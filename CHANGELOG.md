@@ -12,6 +12,62 @@
 
 ---
 
+## [001-create-ticket-api] - 2026-02-13 22:53
+
+### 🎯 Prompt
+> "Speckit 워크플로우 통합 및 에러 처리 시스템 구축"
+
+### ✅ Changes
+- **Added**: Speckit 워크플로우 문서 세트 (`specs/001-create-ticket-api/`)
+  - `spec.md` - 기능 명세
+  - `plan.md` - 구현 계획
+  - `tasks.md` - 작업 목록
+  - `data-model.md` - 데이터 모델
+  - `research.md` - 사전 조사
+  - `quickstart.md` - 빠른 시작 가이드
+  - `checklists/`, `contracts/` - 체크리스트 및 계약
+- **Added**: 공유 에러 시스템 (`src/shared/errors/`)
+  - `TicketNotFoundError` - 티켓 미존재 에러
+  - `ValidationError` - 검증 에러
+- **Added**: 서비스 레이어 타입 정의 (`src/server/db/types.ts`)
+- **Added**: 서비스 export 정리 (`src/server/services/index.ts`)
+- **Added**: 서비스 단위 테스트 (`__tests__/services/ticketService.test.ts`)
+- **Modified**: `ticketService.ts` - 에러 처리 개선 및 비즈니스 로직 강화
+- **Modified**: `app/api/tickets/route.ts` - 통일된 에러 응답 형식 적용
+- **Modified**: `__tests__/api/tickets.test.ts` - 추가 통합 테스트 케이스
+- **Modified**: `.specify/memory/constitution.md` - Speckit 워크플로우 가이드 추가
+- **Modified**: Environment files (`.env.example`, `.env.local`, `.env.test`) - DB 설정 업데이트
+- **Modified**: `jest.setup.ts` - 통합 테스트를 위한 mock 제거
+
+### 📊 Architecture
+- **Layer Separation**: API Route → Service → DB 계층 분리 완료
+- **Error Handling**: 중앙화된 에러 시스템 도입
+- **Type Safety**: 서버 전용 타입과 공유 타입 분리
+- **Documentation**: Speckit 기반 체계적 명세 관리
+
+### 📁 Files Modified
+- `specs/001-create-ticket-api/` (새 디렉토리, ~90KB 문서)
+- `src/shared/errors/index.ts` (+13, -0 lines)
+- `src/server/db/types.ts` (+20, -0 lines) [new]
+- `src/server/services/index.ts` (+5, -0 lines) [new]
+- `src/server/services/ticketService.ts` (+71, -42 lines)
+- `app/api/tickets/route.ts` (+43, -? lines)
+- `__tests__/api/tickets.test.ts` (+89, -0 lines)
+- `__tests__/services/ticketService.test.ts` (+150, -0 lines) [new]
+- `.specify/memory/constitution.md` (+3, -0 lines)
+- `.env.example` (+5, -1 lines)
+- `.env.local` (+2, -1 lines)
+- `.env.test` (+2, -1 lines)
+- `jest.setup.ts` (+3, -1 lines)
+
+### 🎓 Key Learnings
+- Speckit 워크플로우는 구현 전 명세를 체계화하는 데 효과적
+- 에러 처리를 중앙화하면 일관된 API 응답 제공 가능
+- 서비스 레이어 분리로 테스트 가능성 향상
+- 타입 분리(shared vs server)로 프론트엔드 의존성 최소화
+
+---
+
 ## [chapter5.1-init] - 2026-02-13 17:00
 
 ### 🎯 Prompt

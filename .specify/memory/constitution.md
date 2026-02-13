@@ -121,6 +121,9 @@ Constitution 수정은 다음 절차를 따른다:
 5. 문서화 및 승인
 6. 버전 업데이트
 
+### Response Result  
+응답 결과는 한글로 설명한다. 
+
 ### Enforcement
 - 모든 PR은 Constitution 준수 여부 검증 필수
 - 위반 사항 발견 시 즉시 수정

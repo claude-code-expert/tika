@@ -92,6 +92,42 @@ describe('POST /api/tickets', () => {
       });
     });
 
+    it('빈 제목이면 400 에러를 반환한다', async () => {
+      // Given
+      const request = createRequest({
+        title: '',
+      });
+
+      // When
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Then
+      expect(response.status).toBe(400);
+      expect(data.error).toEqual({
+        code: 'VALIDATION_ERROR',
+        message: '제목을 입력해주세요',
+      });
+    });
+
+    it('공백만 있는 제목이면 400 에러를 반환한다', async () => {
+      // Given
+      const request = createRequest({
+        title: '   ',
+      });
+
+      // When
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Then
+      expect(response.status).toBe(400);
+      expect(data.error).toEqual({
+        code: 'VALIDATION_ERROR',
+        message: '제목을 입력해주세요',
+      });
+    });
+
     it('제목이 200자를 초과하면 400 에러를 반환한다', async () => {
       // Given
       const request = createRequest({
@@ -107,6 +143,25 @@ describe('POST /api/tickets', () => {
       expect(data.error).toEqual({
         code: 'VALIDATION_ERROR',
         message: '제목은 200자 이내로 입력해주세요',
+      });
+    });
+
+    it('설명이 1000자를 초과하면 400 에러를 반환한다', async () => {
+      // Given
+      const request = createRequest({
+        title: '테스트',
+        description: 'a'.repeat(1001),
+      });
+
+      // When
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Then
+      expect(response.status).toBe(400);
+      expect(data.error).toEqual({
+        code: 'VALIDATION_ERROR',
+        message: '설명은 1000자 이내로 입력해주세요',
       });
     });
 
@@ -146,6 +201,40 @@ describe('POST /api/tickets', () => {
         code: 'VALIDATION_ERROR',
         message: '우선순위는 LOW, MEDIUM, HIGH 중 선택해주세요',
       });
+    });
+  });
+
+  describe('비즈니스 로직', () => {
+    it('연속으로 생성된 티켓은 나중 티켓의 position이 더 작다', async () => {
+      // Given: 첫 번째 티켓 생성
+      const request1 = createRequest({ title: '첫 번째 티켓' });
+      const response1 = await POST(request1);
+      const ticket1 = await response1.json();
+
+      // When: 두 번째 티켓 생성
+      const request2 = createRequest({ title: '두 번째 티켓' });
+      const response2 = await POST(request2);
+      const ticket2 = await response2.json();
+
+      // Then: 나중 생성된 티켓의 position이 더 작음 (맨 위에 배치)
+      expect(response2.status).toBe(201);
+      expect(ticket2.position).toBeLessThan(ticket1.position);
+    });
+
+    it('생성된 티켓의 startedAt과 completedAt은 null이다', async () => {
+      // Given
+      const request = createRequest({
+        title: '테스트 티켓',
+      });
+
+      // When
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Then
+      expect(response.status).toBe(201);
+      expect(data.startedAt).toBeNull();
+      expect(data.completedAt).toBeNull();
     });
   });
 });

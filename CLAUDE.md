@@ -354,6 +354,17 @@ docs: API_SPEC.md 에러 코드 추가
 - `feature/*`: 기능 개발
 - `fix/*`: 버그 수정
 
+## Recent Changes
+
+> 최근 7-14일간의 주요 변경사항을 추적합니다.
+> 전체 히스토리는 [CHANGELOG.md](./CHANGELOG.md) 참조
+
+### 2026-02-13
+- **[chapter5.1-init]** Changelog 시스템 구현 완료 (/changelog 스킬, helper script, 문서 템플릿)
+- **[chapter5.1-init]** TC-API-001 테스트 완료 (11/11 passed, 100% coverage)
+- **[Multi-branch]** DB 설정 파일 3개 브랜치에 추가 (chapter4.4.5, chapter5.1-SDD, chapter5.1-init)
+- **[chapter5.1-init]** Jest 통합 테스트 활성화 (ticketService mock 제거)
+
 ---
 
 **핵심 원칙과 거버넌스는 `.specify/memory/constitution.md` 참조**

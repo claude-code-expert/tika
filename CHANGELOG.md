@@ -43,6 +43,7 @@
 ### 📚 References
 - Claude Code Skills Documentation: https://code.claude.com/docs/skills.md
 - Claude Code Plugins Reference: https://code.claude.com/docs/plugins-reference.md
+- **Incident Report**: [docs/incidents/2026-02-13-changelog-skill-structure.md](docs/incidents/2026-02-13-changelog-skill-structure.md)
 
 ---
 

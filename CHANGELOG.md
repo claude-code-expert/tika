@@ -12,6 +12,80 @@
 
 ---
 
+## [001-create-ticket-api] - 2026-02-14 01:18
+
+### 🎯 Prompt
+> "changelog 스킬을 올바른 skills 구조로 수정 + 공식 문서 우선 참조 원칙 추가"
+
+### ✅ Changes
+- **Fixed**: Changelog를 올바른 skills 구조로 이동 (`.claude/skills/changelog/SKILL.md`)
+- **Fixed**: YAML frontmatter 개선 (name, user-invocable 추가, invoke_pattern 제거)
+- **Added**: constitution.md에 "Documentation First" 원칙 추가 (Core Principle VII)
+- **Updated**: CLAUDE.md에 문서 참조 원칙 및 `.claude/` 디렉토리 구조 가이드 추가
+- **Corrected**: 이전 두 엔트리(23:44, 23:19)의 잘못된 정보 정정
+
+### 📁 Files Modified
+- `.claude/skills/changelog/SKILL.md` (새 위치, frontmatter 개선)
+- `.claude/commands/changelog.md` (삭제 예정)
+- `.specify/memory/constitution.md` (+9 lines, Documentation First 원칙)
+- `CLAUDE.md` (+30 lines, 금지사항 및 .claude/ 구조 문서화)
+- `CHANGELOG.md` (this entry)
+
+### 🎓 Key Learnings (CORRECTED)
+- **⚠️ 이전 이해 정정**: `.claude/skills/`는 **공식적으로 지원됨** (이전 엔트리의 "미지원"은 오류)
+- **올바른 Skills 구조**: `.claude/skills/<name>/SKILL.md` (디렉토리 + SKILL.md)
+- **잘못된 구조**: `.claude/skills/changelog.md` (단일 파일, 인식 안 됨)
+- **공식 문서 우선**: 추측하지 말고 https://code.claude.com/docs 필수 참조
+- **Commands vs Skills**:
+  - Commands (`.claude/commands/*.md`): 레거시 형식, 단순 파일, 여전히 작동
+  - Skills (`.claude/skills/*/SKILL.md`): 권장 형식, 디렉토리 + 지원 파일 + 고급 기능
+
+### 📚 References
+- Claude Code Skills Documentation: https://code.claude.com/docs/skills.md
+- Claude Code Plugins Reference: https://code.claude.com/docs/plugins-reference.md
+
+---
+
+## [001-create-ticket-api] - 2026-02-13 23:44
+
+### ⚠️ CORRECTION
+> 이 엔트리의 "Key Learnings"는 **잘못된 정보**입니다.
+> 올바른 정보는 2026-02-14 01:18 엔트리 참조.
+
+### 🎯 Prompt
+> "changelog 스킬 인식 문제 해결 - .claude/commands/로 재이동"
+
+### ✅ Changes
+- **Moved**: `changelog.md`를 `.claude/skills/`에서 `.claude/commands/`로 재이동
+- **Removed**: `.claude/skills/` 디렉토리 삭제
+
+### 📁 Files Modified
+- `.claude/commands/changelog.md` (moved back from skills/)
+- `.claude/skills/` (directory removed)
+
+### ~~🎓 Key Learnings~~ (❌ 잘못된 정보)
+- ~~Claude Code는 `.claude/commands/` 디렉토리만 스킬로 인식~~
+- ~~`.claude/skills/` 디렉토리는 아직 공식적으로 지원되지 않음~~
+- ~~모든 스킬/커맨드는 `.claude/commands/`에 위치해야 함~~
+
+---
+
+## [001-create-ticket-api] - 2026-02-13 23:19
+
+### ⚠️ CORRECTION
+> 이 엔트리의 접근 방식은 올바랐으나 구조가 잘못되었습니다.
+> `.claude/skills/changelog.md` (X) → `.claude/skills/changelog/SKILL.md` (O)
+
+### 🎯 Prompt
+> "Changelog skill을 .claude/skills/로 분리"
+
+### ✅ Changes
+- **Added**: `.claude/skills/` 디렉토리 생성
+- **Moved**: `changelog.md`를 `.claude/commands/`에서 `.claude/skills/`로 이동 (잘못된 구조)
+- **Kept**: `speckit.*` 파일들은 `.claude/commands/`에 유지
+
+---
+
 ## [001-create-ticket-api] - 2026-02-13 23:44
 
 ### 🎯 Prompt

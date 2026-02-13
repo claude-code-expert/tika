@@ -1,8 +1,9 @@
 ---
+name: changelog
 description: Record current session changes to CHANGELOG.md and update CLAUDE.md Recent Changes section
+user-invocable: true
 handoffs:
   - When finished logging changes, suggest running tests or committing
-invoke_pattern: /changelog
 ---
 
 # Changelog Recording Skill

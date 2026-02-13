@@ -11,6 +11,12 @@ src/shared/에서 타입과 검증 스키마를 공유한다.
 ## 프로젝트 구조
 ```
 tika/
+├── .claude/
+│   ├── skills/       # Custom skills (디렉토리 + SKILL.md 형식)
+│   │   └── changelog/SKILL.md
+│   ├── commands/     # Legacy 커맨드 (단일 .md 파일, 여전히 작동)
+│   │   └── speckit.*.md
+│   └── settings.local.json
 ├── app/api/          # 백엔드 진입점 (Route Handlers)
 ├── src/
 │   ├── server/       # 백엔드 로직 (services, db, middleware)
@@ -18,6 +24,15 @@ tika/
 │   └── shared/       # 공유 타입, Zod 스키마, 상수
 └── docs/             # 프로젝트 명세 문서
 ```
+
+### .claude/ 디렉토리 구조 (Claude Code 전용)
+- **`.claude/skills/`**: 권장 형식, 디렉토리 + `SKILL.md` + 지원 파일
+  - 예: `.claude/skills/changelog/SKILL.md`
+  - YAML frontmatter 필수 (name, description, user-invocable 등)
+- **`.claude/commands/`**: 레거시 형식, 단일 `.md` 파일 (여전히 작동)
+  - 예: `.claude/commands/speckit.plan.md`
+  - Skills보다 기능이 제한적이지만 간단한 용도로 사용 가능
+- **공식 문서**: https://code.claude.com/docs/skills.md
 
 ## 기술 스택
 - **Framework**: Next.js 15 (App Router)
@@ -301,12 +316,15 @@ npm run db:seed      # 시드 데이터 생성
 - ❌ .env 파일 커밋
 - ❌ src/client/에서 DB 직접 접근
 - ❌ Route Handler에 비즈니스 로직 작성
+- ❌ **공식 문서 확인 없이 추측으로 구현** (특히 Claude Code 기능/구조)
 
 ### 확인 필요
 - ⚠️ DB 스키마 변경 → 마이그레이션 생성
 - ⚠️ shared 타입 변경 → 영향 범위 확인
 - ⚠️ API 응답 형식 변경 → API_SPEC.md 먼저 수정
 - ⚠️ 패키지 추가/업그레이드 → 호환성 확인
+- ⚠️ Claude Code 기능 사용 → https://code.claude.com/docs 먼저 확인
+- ⚠️ 프레임워크/라이브러리 기능 → 최신 공식 문서 확인
 
 ## 문제 해결
 
@@ -359,8 +377,11 @@ docs: API_SPEC.md 에러 코드 추가
 > 최근 7-14일간의 주요 변경사항을 추적합니다.
 > 전체 히스토리는 [CHANGELOG.md](./CHANGELOG.md) 참조
 
+### 2026-02-14
+- **[001-create-ticket-api]** ✅ Changelog를 올바른 skills 구조로 수정 (.claude/skills/changelog/SKILL.md) + Documentation First 원칙 추가
+
 ### 2026-02-13
-- **[001-create-ticket-api]** Changelog 스킬 인식 문제 해결 (.claude/commands/로 재이동, .claude/skills/ 미지원 확인)
+- **[001-create-ticket-api]** ⚠️ Changelog 스킬 구조 시행착오 (잘못된 구조 사용, 공식 문서 미확인)
 - **[001-create-ticket-api]** Speckit 워크플로우 통합 및 에러 처리 시스템 구축 (specs/, src/shared/errors/, 서비스 레이어 개선)
 - **[chapter5.1-init]** Changelog 시스템 구현 완료 (/changelog 스킬, helper script, 문서 템플릿)
 - **[chapter5.1-init]** TC-API-001 테스트 완료 (11/11 passed, 100% coverage)

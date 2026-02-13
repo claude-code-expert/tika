@@ -18,20 +18,29 @@ src/shared/에서 타입과 검증 스키마를 공유한다.
 - Frontend: React 19
 - Styling: Tailwind CSS 4
 - Drag & Drop: @dnd-kit/core + @dnd-kit/sortable
-- ORM: Drizzle ORM
-- DB: PostgreSQL (로컬 개발), Vercel Postgres (Neon)
+- ORM: Drizzle ORM 0.38.x
+- DB: PostgreSQL (로컬 개발, node-postgres), Vercel Postgres (배포)
 - Validation: Zod
 - Testing: Jest + React Testing Library
 - Deployment: Vercel
 
+## 환경 설정
+- **환경 변수**: DATABASE_URL (PostgreSQL 연결 문자열)
+- **경로 별칭**:
+  - `@/` → `src/`
+  - `@/app/` → `app/`
+  - `@/shared/` → `src/shared/`
+  - `@/server/` → `src/server/`
+  - `@/client/` → `src/client/`
+
 ## 프로젝트 문서 (반드시 참조)
-- 제품 요구사항: /docs/PRD.md
-- 기술 요구사항: /docs/TRD.md
-- 상세 요구사항: /docs/REQUIREMENTS.md
-- API 명세: /docs/API_SPEC.md
-- 데이터 모델: /docs/DATA_MODEL.md
-- 컴포넌트 명세: /docs/COMPONENT_SPEC.md
-- 테스트 케이스: /docs/TEST_CASES.md
+- 제품 요구사항: docs/PRD.md
+- 기술 요구사항: docs/TRD.md
+- 상세 요구사항: docs/REQUIREMENTS.md
+- API 명세: docs/API_SPEC.md
+- 데이터 모델: docs/DATA_MODEL.md
+- 컴포넌트 명세: docs/COMPONENT_SPEC.md
+- 테스트 케이스: docs/TEST_CASES.md
 
 ## 코딩 컨벤션
 
@@ -71,6 +80,7 @@ src/shared/에서 타입과 검증 스키마를 공유한다.
 - console.log 커밋 금지 (디버깅 후 제거)
 - src/client/에서 직접 DB 접근 금지
 - src/server/에서 React 관련 코드 작성 금지
+- .env 파일 커밋 금지 (.env.example만 커밋)
 
 ### 경계 규칙
 - 백엔드 작업 시(app/api/, src/server/) 프론트엔드(src/client/) 코드 수정 금지
@@ -84,15 +94,26 @@ src/shared/에서 타입과 검증 스키마를 공유한다.
 ## SDD 워크플로우 규칙
 
 ### 구현 전 명세 확인
-1. API 구현 전: API_SPEC.md에서 요청/응답 형식, 에러 메시지 확인
-2. 컴포넌트 구현 전: COMPONENT_SPEC.md에서 Props, 이벤트 흐름 확인
-3. DB 작업 전: DATA_MODEL.md에서 스키마, 비즈니스 규칙 확인
+1. **API 구현 전**: API_SPEC.md에서 요청/응답 형식, 에러 메시지 확인
+2. **컴포넌트 구현 전**: COMPONENT_SPEC.md에서 Props, 이벤트 흐름 확인
+3. **DB 작업 전**: DATA_MODEL.md에서 스키마, 비즈니스 규칙 확인
+4. **타입 정의 전**: src/shared/types/index.ts 먼저 확인 및 수정
 
 ### 명세 우선 원칙
 - 명세에 정의된 에러 메시지를 그대로 사용할 것
 - 명세에 없는 필드나 동작을 임의로 추가하지 말 것
 - 명세와 구현이 다를 경우, 명세를 먼저 수정한 후 구현 변경
+- 불확실한 부분은 구현 전 명세 문서를 먼저 업데이트
+
+### TDD 사이클
+1. TEST_CASES.md에서 해당 기능의 테스트 케이스 확인
+2. 테스트 코드 작성 (Red)
+3. 최소한의 구현으로 테스트 통과 (Green)
+4. 리팩토링 (Refactor)
+5. 명세 문서와 일치 여부 재확인
 
 ### 검증 단계
 - 구현 완료 후 TEST_CASES.md의 시나리오로 검증
 - 테스트 실패 시 구현을 수정 (명세 오류인 경우 명세 먼저 수정)
+- TypeScript 타입 체크 통과 확인 (`npx tsc --noEmit`)
+- 빌드 성공 확인 (`npm run build`)

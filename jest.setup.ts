@@ -1,11 +1,9 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 import { config } from 'dotenv';
 
 // 테스트 환경 변수 로드
 config({ path: '.env.test' });
-
-// Next.js 15 App Router 호환: fetch polyfill
-global.fetch = jest.fn();
 
 // TextEncoder/TextDecoder polyfill (Node.js 환경에서 필요)
 if (typeof global.TextEncoder === 'undefined') {
@@ -14,13 +12,55 @@ if (typeof global.TextEncoder === 'undefined') {
   global.TextDecoder = TextDecoder;
 }
 
-// 서버 사이드 모듈 mock
-// Note: 통합 테스트에서는 실제 서비스를 사용하므로 여기서 mock하지 않음
-// 필요한 경우 개별 테스트 파일에서 jest.mock() 사용
+// ============================================
+// Next.js Mock: next/navigation
+// ============================================
+const mockRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  refresh: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  prefetch: jest.fn(),
+};
 
-// console 출력 제어 (선택사항)
+jest.mock('next/navigation', () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}));
+
+// ============================================
+// Next.js Mock: next/image
+// ============================================
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    const { fill, priority, ...rest } = props;
+    return React.createElement('img', rest);
+  },
+}));
+
+// ============================================
+// Next.js Mock: next/link
+// ============================================
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) =>
+    React.createElement('a', { href, ...rest }, children),
+}));
+
+// ============================================
+// fetch: 기본 mock (개별 테스트에서 재정의 가능)
+// ============================================
+global.fetch = jest.fn();
+
+// ============================================
+// console 출력 제어
+// ============================================
 global.console = {
   ...console,
-  error: jest.fn(), // 테스트 중 에러 로그 숨김
-  warn: jest.fn(),  // 테스트 중 경고 로그 숨김
+  error: jest.fn(),
+  warn: jest.fn(),
 };

@@ -5,7 +5,7 @@
 
 ## 프로젝트 개요
 Tika는 티켓 기반 칸반 보드 TODO 앱이다.
-Next.js App Router 기반으로, 프론트엔드와 백엔드를 디렉토리 수준에서 분리한다.
+Next.js App Router 기반으로, 프런트엔드와 백엔드를 디렉토리 수준에서 분리한다.
 src/shared/에서 타입과 검증 스키마를 공유한다.
 
 ## 프로젝트 구조
@@ -20,7 +20,7 @@ tika/
 ├── app/api/          # 백엔드 진입점 (Route Handlers)
 ├── src/
 │   ├── server/       # 백엔드 로직 (services, db, middleware)
-│   ├── client/       # 프론트엔드 로직 (components, hooks, api)
+│   ├── client/       # 프런트엔드 로직 (components, hooks, api)
 │   └── shared/       # 공유 타입, Zod 스키마, 상수
 └── docs/             # 프로젝트 명세 문서
 ```
@@ -219,7 +219,7 @@ return Response.json({ message: 'Not found' }, { status: 404 });
 return Response.json({ error: 'Not found' }, { status: 404 });
 ```
 
-### 프론트엔드 (src/client/)
+### 프런트엔드 (src/client/)
 
 #### 컴포넌트 패턴
 ```typescript

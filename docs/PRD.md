@@ -161,12 +161,12 @@ Tika는 개인 할 일 관리를 위한 티켓 기반 칸반 보드 웹 애플�
 | 영역 | 기술 | 선정 이유 |
 |------|------|----------|
 | 프레임워크 | Next.js 15 (App Router) | Vercel 네이티브 통합, 별도 서버 없이 API 구현, 프론트와 동일 프로젝트에서 관리 |
-| 프론트엔드 | React 19 + TypeScript | 타입 안전성으로 AI 생성 코드의 오류를 컴파일 시점에 잡을 수 있음 |
+| 프런트엔드 | React 19 + TypeScript | 타입 안전성으로 AI 생성 코드의 오류를 컴파일 시점에 잡을 수 있음 |
 | 스타일링 | Tailwind CSS 4 | 유틸리티 클래스 기반으로 AI가 일관된 스타일 코드를 생성하기 쉬움 |
 | 드래그앤드롭 | @dnd-kit/core | React 19 호환, 접근성 지원, 경량 |
 | ORM | Drizzle ORM | Vercel Postgres 공식 지원, 서버리스 최적화, 코드 생성 단계 불필요 |
 | DB | Vercel Postgres (Neon) | Vercel 네이티브 통합, 서버리스 환경 최적화, 무료 티어 제공 |
-| 검증 | Zod | 프론트엔드와 백엔드에서 동일한 검증 스키마 공유 가능 |
+| 검증 | Zod | 프런트엔드와 백엔드에서 동일한 검증 스키마 공유 가능 |
 | 테스트 | Jest + React Testing Library | TDD에 적합한 테스트 러너와 사용자 관점의 컴포넌트 테스트 |
 | 배포 | Vercel | Next.js 최적 배포 환경, Git push로 자동 배포, DB까지 통합 관리 |
 

@@ -16,6 +16,10 @@ const config: Config = {
     '^@/server/(.*)$': '<rootDir>/src/server/$1',
     '^@/client/(.*)$': '<rootDir>/src/client/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
+
+    // 정적 에셋 mock
+    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/styleMock.ts',
+    '\\.(jpg|jpeg|png|gif|svg|webp|ico)$': '<rootDir>/__mocks__/fileMock.ts',
   },
 
   testMatch: [

@@ -9,7 +9,7 @@
 
 ### 1.1 전체 구성
 
-Vercel 단일 플랫폼에서 프론트엔드, API, 데이터베이스를 통합 운영한다. `git push` 한 번으로 전체가 배포되고, CORS 설정이나 별도 서버 관리가 필요 없다.
+Vercel 단일 플랫폼에서 프런트엔드, API, 데이터베이스를 통합 운영한다. `git push` 한 번으로 전체가 배포되고, CORS 설정이나 별도 서버 관리가 필요 없다.
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -43,11 +43,11 @@ Vercel 단일 플랫폼에서 프론트엔드, API, 데이터베이스를 통합
 
 ### 1.2 프론트/백엔드 논리적 분리
 
-Next.js App Router 기반으로, 프론트엔드와 백엔드를 **디렉토리 수준에서 분리**한다. 물리적으로 같은 프로젝트이지만, 코드 의존 방향이 명확하고 한쪽을 수정할 때 다른 쪽에 영향을 주지 않는다.
+Next.js App Router 기반으로, 프런트엔드와 백엔드를 **디렉토리 수준에서 분리**한다. 물리적으로 같은 프로젝트이지만, 코드 의존 방향이 명확하고 한쪽을 수정할 때 다른 쪽에 영향을 주지 않는다.
 
 - **`app/api/`** — 백엔드 진입점 (Route Handlers, 요청 파싱 + 응답만)
 - **`src/server/`** — 백엔드 로직 (services, db, middleware)
-- **`src/client/`** — 프론트엔드 로직 (components, hooks, api 호출)
+- **`src/client/`** — 프런트엔드 로직 (components, hooks, api 호출)
 - **`src/shared/`** — 양쪽에서 사용하는 타입, 검증 스키마, 상수
 
 ```
@@ -63,7 +63,7 @@ Next.js App Router 기반으로, 프론트엔드와 백엔드를 **디렉토리 
 
 ## 2. 기술 스택 상세
 
-### 2.1 프론트엔드
+### 2.1 프런트엔드
 
 | 기술 | 버전 | 용도 | 선정 이유 |
 |------|------|------|----------|
@@ -121,7 +121,7 @@ tika/
 │   │       └── reorder/
 │   │           └── route.ts          # PATCH /api/tickets/reorder
 │   │
-│   ├── (board)/                      # 프론트엔드: 페이지 그룹
+│   ├── (board)/                      # 프런트엔드: 페이지 그룹
 │   │   ├── page.tsx                  # 메인 칸반 보드 페이지
 │   │   └── layout.tsx                # 보드 레이아웃
 │   ├── layout.tsx                    # 루트 레이아웃
@@ -139,7 +139,7 @@ tika/
 │   │       ├── errorHandler.ts       # 에러 처리
 │   │       └── validate.ts           # Zod 검증 유틸리티
 │   │
-│   ├── client/                       # 프론트엔드 로직 (브라우저에서 실행)
+│   ├── client/                       # 프런트엔드 로직 (브라우저에서 실행)
 │   │   ├── components/
 │   │   │   ├── board/
 │   │   │   │   ├── Board.tsx         # 칸반 보드 컨테이너 (DnD 컨텍스트)
@@ -171,11 +171,11 @@ tika/
 │   │   └── tickets.test.ts
 │   ├── services/                     # 서비스 단위 테스트 (백엔드)
 │   │   └── ticketService.test.ts
-│   ├── components/                   # 컴포넌트 테스트 (프론트엔드)
+│   ├── components/                   # 컴포넌트 테스트 (프런트엔드)
 │   │   ├── Board.test.tsx
 │   │   ├── Column.test.tsx
 │   │   └── TicketCard.test.tsx
-│   └── hooks/                        # Hook 테스트 (프론트엔드)
+│   └── hooks/                        # Hook 테스트 (프런트엔드)
 │       └── useTickets.test.ts
 │
 ├── docs/                             # 프로젝트 문서
@@ -269,7 +269,7 @@ Board.tsx (DnD 이벤트)
   → 실패 시 롤백 (이전 상태로 복원)
 ```
 
-프론트엔드 폼에서의 **클라이언트 검증**과 Route Handler에서의 **서버 검증**, 두 단계 모두 `src/shared/validations/`의 동일한 Zod 스키마를 사용한다.
+프런트엔드 폼에서의 **클라이언트 검증**과 Route Handler에서의 **서버 검증**, 두 단계 모두 `src/shared/validations/`의 동일한 Zod 스키마를 사용한다.
 
 ---
 
@@ -305,8 +305,8 @@ Board.tsx (DnD 이벤트)
 
 | 규칙 | 설명 |
 |------|------|
-| `src/server/` → `src/client/` import 금지 | 백엔드에서 프론트엔드 코드 참조 불가 |
-| `src/client/` → `src/server/` import 금지 | 프론트엔드에서 백엔드 코드 직접 참조 불가 |
+| `src/server/` → `src/client/` import 금지 | 백엔드에서 프런트엔드 코드 참조 불가 |
+| `src/client/` → `src/server/` import 금지 | 프런트엔드에서 백엔드 코드 직접 참조 불가 |
 | `src/shared/`만 양쪽에서 참조 가능 | 타입, Zod 스키마, 상수만 공유 |
 | Route Handler 안에 비즈니스 로직 금지 | 요청 파싱 → 서비스 호출 → 응답 반환만 |
 | `src/client/`에서 직접 DB 접근 금지 | 반드시 API를 통해 데이터 접근 |
@@ -316,7 +316,7 @@ Board.tsx (DnD 이벤트)
 
 ---
 
-## 8. 프론트엔드 아키텍처
+## 8. 프런트엔드 아키텍처
 
 ### 8.1 렌더링 전략
 

@@ -21,7 +21,7 @@
 
 ## 기술 스택
 
-### 프론트엔드
+### 프런트엔드
 
 | 기술 | 버전 | 용도 |
 |------|------|------|
@@ -65,7 +65,7 @@ tika/
 │   │       └── reorder/
 │   │           └── route.ts          # PATCH /api/tickets/reorder
 │   │
-│   ├── (board)/                      # 프론트엔드: 페이지 그룹
+│   ├── (board)/                      # 프런트엔드: 페이지 그룹
 │   │   ├── page.tsx                  # 메인 칸반 보드 페이지
 │   │   └── layout.tsx                # 보드 레이아웃
 │   ├── layout.tsx                    # 루트 레이아웃
@@ -83,7 +83,7 @@ tika/
 │   │       ├── errorHandler.ts       # 에러 처리
 │   │       └── validate.ts           # Zod 검증 유틸리티
 │   │
-│   ├── client/                       # 프론트엔드 로직 (브라우저에서 실행)
+│   ├── client/                       # 프런트엔드 로직 (브라우저에서 실행)
 │   │   ├── components/
 │   │   │   ├── board/                # Board, Column, TicketCard
 │   │   │   ├── ticket/               # TicketModal, TicketForm
@@ -120,8 +120,8 @@ tika/
 
 | 규칙 | 설명 |
 |------|------|
-| `src/server/` → `src/client/` import 금지 | 백엔드에서 프론트엔드 코드 참조 불가 |
-| `src/client/` → `src/server/` import 금지 | 프론트엔드에서 백엔드 코드 직접 참조 불가 |
+| `src/server/` → `src/client/` import 금지 | 백엔드에서 프런트엔드 코드 참조 불가 |
+| `src/client/` → `src/server/` import 금지 | 프런트엔드에서 백엔드 코드 직접 참조 불가 |
 | `src/shared/`만 양쪽에서 참조 가능 | 타입, Zod 스키마, 상수만 공유 |
 
 ---
@@ -236,7 +236,7 @@ claude
 
 개발 순서:
 1. **백엔드 (Chapter 5)**: TEST_CASES.md의 TC-API 기반으로 TDD 사이클 진행
-2. **프론트엔드 (Chapter 6)**: TC-COMP, TC-INT 기반으로 컴포넌트 구현
+2. **프런트엔드 (Chapter 6)**: TC-COMP, TC-INT 기반으로 컴포넌트 구현
 
 ---
 

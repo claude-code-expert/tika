@@ -14,7 +14,7 @@
 
 ### III. Contract-First API Design
 API는 명확한 계약을 기반으로 설계되고 구현된다.
-- **Why**: 프론트엔드-백엔드 간 인터페이스 불일치는 통합 단계에서 큰 비용을 발생시킨다.
+- **Why**: 프런트엔드-백엔드 간 인터페이스 불일치는 통합 단계에서 큰 비용을 발생시킨다.
 - **원칙**: API_SPEC.md에 정의된 요청/응답 형식을 정확히 준수한다.
 
 ### IV. Validated Inputs, Safe Outputs
@@ -98,7 +98,7 @@ AI 코딩 에이전트가 실수로 위험한 작업을 수행하지 않도록 �
 - DB 스키마: `src/server/db/schema.ts`
 
 ### No Direct Database Access from Frontend
-프론트엔드는 데이터베이스에 직접 접근할 수 없다.
+프런트엔드는 데이터베이스에 직접 접근할 수 없다.
 - **Why**: 보안, 비즈니스 로직 중복, 트랜잭션 관리 문제
 - **원칙**: 모든 데이터 접근은 API를 통해서만
 

@@ -1,7 +1,7 @@
 # Tika - 컴포넌트 명세 (COMPONENT_SPEC.md)
 
 > React 컴포넌트 계층, Props, 동작, 이벤트 흐름, Hook 정의
-> 관련 문서: PRD.md, REQUIREMENTS.md, API_SPEC.md, DATA_MODEL.md
+> 관련 문서: PRD.md, REQUIREMENTS.md, API_SPEC.md, DATA_MODEL.md, [FRONTEND_TASKS.md](./FRONTEND_TASKS.md) (구현 순서)
 
 ---
 
@@ -459,3 +459,9 @@ TicketModal(삭제 버튼 클릭)
 | US-006: 할 일 완료 처리 | Board (Done 칼럼 드롭) | useTickets.complete |
 | US-007: 할 일 수정 | TicketModal, TicketForm | useTickets.update |
 | US-008: 할 일 삭제 | TicketModal, ConfirmDialog | useTickets.remove |
+
+---
+
+## 7. 구현 순서
+
+컴포넌트 구현 순서와 TDD 체크리스트는 [FRONTEND_TASKS.md](./FRONTEND_TASKS.md) 참조.

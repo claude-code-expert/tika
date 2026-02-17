@@ -24,3 +24,6 @@ coverage/
 
 # Drizzle
 drizzle/meta/
+
+# reference docs
+/reference/docs/*

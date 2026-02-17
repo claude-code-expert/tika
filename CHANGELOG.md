@@ -12,6 +12,94 @@
 
 ---
 
+## [chapter6-frontend-phase1] - 2026-02-17 16:06
+
+### 🎯 Prompt
+> See commit message
+
+### ✅ Changes
+
+- **Modified**: `.gitignore`
+- **Deleted**: `__tests__/api/ticketApi.test.ts`
+- **Deleted**: `__tests__/components/Board.test.tsx`
+- **Deleted**: `__tests__/components/BoardContainer.test.tsx`
+- **Deleted**: `__tests__/components/BoardHeader.test.tsx`
+- **Deleted**: `__tests__/components/Button.test.tsx`
+- **Deleted**: `__tests__/components/Column.test.tsx`
+- **Deleted**: `__tests__/components/ColumnHeader.test.tsx`
+- **Deleted**: `__tests__/components/ConfirmDialog.test.tsx`
+- **Deleted**: `__tests__/components/FilterBar.test.tsx`
+- **Deleted**: `__tests__/components/Modal.test.tsx`
+- **Deleted**: `__tests__/components/TicketCard.test.tsx`
+- **Deleted**: `__tests__/components/TicketDetailView.test.tsx`
+- **Deleted**: `__tests__/components/TicketForm.test.tsx`
+- **Deleted**: `__tests__/components/TicketModal.test.tsx`
+- **Deleted**: `__tests__/hooks/useTickets.test.ts`
+- **Modified**: `app/page.tsx`
+- **Deleted**: `src/client/api/ticketApi.ts`
+- **Renamed**: `src/shared/types/.gitkeep	src/client/components/board/.gitkeep`
+- **Deleted**: `src/client/components/board/Board.tsx`
+- **Deleted**: `src/client/components/board/BoardContainer.tsx`
+- **Deleted**: `src/client/components/board/BoardHeader.tsx`
+- **Deleted**: `src/client/components/board/Column.tsx`
+- **Deleted**: `src/client/components/board/ColumnHeader.tsx`
+- **Deleted**: `src/client/components/board/FilterBar.tsx`
+- **Renamed**: `src/shared/validations/.gitkeep	src/client/components/ticket/.gitkeep`
+- **Deleted**: `src/client/components/ticket/TicketCard.tsx`
+- **Deleted**: `src/client/components/ticket/TicketDetailView.tsx`
+- **Deleted**: `src/client/components/ticket/TicketForm.tsx`
+- **Deleted**: `src/client/components/ticket/TicketModal.tsx`
+- **Added**: `src/client/components/ui/.gitkeep`
+- **Deleted**: `src/client/components/ui/Badge.tsx`
+- **Deleted**: `src/client/components/ui/Button.tsx`
+- **Deleted**: `src/client/components/ui/ConfirmDialog.tsx`
+- **Deleted**: `src/client/components/ui/Modal.tsx`
+- **Deleted**: `src/client/hooks/useTickets.ts`
+- **Modified**: `tsconfig.tsbuildinfo`
+
+### 📁 Files Modified
+
+- `.gitignore` (+3, -0 lines)
+- `__tests__/api/ticketApi.test.ts` (+0, -182 lines)
+- `__tests__/components/Board.test.tsx` (+0, -134 lines)
+- `__tests__/components/BoardContainer.test.tsx` (+0, -158 lines)
+- `__tests__/components/BoardHeader.test.tsx` (+0, -33 lines)
+- `__tests__/components/Button.test.tsx` (+0, -86 lines)
+- `__tests__/components/Column.test.tsx` (+0, -131 lines)
+- `__tests__/components/ColumnHeader.test.tsx` (+0, -34 lines)
+- `__tests__/components/ConfirmDialog.test.tsx` (+0, -65 lines)
+- `__tests__/components/FilterBar.test.tsx` (+0, -60 lines)
+- `__tests__/components/Modal.test.tsx` (+0, -81 lines)
+- `__tests__/components/TicketCard.test.tsx` (+0, -180 lines)
+- `__tests__/components/TicketDetailView.test.tsx` (+0, -71 lines)
+- `__tests__/components/TicketForm.test.tsx` (+0, -117 lines)
+- `__tests__/components/TicketModal.test.tsx` (+0, -118 lines)
+- `__tests__/hooks/useTickets.test.ts` (+0, -251 lines)
+- `app/page.tsx` (+8, -8 lines)
+- `src/client/api/ticketApi.ts` (+0, -69 lines)
+- `src/{shared/types` (+0, -0 lines)
+- `src/client/components/board/Board.tsx` (+0, -42 lines)
+- `src/client/components/board/BoardContainer.tsx` (+0, -145 lines)
+- `src/client/components/board/BoardHeader.tsx` (+0, -24 lines)
+- `src/client/components/board/Column.tsx` (+0, -46 lines)
+- `src/client/components/board/ColumnHeader.tsx` (+0, -15 lines)
+- `src/client/components/board/FilterBar.tsx` (+0, -32 lines)
+- `src/{shared/validations` (+0, -0 lines)
+- `src/client/components/ticket/TicketCard.tsx` (+0, -47 lines)
+- `src/client/components/ticket/TicketDetailView.tsx` (+0, -35 lines)
+- `src/client/components/ticket/TicketForm.tsx` (+0, -124 lines)
+- `src/client/components/ticket/TicketModal.tsx` (+0, -55 lines)
+- `src/client/components/ui/.gitkeep` (+0, -0 lines)
+- `src/client/components/ui/Badge.tsx` (+0, -12 lines)
+- `src/client/components/ui/Button.tsx` (+0, -29 lines)
+- `src/client/components/ui/ConfirmDialog.tsx` (+0, -25 lines)
+- `src/client/components/ui/Modal.tsx` (+0, -36 lines)
+- `src/client/hooks/useTickets.ts` (+0, -100 lines)
+- `tsconfig.tsbuildinfo` (+1, -1 lines)
+
+---
+
+
 ## [chapter6-frontend] - 2026-02-16 18:35
 
 ### 🎯 Prompt

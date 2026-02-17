@@ -78,8 +78,8 @@ FilterBar ──┼── BoardContainer ──── page.tsx
 
 | 순서 | 모듈 | 파일 경로 | 명세 | 테스트 | 상태 |
 |------|------|-----------|------|--------|------|
-| 4-1 | ticketApi | `src/client/api/ticketApi.ts` | COMPONENT_SPEC §4 | 11 tests | ⬜ |
-| 4-2 | useTickets | `src/client/hooks/useTickets.ts` | COMPONENT_SPEC §4 | 10 tests | ⬜ |
+| 4-1 | ticketApi | `src/client/api/ticketApi.ts` | COMPONENT_SPEC §4 | 11 tests | ✅ |
+| 4-2 | useTickets | `src/client/hooks/useTickets.ts` | COMPONENT_SPEC §4 | 10 tests | ✅ |
 
 **의존성**: 없음 (fetch 래퍼 + React Hook)
 **useTickets** → ticketApi
@@ -303,13 +303,13 @@ TDD 체크리스트:
 ```
 
 TDD 체크리스트:
-- [ ] getBoard: GET /api/tickets 호출 + 응답 반환
-- [ ] create: POST /api/tickets 호출 + Ticket 반환
-- [ ] update: PATCH /api/tickets/:id 호출 + Ticket 반환
-- [ ] remove: DELETE /api/tickets/:id 호출
-- [ ] reorder: PATCH /api/tickets/reorder 호출 + 결과 반환
-- [ ] complete: PATCH /api/tickets/:id/complete 호출 + Ticket 반환
-- [ ] 에러 응답 시 error.message throw
+- [x] getBoard: GET /api/tickets 호출 + 응답 반환
+- [x] create: POST /api/tickets 호출 + Ticket 반환
+- [x] update: PATCH /api/tickets/:id 호출 + Ticket 반환
+- [x] remove: DELETE /api/tickets/:id 호출
+- [x] reorder: PATCH /api/tickets/reorder 호출 + 결과 반환
+- [x] complete: PATCH /api/tickets/:id/complete 호출 + Ticket 반환
+- [x] 에러 응답 시 error.message throw
 
 ---
 
@@ -323,14 +323,14 @@ TDD 체크리스트:
 ```
 
 TDD 체크리스트:
-- [ ] initialData로 board 상태 초기화
-- [ ] create 호출 → ticketApi.create + getBoard
-- [ ] update 호출 → ticketApi.update + getBoard
-- [ ] remove 호출 → ticketApi.remove + getBoard
-- [ ] reorder 호출 → ticketApi.reorder + getBoard
-- [ ] complete 호출 → ticketApi.complete + getBoard
-- [ ] 실패 시 error 상태 설정
-- [ ] API 호출 중 isLoading=true
+- [x] initialData로 board 상태 초기화
+- [x] create 호출 → ticketApi.create + getBoard
+- [x] update 호출 → ticketApi.update + getBoard
+- [x] remove 호출 → ticketApi.remove + getBoard
+- [x] reorder 호출 → ticketApi.reorder + getBoard
+- [x] complete 호출 → ticketApi.complete + getBoard
+- [x] 실패 시 error 상태 설정
+- [x] API 호출 중 isLoading=true
 
 ---
 

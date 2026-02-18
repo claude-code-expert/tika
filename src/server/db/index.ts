@@ -7,7 +7,7 @@ let _db: NodePgDatabase<typeof schema> | null = null;
 function getDb(): NodePgDatabase<typeof schema> {
   if (!_db) {
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
     });
     _db = drizzle(pool, { schema });
   }

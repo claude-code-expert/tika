@@ -45,16 +45,18 @@
 
 ```json
 {
-  "id": 1,
-  "title": "API 설계 문서 작성",
-  "description": "REST API 엔드포인트와 요청/응답 형식을 정의한다",
-  "status": "BACKLOG",
-  "priority": "HIGH",
-  "position": -1024,
-  "dueDate": "2026-02-15",
-  "completedAt": null,
-  "createdAt": "2026-02-01T09:00:00.000Z",
-  "updatedAt": "2026-02-01T09:00:00.000Z"
+  "ticket": {
+    "id": 1,
+    "title": "API 설계 문서 작성",
+    "description": "REST API 엔드포인트와 요청/응답 형식을 정의한다",
+    "status": "BACKLOG",
+    "priority": "HIGH",
+    "position": -1024,
+    "dueDate": "2026-02-15",
+    "completedAt": null,
+    "createdAt": "2026-02-01T09:00:00.000Z",
+    "updatedAt": "2026-02-01T09:00:00.000Z"
+  }
 }
 ```
 
@@ -122,17 +124,19 @@
 
 ```json
 {
-  "id": 1,
-  "title": "API 설계 문서 작성",
-  "description": "REST API 엔드포인트와 요청/응답 형식을 정의한다",
-  "status": "BACKLOG",
-  "priority": "HIGH",
-  "position": 0,
-  "dueDate": "2026-02-15",
-  "completedAt": null,
-  "createdAt": "2026-02-01T09:00:00.000Z",
-  "updatedAt": "2026-02-01T09:00:00.000Z",
-  "isOverdue": false
+  "ticket": {
+    "id": 1,
+    "title": "API 설계 문서 작성",
+    "description": "REST API 엔드포인트와 요청/응답 형식을 정의한다",
+    "status": "BACKLOG",
+    "priority": "HIGH",
+    "position": 0,
+    "dueDate": "2026-02-15",
+    "completedAt": null,
+    "createdAt": "2026-02-01T09:00:00.000Z",
+    "updatedAt": "2026-02-01T09:00:00.000Z",
+    "isOverdue": false
+  }
 }
 ```
 
@@ -172,7 +176,7 @@
 
 ### Response 200 OK
 
-수정된 티켓 전체 데이터 (GET /api/tickets/:id와 동일한 형식)
+수정된 티켓 전체 데이터 (GET /api/tickets/:id와 동일한 `{ "ticket": { ... } }` 형식)
 
 ### 에러 응답
 
@@ -215,7 +219,9 @@
 |------|------|------|------|
 | ticketId | number | O | 이동할 티켓 ID |
 | status | string | O | 대상 칼럼 (BACKLOG \| TODO \| IN_PROGRESS \| DONE) |
-| position | number | O | 칼럼 내 새 인덱스 (0부터 시작) |
+| position | number | O | 칼럼 내 표시 인덱스 (0-based). 서버가 gap-based position으로 변환 |
+
+> **position 처리 방식**: 클라이언트는 표시 인덱스(0, 1, 2...)를 전송하고, 서버는 이를 gap-based position 값(1024 간격)으로 변환하여 저장한다. 응답에는 변환된 실제 position 값이 반환된다. 상세 로직은 DATA_MODEL.md §5.3 참조.
 
 ```json
 {
@@ -233,18 +239,18 @@
     "id": 3,
     "title": "API 설계 문서 작성",
     "status": "IN_PROGRESS",
-    "position": 0,
+    "position": -1024,
     "completedAt": null,
     "updatedAt": "2026-02-01T10:30:00.000Z"
   },
   "affected": [
-    { "id": 5, "position": 1024 },
-    { "id": 8, "position": 2048 }
+    { "id": 5, "position": 0 },
+    { "id": 8, "position": 1024 }
   ]
 }
 ```
 
-**affected**: 순서가 변경된 다른 티켓들의 ID와 새 position
+**affected**: 순서가 변경된 다른 티켓들의 ID와 실제 저장된 gap-based position 값
 
 ### 에러 응답
 

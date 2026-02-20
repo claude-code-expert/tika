@@ -11,12 +11,11 @@ App (page.tsx - 서버 컴포넌트)
 │
 └── BoardContainer (클라이언트 컴포넌트, 상태 관리 + DnD 컨텍스트)
     │
-    ├── BoardHeader
-    │   └── CreateTicketButton ─── TicketForm (모달)
+    ├── [헤더 영역] ─── TicketForm (생성 모달)
     │
     ├── Board (DndContext)
     │   ├── Column (BACKLOG)
-    │   │   ├── ColumnHeader (칼럼명 + 카드 수)
+    │   │   ├── [칼럼 헤더] (칼럼명 + 카드 수)
     │   │   └── SortableContext
     │   │       ├── TicketCard
     │   │       ├── TicketCard
@@ -30,8 +29,10 @@ App (page.tsx - 서버 컴포넌트)
     │
     └── TicketModal (상세/수정 모달)
         ├── TicketForm (수정 폼)
-        └── DeleteButton ─── ConfirmDialog
+        └── ConfirmDialog (삭제 확인)
 ```
+
+> **참고**: `[헤더 영역]`, `[칼럼 헤더]`는 논리적 영역을 나타낸다. 독립 컴포넌트 파일이 아니라 각각 `BoardContainer`, `Column` 내부에 인라인으로 구현된다. 물리적 파일 구조는 TRD.md §3 참조.
 
 ---
 

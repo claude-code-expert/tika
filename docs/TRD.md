@@ -1,7 +1,7 @@
 # Tika - Technical Requirements Document (TRD)
 
-> 버전: 1.0 (MVP)
-> 최종 수정일: 2026-02-01
+> 버전: 0.1.0 (MVP)
+> 최종 수정일: 2026-02-20
 
 ---
 
@@ -79,51 +79,48 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 
 ```
 tika/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx                # 루트 레이아웃
-│   ├── page.tsx                  # 메인 페이지 (칸반 보드)
-│   ├── globals.css               # 글로벌 스타일
-│   └── api/                      # API Routes (백엔드)
-│       └── tickets/
-│           ├── route.ts          # GET /api/tickets, POST /api/tickets
-│           ├── [id]/
-│           │   └── route.ts      # GET|PATCH|DELETE /api/tickets/:id
-│           └── reorder/
-│               └── route.ts      # PATCH /api/tickets/reorder
+├── app/                          # Next.js App Router (라우팅 레이어)
+│   ├── api/tickets/              # REST API 엔드포인트
+│   │   ├── route.ts              # GET /api/tickets, POST /api/tickets
+│   │   ├── [id]/route.ts         # GET, PATCH, DELETE /api/tickets/:id
+│   │   └── reorder/route.ts      # PATCH /api/tickets/reorder
+│   ├── layout.tsx                # 루트 HTML 레이아웃
+│   ├── page.tsx                  # 메인 페이지 (서버 컴포넌트)
+│   └── globals.css               # 글로벌 스타일
 │
-├── src/
+├── src/                          # 애플리케이션 소스 코드
 │   ├── components/               # React 컴포넌트
-│   │   ├── board/
-│   │   │   ├── Board.tsx         # 칸반 보드 컨테이너
-│   │   │   ├── Column.tsx        # 칼럼 (Backlog, TODO 등)
-│   │   │   └── TicketCard.tsx    # 티켓 카드
-│   │   ├── ticket/
-│   │   │   ├── TicketModal.tsx   # 티켓 상세/수정 모달
-│   │   │   └── TicketForm.tsx    # 티켓 생성 폼
-│   │   └── ui/
-│   │       ├── Button.tsx        # 공통 버튼
-│   │       ├── Modal.tsx         # 공통 모달
-│   │       ├── Badge.tsx         # 우선순위 뱃지
-│   │       └── ConfirmDialog.tsx # 확인 다이얼로그
+│   │   ├── board/                # 칸반 보드 컴포넌트
+│   │   │   ├── BoardContainer.tsx    # 보드 최상위 클라이언트 컨테이너
+│   │   │   ├── Board.tsx             # 4칼럼 그리드 레이아웃
+│   │   │   ├── Column.tsx            # 단일 칼럼 (Droppable)
+│   │   │   └── TicketCard.tsx        # 카드 컴포넌트 (Draggable)
+│   │   ├── ticket/               # 티켓 관련 UI
+│   │   │   ├── TicketForm.tsx        # 생성/수정 폼
+│   │   │   └── TicketModal.tsx       # 상세 보기 모달
+│   │   └── ui/                   # 공통 UI 컴포넌트
+│   │       ├── Button.tsx            # 범용 버튼
+│   │       ├── Badge.tsx             # 우선순위 뱃지
+│   │       ├── Modal.tsx             # 모달 컨테이너
+│   │       └── ConfirmDialog.tsx     # 삭제 확인 다이얼로그
 │   │
-│   ├── db/
-│   │   ├── index.ts              # Drizzle 클라이언트 초기화
-│   │   ├── schema.ts             # DB 스키마 정의
-│   │   └── queries/
-│   │       └── tickets.ts        # 티켓 관련 쿼리 함수
+│   ├── db/                       # 데이터베이스 레이어
+│   │   ├── index.ts              # Drizzle 인스턴스 생성
+│   │   ├── schema.ts             # Drizzle 테이블 정의
+│   │   ├── queries/              # 데이터베이스 쿼리 함수
+│   │   │   └── tickets.ts        # 티켓 CRUD 쿼리
+│   │   └── seed.ts               # 시드 데이터 스크립트
 │   │
-│   ├── lib/
-│   │   ├── validations.ts        # Zod 스키마 (요청 검증)
-│   │   └── constants.ts          # 상수 (칼럼명, 우선순위 등)
+│   ├── hooks/                    # 커스텀 React 훅
+│   │   └── useTickets.ts         # 보드 상태 관리 훅
 │   │
-│   ├── hooks/
-│   │   └── useTickets.ts         # 티켓 데이터 커스텀 훅
+│   ├── lib/                      # 유틸리티 및 헬퍼
+│   │   ├── constants.ts          # 상수 (색상, 제한값, 간격)
+│   │   ├── validations.ts        # Zod 검증 스키마
+│   │   └── utils.ts              # 헬퍼 함수 (그룹핑, 마감일 체크)
 │   │
-│   └── types/
-│       └── index.ts              # 공유 TypeScript 타입
-│
-├── migrations/                   # Drizzle 마이그레이션 파일
-│   └── meta/
+│   └── types/                    # TypeScript 타입 정의
+│       └── index.ts              # 공유 타입 (중앙 집중)
 │
 ├── docs/                         # 프로젝트 문서
 │   ├── PRD.md                    # 제품 요구사항
@@ -134,22 +131,18 @@ tika/
 │   ├── COMPONENT_SPEC.md         # 컴포넌트 명세
 │   └── TEST_CASES.md             # 테스트 케이스
 │
+├── migrations/                   # Drizzle ORM 마이그레이션 (자동 생성)
+│
 ├── __tests__/                    # 테스트 파일
-│   ├── api/
-│   │   └── tickets.test.ts
-│   └── components/
-│       ├── Board.test.tsx
-│       ├── Column.test.tsx
-│       └── TicketCard.test.tsx
+│   ├── api/                      # API 테스트
+│   └── components/               # 컴포넌트 테스트
 │
-├── public/                       # 정적 파일
+├── .claude/                      # Claude Code 설정
+│   └── CLAUDE.md                 # 프로젝트 가이드
 │
-├── CLAUDE.md                     # Claude Code 프로젝트 설정
-├── .env.local                    # 환경 변수 (Git 제외)
 ├── .env.example                  # 환경 변수 템플릿
 ├── drizzle.config.ts             # Drizzle Kit 설정
 ├── next.config.ts                # Next.js 설정
-├── tailwind.config.ts            # Tailwind CSS 설정
 ├── tsconfig.json                 # TypeScript 설정
 ├── jest.config.ts                # Jest 설정
 ├── package.json

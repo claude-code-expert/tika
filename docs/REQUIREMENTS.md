@@ -92,10 +92,13 @@
 |------|------|------|
 | ticketId | number | 이동할 티켓 ID |
 | status | enum | 이동 대상 칼럼 (BACKLOG, TODO, IN_PROGRESS, DONE) |
-| position | number | 칼럼 내 새 위치 (0부터 시작) |
+| position | number | 칼럼 내 표시 인덱스 (0-based). 서버가 gap-based position으로 변환 |
+
+> **position 처리 방식**: 클라이언트는 표시 인덱스(0, 1, 2...)를 전송하고, 서버는 이를 gap-based position 값(1024 간격)으로 변환하여 저장한다. gap-based position 상세 로직은 DATA_MODEL.md §5.3 참조.
 
 **처리 규칙**:
 - 상태(status)와 순서(position) 동시 업데이트
+- 서버에서 표시 인덱스를 gap-based position으로 변환
 - 영향받는 다른 티켓들의 position도 재정렬
 - 트랜잭션으로 원자성 보장
 

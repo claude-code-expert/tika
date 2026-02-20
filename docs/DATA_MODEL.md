@@ -1,6 +1,6 @@
 # Tika - 데이터 모델 명세 (DATA_MODEL.md)
 
-> 버전: 1.0 (MVP)
+> 버전: 0.1.0 (MVP)
 > ORM: Drizzle ORM + Vercel Postgres
 
 ---
@@ -243,8 +243,8 @@ const seedTickets = [
   { title: 'UI 와이어프레임 작성', status: 'DONE', priority: 'MEDIUM', position: 1024 },
   { title: 'API 설계 문서 작성', status: 'IN_PROGRESS', priority: 'HIGH', position: 0 },
   { title: 'DB 스키마 설계', status: 'IN_PROGRESS', priority: 'MEDIUM', position: 1024 },
-  { title: '로그인 페이지 구현', status: 'TODO', priority: 'HIGH', position: 0 },
-  { title: '대시보드 레이아웃', status: 'TODO', priority: 'MEDIUM', position: 1024 },
+  { title: '칸반 보드 UI 구현', status: 'TODO', priority: 'HIGH', position: 0 },
+  { title: '드래그앤드롭 기능 구현', status: 'TODO', priority: 'MEDIUM', position: 1024 },
   { title: '알림 기능 조사', status: 'BACKLOG', priority: 'LOW', position: 0 },
   { title: '성능 테스트 계획', status: 'BACKLOG', priority: 'MEDIUM', position: 1024 },
   { title: 'CI/CD 파이프라인 구축', status: 'BACKLOG', priority: 'LOW', position: 2048 },

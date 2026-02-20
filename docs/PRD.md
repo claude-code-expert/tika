@@ -1,8 +1,8 @@
 # Tika - Product Requirements Document (PRD)
 
 > **Tika** = **Ti**cket-based **Ka**nban Board TODO App
-> 버전: 1.0 (MVP)
-> 최종 수정일: 2026-02-01
+> 버전: 0.1.0 (MVP)
+> 최종 수정일: 2026-02-20
 
 ---
 
@@ -134,7 +134,7 @@ Tika는 개인 할 일 관리를 위한 티켓 기반 칸반 보드 웹 애플�
 | 프레임워크 | Next.js 15 (App Router) | 모노레포, SSR/SSG, API Routes 통합 |
 | 언어 | TypeScript | 타입 안전성, 명세와 코드 일치 |
 | 스타일링 | Tailwind CSS | 유틸리티 기반, 빠른 프로토타이핑 |
-| 드래그앤드롭 | @dnd-kit/core | React 18+ 호환, 접근성, 경량 |
+| 드래그앤드롭 | @dnd-kit/core + @dnd-kit/sortable | React 18+ 호환, 접근성, 경량 |
 | ORM | Drizzle ORM | Vercel Postgres 공식 지원, 서버리스 최적화, SQL 친화적 |
 | DB | Vercel Postgres (Neon) | Vercel 네이티브 통합, 서버리스, 무료 티어 |
 | 배포 | Vercel | Next.js 최적 배포 환경, Git 연동 자동 배포 |

@@ -17,6 +17,9 @@ build/
 .env.test.local
 .env.production.local
 
+#docs
+/docs/phase/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -95,47 +95,56 @@ CREATE INDEX idx_tickets_user_id ON tickets(user_id);
 
 ---
 
-### 2.2 팀 / 멀티유저
+### 2.2 워크스페이스 / 멀티유저
 
 **난이도**: HIGH | **예상 소요**: 5~6일 | **의존성**: 2.1 OAuth
+**Phase 배치**: Phase 4 (FR-301, FR-302)
 
-팀 단위 보드 관리와 역할 기반 접근 제어(RBAC)를 구현한다.
+워크스페이스 기반 보드 관리와 역할 기반 접근 제어(RBAC)를 구현한다.
 
 **구현 범위**:
-- `teams` 테이블 (id, name, owner_id, created_at)
-- `team_members` 조인 테이블 (team_id, user_id, role: OWNER|MEMBER|VIEWER)
-- tickets 테이블에 `team_id` 추가
-- 팀 선택 UI, 멤버 초대/관리
+- `workspaces` 테이블 (id, name, owner_id, created_at)
+- `workspace_members` 조인 테이블 (workspace_id, user_id, role: OWNER|MEMBER|VIEWER)
+- tickets 테이블에 `workspace_id` 추가
+- 워크스페이스 선택 UI, 멤버 초대/관리
 - RBAC 미들웨어
+
+**역할 체계**:
+
+| 역할 | 권한 |
+|------|------|
+| OWNER | 모든 권한 + 워크스페이스 삭제 + 멤버 역할 변경 |
+| MEMBER | 티켓 CRUD + 댓글 + 자신에게 할당된 티켓 관리 |
+| VIEWER | 읽기 전용 (보드 조회, 티켓 상세 조회만) |
 
 **스키마 변경**:
 ```sql
-CREATE TABLE teams (
+CREATE TABLE workspaces (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   owner_id TEXT NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE team_members (
-  team_id INT REFERENCES teams(id) ON DELETE CASCADE,
+CREATE TABLE workspace_members (
+  workspace_id INT REFERENCES workspaces(id) ON DELETE CASCADE,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   role VARCHAR(50) DEFAULT 'MEMBER',
-  PRIMARY KEY (team_id, user_id)
+  PRIMARY KEY (workspace_id, user_id)
 );
 
-ALTER TABLE tickets ADD COLUMN team_id INT REFERENCES teams(id);
-CREATE INDEX idx_tickets_team_id ON tickets(team_id);
-CREATE INDEX idx_team_members_user ON team_members(user_id);
+ALTER TABLE tickets ADD COLUMN workspace_id INT REFERENCES workspaces(id);
+CREATE INDEX idx_tickets_workspace_id ON tickets(workspace_id);
+CREATE INDEX idx_workspace_members_user ON workspace_members(user_id);
 ```
 
 **구현 순서**:
-1. DB 스키마 — teams, team_members
-2. `src/server/services/teamService.ts` — 팀 CRUD
+1. DB 스키마 — workspaces, workspace_members
+2. `src/server/services/workspaceService.ts` — 워크스페이스 CRUD
 3. `src/server/services/permissionService.ts` — RBAC 검증
-4. API: `/api/teams`, `/api/teams/:id/members`
-5. 미들웨어: `checkTeamPermission()`
-6. UI: TeamSelector, TeamMemberList, InviteModal
+4. API: `/api/workspaces`, `/api/workspaces/:id/members`
+5. 미들웨어: `checkWorkspacePermission()`
+6. UI: WorkspaceSelector, WorkspaceMemberList, InviteModal
 
 **테스트 케이스**: TC-TEAM-001 ~ TC-TEAM-010
 
@@ -148,7 +157,7 @@ CREATE INDEX idx_team_members_user ON team_members(user_id);
 티켓에 색상 라벨을 붙여 분류할 수 있다.
 
 **구현 범위**:
-- `labels` 테이블 (id, name, color, team_id, created_at)
+- `labels` 테이블 (id, name, color, workspace_id, created_at)
 - `ticket_labels` M:N 조인 테이블 (ticket_id, label_id)
 - Ticket 타입에 `labels: Label[]` 추가
 - 라벨 필터링, 라벨 관리 UI
@@ -159,7 +168,7 @@ CREATE TABLE labels (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   color VARCHAR(7) DEFAULT '#3B82F6',
-  team_id INT REFERENCES teams(id),
+  workspace_id INT REFERENCES workspaces(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -251,29 +260,33 @@ CREATE INDEX idx_comments_ticket_id ON comments(ticket_id);
 ### 2.6 알림 / 리마인더
 
 **난이도**: MEDIUM | **예상 소요**: 3~4일 | **의존성**: 2.1 OAuth
+**Phase 배치**: Phase 2 (FR-102, FR-103, FR-104)
 
-마감 초과, 댓글, 멘션 등의 이벤트를 알린다.
+마감일 D-1 알림을 Slack/Telegram 채널로 발송한다.
+
+**지원 채널**:
+
+| 채널 | 연동 방식 | 필요 정보 |
+|------|----------|----------|
+| Slack | Incoming Webhook | Webhook URL |
+| Telegram | Bot API | Bot Token + Chat ID |
 
 **구현 범위**:
-- `notifications` 테이블 (id, user_id, type, text, ticket_id, read_at, created_at)
-- Vercel Cron으로 매일 마감 초과 체크
-- 이메일 알림 (Resend/SendGrid)
+- `notification_channels` 테이블 (사용자별 채널 설정)
+- `notification_logs` 테이블 (발송 이력)
+- Vercel Cron으로 매일 마감 D-1 체크
+- Slack Webhook / Telegram Bot API 발송
 - 인앱 알림 벨 + 드롭다운
 
 **구현 순서**:
-1. DB 스키마 — notifications
+1. DB 스키마 — notification_channels, notification_logs
 2. `src/server/services/notificationService.ts`
-3. `src/server/services/emailService.ts`
-4. Vercel Cron: `src/server/jobs/overdueChecker.ts`
-5. API: GET `/api/notifications`, PATCH `/api/notifications/:id/read`
-6. UI: NotificationBell, NotificationDropdown
-
-**필요 패키지**:
-```json
-{
-  "resend": "^3.x"
-}
-```
+3. `src/server/services/slackService.ts`
+4. `src/server/services/telegramService.ts`
+5. Vercel Cron: `src/server/jobs/dueDateChecker.ts`
+6. API: GET `/api/notifications`, PATCH `/api/notifications/:id/read`
+7. API: `/api/settings/notifications` (채널 설정 CRUD)
+8. UI: NotificationBell, NotificationDropdown, 설정 페이지 채널 관리
 
 **테스트 케이스**: TC-NOTIF-001 ~ TC-NOTIF-008
 
@@ -301,37 +314,17 @@ CREATE INDEX idx_comments_ticket_id ON comments(ticket_id);
 
 ---
 
-### 2.8 다크 모드
+### 2.8 동적 컬럼 관리 (OWNER 전용)
 
-**난이도**: LOW | **예상 소요**: 1일 | **의존성**: 없음
+**난이도**: MEDIUM | **예상 소요**: 2~3일 | **의존성**: 2.2 워크스페이스/RBAC
+**Phase 배치**: 어드민 기능으로 별도 정리 예정
 
-시스템 설정 감지 및 수동 토글로 다크 테마를 지원한다.
-
-**구현 범위**:
-- `globals.css`에 `:root.dark` CSS 변수 추가
-- `prefers-color-scheme` 미디어 쿼리 감지
-- localStorage 기반 테마 저장
-- 헤더에 토글 버튼
-
-**구현 순서**:
-1. `app/globals.css` — dark 테마 변수 정의
-2. `src/client/components/ui/DarkModeToggle.tsx`
-3. `src/client/contexts/ThemeProvider.tsx` + `useTheme()` 훅
-4. `app/layout.tsx` — 초기 테마 로딩
-5. `src/shared/design/colors.json` — dark 팔레트 추가
-
-**테스트 케이스**: TC-THEME-001, TC-THEME-002
-
----
-
-### 2.9 동적 컬럼 관리 (관리자)
-
-**난이도**: MEDIUM | **예상 소요**: 2~3일 | **의존성**: 2.2 팀/RBAC
+> **참고**: OWNER 전용 기능이다. OWNER 역할만 접근 가능하며, 어드민 기능 명세는 별도 문서에서 정리한다.
 
 하드코딩된 4컬럼(BACKLOG/TODO/IN_PROGRESS/DONE)을 동적으로 관리한다.
 
 **구현 범위**:
-- `columns` 테이블 (id, team_id, name, position, created_at)
+- `columns` 테이블 (id, workspace_id, name, position, created_at)
 - TICKET_STATUS를 DB 기반으로 전환
 - 관리자 페이지에서 컬럼 CRUD
 - 드래그로 컬럼 순서 변경
@@ -502,7 +495,7 @@ plannedStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 | 주차 | 작업 | 난이도 | 소요 |
 |------|------|--------|------|
 | 3주 | Google OAuth (Feature 2.1) | HIGH | 4~5일 |
-| 4주 | 팀 / 멀티유저 (Feature 2.2) | HIGH | 5~6일 |
+| 4주 | 워크스페이스 / 멀티유저 (Feature 2.2) | HIGH | 5~6일 |
 
 ### Phase 2C: 협업 기능 (2주)
 
@@ -511,7 +504,6 @@ plannedStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 | 5주 | 라벨/태그 (Feature 2.3) | MEDIUM | 2~3일 |
 | 5주 | 댓글 (Feature 2.4) | MEDIUM | 2~3일 |
 | 6주 | 반응형 레이아웃 미세 조정 | LOW | 1일 |
-| 6주 | 다크 모드 (Feature 2.8) | LOW | 1일 |
 
 ### Phase 2D: 고급 기능 (2주)
 
@@ -521,11 +513,11 @@ plannedStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 | 7주 | 고급 검색/필터 (Feature 2.7) | LOW | 1~2일 |
 | 8주 | 알림/리마인더 (Feature 2.6) | MEDIUM | 3~4일 |
 
-### Phase 2E: 관리자 (1주)
+### Phase 2E: 관리자 — OWNER 전용 (1주)
 
 | 주차 | 작업 | 난이도 | 소요 |
 |------|------|--------|------|
-| 9주 | 동적 컬럼 관리 (Feature 2.9) | MEDIUM | 2~3일 |
+| 9주 | 동적 컬럼 관리 (Feature 2.8, OWNER 전용) | MEDIUM | 2~3일 |
 | 9주 | 성능 최적화 + 최종 문서화 | LOW | 2일 |
 
 ---
@@ -538,7 +530,6 @@ plannedStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 |------|--------|------|----------|
 | OAuth | Google Cloud Console | 무료 | 0.5일 |
 | 파일 저장 | Vercel Blob / AWS S3 | $0~5/월 | 0.5일 |
-| 이메일 | Resend / SendGrid | $0~50/월 | 1일 |
 | 실시간 (선택) | Socket.io / Pusher | $0~100/월 | 2~3일 |
 
 ### 추가 npm 패키지
@@ -546,7 +537,6 @@ plannedStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 ```json
 {
   "next-auth": "^5.x",         // OAuth 인증
-  "resend": "^3.x",            // 이메일 발송
   "@vercel/blob": "^0.x"       // 파일 업로드 (선택)
 }
 ```
@@ -585,7 +575,7 @@ Phase 2 완료 후 목표:
 
 ```sql
 -- ============================================
--- Phase 2B: 사용자 & 팀
+-- Phase 2B: 사용자 & 워크스페이스
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS users (
@@ -596,22 +586,22 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS teams (
+CREATE TABLE IF NOT EXISTS workspaces (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   owner_id TEXT NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS team_members (
-  team_id INT REFERENCES teams(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS workspace_members (
+  workspace_id INT REFERENCES workspaces(id) ON DELETE CASCADE,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   role VARCHAR(50) DEFAULT 'MEMBER',
-  PRIMARY KEY (team_id, user_id)
+  PRIMARY KEY (workspace_id, user_id)
 );
 
 ALTER TABLE tickets ADD COLUMN user_id TEXT REFERENCES users(id);
-ALTER TABLE tickets ADD COLUMN team_id INT REFERENCES teams(id);
+ALTER TABLE tickets ADD COLUMN workspace_id INT REFERENCES workspaces(id);
 
 -- ============================================
 -- Phase 2C: 라벨 & 댓글
@@ -621,7 +611,7 @@ CREATE TABLE IF NOT EXISTS labels (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   color VARCHAR(7) DEFAULT '#3B82F6',
-  team_id INT REFERENCES teams(id),
+  workspace_id INT REFERENCES workspaces(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -654,23 +644,33 @@ CREATE TABLE IF NOT EXISTS attachments (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE IF NOT EXISTS notification_channels (
   id SERIAL PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
-  type VARCHAR(50) NOT NULL,
-  text TEXT NOT NULL,
-  ticket_id INT REFERENCES tickets(id) ON DELETE SET NULL,
-  read_at TIMESTAMP,
+  channel VARCHAR(50) NOT NULL,
+  config JSONB NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS notification_logs (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  ticket_id INT REFERENCES tickets(id) ON DELETE SET NULL,
+  channel VARCHAR(50) NOT NULL,
+  message TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  error_message TEXT,
+  sent_at TIMESTAMP DEFAULT NOW()
+);
+
 -- ============================================
--- Phase 2E: 동적 컬럼
+-- Phase 2E: 동적 컬럼 (어드민 전용)
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS columns (
   id SERIAL PRIMARY KEY,
-  team_id INT REFERENCES teams(id),
+  workspace_id INT REFERENCES workspaces(id),
   name VARCHAR(255) NOT NULL,
   position INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW()
@@ -681,10 +681,11 @@ CREATE TABLE IF NOT EXISTS columns (
 -- ============================================
 
 CREATE INDEX idx_tickets_user_id ON tickets(user_id);
-CREATE INDEX idx_tickets_team_id ON tickets(team_id);
+CREATE INDEX idx_tickets_workspace_id ON tickets(workspace_id);
 CREATE INDEX idx_comments_ticket_id ON comments(ticket_id);
-CREATE INDEX idx_team_members_user ON team_members(user_id);
-CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_workspace_members_user ON workspace_members(user_id);
+CREATE INDEX idx_notification_channels_user ON notification_channels(user_id);
+CREATE INDEX idx_notification_logs_user ON notification_logs(user_id);
 CREATE INDEX idx_attachments_ticket ON attachments(ticket_id);
 ```
 
@@ -697,11 +698,11 @@ Feature 2.1 (OAuth)
 ├── src/client/components/auth/LoginButton.tsx
 └── src/client/components/auth/LogoutButton.tsx
 
-Feature 2.2 (팀)
-├── src/client/components/team/TeamSelector.tsx
-├── src/client/components/team/TeamMemberList.tsx
-├── src/client/components/team/InviteModal.tsx
-└── src/client/components/team/RoleSelector.tsx
+Feature 2.2 (워크스페이스)
+├── src/client/components/workspace/WorkspaceSelector.tsx
+├── src/client/components/workspace/WorkspaceMemberList.tsx
+├── src/client/components/workspace/InviteModal.tsx
+└── src/client/components/workspace/RoleSelector.tsx
 
 Feature 2.3 (라벨)
 ├── src/client/components/label/LabelSelector.tsx
@@ -718,13 +719,13 @@ Feature 2.5 (첨부)
 
 Feature 2.6 (알림)
 ├── src/client/components/notification/NotificationBell.tsx
-└── src/client/components/notification/NotificationDropdown.tsx
+├── src/client/components/notification/NotificationDropdown.tsx
+└── src/client/components/notification/ChannelSettings.tsx
 
 UI 개선
 ├── src/client/components/ui/TabBar.tsx       (모바일 컬럼 전환)
-├── src/client/components/ui/DarkModeToggle.tsx
 ├── src/client/components/ui/FilterPanel.tsx  (고급 검색)
-└── src/client/components/admin/ColumnManager.tsx
+└── src/client/components/admin/ColumnManager.tsx  (OWNER 전용)
 ```
 
 ---
@@ -733,14 +734,15 @@ UI 개선
 
 ```
 src/server/services/
-├── teamService.ts          (팀 CRUD)
+├── workspaceService.ts     (워크스페이스 CRUD)
 ├── permissionService.ts    (RBAC 검증)
 ├── labelService.ts         (라벨 CRUD)
 ├── commentService.ts       (댓글 CRUD)
 ├── attachmentService.ts    (파일 업로드/삭제)
 ├── notificationService.ts  (알림 생성/읽음)
-├── emailService.ts         (이메일 발송)
-├── columnService.ts        (동적 컬럼 관리)
+├── slackService.ts         (Slack Webhook 발송)
+├── telegramService.ts      (Telegram Bot API 발송)
+├── columnService.ts        (동적 컬럼 관리, OWNER 전용)
 └── jobs/
-    └── overdueChecker.ts   (Vercel Cron)
+    └── dueDateChecker.ts   (Vercel Cron, 마감 D-1 알림)
 ```

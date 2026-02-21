@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "name": "Tika Design System Colors",
+    "version": "2.0.0",
+    "updated": "2026-02-21",
+    "description": "Complete color token set for Tika kanban board application"
+  },
+
+  "brand": {
+    "accent_primary": "#629584",
+    "accent_primary_hover": "#527D6F",
+    "accent_light": "#E8F5F0"
+  },
+
+  "background": {
+    "app": "#F8F9FB",
+    "header": "#FFFFFF",
+    "sidebar": "#F1F3F6",
+    "board": "#E8EDF2",
+    "footer": "#F4F5F7",
+    "card": "#FFFFFF",
+    "column": "#F4F5F7"
+  },
+
+  "text": {
+    "primary": "#2C3E50",
+    "secondary": "#5A6B7F",
+    "muted": "#8993A4"
+  },
+
+  "border": {
+    "light": "#DFE1E6",
+    "medium": "#C4C9D1"
+  },
+
+  "lane_headers": {
+    "todo": {
+      "background": "#DBEAFE",
+      "text": "#2C3E50"
+    },
+    "in_progress": {
+      "background": "#FEF3C7",
+      "text": "#2C3E50"
+    },
+    "done": {
+      "background": "#D1FAE5",
+      "text": "#2C3E50"
+    }
+  },
+
+  "lane_header_original_text": {
+    "_comment": "Legacy values (replaced by text.primary for readability)",
+    "todo_text": "#1E40AF",
+    "in_progress_text": "#92400E",
+    "done_text": "#065F46"
+  },
+
+  "priority_badges": {
+    "critical": { "background": "#FEE2E2", "text": "#DC2626" },
+    "high":     { "background": "#FFEDD5", "text": "#C2410C" },
+    "medium":   { "background": "#FEF9C3", "text": "#A16207" },
+    "low":      { "background": "#F3F4F6", "text": "#6B7280" },
+    "done":     { "background": "#D1FAE5", "text": "#065F46" }
+  },
+
+  "due_date_badges": {
+    "normal":   { "background": "#F3F4F6", "text": "#8993A4" },
+    "overdue":  { "background": "#FEE2E2", "text": "#DC2626" },
+    "soon":     { "background": "#FEF3C7", "text": "#92400E" }
+  },
+
+  "status_badge_inline": {
+    "TODO":        { "background": "#DBEAFE", "text": "#1E40AF" },
+    "In Progress": { "background": "#FEF3C7", "text": "#92400E" },
+    "Done":        { "background": "#D1FAE5", "text": "#065F46" }
+  },
+
+  "tag_labels": {
+    "preset": {
+      "Frontend": { "background": "#2b7fff", "text": "#FFFFFF", "css_class": "fe" },
+      "Backend":  { "background": "#00c950", "text": "#FFFFFF", "css_class": "be" },
+      "Design":   { "background": "#ad46ff", "text": "#FFFFFF", "css_class": "ui" },
+      "Bug":      { "background": "#fb2c36", "text": "#FFFFFF", "css_class": "bug" },
+      "Docs":     { "background": "#ffac6d", "text": "#3D2200", "css_class": "doc" },
+      "Infra":    { "background": "#615fff", "text": "#FFFFFF", "css_class": "inf" }
+    },
+    "extended_palette": {
+      "c7":  { "background": "#ff29d3", "text": "#FFFFFF" },
+      "c8":  { "background": "#a0628c", "text": "#FFFFFF" },
+      "c9":  { "background": "#89d0f0", "text": "#1A3D4D" },
+      "c10": { "background": "#71e4bf", "text": "#0A3D2A" },
+      "c11": { "background": "#46e264", "text": "#0D3A14" },
+      "c12": { "background": "#caee68", "text": "#3A4200" },
+      "c13": { "background": "#fffe92", "text": "#4A4500" },
+      "c14": { "background": "#f7d1d1", "text": "#5C1A1A" },
+      "c15": { "background": "#f7a2ff", "text": "#4A0050" },
+      "c16": { "background": "#c1d1ff", "text": "#1A2A5C" },
+      "c17": { "background": "#c5dbdc", "text": "#2A3D3E" }
+    },
+    "swatch_palette": [
+      "#fb2c36", "#615fff", "#00c950", "#2b7fff", "#ad46ff",
+      "#ff29d3", "#a0628c", "#89d0f0", "#71e4bf", "#46e264",
+      "#caee68", "#fffe92", "#ffac6d", "#f7d1d1", "#f7a2ff",
+      "#c1d1ff", "#c5dbdc"
+    ]
+  },
+
+  "category_type_badges": {
+    "goal":    "#8B5CF6",
+    "story":   "#3B82F6",
+    "feature": "#10B981",
+    "task":    "#F59E0B"
+  },
+
+  "avatar_colors": {
+    "홍길동": "#7EB4A2",
+    "김민수": "#60A5FA",
+    "이서연": "#A78BFA",
+    "default": "#8993A4"
+  },
+
+  "modal": {
+    "overlay": "rgba(9, 30, 66, 0.54)"
+  },
+
+  "danger": {
+    "text": "#DC2626",
+    "border": "#FECACA",
+    "background_hover": "#FEF2F2"
+  },
+
+  "notification_dot": "#EF4444",
+
+  "shadows": {
+    "card":         "0 1px 2px rgba(9,30,66,0.12)",
+    "card_hover":   "0 3px 8px rgba(9,30,66,0.18)",
+    "card_drag":    "0 5px 10px rgba(9,30,66,0.25)",
+    "header":       "0 1px 3px rgba(0,0,0,0.08)",
+    "dropdown":     "0 8px 24px rgba(0,0,0,0.12)"
+  }
+}

@@ -305,7 +305,7 @@ npm audit fix --force     # ❌ 절대 금지
 | title | VARCHAR(200) | NOT NULL | - | 제목 (1~200자) |
 | description | TEXT | NULLABLE | NULL | 설명 (최대 1000자) |
 | status | VARCHAR(20) | NOT NULL | 'BACKLOG' | 상태: BACKLOG, TODO, IN_PROGRESS, DONE |
-| priority | VARCHAR(10) | NOT NULL | 'MEDIUM' | 우선순위: LOW, MEDIUM, HIGH |
+| priority | VARCHAR(10) | NOT NULL | 'MEDIUM' | 우선순위: LOW, MEDIUM, HIGH, CRITICAL |
 | position | INTEGER | NOT NULL | 0 | 칼럼 내 정렬 순서 |
 | due_date | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
 | completed_at | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 |

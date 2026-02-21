@@ -13,6 +13,11 @@
 |-------|------|------|------|------|
 | Phase 1 | v0.1.0 | MVP — 칸반 보드 + 체크리스트 + 라벨 + 상위 이슈 + 담당자 | 구현 완료 | tika |
 | Phase 2 | v0.2.0 | SaaS — 인증 + 알림 + 라벨 확장 + 댓글 + 고급검색 | 구현 예정 | tika |
+| Phase 3 | v0.3.0 | Pro — 리치 에디터 + 파일 첨부 + MCP 서버 + 결제 모듈 | 구현 예정 | tika |
+| Phase 4 | v0.4.0 | Team — 워크스페이스 + 팀 협업 + 스위밍 레인 + 대시보드 | 설계만 | 별도 레포 |
+| Phase 5 | v1.0.0 | Enterprise — 온프레미스 설치 + 라이센스 관리 | 설계만 | 별도 레포 |
+
+> 전체 로드맵 상세: [ROADMAP.md](ROADMAP.md) 참조
 
 ---
 
@@ -327,7 +332,7 @@ isOverdue = (dueDate != null) AND (dueDate < 오늘 날짜) AND (status ≠ DONE
 
 ### FR-010: 상위 이슈 (이슈 계층 구조)
 
-**설명**: 티켓을 3단계 계층 구조(Goal → Story → Feature)로 분류하여 상위 이슈와의 관계를 설정한다.
+**설명**: 티켓을 4단계 계층 구조(Goal → Story → Feature → Task)로 분류하여 상위 이슈와의 관계를 설정한다.
 
 **계층 구조**:
 
@@ -336,11 +341,12 @@ isOverdue = (dueDate != null) AND (dueDate < 오늘 날짜) AND (status ≠ DONE
 | 1 | GOAL | 최상위 목표 | "MVP 출시", "팀 협업 확장" |
 | 2 | STORY | Goal 하위의 스토리 | "사용자 인증 시스템", "칸반 보드 핵심 기능" |
 | 3 | FEATURE | Story 하위의 기능 단위 | "인증 API", "드래그앤드롭" |
+| 4 | TASK | Feature 하위의 세부 작업 | "JWT 토큰 발급 구현", "드롭존 이벤트 핸들러" |
 
 **처리 규칙**:
-- 티켓에 상위 이슈(Goal/Story/Feature)를 선택적으로 연결
-- 3단계 캐스케이딩 드롭다운: Goal 선택 → Story 목록 갱신 → Feature 목록 갱신
-- Goal/Story/Feature CRUD 가능
+- 티켓에 상위 이슈(Goal/Story/Feature/Task)를 선택적으로 연결
+- 4단계 캐스케이딩 드롭다운: Goal 선택 → Story 목록 갱신 → Feature 목록 갱신 → Task 목록 갱신
+- Goal/Story/Feature/Task CRUD 가능
 - 상위 이슈 삭제 시 하위 항목의 parent_id = null 처리
 - 티켓에 연결된 이슈 삭제 시 ticket의 issue_id = null 처리
 
@@ -350,7 +356,7 @@ isOverdue = (dueDate != null) AND (dueDate < 오늘 날짜) AND (status ≠ DONE
 |------|------|------|--------|------|
 | id | SERIAL | PK | — | 고유 ID |
 | name | VARCHAR(100) | NOT NULL | — | 이슈명 |
-| type | VARCHAR(10) | NOT NULL | — | GOAL, STORY, FEATURE |
+| type | VARCHAR(10) | NOT NULL | — | GOAL, STORY, FEATURE, TASK |
 | parent_id | INT | FK → issues(id) ON DELETE SET NULL, NULLABLE | null | 상위 이슈 ID |
 | created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
 
@@ -367,9 +373,9 @@ isOverdue = (dueDate != null) AND (dueDate < 오늘 날짜) AND (status ≠ DONE
 - `DELETE /api/issues/:id` — 이슈 삭제 (204)
 
 **UI 요소**:
-- 티켓 생성/수정 모달: 3단계 캐스케이딩 셀렉트 (Goal → Story → Feature)
-- 티켓 상세 모달: 상위 이슈 브레드크럼 표시 (예: [G] MVP 출시 › [S] 칸반 보드 › [F] 드래그앤드롭)
-- 카드: 상위 이슈 태그 (최하위 Feature명)
+- 티켓 생성/수정 모달: 4단계 캐스케이딩 셀렉트 (Goal → Story → Feature → Task)
+- 티켓 상세 모달: 상위 이슈 브레드크럼 표시 (예: [G] MVP 출시 › [S] 칸반 보드 › [F] 드래그앤드롭 › [T] 드롭존 이벤트 핸들러)
+- 카드: 상위 이슈 태그 (최하위 이슈 타입명)
 
 ---
 

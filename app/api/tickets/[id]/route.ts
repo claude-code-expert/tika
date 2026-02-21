@@ -1,106 +1,120 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
-import { updateTicketSchema, ticketIdSchema } from '@/lib/validations';
-import { addMeta } from '@/lib/utils';
-import type { Ticket } from '@/types';
+import { updateTicketSchema } from '@/shared/validations/ticket';
+import { ticketService } from '@/server/services';
+import { TicketNotFoundError } from '@/shared/errors';
 
-type RouteParams = { params: Promise<{ id: string }> };
+type RouteContext = { params: Promise<{ id: string }> };
 
-// GET /api/tickets/:id - 티켓 상세 조회
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  _request: NextRequest,
+  context: RouteContext
+) {
   try {
-    const { id } = await params;
-    const parsed = ticketIdSchema.safeParse({ id });
-    if (!parsed.success) {
+    const { id } = await context.params;
+    const ticketId = Number(id);
+
+    if (isNaN(ticketId)) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: '유효한 티켓 ID가 필요합니다' } },
-        { status: 400 },
+        { error: { code: 'VALIDATION_ERROR', message: '유효하지 않은 티켓 ID입니다' } },
+        { status: 400 }
       );
     }
 
-    const ticket = await getTicketById(parsed.data.id);
-    if (!ticket) {
-      return NextResponse.json(
-        { error: { code: 'TICKET_NOT_FOUND', message: 'Ticket not found' } },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(addMeta(ticket as Ticket));
+    const ticket = await ticketService.getById(ticketId);
+    return NextResponse.json(ticket);
   } catch (error) {
-    console.error('GET /api/tickets/:id error:', error);
+    if (error instanceof TicketNotFoundError) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: error.message } },
+        { status: 404 }
+      );
+    }
+
+    console.error('Unexpected error in GET /api/tickets/:id:', error);
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
-      { status: 500 },
+      { error: { code: 'INTERNAL_ERROR', message: '서버 내부 오류가 발생했습니다' } },
+      { status: 500 }
     );
   }
 }
 
-// PATCH /api/tickets/:id - 티켓 수정
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext
+) {
   try {
-    const { id } = await params;
-    const idParsed = ticketIdSchema.safeParse({ id });
-    if (!idParsed.success) {
+    const { id } = await context.params;
+    const ticketId = Number(id);
+
+    if (isNaN(ticketId)) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: '유효한 티켓 ID가 필요합니다' } },
-        { status: 400 },
+        { error: { code: 'VALIDATION_ERROR', message: '유효하지 않은 티켓 ID입니다' } },
+        { status: 400 }
       );
     }
 
     const body = await request.json();
-    const parsed = updateTicketSchema.safeParse(body);
-    if (!parsed.success) {
+    const result = updateTicketSchema.safeParse(body);
+
+    if (!result.success) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0].message } },
-        { status: 400 },
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: result.error.errors[0].message,
+          },
+        },
+        { status: 400 }
       );
     }
 
-    const ticket = await updateTicket(idParsed.data.id, parsed.data);
-    if (!ticket) {
-      return NextResponse.json(
-        { error: { code: 'TICKET_NOT_FOUND', message: 'Ticket not found' } },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(addMeta(ticket as Ticket));
+    const ticket = await ticketService.update(ticketId, result.data);
+    return NextResponse.json(ticket);
   } catch (error) {
-    console.error('PATCH /api/tickets/:id error:', error);
+    if (error instanceof TicketNotFoundError) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: error.message } },
+        { status: 404 }
+      );
+    }
+
+    console.error('Unexpected error in PATCH /api/tickets/:id:', error);
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
-      { status: 500 },
+      { error: { code: 'INTERNAL_ERROR', message: '서버 내부 오류가 발생했습니다' } },
+      { status: 500 }
     );
   }
 }
 
-// DELETE /api/tickets/:id - 티켓 삭제
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  _request: NextRequest,
+  context: RouteContext
+) {
   try {
-    const { id } = await params;
-    const parsed = ticketIdSchema.safeParse({ id });
-    if (!parsed.success) {
+    const { id } = await context.params;
+    const ticketId = Number(id);
+
+    if (isNaN(ticketId)) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: '유효한 티켓 ID가 필요합니다' } },
-        { status: 400 },
+        { error: { code: 'VALIDATION_ERROR', message: '유효하지 않은 티켓 ID입니다' } },
+        { status: 400 }
       );
     }
 
-    const result = await deleteTicket(parsed.data.id);
-    if (!result) {
-      return NextResponse.json(
-        { error: { code: 'TICKET_NOT_FOUND', message: 'Ticket not found' } },
-        { status: 404 },
-      );
-    }
-
+    await ticketService.remove(ticketId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('DELETE /api/tickets/:id error:', error);
+    if (error instanceof TicketNotFoundError) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: error.message } },
+        { status: 404 }
+      );
+    }
+
+    console.error('Unexpected error in DELETE /api/tickets/:id:', error);
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
-      { status: 500 },
+      { error: { code: 'INTERNAL_ERROR', message: '서버 내부 오류가 발생했습니다' } },
+      { status: 500 }
     );
   }
 }

@@ -4,7 +4,7 @@
 >
 > **분석일**: 2026-02-19
 > **현재 상태**: MVP 완성 (Phase 1 — FR-001~FR-008 전체 구현 완료)
-> **브랜치**: `chapter6-frontend`
+> **브랜치**: `feature/frontend`
 
 ---
 

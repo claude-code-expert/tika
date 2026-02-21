@@ -75,6 +75,7 @@
 | 병합 커밋 없이 (fast-forward) | `git merge --ff-only <branch>` | `git merge --ff-only hotfix/typo` |
 | 항상 병합 커밋 생성 | `git merge --no-ff <branch>` | `git merge --no-ff feature/kanban-board` |
 | 병합 충돌 해결 후 계속 | `git add . && git commit` | `git add . && git commit -m "충돌 해결"` |
+| 관련 없는 히스토리 병합 | `git merge <branch> --allow-unrelated-histories` | `git merge feature --allow-unrelated-histories` |
 | 병합 취소 | `git merge --abort` | `git merge --abort` |
 
 ### 태그
@@ -93,6 +94,31 @@
 ---
 
 ## 2. 고급 명령어
+
+### Allow Unrelated Histories
+
+> 공통 조상 커밋이 없는 **독립적인 두 히스토리를 병합**한다. `git init`으로 새로 만든 로컬 저장소와 기존 원격 저장소를 합치거나, 서로 다른 프로젝트를 하나로 통합할 때 사용한다.
+
+**대표 사용 사례**: 로컬에서 `git init`으로 시작한 프로젝트를 이미 커밋이 있는 원격 저장소와 병합할 때.
+
+```bash
+# 문법
+git merge <branch> --allow-unrelated-histories
+
+# 예시 1: 원격 브랜치를 로컬 main에 병합
+git fetch origin
+git merge origin/feature --allow-unrelated-histories
+
+# 예시 2: 로컬 브랜치끼리 병합
+git merge feature --allow-unrelated-histories
+
+# 예시 3: pull 시에도 사용 가능
+git pull origin main --allow-unrelated-histories
+```
+
+> **발생 상황**: `fatal: refusing to merge unrelated histories` 에러가 나타나면 두 브랜치가 공통 조상이 없다는 의미이다. 의도적으로 합쳐야 하는 경우에만 이 옵션을 사용하고, 충돌이 발생하면 수동으로 해결한다.
+
+---
 
 ### Cherry-pick
 

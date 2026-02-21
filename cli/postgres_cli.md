@@ -10,7 +10,7 @@ psql -U <user> -d <database>              # psql -U postgres -d tika
 
 # 호스트/포트 지정 접속
 psql -h <host> -p <port> -U <user> -d <database>
-                                           # psql -h localhost -p 5432 -U postgres -d tika
+# psql -h localhost -p 5432 -U postgres -d tika
 
 # 기본 접속 (현재 OS 사용자)
 psql postgres

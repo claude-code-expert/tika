@@ -1,34 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reorderTicket } from '@/db/queries/tickets';
-import { reorderTicketSchema } from '@/lib/validations';
+import { reorderTicketSchema } from '@/shared/validations/ticket';
+import { ticketService } from '@/server/services';
+import { TicketNotFoundError } from '@/shared/errors';
 
-// PATCH /api/tickets/reorder - 드래그앤드롭 순서/상태 변경
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = reorderTicketSchema.safeParse(body);
+    const result = reorderTicketSchema.safeParse(body);
 
-    if (!parsed.success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0].message } },
-        { status: 400 },
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: result.error.errors[0].message,
+          },
+        },
+        { status: 400 }
       );
     }
 
-    const ticket = await reorderTicket(parsed.data);
-    if (!ticket) {
-      return NextResponse.json(
-        { error: { code: 'TICKET_NOT_FOUND', message: 'Ticket not found' } },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ticket });
+    const data = await ticketService.reorder(result.data);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('PATCH /api/tickets/reorder error:', error);
+    if (error instanceof TicketNotFoundError) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: error.message } },
+        { status: 404 }
+      );
+    }
+
+    console.error('Unexpected error in PATCH /api/tickets/reorder:', error);
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
-      { status: 500 },
+      { error: { code: 'INTERNAL_ERROR', message: '서버 내부 오류가 발생했습니다' } },
+      { status: 500 }
     );
   }
 }

@@ -1,13 +1,13 @@
 # Tika - Technical Requirements Document (TRD)
 
-> 버전: 0.1.0 (MVP)
-> 최종 수정일: 2026-02-20
+> 버전: 0.2.0
+> 최종 수정일: 2026-02-21
 
 ---
 
 ## 1. 시스템 아키텍처
 
-### 1.1 전체 구성
+### 1.1 Phase 1 아키텍처 (현재)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -31,7 +31,44 @@
 └─────────────────────────────────────────────┘
 ```
 
-### 1.2 모노레포 구조
+- **API Routes**: tickets, labels, issues, members, checklist 엔드포인트
+- **Drizzle ORM**: 6개 테이블 관리 (tickets, checklist_items, labels, ticket_labels, issues, members)
+
+### 1.2 Phase 2 아키텍처 (예정)
+
+```
+┌──────────────────────────────────────────────────────┐
+│                      Vercel                           │
+│                                                       │
+│  ┌────────────┐   ┌───────────────┐   ┌───────────┐ │
+│  │  Next.js   │   │  Next.js      │   │ NextAuth  │ │
+│  │  Frontend  │──▶│  API Routes   │──▶│ v5        │ │
+│  │  (React)   │   │  (Server)     │   │ (Auth)    │ │
+│  └────────────┘   └──────┬────────┘   └─────┬─────┘ │
+│                          │                    │       │
+│                 ┌────────▼─────────┐   ┌─────▼─────┐ │
+│                 │  Drizzle ORM     │   │  Google   │ │
+│                 └────────┬─────────┘   │  OAuth    │ │
+│                          │             └───────────┘ │
+│                 ┌────────▼─────────┐                 │
+│                 │ Vercel Postgres  │                  │
+│                 │ (Neon)           │                  │
+│                 └──────────────────┘                  │
+│                                                       │
+│  ┌──────────────┐   ┌──────────────┐                 │
+│  │ Vercel Cron  │   │ External     │                 │
+│  │ (스케줄러)    │   │ Services     │                 │
+│  └──────────────┘   │ - Slack API  │                 │
+│                      │ - Telegram   │                 │
+│                      └──────────────┘                 │
+└──────────────────────────────────────────────────────┘
+```
+
+- **NextAuth v5**: Google OAuth 2.0, JWT 세션, httpOnly 쿠키
+- **Vercel Cron**: 매일 09:00 KST 마감일 D-1 알림 발송
+- **External Services**: Slack Incoming Webhook, Telegram Bot API
+
+### 1.3 모노레포 구조
 
 Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)를 하나의 프로젝트에서 관리한다.
 
@@ -49,7 +86,7 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 |------|------|------|
 | Next.js | 15.x | 풀스택 프레임워크 (App Router) |
 | React | 19.x | UI 렌더링 |
-| TypeScript | 5.x | 타입 안전성 |
+| TypeScript | 5.7.x | 타입 안전성 |
 | Tailwind CSS | 4.x | 스타일링 |
 | @dnd-kit/core | 6.x | 드래그앤드롭 |
 | @dnd-kit/sortable | 8.x | 칼럼 내 정렬 |
@@ -62,16 +99,24 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 | Drizzle ORM | 0.38.x | DB 쿼리, 스키마 관리 |
 | Drizzle Kit | 0.30.x | 마이그레이션 관리 |
 | @vercel/postgres | latest | Vercel Postgres 연결 드라이버 |
-| Zod | 3.x | 요청 데이터 검증 |
+| Zod | 3.24.x | 요청 데이터 검증 |
 
 ### 2.3 개발 도구
 
 | 기술 | 용도 |
 |------|------|
-| ESLint | 린트 |
-| Prettier | 코드 포맷팅 |
-| Jest + React Testing Library | 테스트 |
+| ESLint 9 | 린트 |
+| Prettier 3.4 | 코드 포맷팅 (prettier-plugin-tailwindcss) |
+| Jest 29.7 + React Testing Library 16 | 테스트 |
 | drizzle-kit | DB 마이그레이션 |
+| tsx 4.19 | TypeScript 실행 (seed 스크립트) |
+
+### 2.4 Phase 2 추가 기술
+
+| 기술 | 버전 | 용도 |
+|------|------|------|
+| NextAuth.js | 5.x | Google OAuth 인증, 세션 관리 |
+| Vercel Cron | — | 마감일 D-1 알림 스케줄러 |
 
 ---
 
@@ -79,74 +124,122 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 
 ```
 tika/
-├── app/                          # Next.js App Router (라우팅 레이어)
-│   ├── api/tickets/              # REST API 엔드포인트
-│   │   ├── route.ts              # GET /api/tickets, POST /api/tickets
-│   │   ├── [id]/route.ts         # GET, PATCH, DELETE /api/tickets/:id
-│   │   └── reorder/route.ts      # PATCH /api/tickets/reorder
-│   ├── layout.tsx                # 루트 HTML 레이아웃
-│   ├── page.tsx                  # 메인 페이지 (서버 컴포넌트)
-│   └── globals.css               # 글로벌 스타일
+├── app/                                  # Next.js App Router (라우팅 레이어)
+│   ├── api/
+│   │   ├── tickets/                      # 티켓 API
+│   │   │   ├── route.ts                  # GET /api/tickets, POST /api/tickets
+│   │   │   ├── [id]/
+│   │   │   │   ├── route.ts              # GET, PATCH, DELETE /api/tickets/:id
+│   │   │   │   └── checklist/            # (FR-008) 체크리스트 API
+│   │   │   │       ├── route.ts          # POST /api/tickets/:id/checklist
+│   │   │   │       └── [itemId]/route.ts # PATCH, DELETE
+│   │   │   └── reorder/route.ts          # PATCH /api/tickets/reorder
+│   │   ├── labels/                       # (FR-009) 라벨 API
+│   │   │   ├── route.ts                  # GET, POST /api/labels
+│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/labels/:id
+│   │   ├── issues/                       # (FR-010) 이슈 계층 API
+│   │   │   ├── route.ts                  # GET, POST /api/issues
+│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/issues/:id
+│   │   ├── members/                      # (FR-011) 멤버 API
+│   │   │   ├── route.ts                  # GET, POST /api/members
+│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/members/:id
+│   │   └── auth/[...nextauth]/route.ts  # (Phase 2) NextAuth 핸들러
+│   ├── login/page.tsx                    # (Phase 2) 로그인 페이지
+│   ├── settings/page.tsx                 # (Phase 2) 설정 페이지
+│   ├── layout.tsx                        # 루트 HTML 레이아웃
+│   ├── page.tsx                          # 메인 페이지 (서버 컴포넌트)
+│   └── globals.css                       # 글로벌 스타일
 │
-├── src/                          # 애플리케이션 소스 코드
-│   ├── components/               # React 컴포넌트
-│   │   ├── board/                # 칸반 보드 컴포넌트
-│   │   │   ├── BoardContainer.tsx    # 보드 최상위 클라이언트 컨테이너
-│   │   │   ├── Board.tsx             # 4칼럼 그리드 레이아웃
-│   │   │   ├── Column.tsx            # 단일 칼럼 (Droppable)
-│   │   │   └── TicketCard.tsx        # 카드 컴포넌트 (Draggable)
-│   │   ├── ticket/               # 티켓 관련 UI
-│   │   │   ├── TicketForm.tsx        # 생성/수정 폼
-│   │   │   └── TicketModal.tsx       # 상세 보기 모달
-│   │   └── ui/                   # 공통 UI 컴포넌트
-│   │       ├── Button.tsx            # 범용 버튼
-│   │       ├── Badge.tsx             # 우선순위 뱃지
-│   │       ├── Modal.tsx             # 모달 컨테이너
-│   │       └── ConfirmDialog.tsx     # 삭제 확인 다이얼로그
+├── src/                                  # 애플리케이션 소스 코드
+│   ├── components/                       # React 컴포넌트
+│   │   ├── board/                        # 칸반 보드 컴포넌트
+│   │   │   ├── BoardContainer.tsx        # 보드 최상위 클라이언트 컨테이너
+│   │   │   ├── Board.tsx                 # 4칼럼 그리드 레이아웃
+│   │   │   ├── Column.tsx                # 단일 칼럼 (Droppable)
+│   │   │   └── TicketCard.tsx            # 카드 컴포넌트 (Draggable)
+│   │   ├── ticket/                       # 티켓 관련 UI
+│   │   │   ├── TicketForm.tsx            # 생성/수정 폼
+│   │   │   ├── TicketModal.tsx           # 상세 보기 모달
+│   │   │   └── ChecklistSection.tsx      # (FR-008) 체크리스트 UI
+│   │   ├── label/                        # (FR-009) 라벨 컴포넌트
+│   │   │   ├── LabelBadge.tsx            # 라벨 뱃지
+│   │   │   └── LabelSelector.tsx         # 라벨 선택/생성기
+│   │   ├── issue/                        # (FR-010) 이슈 계층 컴포넌트
+│   │   │   └── IssueBreadcrumb.tsx       # 이슈 브레드크럼
+│   │   └── ui/                           # 공통 UI 컴포넌트
+│   │       ├── Button.tsx                # 범용 버튼
+│   │       ├── Badge.tsx                 # 우선순위 뱃지
+│   │       ├── Modal.tsx                 # 모달 컨테이너
+│   │       ├── ConfirmDialog.tsx         # 삭제 확인 다이얼로그
+│   │       ├── Avatar.tsx                # (FR-011) 담당자 아바타
+│   │       └── FilterBar.tsx             # 필터 바
 │   │
-│   ├── db/                       # 데이터베이스 레이어
-│   │   ├── index.ts              # Drizzle 인스턴스 생성
-│   │   ├── schema.ts             # Drizzle 테이블 정의
-│   │   ├── queries/              # 데이터베이스 쿼리 함수
-│   │   │   └── tickets.ts        # 티켓 CRUD 쿼리
-│   │   └── seed.ts               # 시드 데이터 스크립트
+│   ├── db/                               # 데이터베이스 레이어
+│   │   ├── index.ts                      # Drizzle 인스턴스 생성
+│   │   ├── schema.ts                     # Drizzle 테이블 정의 (6개 테이블)
+│   │   ├── queries/                      # 데이터베이스 쿼리 함수
+│   │   │   ├── tickets.ts               # 티켓 CRUD 쿼리
+│   │   │   ├── checklist.ts             # (FR-008) 체크리스트 쿼리
+│   │   │   ├── labels.ts                # (FR-009) 라벨 쿼리
+│   │   │   ├── issues.ts                # (FR-010) 이슈 쿼리
+│   │   │   └── members.ts               # (FR-011) 멤버 쿼리
+│   │   └── seed.ts                       # 시드 데이터 스크립트
 │   │
-│   ├── hooks/                    # 커스텀 React 훅
-│   │   └── useTickets.ts         # 보드 상태 관리 훅
+│   ├── hooks/                            # 커스텀 React 훅
+│   │   ├── useTickets.ts                 # 보드 상태 관리 훅
+│   │   ├── useLabels.ts                  # (FR-009) 라벨 상태 훅
+│   │   └── useIssues.ts                  # (FR-010) 이슈 상태 훅
 │   │
-│   ├── lib/                      # 유틸리티 및 헬퍼
-│   │   ├── constants.ts          # 상수 (색상, 제한값, 간격)
-│   │   ├── validations.ts        # Zod 검증 스키마
-│   │   └── utils.ts              # 헬퍼 함수 (그룹핑, 마감일 체크)
+│   ├── lib/                              # 유틸리티 및 헬퍼
+│   │   ├── constants.ts                  # 상수 (색상, 제한값, 간격)
+│   │   ├── validations.ts               # Zod 검증 스키마
+│   │   └── utils.ts                      # 헬퍼 함수 (그룹핑, 마감일 체크)
 │   │
-│   └── types/                    # TypeScript 타입 정의
-│       └── index.ts              # 공유 타입 (중앙 집중)
+│   └── types/                            # TypeScript 타입 정의
+│       └── index.ts                      # 공유 타입 (중앙 집중)
 │
-├── docs/                         # 프로젝트 문서
-│   ├── PRD.md                    # 제품 요구사항
-│   ├── TRD.md                    # 기술 요구사항 (이 문서)
-│   ├── REQUIREMENTS.md           # 상세 요구사항 명세
-│   ├── API_SPEC.md               # API 명세서
-│   ├── DATA_MODEL.md             # 데이터 모델
-│   ├── COMPONENT_SPEC.md         # 컴포넌트 명세
-│   └── TEST_CASES.md             # 테스트 케이스
+├── docs/                                 # 프로젝트 문서
+│   ├── PRD.md                            # 제품 요구사항
+│   ├── TRD.md                            # 기술 요구사항 (이 문서)
+│   ├── REQUIREMENTS.md                   # 상세 요구사항 명세 (v0.2.0)
+│   ├── API_SPEC.md                       # API 명세서
+│   ├── DATA_MODEL.md                     # 데이터 모델
+│   ├── COMPONENT_SPEC.md                 # 컴포넌트 명세
+│   ├── SCREEN_SPEC.md                    # 화면 정의서
+│   ├── TEST_CASES.md                     # 테스트 케이스
+│   ├── front/                            # 프론트엔드 디자인 참조
+│   │   ├── tika-main.html               # HTML 프로토타입
+│   │   ├── DESIGN_SYSTEM.md             # 디자인 시스템 v2.0
+│   │   ├── UI_COMPONENT_GUIDE.md        # UI 컴포넌트 가이드
+│   │   └── COLOR.json                    # 색상 팔레트
+│   ├── enterprise/                       # 확장 계획
+│   │   ├── feature-expansion-roadmap.md  # Phase 2+ 기능 분석
+│   │   └── operations-guide.md           # 운영 가이드
+│   └── phase/                            # Phase 3~5 설계
+│       ├── REQUIREMENTS-Phase3.md
+│       ├── REQUIREMENTS-Phase4.md
+│       └── REQUIREMENTS-Phase5.md
 │
-├── migrations/                   # Drizzle ORM 마이그레이션 (자동 생성)
+├── migrations/                           # Drizzle ORM 마이그레이션 (자동 생성)
 │
-├── __tests__/                    # 테스트 파일
-│   ├── api/                      # API 테스트
-│   └── components/               # 컴포넌트 테스트
+├── __tests__/                            # 테스트 파일
+│   ├── api/                              # API 테스트
+│   └── components/                       # 컴포넌트 테스트
 │
-├── .claude/                      # Claude Code 설정
-│   └── CLAUDE.md                 # 프로젝트 가이드
+├── .claude/                              # Claude Code 설정
+│   ├── CLAUDE.md                         # 프로젝트 가이드
+│   ├── settings.json                     # 팀 공유 설정
+│   ├── commands/                         # 슬래시 명령어
+│   ├── agents/                           # 에이전트 프롬프트
+│   └── rules/                            # 자동 적용 규칙
 │
-├── .env.example                  # 환경 변수 템플릿
-├── drizzle.config.ts             # Drizzle Kit 설정
-├── next.config.ts                # Next.js 설정
-├── tsconfig.json                 # TypeScript 설정
-├── jest.config.ts                # Jest 설정
-├── package.json
-└── .gitignore
+├── .env.example                          # 환경 변수 템플릿
+├── drizzle.config.ts                     # Drizzle Kit 설정
+├── next.config.ts                        # Next.js 설정
+├── tsconfig.json                         # TypeScript 설정
+├── jest.config.ts                        # Jest 설정
+├── .prettierrc                           # Prettier 설정
+└── package.json                          # 의존성 및 스크립트
 ```
 
 ---
@@ -170,15 +263,46 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 - `drizzle-kit migrate`로 마이그레이션 적용
 - 마이그레이션 파일은 Git에 포함하여 버전 관리
 
+### 4.3 Phase 1 테이블 구성
+
+| 테이블 | 설명 | 관계 |
+|--------|------|------|
+| tickets | 티켓 (칸반 카드) | 중심 엔티티 |
+| checklist_items | 체크리스트 항목 | tickets 1:N (ON DELETE CASCADE) |
+| labels | 라벨 정의 | — |
+| ticket_labels | 티켓-라벨 매핑 | M:N (tickets, labels, ON DELETE CASCADE) |
+| issues | 이슈 계층 (Goal/Story/Feature/Task) | self-referencing (ON DELETE SET NULL) |
+| members | 멤버 (담당자 후보) | — |
+
+> 상세 스키마: DATA_MODEL.md 및 REQUIREMENTS.md FR-008~FR-011 참조
+
+### 4.4 tickets 테이블 확장 칼럼
+
+기본 tickets 테이블(id, title, description, status, priority, position, due_date, completed_at, created_at, updated_at)에 추가:
+
+| 칼럼 | 타입 | 설명 |
+|------|------|------|
+| type | VARCHAR(10) NOT NULL | 티켓 타입: GOAL, STORY, FEATURE, TASK (필수, 생성 시 최초 선택) |
+| issue_id | INT NULLABLE | FK → issues(id) ON DELETE SET NULL |
+| assignee_id | INT NULLABLE | FK → members(id) ON DELETE SET NULL |
+
+### 4.5 Phase 2 예상 추가 테이블
+
+| 테이블 | 설명 |
+|--------|------|
+| users | Google OAuth 사용자 (NextAuth) |
+| notification_channels | Slack/Telegram 채널 설정 |
+| notifications | 알림 발송 이력 |
+| comments | 티켓 댓글 |
+
 ---
 
 ## 5. API 설계 원칙
 
 ### 5.1 REST API 규칙
 
-- 기본 경로: `/api/tickets`
 - JSON 요청/응답
-- HTTP 상태 코드 표준 준수 (200, 201, 400, 404, 500)
+- HTTP 상태 코드 표준 준수 (200, 201, 204, 400, 404, 500)
 - 에러 응답 형식 통일
 
 ### 5.2 에러 응답 형식
@@ -187,14 +311,48 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 {
   "error": {
     "code": "TICKET_NOT_FOUND",
-    "message": "Ticket not found"
+    "message": "티켓을 찾을 수 없습니다"
   }
 }
 ```
 
+| 에러 코드 | HTTP 상태 | 발생 조건 |
+|-----------|----------|----------|
+| VALIDATION_ERROR | 400 | 입력값 제약조건 위반 |
+| TICKET_NOT_FOUND | 404 | 존재하지 않는 엔티티 ID |
+| INTERNAL_ERROR | 500 | 서버 내부 오류 |
+
 ### 5.3 요청 검증
 
 모든 API 요청은 Zod 스키마로 검증한다. 검증 실패 시 400 Bad Request와 구체적인 에러 메시지를 반환한다.
+
+### 5.4 Phase 1 API 엔드포인트 요약
+
+| 메서드 | 경로 | 상태코드 | 설명 | 관련 FR |
+|--------|------|----------|------|---------|
+| POST | /api/tickets | 201 | 티켓 생성 | FR-001 |
+| GET | /api/tickets | 200 | 전체 티켓 조회 (보드 데이터) | FR-002 |
+| GET | /api/tickets/:id | 200 | 단일 티켓 조회 | FR-003 |
+| PATCH | /api/tickets/:id | 200 | 티켓 수정 | FR-004 |
+| DELETE | /api/tickets/:id | 204 | 티켓 삭제 | FR-005 |
+| PATCH | /api/tickets/reorder | 200 | 드래그앤드롭 순서 변경 | FR-006 |
+| POST | /api/tickets/:id/checklist | 201 | 체크리스트 항목 추가 | FR-008 |
+| PATCH | /api/tickets/:id/checklist/:itemId | 200 | 체크리스트 항목 수정/토글 | FR-008 |
+| DELETE | /api/tickets/:id/checklist/:itemId | 204 | 체크리스트 항목 삭제 | FR-008 |
+| GET | /api/labels | 200 | 전체 라벨 목록 | FR-009 |
+| POST | /api/labels | 201 | 라벨 생성 | FR-009 |
+| PATCH | /api/labels/:id | 200 | 라벨 수정 | FR-009 |
+| DELETE | /api/labels/:id | 204 | 라벨 삭제 | FR-009 |
+| GET | /api/issues | 200 | 전체 이슈 계층 목록 | FR-010 |
+| POST | /api/issues | 201 | 이슈 생성 | FR-010 |
+| PATCH | /api/issues/:id | 200 | 이슈 수정 | FR-010 |
+| DELETE | /api/issues/:id | 204 | 이슈 삭제 | FR-010 |
+| GET | /api/members | 200 | 전체 멤버 목록 | FR-011 |
+| POST | /api/members | 201 | 멤버 등록 | FR-011 |
+| PATCH | /api/members/:id | 200 | 멤버 수정 | FR-011 |
+| DELETE | /api/members/:id | 204 | 멤버 삭제 | FR-011 |
+
+> 상세 요청/응답 사양: API_SPEC.md 참조
 
 ---
 
@@ -208,6 +366,7 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 ### 6.2 상태 관리
 
 - **서버 상태**: fetch + React 상태 (useState/useReducer)
+- **커스텀 훅**: useTickets (보드), useLabels (라벨), useIssues (이슈 계층)
 - **낙관적 업데이트**: 드래그앤드롭 시 즉시 UI 반영 → API 호출 → 실패 시 롤백
 - 별도 상태 관리 라이브러리(Redux, Zustand 등)는 MVP에서 사용하지 않음
 
@@ -216,7 +375,17 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 - @dnd-kit 사용
 - 칼럼 간 이동: 상태(status) 변경 + 순서(position) 업데이트
 - 칼럼 내 이동: 순서(position)만 업데이트
-- 터치 디바이스 지원
+- 터치 디바이스 지원 (200ms 딜레이)
+- 낙관적 업데이트 + 실패 시 롤백
+
+### 6.4 디자인 시스템 참조
+
+| 자료 | 경로 | 설명 |
+|------|------|------|
+| 디자인 토큰 | `docs/front/DESIGN_SYSTEM.md` | 타이포그래피, 간격, 색상, 그림자, 레이아웃 |
+| 컴포넌트 인벤토리 | `docs/front/UI_COMPONENT_GUIDE.md` | 전체 UI 컴포넌트 사양 |
+| 색상 팔레트 | `docs/front/COLOR.json` | 구조화된 색상 토큰 |
+| HTML 프로토타입 | `docs/front/tika-main.html` | 동작하는 단일 파일 프로토타입 |
 
 ---
 
@@ -231,8 +400,15 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 ### 7.2 환경 변수
 
 ```bash
-# .env.example
-POSTGRES_URL=              # Vercel Postgres 연결 문자열
+# Phase 1 (현재)
+POSTGRES_URL=                    # Vercel Postgres 연결 문자열
+
+# Phase 2 (예정)
+NEXTAUTH_SECRET=                 # NextAuth 비밀 키
+NEXTAUTH_URL=                    # NextAuth 콜백 URL (예: https://tika.vercel.app)
+GOOGLE_CLIENT_ID=                # Google OAuth 클라이언트 ID
+GOOGLE_CLIENT_SECRET=            # Google OAuth 클라이언트 시크릿
+CRON_SECRET=                     # Vercel Cron 인증 토큰
 ```
 
 ### 7.3 로컬 개발 환경
@@ -248,15 +424,30 @@ POSTGRES_URL=              # Vercel Postgres 연결 문자열
 |------|------|
 | First Contentful Paint | < 1.5초 |
 | Largest Contentful Paint | < 2.5초 |
-| API 응답 시간 | < 200ms |
+| API 응답 시간 (p95) | < 200ms |
 | 드래그앤드롭 반응 | 즉시 (낙관적 업데이트) |
-| Lighthouse 점수 | > 90 (Performance) |
+| Lighthouse Performance | > 90 |
 
 ---
 
-## 9. 보안 고려사항 (MVP)
+## 9. 보안 고려사항
 
-- SQL Injection 방지: Drizzle ORM 파라미터 바인딩
-- XSS 방지: React 자동 이스케이핑 + 입력 검증
-- HTTPS: Vercel 기본 제공
-- 환경 변수: DB 연결 정보 코드에 미포함
+### 9.1 Phase 1 (현재)
+
+| 항목 | 전략 |
+|------|------|
+| SQL Injection | Drizzle ORM 파라미터 바인딩 |
+| XSS | React 자동 이스케이핑 + Zod 입력 검증 |
+| HTTPS | Vercel 기본 제공 |
+| 환경 변수 | DB 연결 정보 코드에 미포함, .env.local 분리 |
+
+### 9.2 Phase 2 (예정)
+
+| 항목 | 전략 |
+|------|------|
+| 인증 | NextAuth.js v5, Google OAuth 2.0 |
+| 세션 관리 | JWT 기반, httpOnly 쿠키 |
+| CSRF 방지 | NextAuth.js 내장 CSRF 토큰 |
+| 데이터 격리 | 모든 쿼리에 user_id 조건 추가 |
+| OAuth 토큰 보호 | 서버 사이드 저장, 클라이언트 노출 금지 |
+| API 보안 | 모든 API 요청에 세션 검증 미들웨어 적용 |

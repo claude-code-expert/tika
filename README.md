@@ -29,10 +29,12 @@ cp .env.example .env.local
 `.env.local` 파일을 열어 `POSTGRES_URL` 값을 설정합니다.
 
 **Vercel Postgres 사용 시:**
+
 - Vercel 대시보드에서 Storage → Postgres 생성
 - `vercel env pull .env.local` 로 자동 설정
 
 **로컬 PostgreSQL 사용 시:**
+
 ```
 POSTGRES_URL=postgresql://username:password@localhost:5432/tika
 ```
@@ -60,18 +62,18 @@ npm run dev
 
 ## 주요 명령어
 
-| 명령어 | 설명 |
-|--------|------|
-| `npm run dev` | 개발 서버 실행 |
-| `npm run build` | 프로덕션 빌드 |
-| `npm run test` | 테스트 실행 |
-| `npm run test:watch` | 테스트 감시 모드 |
-| `npm run db:generate` | DB 마이그레이션 생성 |
-| `npm run db:migrate` | DB 마이그레이션 적용 |
-| `npm run db:studio` | Drizzle Studio (DB GUI) |
-| `npm run db:seed` | 시드 데이터 삽입 |
-| `npm run lint` | ESLint 검사 |
-| `npm run format` | Prettier 포맷팅 |
+| 명령어                | 설명                    |
+| --------------------- | ----------------------- |
+| `npm run dev`         | 개발 서버 실행          |
+| `npm run build`       | 프로덕션 빌드           |
+| `npm run test`        | 테스트 실행             |
+| `npm run test:watch`  | 테스트 감시 모드        |
+| `npm run db:generate` | DB 마이그레이션 생성    |
+| `npm run db:migrate`  | DB 마이그레이션 적용    |
+| `npm run db:studio`   | Drizzle Studio (DB GUI) |
+| `npm run db:seed`     | 시드 데이터 삽입        |
+| `npm run lint`        | ESLint 검사             |
+| `npm run format`      | Prettier 포맷팅         |
 
 ## 프로젝트 구조
 

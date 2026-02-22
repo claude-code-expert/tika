@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChecklistSection 컴포넌트 - Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .page-content {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 32px;
+    }
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    /* Checklist styles */
+    .checklist-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .checklist-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+    }
+    .checklist-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .progress-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-light);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent-primary);
+      transition: width 0.3s ease;
+    }
+    .checklist-items {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .checklist-item:hover {
+      background: #F8F9FB;
+    }
+    .checklist-item input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .item-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      flex: 1;
+      line-height: 1.4;
+    }
+    .item-text.done {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .delete-item-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .checklist-item:hover .delete-item-btn {
+      opacity: 1;
+    }
+    .delete-item-btn:hover {
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+    /* Add item row */
+    .add-item-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    .add-item-input {
+      flex: 1;
+      height: 32px;
+      padding: 0 10px;
+      border: 1.5px dashed var(--border-medium);
+      border-radius: 5px;
+      font-size: 13px;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      outline: none;
+      background: transparent;
+      transition: border-color 0.15s, border-style 0.15s;
+    }
+    .add-item-input:focus {
+      border-color: var(--accent-primary);
+      border-style: solid;
+    }
+    .add-item-input::placeholder {
+      color: var(--text-muted);
+    }
+    .add-item-btn {
+      height: 32px;
+      padding: 0 12px;
+      background: #F8F9FB;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-size: 12px;
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-item-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    /* Static state variants */
+    .static-states {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .state-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    /* Progress bar demo */
+    .progress-demo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .progress-demo-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .progress-demo-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 0;
+      gap: 8px;
+    }
+    .empty-icon {
+      font-size: 32px;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+    .empty-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .empty-action {
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: var(--accent-primary);
+      cursor: pointer;
+      font-family: var(--font-body);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .empty-action:hover {
+      color: var(--accent-hover);
+    }
+  </style>
+</head>
+<body>
+  <nav style="height:52px;background:#fff;border-bottom:1px solid #DFE1E6;display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;">
+    <div style="width:28px;height:28px;background:#629584;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">T</div>
+    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#2C3E50;">Tika</span>
+    <span style="color:#DFE1E6;">|</span>
+    <a href="index.html" style="font-size:13px;color:#629584;text-decoration:none;">← 데모 홈</a>
+    <span style="color:#DFE1E6;">›</span>
+    <span style="font-size:13px;color:#5A6B7F;">ChecklistSection 컴포넌트</span>
+  </nav>
+
+  <div class="page-content">
+    <h1 class="page-title">ChecklistSection 컴포넌트</h1>
+
+    <!-- SECTION 1: Live Interactive Checklist -->
+    <div class="section">
+      <div class="section-title">기본 체크리스트</div>
+      <div class="card">
+        <div class="checklist-header">
+          <span class="checklist-title">☑ 체크리스트</span>
+          <span class="checklist-count" id="live-count">2 / 4</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="live-progress" style="width: 50%;"></div>
+        </div>
+        <div class="checklist-items" id="live-items"></div>
+        <div class="add-item-row">
+          <input class="add-item-input" id="new-item-input" type="text" placeholder="새 항목 입력..." maxlength="100" />
+          <button class="add-item-btn" id="add-item-btn">+ 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Static State Variants -->
+    <div class="section">
+      <div class="section-title">상태 변형</div>
+      <div class="static-states">
+
+        <!-- 빈 상태 variant -->
+        <div class="card">
+          <div class="state-label">빈 상태</div>
+          <div class="checklist-header">
+            <span class="checklist-title">☑ 체크리스트</span>
+            <span class="checklist-count">0 / 0</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:0%;"></div></div>
+          <div style="padding: 12px 10px; font-size:13px; color: var(--text-muted); text-align: center;">체크리스트를 추가해 주세요</div>
+        </div>
+
+        <!-- 진행 중 variant -->
+        <div class="card">
+          <div class="state-label">진행 중</div>
+          <div class="checklist-header">
+            <span class="checklist-title">☑ 체크리스트</span>
+            <span class="checklist-count">2 / 5</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:40%;"></div></div>
+          <div class="checklist-items">
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">요구사항 분석</span></div>
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">데이터베이스 설계</span></div>
+            <div class="checklist-item"><input type="checkbox" disabled /><span class="item-text">API 엔드포인트 구현</span></div>
+            <div class="checklist-item"><input type="checkbox" disabled /><span class="item-text">프론트엔드 연동</span></div>
+            <div class="checklist-item"><input type="checkbox" disabled /><span class="item-text">QA 테스트</span></div>
+          </div>
+        </div>
+
+        <!-- 완료 variant -->
+        <div class="card">
+          <div class="state-label">완료</div>
+          <div class="checklist-header">
+            <span class="checklist-title">☑ 체크리스트</span>
+            <span class="checklist-count">5 / 5</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:100%;"></div></div>
+          <div class="checklist-items">
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">요구사항 분석</span></div>
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">데이터베이스 설계</span></div>
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">API 엔드포인트 구현</span></div>
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">프론트엔드 연동</span></div>
+            <div class="checklist-item"><input type="checkbox" checked disabled /><span class="item-text done">QA 테스트</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Progress Bar Demo -->
+    <div class="section">
+      <div class="section-title">진행률 바</div>
+      <div class="card">
+        <div class="progress-demo-list">
+          <div class="progress-demo-item">
+            <div class="progress-track" style="margin-bottom:4px;"><div class="progress-fill" style="width:0%;"></div></div>
+            <span class="progress-demo-label">0 / 5 완료 (0%)</span>
+          </div>
+          <div class="progress-demo-item">
+            <div class="progress-track" style="margin-bottom:4px;"><div class="progress-fill" style="width:25%;"></div></div>
+            <span class="progress-demo-label">1 / 4 완료 (25%)</span>
+          </div>
+          <div class="progress-demo-item">
+            <div class="progress-track" style="margin-bottom:4px;"><div class="progress-fill" style="width:50%;"></div></div>
+            <span class="progress-demo-label">2 / 4 완료 (50%)</span>
+          </div>
+          <div class="progress-demo-item">
+            <div class="progress-track" style="margin-bottom:4px;"><div class="progress-fill" style="width:75%;"></div></div>
+            <span class="progress-demo-label">3 / 4 완료 (75%)</span>
+          </div>
+          <div class="progress-demo-item">
+            <div class="progress-track" style="margin-bottom:4px;"><div class="progress-fill" style="width:100%;"></div></div>
+            <span class="progress-demo-label">4 / 4 완료 (100%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Empty State -->
+    <div class="section">
+      <div class="section-title">빈 상태 (Empty State)</div>
+      <div class="card">
+        <div class="checklist-header">
+          <span class="checklist-title">☑ 체크리스트</span>
+          <span class="checklist-count">0 / 0</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:0%;"></div></div>
+        <div class="empty-state">
+          <div class="empty-icon">☑</div>
+          <span class="empty-text">아직 체크리스트가 없습니다</span>
+          <button class="empty-action">+ 첫 항목 추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let items = [
+      { id: 1, text: 'JWT 토큰 생성/검증 로직 구현', done: true },
+      { id: 2, text: '미들웨어 체인 설계', done: true },
+      { id: 3, text: 'API 엔드포인트 명세 작성', done: false },
+      { id: 4, text: '테스트 케이스 작성', done: false },
+    ];
+    let nextId = 5;
+
+    const liveItemsEl = document.getElementById('live-items');
+    const liveCountEl = document.getElementById('live-count');
+    const liveProgressEl = document.getElementById('live-progress');
+    const newItemInput = document.getElementById('new-item-input');
+    const addItemBtn = document.getElementById('add-item-btn');
+
+    function updateProgress() {
+      const total = items.length;
+      const done = items.filter(i => i.done).length;
+      liveCountEl.textContent = `${done} / ${total}`;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+      liveProgressEl.style.width = pct + '%';
+    }
+
+    function renderItems() {
+      liveItemsEl.innerHTML = '';
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'checklist-item';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = item.done;
+        cb.addEventListener('change', () => {
+          item.done = cb.checked;
+          renderItems();
+          updateProgress();
+        });
+
+        const textEl = document.createElement('span');
+        textEl.className = 'item-text' + (item.done ? ' done' : '');
+        textEl.textContent = item.text;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-item-btn';
+        delBtn.title = '삭제';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', () => {
+          items = items.filter(i => i.id !== item.id);
+          renderItems();
+          updateProgress();
+        });
+
+        row.appendChild(cb);
+        row.appendChild(textEl);
+        row.appendChild(delBtn);
+        liveItemsEl.appendChild(row);
+      });
+    }
+
+    function addItem() {
+      const text = newItemInput.value.trim();
+      if (!text) return;
+      items.push({ id: nextId++, text, done: false });
+      newItemInput.value = '';
+      renderItems();
+      updateProgress();
+    }
+
+    addItemBtn.addEventListener('click', addItem);
+    newItemInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addItem();
+    });
+
+    // Empty state "첫 항목 추가" button - scroll to section 1
+    document.querySelector('.empty-action').addEventListener('click', () => {
+      document.querySelector('#new-item-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelector('#new-item-input').focus();
+    });
+
+    // Init
+    renderItems();
+    updateProgress();
+  </script>
+</body>
+</html>

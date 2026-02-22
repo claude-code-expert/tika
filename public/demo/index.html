@@ -1,316 +1,451 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tika - 데모 인덱스</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tika — UI 데모</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --accent-primary: #629584;
-      --accent-hover: #527D6F;
-      --accent-light: #E8F5F0;
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
       --bg-app: #F8F9FB;
-      --bg-header: #FFFFFF;
       --bg-card: #FFFFFF;
+      --bg-sidebar: #FFFFFF;
       --text-primary: #2C3E50;
       --text-secondary: #5A6B7F;
       --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-light: #E8F5F0;
       --border-light: #DFE1E6;
-      --border-medium: #C4C9D1;
-      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
-      --shadow-card-hover: 0 3px 8px rgba(9,30,66,0.18);
+      --shadow-header: 0 1px 3px rgba(9,30,66,0.10);
+      --nav-item-hover: #F4F5F7;
+      --nav-item-active-bg: #E8F5F0;
+      --nav-item-active-text: #3D6B5E;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--font-body);
       background: var(--bg-app);
       color: var(--text-primary);
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    /* 헤더 */
-    header {
-      height: 60px;
-      background: var(--bg-header);
+    /* ─── Header ─── */
+    .app-header {
+      height: 52px;
+      background: var(--bg-card);
       border-bottom: 1px solid var(--border-light);
+      box-shadow: var(--shadow-header);
       display: flex;
       align-items: center;
-      padding: 0 32px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
+      padding: 0 20px;
       gap: 10px;
-      text-decoration: none;
+      flex-shrink: 0;
+      z-index: 10;
     }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
+    .header-logo {
+      width: 28px; height: 28px;
       background: var(--accent-primary);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 700;
-      font-size: 16px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 14px;
+      font-family: var(--font-display);
+      flex-shrink: 0;
     }
-
-    .logo-text {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
+    .header-title {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 16px;
       color: var(--text-primary);
     }
-
     .header-badge {
-      margin-left: 12px;
       padding: 2px 8px;
       background: var(--accent-light);
       color: var(--accent-primary);
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px; font-weight: 600;
       border-radius: 4px;
     }
-
-    /* 메인 컨텐츠 */
-    main {
-      flex: 1;
-      padding: 60px 32px;
-      max-width: 900px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .page-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-    }
-
-    .page-subtitle {
-      font-size: 15px;
-      color: var(--text-secondary);
-      margin-bottom: 48px;
-      line-height: 1.6;
-    }
-
-    .section-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
+    .header-preview-label {
+      margin-left: auto;
+      font-size: 12px;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 16px;
+      font-family: var(--font-display);
+    }
+    #preview-title {
+      font-weight: 600;
+      color: var(--text-secondary);
     }
 
-    /* 데모 카드 그리드 */
-    .demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
-      margin-bottom: 60px;
-    }
-
-    .demo-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 10px;
-      padding: 28px 24px;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: var(--shadow-card);
-      transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+    /* ─── Body ─── */
+    .app-body {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      flex: 1;
+      overflow: hidden;
     }
 
-    .demo-card:hover {
-      box-shadow: var(--shadow-card-hover);
-      border-color: var(--accent-primary);
-      transform: translateY(-2px);
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      padding: 12px 0 20px;
     }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
 
-    .card-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
+    /* Section header */
+    .nav-section { margin-bottom: 2px; }
+    .nav-section-title {
+      padding: 8px 14px 4px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .nav-list { list-style: none; }
+
+    /* Nav item */
+    .nav-item {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      margin-bottom: 4px;
+      gap: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+      user-select: none;
     }
-
-    .card-icon.board   { background: #E8F5F0; }
-    .card-icon.modal-n { background: #EEF2FF; }
-    .card-icon.modal-d { background: #FFF7ED; }
-
-    .card-scr {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .card-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 17px;
+    .nav-item:hover { background: var(--nav-item-hover); }
+    .nav-item.active { background: var(--nav-item-active-bg); }
+    .nav-item.active .nav-label {
+      color: var(--nav-item-active-text);
       font-weight: 700;
-      color: var(--text-primary);
     }
-
-    .card-desc {
+    .nav-item.active .nav-scr { color: var(--accent-primary); }
+    .nav-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+    }
+    .nav-text { flex: 1; min-width: 0; }
+    .nav-label {
       font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.6;
+      color: var(--text-primary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-scr {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Menlo', monospace;
     }
 
-    .card-arrow {
-      margin-top: auto;
-      padding-top: 12px;
+    /* Sub-nav items (settings sections) */
+    .nav-sub-item {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent-primary);
-    }
-
-    /* 기술 스택 섹션 */
-    .tech-stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .tech-chip {
-      padding: 6px 14px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 20px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    /* 푸터 */
-    footer {
-      height: 55px;
-      background: #F4F5F7;
-      border-top: 1px solid var(--border-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 5px 14px 5px 40px;
+      cursor: pointer;
       font-size: 12px;
-      color: var(--text-muted);
+      color: var(--text-secondary);
+      transition: background 0.1s;
+      user-select: none;
+      border-left: 2px solid transparent;
+    }
+    .nav-sub-item:hover { background: var(--nav-item-hover); }
+    .nav-sub-item.active {
+      background: var(--nav-item-active-bg);
+      color: var(--nav-item-active-text);
+      font-weight: 700;
+      border-left-color: var(--accent-primary);
+    }
+    .nav-sub-icon { font-size: 12px; flex-shrink: 0; }
+
+    /* Divider */
+    .nav-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 8px 14px;
     }
 
-    footer span {
-      color: #e25555;
-      margin: 0 2px;
+    /* ─── Preview Pane ─── */
+    .preview-pane {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s;
+    }
+
+    /* Screen mode: full-width, no padding */
+    .preview-pane.mode-screen {
+      background: var(--bg-app);
+      padding: 0;
+    }
+    .preview-pane.mode-screen iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    /* Doc mode: padded grey bg, iframe floats with shadow */
+    .preview-pane.mode-doc {
+      background: #D5D9DF;
+      padding: 16px;
+      overflow: auto;
+    }
+    .preview-pane.mode-doc iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
 
-  <!-- 헤더 -->
-  <header>
-    <a href="index.html" class="logo">
-      <div class="logo-icon">T</div>
-      <span class="logo-text">Tika</span>
-    </a>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">T</div>
+    <span class="header-title">Tika</span>
     <span class="header-badge">Demo</span>
+    <span class="header-preview-label">미리보기: <span id="preview-title">메인 보드 뷰</span></span>
   </header>
 
-  <!-- 메인 -->
-  <main>
-    <h1 class="page-title">Tika UI 데모</h1>
-    <p class="page-subtitle">
-      Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션입니다.<br />
-      아래 링크에서 각 화면의 인터랙티브 HTML 데모를 확인할 수 있습니다.
-    </p>
+  <div class="app-body">
 
-    <!-- 화면 데모 목록 -->
-    <p class="section-title">화면 데모</p>
-    <div class="demo-grid">
+    <!-- Sidebar -->
+    <nav class="sidebar">
 
-      <a href="board.html" class="demo-card">
-        <div class="card-icon board">📋</div>
-        <div class="card-scr">SCR-001</div>
-        <div class="card-title">메인 보드 뷰</div>
-        <div class="card-desc">
-          4단계 칸반 보드. 사이드바, 필터바, 티켓 카드, 우선순위 뱃지, 마감일 경고 표시.
-        </div>
-        <div class="card-arrow">
-          데모 보기 →
-        </div>
-      </a>
+      <!-- Screens -->
+      <div class="nav-section">
+        <div class="nav-section-title">Screens</div>
+        <ul class="nav-list">
+          <li class="nav-item active" onclick="loadPage('board.html', this, '메인 보드 뷰', 'screen')">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-001</span>
+              <div class="nav-label">메인 보드 뷰</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('modal-new.html', this, '새 업무 생성 모달', 'screen')">
+            <span class="nav-icon">✏️</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-002</span>
+              <div class="nav-label">새 업무 생성 모달</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('modal-detail.html', this, '티켓 상세 모달', 'screen')">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-003</span>
+              <div class="nav-label">티켓 상세 모달</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('login.html', this, '로그인', 'screen')">
+            <span class="nav-icon">🔐</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-004</span>
+              <div class="nav-label">로그인</div>
+            </span>
+          </li>
 
-      <a href="modal-new.html" class="demo-card">
-        <div class="card-icon modal-n">✏️</div>
-        <div class="card-scr">SCR-002</div>
-        <div class="card-title">새 업무 생성 모달</div>
-        <div class="card-desc">
-          이슈 타입 선택, 체크리스트 빌더, 라벨 칩, 캐스케이딩 상위 카테고리 드롭다운.
-        </div>
-        <div class="card-arrow">
-          데모 보기 →
-        </div>
-      </a>
+          <!-- SCR-005: 설정 (자체 사이드바) — 하위 섹션 직접 접근 -->
+          <li class="nav-item" onclick="loadPage('settings.html', this, '설정', 'screen')">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-005</span>
+              <div class="nav-label">설정</div>
+            </span>
+          </li>
+          <li class="nav-sub-item" id="sub-general" onclick="loadSettings('general', this, '설정 — 일반')">
+            <span class="nav-sub-icon">🔧</span> 일반
+          </li>
+          <li class="nav-sub-item" id="sub-notification" onclick="loadSettings('notification', this, '설정 — 알림 채널')">
+            <span class="nav-sub-icon">🔔</span> 알림 채널
+          </li>
+          <li class="nav-sub-item" id="sub-labels" onclick="loadSettings('labels', this, '설정 — 라벨 관리')">
+            <span class="nav-sub-icon">🏷️</span> 라벨 관리
+          </li>
+          <li class="nav-sub-item" id="sub-members" onclick="loadSettings('members', this, '설정 — 멤버 관리')">
+            <span class="nav-sub-icon">👥</span> 멤버 관리
+          </li>
 
-      <a href="modal-detail.html" class="demo-card">
-        <div class="card-icon modal-d">🔍</div>
-        <div class="card-scr">SCR-003</div>
-        <div class="card-title">티켓 상세 모달</div>
-        <div class="card-desc">
-          라벨 편집, 카테고리 브레드크럼, 체크리스트, 활동 내역, 댓글 입력.
-        </div>
-        <div class="card-arrow">
-          데모 보기 →
-        </div>
-      </a>
+          <li class="nav-item" onclick="loadPage('notifications.html', this, '알림 내역', 'screen')">
+            <span class="nav-icon">🔔</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-006</span>
+              <div class="nav-label">알림 내역</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('tika-main.html', this, '메인 보드 (v2)', 'screen')">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">메인 보드 (v2)</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('detail-modal.html', this, '상세 모달 (alt)', 'screen')">
+            <span class="nav-icon">📄</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">상세 모달 (alt)</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('new-task-modal.html', this, '생성 모달 (alt)', 'screen')">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">생성 모달 (alt)</div>
+            </span>
+          </li>
+        </ul>
+      </div>
 
-    </div>
+      <div class="nav-divider"></div>
 
-    <!-- 기술 스택 -->
-    <p class="section-title">기술 스택 (실제 앱)</p>
-    <div class="tech-stack">
-      <span class="tech-chip">Next.js 15</span>
-      <span class="tech-chip">React 19</span>
-      <span class="tech-chip">TypeScript 5.7</span>
-      <span class="tech-chip">Tailwind CSS 4</span>
-      <span class="tech-chip">Drizzle ORM</span>
-      <span class="tech-chip">Vercel Postgres</span>
-      <span class="tech-chip">@dnd-kit</span>
-      <span class="tech-chip">Zod</span>
-    </div>
-  </main>
+      <!-- Components -->
+      <div class="nav-section">
+        <div class="nav-section-title">Components</div>
+        <ul class="nav-list">
+          <li class="nav-item" onclick="loadPage('button.html', this, 'Button', 'doc')">
+            <span class="nav-icon">🔘</span>
+            <span class="nav-text"><div class="nav-label">Button</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('badge.html', this, 'Badge', 'doc')">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-text"><div class="nav-label">Badge</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('avatar.html', this, 'Avatar', 'doc')">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text"><div class="nav-label">Avatar</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('ticket-card.html', this, 'TicketCard', 'doc')">
+            <span class="nav-icon">🎫</span>
+            <span class="nav-text"><div class="nav-label">TicketCard</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('confirm-dialog.html', this, 'ConfirmDialog', 'doc')">
+            <span class="nav-icon">⚠️</span>
+            <span class="nav-text"><div class="nav-label">ConfirmDialog</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('filter-bar.html', this, 'FilterBar', 'doc')">
+            <span class="nav-icon">🔎</span>
+            <span class="nav-text"><div class="nav-label">FilterBar</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('label-selector.html', this, 'LabelSelector', 'doc')">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-text"><div class="nav-label">LabelSelector</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('checklist.html', this, 'ChecklistSection', 'doc')">
+            <span class="nav-icon">☑️</span>
+            <span class="nav-text"><div class="nav-label">ChecklistSection</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('breadcrumb.html', this, 'IssueBreadcrumb', 'doc')">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-text"><div class="nav-label">IssueBreadcrumb</div></span>
+          </li>
+        </ul>
+      </div>
 
-  <!-- 푸터 -->
-  <footer>
-    &copy; 2026 Tika. All rights reserved. &nbsp;|&nbsp; Built with <span>♥</span> by CodeVillain
-  </footer>
+    </nav>
+
+    <!-- Preview Pane (mode-screen: full-width / mode-doc: padded with shadow) -->
+    <main class="preview-pane mode-screen">
+      <iframe id="preview" src="board.html" title="데모 미리보기"></iframe>
+    </main>
+
+  </div>
+
+  <script>
+    /**
+     * 일반 페이지 로드
+     * @param {string} file  - 로드할 파일명
+     * @param {Element} el   - 클릭한 nav 항목
+     * @param {string} label - 헤더에 표시할 이름
+     * @param {string} type  - 'screen' | 'doc'
+     */
+    function loadPage(file, el, label, type) {
+      var iframe = document.getElementById('preview');
+      iframe.src = file;
+      document.getElementById('preview-title').textContent = label;
+
+      // active 상태 초기화
+      document.querySelectorAll('.nav-item, .nav-sub-item').forEach(function(i) {
+        i.classList.remove('active');
+      });
+      el.classList.add('active');
+
+      // 프리뷰 모드 전환
+      setPreviewMode(type);
+    }
+
+    /**
+     * 설정 페이지 섹션 직접 이동
+     * settings.html의 switchSection(id, el) 함수를 호출
+     */
+    function loadSettings(sectionId, el, label) {
+      var iframe = document.getElementById('preview');
+      document.getElementById('preview-title').textContent = label;
+
+      // active 상태 초기화
+      document.querySelectorAll('.nav-item, .nav-sub-item').forEach(function(i) {
+        i.classList.remove('active');
+      });
+      el.classList.add('active');
+      setPreviewMode('screen');
+
+      function switchAfterLoad() {
+        try {
+          var iDoc = iframe.contentWindow.document;
+          // settings.html nav 항목에서 해당 sectionId를 가진 요소 찾기
+          var navEl = iDoc.querySelector('.nav-item[onclick*="\'' + sectionId + '\'"]');
+          if (navEl) {
+            iframe.contentWindow.switchSection(sectionId, navEl);
+          }
+        } catch (e) {
+          // cross-origin 등 예외 무시
+        }
+      }
+
+      // 이미 settings.html 로드된 경우 섹션만 전환
+      if (iframe.src && iframe.src.indexOf('settings.html') !== -1) {
+        switchAfterLoad();
+      } else {
+        iframe.onload = function() {
+          switchAfterLoad();
+          iframe.onload = null;
+        };
+        iframe.src = 'settings.html';
+      }
+    }
+
+    /**
+     * 프리뷰 모드 전환
+     * mode-screen: 패딩 없이 full-width
+     * mode-doc:    회색 배경 + 16px 패딩 + 아이프레임 shadow
+     */
+    function setPreviewMode(type) {
+      var pane = document.querySelector('.preview-pane');
+      pane.classList.remove('mode-screen', 'mode-doc');
+      pane.classList.add(type === 'doc' ? 'mode-doc' : 'mode-screen');
+    }
+  </script>
 
 </body>
 </html>

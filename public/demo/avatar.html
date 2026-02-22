@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avatar 컴포넌트 — Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      width: 28px;
+      height: 28px;
+      background: #629584;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .nav-brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+    .nav-sep { color: var(--border-medium); font-size: 14px; margin: 0 2px; }
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--accent-primary); }
+    .nav-current { font-size: 13px; color: var(--text-muted); }
+    .nav-right {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* MAIN */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .page-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* SECTION */
+    .demo-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .demo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* AVATAR BASE */
+    .avatar {
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    /* SIZES */
+    .avatar-xs { width: 20px; height: 20px; font-size: 9px; }
+    .avatar-sm { width: 24px; height: 24px; font-size: 10px; }
+    .avatar-md { width: 32px; height: 32px; font-size: 13px; }
+    .avatar-lg { width: 40px; height: 40px; font-size: 16px; }
+    .avatar-xl { width: 56px; height: 56px; font-size: 22px; }
+
+    /* SIZE LABEL ROW */
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .size-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+    }
+
+    /* COLOR SAMPLES */
+    .color-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* AVATAR GROUP */
+    .avatar-group {
+      display: flex;
+      align-items: center;
+    }
+    .avatar-group .avatar {
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+    }
+    .avatar-group .avatar + .avatar {
+      margin-left: -8px;
+    }
+    .avatar-overflow {
+      background: #DFE1E6;
+      color: #5A6B7F;
+      font-size: 10px;
+    }
+
+    /* ASSIGNEE ROW */
+    .assignee-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .assignee-unassigned {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* INTERACTIVE DEMO */
+    .interactive-layout {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+    .control-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .control-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .text-input {
+      width: 100%;
+      max-width: 180px;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg-app);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .text-input:focus { border-color: var(--accent-primary); }
+
+    .color-swatches {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.selected { border-color: var(--text-primary); }
+
+    .preview-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-app);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-card);
+      padding: 32px 24px;
+      min-width: 120px;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">T</div>
+  <span class="nav-brand">Tika</span>
+  <span class="nav-sep">/</span>
+  <a href="index.html" class="nav-back">← 컴포넌트</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-current">Avatar</span>
+  <span class="nav-right">Avatar 컴포넌트</span>
+</nav>
+
+<main>
+  <div class="page-title">Avatar</div>
+  <div class="page-desc">이니셜 기반 사용자 아바타 컴포넌트. 5가지 크기와 그룹 스태킹을 지원한다.</div>
+
+  <!-- SECTION 1: 크기 -->
+  <div class="demo-section">
+    <div class="section-title">크기</div>
+    <div class="demo-row" style="align-items: flex-end; gap: 20px;">
+      <div class="size-item">
+        <span class="avatar avatar-xs" style="background:#629584;">홍</span>
+        <span class="size-label">XS<br/>20px</span>
+      </div>
+      <div class="size-item">
+        <span class="avatar avatar-sm" style="background:#629584;">홍</span>
+        <span class="size-label">SM<br/>24px</span>
+      </div>
+      <div class="size-item">
+        <span class="avatar avatar-md" style="background:#629584;">홍</span>
+        <span class="size-label">MD<br/>32px</span>
+      </div>
+      <div class="size-item">
+        <span class="avatar avatar-lg" style="background:#629584;">홍</span>
+        <span class="size-label">LG<br/>40px</span>
+      </div>
+      <div class="size-item">
+        <span class="avatar avatar-xl" style="background:#629584;">홍</span>
+        <span class="size-label">XL<br/>56px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: 색상 시스템 -->
+  <div class="demo-section">
+    <div class="section-title">색상 시스템</div>
+    <div class="demo-row" style="gap: 20px;">
+      <div class="color-item">
+        <span class="avatar avatar-md" style="background:#629584;">홍</span>
+        <span class="color-name">홍 (Hong)</span>
+      </div>
+      <div class="color-item">
+        <span class="avatar avatar-md" style="background:#3B82F6;">김</span>
+        <span class="color-name">김 (Kim)</span>
+      </div>
+      <div class="color-item">
+        <span class="avatar avatar-md" style="background:#8B5CF6;">이</span>
+        <span class="color-name">이 (Lee)</span>
+      </div>
+      <div class="color-item">
+        <span class="avatar avatar-md" style="background:#F59E0B;">박</span>
+        <span class="color-name">박 (Park)</span>
+      </div>
+      <div class="color-item">
+        <span class="avatar avatar-md" style="background:#EF4444;">최</span>
+        <span class="color-name">최 (Choi)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: 아바타 그룹 -->
+  <div class="demo-section">
+    <div class="section-title">아바타 그룹</div>
+    <div class="demo-row">
+      <div class="avatar-group">
+        <span class="avatar avatar-md" style="background:#629584;">홍</span>
+        <span class="avatar avatar-md" style="background:#3B82F6;">김</span>
+        <span class="avatar avatar-md" style="background:#8B5CF6;">이</span>
+        <span class="avatar avatar-md avatar-overflow">+2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: 담당자 표시 -->
+  <div class="demo-section">
+    <div class="section-title">담당자 표시</div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="assignee-row">
+        <span class="avatar avatar-sm" style="background:#629584;">홍</span>
+        <span>홍길동</span>
+      </div>
+      <div class="assignee-row">
+        <span class="avatar avatar-sm" style="background:#3B82F6;">김</span>
+        <span>김민수</span>
+      </div>
+      <div class="assignee-row">
+        <span class="assignee-unassigned">미배정</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: INTERACTIVE DEMO -->
+  <div class="demo-section">
+    <div class="section-title">Interactive Demo</div>
+    <div class="interactive-layout">
+      <div class="control-stack">
+        <div>
+          <div class="control-label">이니셜 입력</div>
+          <input
+            type="text"
+            class="text-input"
+            id="avatar-initials"
+            maxlength="2"
+            placeholder="홍"
+            value="홍"
+          />
+        </div>
+        <div>
+          <div class="control-label">색상 선택</div>
+          <div class="color-swatches">
+            <span class="swatch selected" style="background:#629584;" data-color="#629584"></span>
+            <span class="swatch" style="background:#3B82F6;" data-color="#3B82F6"></span>
+            <span class="swatch" style="background:#8B5CF6;" data-color="#8B5CF6"></span>
+            <span class="swatch" style="background:#F59E0B;" data-color="#F59E0B"></span>
+            <span class="swatch" style="background:#EF4444;" data-color="#EF4444"></span>
+            <span class="swatch" style="background:#10B981;" data-color="#10B981"></span>
+          </div>
+        </div>
+      </div>
+      <div class="preview-box">
+        <span class="avatar avatar-xl" id="preview-avatar" style="background:#629584;">홍</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Tika Demo</footer>
+
+<script>
+  const initialsInput = document.getElementById('avatar-initials');
+  const previewAvatar = document.getElementById('preview-avatar');
+  const swatches = document.querySelectorAll('.swatch');
+
+  let selectedColor = '#629584';
+
+  function updatePreview() {
+    const val = initialsInput.value.trim();
+    previewAvatar.textContent = val || '?';
+    previewAvatar.style.background = selectedColor;
+  }
+
+  initialsInput.addEventListener('input', updatePreview);
+
+  swatches.forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      swatches.forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      selectedColor = swatch.dataset.color;
+      updatePreview();
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,40 +1,13 @@
 # Tika - Technical Requirements Document (TRD)
 
-> 버전: 0.2.0
-> 최종 수정일: 2026-02-21
+> 버전: 2.0
+> 최종 수정일: 2026-02-22
 
 ---
 
 ## 1. 시스템 아키텍처
 
 ### 1.1 Phase 1 아키텍처 (현재)
-
-```
-┌─────────────────────────────────────────────┐
-│                  Vercel                      │
-│                                             │
-│  ┌─────────────┐    ┌──────────────────┐   │
-│  │  Next.js    │    │  Next.js         │   │
-│  │  Frontend   │───▶│  API Routes      │   │
-│  │  (React)    │    │  (Server)        │   │
-│  └─────────────┘    └────────┬─────────┘   │
-│                              │              │
-│                     ┌────────▼─────────┐   │
-│                     │  Drizzle ORM     │   │
-│                     └────────┬─────────┘   │
-│                              │              │
-│                     ┌────────▼─────────┐   │
-│                     │ Vercel Postgres  │   │
-│                     │ (Neon)           │   │
-│                     └──────────────────┘   │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
-- **API Routes**: tickets, labels, issues, members, checklist 엔드포인트
-- **Drizzle ORM**: 6개 테이블 관리 (tickets, checklist_items, labels, ticket_labels, issues, members)
-
-### 1.2 Phase 2 아키텍처 (예정)
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -55,16 +28,27 @@
 │                 │ (Neon)           │                  │
 │                 └──────────────────┘                  │
 │                                                       │
-│  ┌──────────────┐   ┌──────────────┐                 │
-│  │ Vercel Cron  │   │ External     │                 │
-│  │ (스케줄러)    │   │ Services     │                 │
-│  └──────────────┘   │ - Slack API  │                 │
-│                      │ - Telegram   │                 │
-│                      └──────────────┘                 │
 └──────────────────────────────────────────────────────┘
 ```
 
 - **NextAuth v5**: Google OAuth 2.0, JWT 세션, httpOnly 쿠키
+- **API Routes**: tickets, labels, issues, members, checklist, workspaces 엔드포인트 (세션 검증 필수)
+- **Drizzle ORM**: 8개 테이블 관리 (users, workspaces, tickets, checklist_items, labels, ticket_labels, issues, members)
+
+### 1.2 Phase 2 아키텍처 (예정)
+
+Phase 1 아키텍처에 알림 인프라를 추가한다:
+
+```
+  Phase 1 아키텍처
+  + ┌──────────────┐   ┌──────────────┐
+    │ Vercel Cron  │   │ External     │
+    │ (스케줄러)    │   │ Services     │
+    └──────────────┘   │ - Slack API  │
+                        │ - Telegram   │
+                        └──────────────┘
+```
+
 - **Vercel Cron**: 매일 09:00 KST 마감일 D-1 알림 발송
 - **External Services**: Slack Incoming Webhook, Telegram Bot API
 
@@ -100,6 +84,7 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 | Drizzle Kit | 0.30.x | 마이그레이션 관리 |
 | @vercel/postgres | latest | Vercel Postgres 연결 드라이버 |
 | Zod | 3.24.x | 요청 데이터 검증 |
+| NextAuth.js | 5.x | Google OAuth 인증, 세션 관리 |
 
 ### 2.3 개발 도구
 
@@ -115,7 +100,6 @@ Next.js App Router 기반 모노레포. 프론트엔드와 백엔드(API Routes)
 
 | 기술 | 버전 | 용도 |
 |------|------|------|
-| NextAuth.js | 5.x | Google OAuth 인증, 세션 관리 |
 | Vercel Cron | — | 마감일 D-1 알림 스케줄러 |
 
 ---
@@ -141,10 +125,12 @@ tika/
 │   │   │   ├── route.ts                  # GET, POST /api/issues
 │   │   │   └── [id]/route.ts            # PATCH, DELETE /api/issues/:id
 │   │   ├── members/                      # (FR-011) 멤버 API
-│   │   │   ├── route.ts                  # GET, POST /api/members
-│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/members/:id
-│   │   └── auth/[...nextauth]/route.ts  # (Phase 2) NextAuth 핸들러
-│   ├── login/page.tsx                    # (Phase 2) 로그인 페이지
+│   │   │   ├── route.ts                  # GET /api/members (Phase 1: 본인만)
+│   │   │   └── [id]/route.ts            # Phase 4에서 활성화
+│   │   ├── workspaces/                   # (FR-012) 워크스페이스 API
+│   │   │   └── route.ts                  # GET /api/workspaces
+│   │   └── auth/[...nextauth]/route.ts  # (FR-013) NextAuth 핸들러
+│   ├── login/page.tsx                    # (FR-013) 로그인 페이지
 │   ├── settings/page.tsx                 # (Phase 2) 설정 페이지
 │   ├── layout.tsx                        # 루트 HTML 레이아웃
 │   ├── page.tsx                          # 메인 페이지 (서버 컴포넌트)
@@ -176,7 +162,7 @@ tika/
 │   │
 │   ├── db/                               # 데이터베이스 레이어
 │   │   ├── index.ts                      # Drizzle 인스턴스 생성
-│   │   ├── schema.ts                     # Drizzle 테이블 정의 (6개 테이블)
+│   │   ├── schema.ts                     # Drizzle 테이블 정의 (8개 테이블)
 │   │   ├── queries/                      # 데이터베이스 쿼리 함수
 │   │   │   ├── tickets.ts               # 티켓 CRUD 쿼리
 │   │   │   ├── checklist.ts             # (FR-008) 체크리스트 쿼리
@@ -267,12 +253,14 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 
 | 테이블 | 설명 | 관계 |
 |--------|------|------|
-| tickets | 티켓 (칸반 카드) | 중심 엔티티 |
+| users | Google OAuth 사용자 | 인증 엔티티 |
+| workspaces | 워크스페이스 | users 1:N (owner_id FK) |
+| tickets | 티켓 (칸반 카드) | workspaces 1:N (workspace_id FK) |
 | checklist_items | 체크리스트 항목 | tickets 1:N (ON DELETE CASCADE) |
-| labels | 라벨 정의 | — |
+| labels | 라벨 정의 | workspaces 1:N (workspace_id FK), UNIQUE(workspace_id, name) |
 | ticket_labels | 티켓-라벨 매핑 | M:N (tickets, labels, ON DELETE CASCADE) |
-| issues | 이슈 계층 (Goal/Story/Feature/Task) | self-referencing (ON DELETE SET NULL) |
-| members | 멤버 (담당자 후보) | — |
+| issues | 이슈 계층 (Goal/Story/Feature/Task) | workspaces 1:N, self-referencing (ON DELETE SET NULL) |
+| members | 멤버 (담당자) | users 1:N, workspaces 1:N, UNIQUE(user_id, workspace_id) |
 
 > 상세 스키마: DATA_MODEL.md 및 REQUIREMENTS.md FR-008~FR-011 참조
 
@@ -290,7 +278,6 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 
 | 테이블 | 설명 |
 |--------|------|
-| users | Google OAuth 사용자 (NextAuth) |
 | notification_channels | Slack/Telegram 채널 설정 |
 | notifications | 알림 발송 이력 |
 | comments | 티켓 댓글 |
@@ -318,6 +305,7 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 
 | 에러 코드 | HTTP 상태 | 발생 조건 |
 |-----------|----------|----------|
+| UNAUTHORIZED | 401 | 미인증 요청 (세션 없음 또는 만료) |
 | VALIDATION_ERROR | 400 | 입력값 제약조건 위반 |
 | TICKET_NOT_FOUND | 404 | 존재하지 않는 엔티티 ID |
 | INTERNAL_ERROR | 500 | 서버 내부 오류 |
@@ -347,10 +335,12 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 | POST | /api/issues | 201 | 이슈 생성 | FR-010 |
 | PATCH | /api/issues/:id | 200 | 이슈 수정 | FR-010 |
 | DELETE | /api/issues/:id | 204 | 이슈 삭제 | FR-010 |
-| GET | /api/members | 200 | 전체 멤버 목록 | FR-011 |
-| POST | /api/members | 201 | 멤버 등록 | FR-011 |
-| PATCH | /api/members/:id | 200 | 멤버 수정 | FR-011 |
-| DELETE | /api/members/:id | 204 | 멤버 삭제 | FR-011 |
+| GET | /api/members | 200 | 멤버 목록 (Phase 1: 본인만) | FR-011 |
+| POST | /api/members | 201 | 멤버 등록 (Phase 4 활성화) | FR-011 |
+| PATCH | /api/members/:id | 200 | 멤버 수정 (Phase 4 활성화) | FR-011 |
+| DELETE | /api/members/:id | 204 | 멤버 삭제 (Phase 4 활성화) | FR-011 |
+| GET | /api/workspaces | 200 | 현재 사용자 워크스페이스 목록 | FR-012 |
+| — | /api/auth/* | — | NextAuth 자동 라우트 (signin, callback, signout, session) | FR-013 |
 
 > 상세 요청/응답 사양: API_SPEC.md 참조
 
@@ -402,12 +392,12 @@ Vercel Postgres는 `@vercel/postgres` 드라이버를 통해 연결하며, Drizz
 ```bash
 # Phase 1 (현재)
 POSTGRES_URL=                    # Vercel Postgres 연결 문자열
-
-# Phase 2 (예정)
 NEXTAUTH_SECRET=                 # NextAuth 비밀 키
 NEXTAUTH_URL=                    # NextAuth 콜백 URL (예: https://tika.vercel.app)
 GOOGLE_CLIENT_ID=                # Google OAuth 클라이언트 ID
 GOOGLE_CLIENT_SECRET=            # Google OAuth 클라이언트 시크릿
+
+# Phase 2 (예정)
 CRON_SECRET=                     # Vercel Cron 인증 토큰
 ```
 
@@ -436,6 +426,12 @@ CRON_SECRET=                     # Vercel Cron 인증 토큰
 
 | 항목 | 전략 |
 |------|------|
+| 인증 | NextAuth.js v5, Google OAuth 2.0 (FR-013) |
+| 세션 관리 | JWT 기반, httpOnly 쿠키 |
+| CSRF 방지 | NextAuth.js 내장 CSRF 토큰 |
+| 데이터 격리 | 모든 쿼리에 workspace_id 조건 추가 (FR-012) |
+| OAuth 토큰 보호 | 서버 사이드 저장, 클라이언트 노출 금지 |
+| API 보안 | 모든 API 요청에 세션 검증 적용, 미인증 시 401 |
 | SQL Injection | Drizzle ORM 파라미터 바인딩 |
 | XSS | React 자동 이스케이핑 + Zod 입력 검증 |
 | HTTPS | Vercel 기본 제공 |
@@ -445,9 +441,4 @@ CRON_SECRET=                     # Vercel Cron 인증 토큰
 
 | 항목 | 전략 |
 |------|------|
-| 인증 | NextAuth.js v5, Google OAuth 2.0 |
-| 세션 관리 | JWT 기반, httpOnly 쿠키 |
-| CSRF 방지 | NextAuth.js 내장 CSRF 토큰 |
-| 데이터 격리 | 모든 쿼리에 user_id 조건 추가 |
-| OAuth 토큰 보호 | 서버 사이드 저장, 클라이언트 노출 금지 |
-| API 보안 | 모든 API 요청에 세션 검증 미들웨어 적용 |
+| 추가 보안 강화 | Phase 1 인증/보안 기반 위에 확장 |

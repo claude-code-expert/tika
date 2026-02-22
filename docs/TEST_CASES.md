@@ -2,8 +2,8 @@
 
 > TDD 사이클에 따라 테스트를 먼저 작성하고 구현한다.
 > 테스트 프레임워크: Jest + React Testing Library
-> 버전: 0.2.0
-> 최종 수정일: 2026-02-21
+> 버전: 2.0
+> 최종 수정일: 2026-02-22
 
 ---
 
@@ -11,13 +11,91 @@
 
 | 영역 | 대상 | 케이스 수 |
 |------|------|-----------|
-| API | 티켓, 체크리스트, 라벨, 이슈, 멤버 | TC-API-001~011 |
+| 인증 | Google OAuth 로그인/로그아웃, 미인증 차단, 데이터 격리 | TC-AUTH-001~005 |
+| 워크스페이스 | 자동 생성, 멤버 자동 등록 | TC-WS-001~003 |
+| API | 티켓, 체크리스트, 라벨, 이슈, 멤버 | TC-API-001~010 |
 | 컴포넌트 | BoardContainer, TicketCard, Column, TicketForm, TicketModal, ChecklistSection, LabelSelector, IssueBreadcrumb, FilterBar | TC-COMP-001~009 |
 | 통합 | 드래그앤드롭, CRUD 흐름, 필터링 | TC-INT-001~003 |
 
 ---
 
-## 1. API 테스트 (백엔드)
+## 1. 인증 테스트 (Phase 1)
+
+### TC-AUTH-001: Google OAuth 로그인
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| AUTH-001-1 | 정상 로그인 | 유효한 Google 계정 | 세션 생성, `/` 리다이렉트 |
+| AUTH-001-2 | 첫 로그인 | 신규 Google 계정 | user 레코드 생성, 기본 워크스페이스 자동 생성, member 자동 등록 |
+| AUTH-001-3 | 재로그인 | 기존 Google 계정 | 기존 user/workspace 유지, 새 세션 생성 |
+| AUTH-001-4 | 로그아웃 | 인증된 세션 | 세션 삭제, `/login` 리다이렉트 |
+| AUTH-001-5 | OAuth 실패 | 인증 거부/에러 | 에러 메시지 표시, `/login` 유지 |
+
+---
+
+### TC-AUTH-002: 미인증 API 차단
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| AUTH-002-1 | GET /api/tickets 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-2 | POST /api/tickets 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-3 | PATCH /api/tickets/:id 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-4 | DELETE /api/tickets/:id 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-5 | PATCH /api/tickets/reorder 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-6 | GET /api/labels 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-7 | POST /api/labels 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-8 | GET /api/issues 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-9 | POST /api/issues 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-10 | GET /api/members 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+| AUTH-002-11 | GET /api/workspaces 미인증 | 세션 없음 | 401, UNAUTHORIZED |
+
+---
+
+### TC-AUTH-003: 워크스페이스 데이터 격리
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| AUTH-003-1 | 다른 워크스페이스 티켓 조회 불가 | 사용자 A가 사용자 B의 workspace_id 티켓 접근 | 빈 결과 반환 (타 워크스페이스 데이터 노출 안됨) |
+| AUTH-003-2 | 다른 워크스페이스 라벨 조회 불가 | 사용자 A가 사용자 B의 라벨 접근 | 빈 결과 |
+| AUTH-003-3 | 다른 워크스페이스 이슈 조회 불가 | 사용자 A가 사용자 B의 이슈 접근 | 빈 결과 |
+| AUTH-003-4 | 티켓 생성 시 workspace_id 자동 설정 | 티켓 생성 | 세션 사용자의 workspace_id 자동 반영 |
+| AUTH-003-5 | 라벨 생성 시 workspace_id 자동 설정 | 라벨 생성 | 세션 사용자의 workspace_id 자동 반영 |
+
+---
+
+## 2. 워크스페이스 테스트 (Phase 1)
+
+### TC-WS-001: 워크스페이스 자동 생성
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| WS-001-1 | 첫 로그인 시 생성 | 신규 사용자 OAuth 성공 | workspaces 테이블에 레코드 생성 (name="내 워크스페이스", owner_id=user.id) |
+| WS-001-2 | 재로그인 시 중복 생성 방지 | 기존 사용자 재로그인 | 워크스페이스 추가 생성 없음 |
+| WS-001-3 | GET /api/workspaces | 인증된 사용자 | 200, 본인 워크스페이스 목록 반환 |
+
+---
+
+### TC-WS-002: 멤버 자동 등록
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| WS-002-1 | 첫 로그인 시 멤버 등록 | 신규 사용자 OAuth 성공 | members 테이블에 레코드 생성 (user_id=user.id, workspace_id=workspace.id, display_name=user.name) |
+| WS-002-2 | 중복 멤버 방지 | 기존 사용자 재로그인 | UNIQUE(user_id, workspace_id)로 중복 방지, 멤버 추가 생성 없음 |
+| WS-002-3 | GET /api/members Phase 1 | 인증된 사용자 | 200, 본인만 포함된 멤버 배열 |
+
+---
+
+### TC-WS-003: 멤버 API Phase 1 제한
+
+| ID | 시나리오 | 조건 | 기대 결과 |
+|----|----------|------|-----------|
+| WS-003-1 | POST /api/members 차단 | Phase 1 | 405, METHOD_NOT_ALLOWED |
+| WS-003-2 | PATCH /api/members/:id 차단 | Phase 1 | 405, METHOD_NOT_ALLOWED |
+| WS-003-3 | DELETE /api/members/:id 차단 | Phase 1 | 405, METHOD_NOT_ALLOWED |
+
+---
+
+## 3. API 테스트 (백엔드)
 
 ### TC-API-001: POST /api/tickets — 티켓 생성
 
@@ -39,6 +117,8 @@
 | 001-14 | 응답에 checklist 포함 | checklist 2개 전송 | 201, 응답에 checklist 배열 포함 |
 | 001-15 | 응답에 labels 포함 | labelIds 전송 | 201, 응답에 labels 배열 포함 |
 | 001-16 | 응답에 assignee 포함 | assigneeId 전송 | 201, 응답에 assignee 객체 포함 |
+| 001-17 | 명시적 status 지정 | `{ title: "ok", type: "TASK", status: "TODO" }` | 201, status=TODO |
+| 001-18 | 잘못된 status 값 | `{ title: "ok", type: "TASK", status: "PENDING" }` | 400, VALIDATION_ERROR |
 
 ---
 
@@ -177,22 +257,19 @@
 
 ### TC-API-010: 멤버 API
 
+**Phase 1**: GET만 허용 (자동 생성된 본인만 조회). POST/PATCH/DELETE → 405 (Phase 4에서 활성화)
+
 | ID | 엔드포인트 | 시나리오 | 입력 | 기대 결과 |
 |----|-----------|----------|------|-----------|
-| 010-1 | GET /api/members | 전체 목록 조회 | — | 200, members 배열 |
-| 010-2 | POST /api/members | 멤버 등록 | `{ name: "홍길동", color: "#7EB4A2" }` | 201, 생성된 멤버 |
-| 010-3 | POST | 이름 누락 | `{ color: "#fff" }` | 400, VALIDATION_ERROR |
-| 010-4 | POST | 50자 초과 이름 | name 51자 | 400, VALIDATION_ERROR |
-| 010-5 | POST | 잘못된 HEX 색상 | `{ name: "x", color: "blue" }` | 400, VALIDATION_ERROR |
-| 010-6 | PATCH /api/members/:id | 이름 수정 | `{ name: "홍길순" }` | 200, 수정된 멤버 |
-| 010-7 | PATCH | 없는 멤버 | 존재하지 않는 id | 404, MEMBER_NOT_FOUND |
-| 010-8 | DELETE /api/members/:id | 멤버 삭제 | 유효한 id | 204 |
-| 010-9 | DELETE | 티켓 assigneeId=null 처리 | 담당자가 배정된 멤버 삭제 | 해당 티켓의 assigneeId = null |
-| 010-10 | DELETE | 없는 멤버 | 존재하지 않는 id | 404, MEMBER_NOT_FOUND |
+| 010-1 | GET /api/members | 본인 멤버 조회 | — | 200, 세션 사용자의 워크스페이스 멤버 배열 (Phase 1: 본인만) |
+| 010-2 | POST /api/members | Phase 1 차단 | `{ displayName: "홍길동" }` | 405, METHOD_NOT_ALLOWED |
+| 010-3 | PATCH /api/members/:id | Phase 1 차단 | `{ displayName: "홍길순" }` | 405, METHOD_NOT_ALLOWED |
+| 010-4 | DELETE /api/members/:id | Phase 1 차단 | 유효한 id | 405, METHOD_NOT_ALLOWED |
+| 010-5 | GET /api/members | 미인증 | 세션 없음 | 401, UNAUTHORIZED |
 
 ---
 
-## 2. 컴포넌트 테스트 (프론트엔드)
+## 4. 컴포넌트 테스트 (프론트엔드)
 
 ### TC-COMP-001: TicketCard
 
@@ -252,7 +329,7 @@
 | C004-10 | 라벨 5개 초과 방지 | 5개 선택 후 추가 시도 시 차단 |
 | C004-11 | TASK 타입 시 캐스케이딩 | Goal→Story→Feature 3단계 셀렉트 표시 |
 | C004-12 | GOAL 타입 시 상위 이슈 없음 | 상위 카테고리 섹션 비표시 |
-| C004-13 | 담당자 셀렉트 | 멤버 목록 + 미배정 옵션 표시 |
+| C004-13 | 담당자 (Phase 1) | 읽기 전용 (세션 사용자 자동 입력), 미배정 버튼만 표시 |
 | C004-14 | 취소 | 폼 초기화 + onCancel 호출 |
 
 ---
@@ -323,7 +400,7 @@
 
 ---
 
-## 3. 통합 테스트
+## 5. 통합 테스트
 
 ### TC-INT-001: 드래그앤드롭 + API 연동
 
@@ -363,9 +440,11 @@
 
 ---
 
-## 4. 테스트 우선순위
+## 6. 테스트 우선순위
 
 ### Phase 1 (핵심 — 즉시 구현)
+- TC-AUTH-001~003 (인증, 미인증 차단, 데이터 격리)
+- TC-WS-001~003 (워크스페이스 자동 생성, 멤버 자동 등록, Phase 1 제한)
 - TC-API-001~006 (티켓 기본 CRUD + 리오더)
 - TC-COMP-001, TC-COMP-002, TC-COMP-003 (카드, 칼럼, 보드 렌더링)
 
@@ -382,16 +461,25 @@
 
 ---
 
-## 5. Phase 2 (SaaS) 추가 예정 테스트
+## 7. Phase 2 (SaaS) 추가 예정 테스트
+
+> TC-AUTH 인증 테스트는 Phase 1으로 이동 완료 (§1 참조)
 
 | 케이스 | 설명 |
 |--------|------|
-| TC-AUTH-001 | Google OAuth 로그인/로그아웃 |
-| TC-AUTH-002 | 미인증 API 접근 → 401 |
-| TC-AUTH-003 | 사용자별 데이터 격리 확인 |
 | TC-NOTIF-001 | Slack Webhook 연동 테스트 메시지 발송 |
 | TC-NOTIF-002 | Telegram Bot 연동 테스트 |
 | TC-NOTIF-003 | D-1 알림 스케줄러 트리거 |
 | TC-SEARCH-001 | 키워드 검색 (ILIKE) |
 | TC-SEARCH-002 | 다중 조건 AND 필터링 |
 | TC-COMMENT-001 | 댓글 CRUD |
+| TC-MEMBER-CRUD | 멤버 POST/PATCH/DELETE 활성화 (Phase 4) |
+
+---
+
+## 변경 이력
+
+| 버전 | 날짜 | 변경 내용 |
+|------|------|----------|
+| 0.3.0 | 2026-02-22 | 인증+워크스페이스 반영: TC-AUTH(§1), TC-WS(§2) 추가, TC-API-010 Phase 1 제한 반영, Phase 2 TC-AUTH 제거, 테스트 우선순위에 인증/워크스페이스 추가 |
+| 0.2.0 | 2026-02-21 | 초기 작성 — API(10), 컴포넌트(9), 통합(3) 테스트 |

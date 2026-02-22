@@ -1,73 +1,95 @@
 # Tika - 데이터 모델 명세 (DATA_MODEL.md)
 
-> 버전: 0.2.0 (Phase 1 Full)
+> 버전: 2.0 (Phase 1 Full)
 > ORM: Drizzle ORM + Vercel Postgres
-> 최종 수정일: 2026-02-21
+> 최종 수정일: 2026-02-22
 
 ---
 
 ## 1. ERD (Entity Relationship Diagram)
 
-### Phase 1: 6개 테이블
+### Phase 1: 8개 테이블
 
 ```
-tickets ──< checklist_items   (1:N, ticket_id FK CASCADE)
-tickets >──< labels           (M:N, ticket_labels 연결 테이블, 양쪽 CASCADE)
-tickets >── issues            (N:1, issue_id FK SET NULL)
-tickets >── members           (N:1, assignee_id FK SET NULL)
-issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
+users ──< workspaces         (1:N, owner_id FK)
+users ──< members            (1:N, user_id FK)
+workspaces ──< tickets       (1:N, workspace_id FK)
+workspaces ──< labels        (1:N, workspace_id FK)
+workspaces ──< issues        (1:N, workspace_id FK)
+workspaces ──< members       (1:N, workspace_id FK)
+tickets ──< checklist_items  (1:N, ticket_id FK CASCADE)
+tickets >──< labels          (M:N, ticket_labels 연결 테이블, 양쪽 CASCADE)
+tickets >── issues           (N:1, issue_id FK SET NULL)
+tickets >── members          (N:1, assignee_id FK SET NULL)
+issues ──< issues            (self-referencing N:1, parent_id FK SET NULL)
+members: UNIQUE(user_id, workspace_id)
+labels: UNIQUE(workspace_id, name)
 ```
 
 ```
-┌──────────────────────────────────────────────────┐
-│                    tickets                       │
-├──────────────────────────────────────────────────┤
-│ id            SERIAL        PK                   │
-│ title         VARCHAR(200)  NOT NULL             │
-│ type          VARCHAR(10)   NOT NULL             │
-│ description   TEXT          NULLABLE             │
-│ status        VARCHAR(20)   NOT NULL  'BACKLOG'  │
-│ priority      VARCHAR(10)   NOT NULL  'MEDIUM'   │
-│ position      INTEGER       NOT NULL  0          │
-│ due_date      DATE          NULLABLE             │
-│ completed_at  TIMESTAMPTZ   NULLABLE             │
-│ issue_id      INTEGER       NULLABLE  FK→issues  │
-│ assignee_id   INTEGER       NULLABLE  FK→members │
-│ created_at    TIMESTAMPTZ   NOT NULL  now()      │
-│ updated_at    TIMESTAMPTZ   NOT NULL  now()      │
-└──────────────────────────────────────────────────┘
-        │                   │              │
-        │ 1:N               │ N:1          │ N:1
-        ▼                   ▼              ▼
-┌───────────────┐   ┌───────────────┐  ┌────────────────┐
-│checklist_items│   │    issues     │  │    members     │
-├───────────────┤   ├───────────────┤  ├────────────────┤
-│ id        PK  │   │ id        PK  │  │ id         PK  │
-│ ticket_id FK  │   │ name          │  │ name           │
-│ text          │   │ type          │  │ color          │
-│ is_completed  │   │ parent_id FK  │  │ created_at     │
-│ position      │   │ created_at    │  └────────────────┘
-│ created_at    │   └───────────────┘
-└───────────────┘        │ self-ref
-                         └─────────┘
-
-        tickets >──< labels (M:N)
-        ┌────────────────────┐
-        │   ticket_labels    │
-        ├────────────────────┤
-        │ ticket_id  FK (PK) │
-        │ label_id   FK (PK) │
-        └────────────────────┘
-                │
-                ▼
-        ┌───────────────┐
-        │    labels     │
-        ├───────────────┤
-        │ id        PK  │
-        │ name  UNIQUE  │
-        │ color         │
-        │ created_at    │
-        └───────────────┘
+┌─────────────────┐     ┌──────────────────────┐
+│     users       │     │    workspaces         │
+├─────────────────┤     ├──────────────────────┤
+│ id    TEXT  PK  │◄────│ owner_id  FK→users   │
+│ email UNIQUE    │     │ id        SERIAL PK  │
+│ name            │     │ name                 │
+│ avatar_url      │     │ created_at           │
+│ created_at      │     └──────────┬───────────┘
+└────────┬────────┘                │ 1:N
+         │ 1:N                     ▼
+         │          ┌──────────────────────────────────────────────────┐
+         │          │                    tickets                       │
+         │          ├──────────────────────────────────────────────────┤
+         │          │ id            SERIAL        PK                   │
+         │          │ workspace_id  INTEGER       NOT NULL FK→ws       │
+         │          │ title         VARCHAR(200)  NOT NULL             │
+         │          │ type          VARCHAR(10)   NOT NULL             │
+         │          │ description   TEXT          NULLABLE             │
+         │          │ status        VARCHAR(20)   NOT NULL  'BACKLOG'  │
+         │          │ priority      VARCHAR(10)   NOT NULL  'MEDIUM'   │
+         │          │ position      INTEGER       NOT NULL  0          │
+         │          │ due_date      DATE          NULLABLE             │
+         │          │ completed_at  TIMESTAMPTZ   NULLABLE             │
+         │          │ issue_id      INTEGER       NULLABLE  FK→issues  │
+         │          │ assignee_id   INTEGER       NULLABLE  FK→members │
+         │          │ created_at    TIMESTAMPTZ   NOT NULL  now()      │
+         │          │ updated_at    TIMESTAMPTZ   NOT NULL  now()      │
+         │          └──────────────────────────────────────────────────┘
+         │                  │                   │              │
+         │                  │ 1:N               │ N:1          │ N:1
+         │                  ▼                   ▼              ▼
+         │          ┌───────────────┐   ┌────────────────┐  ┌─────────────────────┐
+         │          │checklist_items│   │    issues       │  │      members        │
+         │          ├───────────────┤   ├────────────────┤  ├─────────────────────┤
+         │          │ id        PK  │   │ id         PK  │  │ id            PK    │
+         │          │ ticket_id FK  │   │ workspace_id FK│  │ user_id       FK→u  │◄── users
+         │          │ text          │   │ name           │  │ workspace_id  FK→ws │
+         │          │ is_completed  │   │ type           │  │ display_name        │
+         │          │ position      │   │ parent_id FK   │  │ color               │
+         │          │ created_at    │   │ created_at     │  │ created_at          │
+         │          └───────────────┘   └────────────────┘  └─────────────────────┘
+         │                                   │ self-ref       UNIQUE(user_id, ws_id)
+         │                                   └─────────┘
+         │
+         │          tickets >──< labels (M:N)
+         │          ┌────────────────────┐
+         │          │   ticket_labels    │
+         │          ├────────────────────┤
+         │          │ ticket_id  FK (PK) │
+         │          │ label_id   FK (PK) │
+         │          └────────────────────┘
+         │                  │
+         │                  ▼
+         │          ┌──────────────────┐
+         │          │     labels       │
+         │          ├──────────────────┤
+         │          │ id           PK  │
+         │          │ workspace_id FK  │
+         │          │ name             │
+         │          │ color            │
+         │          │ created_at       │
+         │          └──────────────────┘
+         │          UNIQUE(workspace_id, name)
 ```
 
 ---
@@ -79,6 +101,7 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
 | id | SERIAL | PK, auto-increment | — | 티켓 고유 식별자 |
+| workspace_id | INTEGER | NOT NULL, FK→workspaces(id) | — | 소속 워크스페이스 |
 | title | VARCHAR(200) | NOT NULL | — | 티켓 제목 (1~200자) |
 | type | VARCHAR(10) | NOT NULL | — | 티켓 타입 (GOAL/STORY/FEATURE/TASK) |
 | description | TEXT | NULLABLE | NULL | 티켓 상세 설명 (최대 1,000자) |
@@ -102,7 +125,7 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 
 | 인덱스명 | 칼럼 | 용도 |
 |---------|------|------|
-| idx_tickets_status_position | (status, position) | 칼럼별 정렬 조회 (보드 렌더링) |
+| idx_tickets_workspace_status_position | (workspace_id, status, position) | 워크스페이스+칼럼별 정렬 조회 (보드 렌더링) |
 | idx_tickets_due_date | (due_date) | 마감일 기준 조회 |
 | idx_tickets_issue_id | (issue_id) | 이슈별 티켓 조회 |
 | idx_tickets_assignee_id | (assignee_id) | 담당자별 티켓 조회 |
@@ -135,11 +158,12 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
 | id | SERIAL | PK, auto-increment | — | 라벨 고유 식별자 |
-| name | VARCHAR(20) | NOT NULL, UNIQUE | — | 라벨 이름 (1~20자) |
-| color | VARCHAR(7) | NOT NULL | — | HEX 색상 코드 (#RRGGBB) |
+| workspace_id | INTEGER | NOT NULL, FK→workspaces(id) | — | 소속 워크스페이스 |
+| name | VARCHAR(20) | NOT NULL | — | 라벨 이름 (1~20자) |
+| color | VARCHAR(7) | NOT NULL | '#3B82F6' | HEX 색상 코드 (#RRGGBB) |
 | created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
 
-**제약**: 전체 최대 20개
+**제약**: 워크스페이스당 최대 20개. `UNIQUE(workspace_id, name)`
 
 ---
 
@@ -166,6 +190,7 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
 | id | SERIAL | PK, auto-increment | — | 이슈 고유 식별자 |
+| workspace_id | INTEGER | NOT NULL, FK→workspaces(id) | — | 소속 워크스페이스 |
 | name | VARCHAR(100) | NOT NULL | — | 이슈 이름 (1~100자) |
 | type | VARCHAR(10) | NOT NULL | — | 이슈 타입 (GOAL/STORY/FEATURE/TASK) |
 | parent_id | INTEGER | NULLABLE, FK→issues(id) ON DELETE SET NULL | NULL | 상위 이슈 (self-referencing) |
@@ -191,8 +216,35 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
 | id | SERIAL | PK, auto-increment | — | 멤버 고유 식별자 |
-| name | VARCHAR(50) | NOT NULL | — | 멤버 이름 (1~50자) |
-| color | VARCHAR(7) | NOT NULL | — | 아바타 배경 HEX 색상 (#RRGGBB) |
+| user_id | TEXT | NOT NULL, FK→users(id) | — | 연결된 사용자 |
+| workspace_id | INTEGER | NOT NULL, FK→workspaces(id) | — | 소속 워크스페이스 |
+| display_name | VARCHAR(50) | NOT NULL | — | 표시 이름 (1~50자) |
+| color | VARCHAR(7) | NOT NULL | '#7EB4A2' | 아바타 배경 HEX 색상 (#RRGGBB) |
+| created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
+
+**제약**: `UNIQUE(user_id, workspace_id)` — 워크스페이스당 사용자 1명의 멤버 레코드
+
+---
+
+### 2.7 users
+
+| 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
+|------|------|----------|--------|------|
+| id | TEXT | PK | — | OAuth provider ID |
+| email | VARCHAR(255) | NOT NULL, UNIQUE | — | 이메일 |
+| name | VARCHAR(100) | NOT NULL | — | 표시 이름 |
+| avatar_url | TEXT | NULLABLE | NULL | 프로필 이미지 URL |
+| created_at | TIMESTAMPTZ | NOT NULL | now() | 가입 시각 |
+
+---
+
+### 2.8 workspaces
+
+| 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
+|------|------|----------|--------|------|
+| id | SERIAL | PK, auto-increment | — | 워크스페이스 고유 식별자 |
+| name | VARCHAR(100) | NOT NULL | '내 워크스페이스' | 워크스페이스 이름 |
+| owner_id | TEXT | NOT NULL, FK→users(id) | — | 소유자 |
 | created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
 
 ---
@@ -200,7 +252,7 @@ issues ──< issues             (self-referencing N:1, parent_id FK SET NULL)
 ## 3. Drizzle 스키마 정의
 
 ```typescript
-// src/db/schema.ts
+// src/server/db/schema.ts
 import {
   pgTable,
   serial,
@@ -211,19 +263,56 @@ import {
   date,
   timestamp,
   primaryKey,
+  unique,
 } from 'drizzle-orm/pg-core';
 
-// --- members ---
-export const members = pgTable('members', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 50 }).notNull(),
-  color: varchar('color', { length: 7 }).notNull(),
+// --- users ---
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// --- workspaces ---
+export const workspaces = pgTable('workspaces', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().default('내 워크스페이스'),
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// --- members ---
+export const members = pgTable(
+  'members',
+  {
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    displayName: varchar('display_name', { length: 50 }).notNull(),
+    color: varchar('color', { length: 7 }).notNull().default('#7EB4A2'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    uniqueUserWorkspace: unique().on(table.userId, table.workspaceId),
+  }),
+);
 
 // --- issues ---
 export const issues = pgTable('issues', {
   id: serial('id').primaryKey(),
+  workspaceId: integer('workspace_id')
+    .notNull()
+    .references(() => workspaces.id),
   name: varchar('name', { length: 100 }).notNull(),
   type: varchar('type', { length: 10 }).notNull(),
   parentId: integer('parent_id').references(() => issues.id, { onDelete: 'set null' }),
@@ -233,6 +322,9 @@ export const issues = pgTable('issues', {
 // --- tickets ---
 export const tickets = pgTable('tickets', {
   id: serial('id').primaryKey(),
+  workspaceId: integer('workspace_id')
+    .notNull()
+    .references(() => workspaces.id),
   title: varchar('title', { length: 200 }).notNull(),
   type: varchar('type', { length: 10 }).notNull(),
   description: text('description'),
@@ -263,12 +355,23 @@ export const checklistItems = pgTable('checklist_items', {
 });
 
 // --- labels ---
-export const labels = pgTable('labels', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 20 }).notNull().unique(),
-  color: varchar('color', { length: 7 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+export const labels = pgTable(
+  'labels',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    name: varchar('name', { length: 20 }).notNull(),
+    color: varchar('color', { length: 7 }).notNull().default('#3B82F6'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    uniqueWorkspaceName: unique().on(table.workspaceId, table.name),
+  }),
+);
 
 // --- ticket_labels (M:N 연결 테이블) ---
 export const ticketLabels = pgTable(
@@ -292,7 +395,7 @@ export const ticketLabels = pgTable(
 ## 4. TypeScript 타입 정의
 
 ```typescript
-// src/types/index.ts
+// src/shared/types/index.ts
 
 // --- 티켓 상태 ---
 export const TICKET_STATUS = {
@@ -362,6 +465,7 @@ export interface ChecklistItem {
 // --- 라벨 ---
 export interface Label {
   id: number;
+  workspaceId: number;
   name: string;
   color: string;  // #RRGGBB
   createdAt: Date;
@@ -370,6 +474,7 @@ export interface Label {
 // --- 이슈 ---
 export interface Issue {
   id: number;
+  workspaceId: number;
   name: string;
   type: IssueType;
   parentId: number | null;
@@ -386,17 +491,37 @@ export interface IssueWithBreadcrumb extends Issue {
   breadcrumb: IssueBreadcrumbItem[];
 }
 
+// --- 사용자 ---
+export interface User {
+  id: string;                // OAuth provider ID
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+  createdAt: Date;
+}
+
+// --- 워크스페이스 ---
+export interface Workspace {
+  id: number;
+  name: string;
+  ownerId: string;           // FK → User.id
+  createdAt: Date;
+}
+
 // --- 멤버 ---
 export interface Member {
   id: number;
-  name: string;
-  color: string;  // #RRGGBB (아바타 배경색)
+  userId: string;            // FK → User.id
+  workspaceId: number;       // FK → Workspace.id
+  displayName: string;
+  color: string;             // #RRGGBB (아바타 배경색)
   createdAt: Date;
 }
 
 // --- 티켓 기본 ---
 export interface Ticket {
   id: number;
+  workspaceId: number;
   title: string;
   type: TicketType;
   description: string | null;
@@ -423,7 +548,8 @@ export interface TicketWithMeta extends Ticket {
 // --- API 요청 타입 ---
 export interface CreateTicketInput {
   title: string;
-  type: TicketType;
+  type?: TicketType;            // 기본값: TASK
+  status?: TicketStatus;        // 기본값: BACKLOG
   description?: string;
   priority?: TicketPriority;
   dueDate?: string;             // YYYY-MM-DD
@@ -506,6 +632,25 @@ function isOverdue(ticket: Ticket): boolean {
 
 - 멤버 삭제 시 해당 멤버가 배정된 모든 티켓의 assignee_id = null (SET NULL)
 
+### 5.8 워크스페이스 데이터 격리
+
+- 모든 데이터 조회/생성은 현재 사용자의 워크스페이스로 스코핑
+- tickets, labels, issues, members 쿼리 시 `WHERE workspace_id = ?` 필수
+- 다른 사용자의 워크스페이스 데이터 접근 불가
+
+### 5.9 자동 멤버 생성 (Phase 1)
+
+- 최초 로그인 시: users 생성 → workspaces 생성 → members 자동 생성
+- members.display_name = users.name (초기값)
+- Phase 1에서는 수동 멤버 생성 불가 (로그인 시 자동 생성만)
+- Phase 4에서 팀 멤버 초대로 확장
+
+### 5.10 담당자 배정 규칙 (Phase 1)
+
+- Phase 1: 담당자는 본인(로그인 사용자의 member)만 배정 가능
+- 미배정(null) 허용
+- 다른 멤버 선택 불가 (Phase 4에서 확장)
+
 ---
 
 ## 6. 시드 데이터
@@ -513,38 +658,47 @@ function isOverdue(ticket: Ticket): boolean {
 개발 및 데모용 초기 데이터 예시:
 
 ```typescript
-// src/db/seed.ts
+// src/server/db/seed.ts
 
-// --- 멤버 시드 ---
+// --- 사용자 시드 ---
+const seedUsers = [
+  { id: 'google-uid-001', email: 'hong@example.com', name: '홍길동', avatarUrl: null },
+];
+
+// --- 워크스페이스 시드 ---
+const seedWorkspaces = [
+  { name: '내 워크스페이스', ownerId: 'google-uid-001' },
+];
+
+// --- 멤버 시드 (로그인 시 자동 생성) ---
 const seedMembers = [
-  { name: '홍길동', color: '#7EB4A2' },
-  { name: '김민수', color: '#60A5FA' },
-  { name: '이서연', color: '#A78BFA' },
+  { userId: 'google-uid-001', workspaceId: 1, displayName: '홍길동', color: '#7EB4A2' },
 ];
 
 // --- 라벨 시드 ---
 const seedLabels = [
-  { name: 'Frontend', color: '#2b7fff' },
-  { name: 'Backend', color: '#00c950' },
-  { name: 'Design', color: '#ad46ff' },
-  { name: 'Bug', color: '#fb2c36' },
-  { name: 'Docs', color: '#ffac6d' },
-  { name: 'Infra', color: '#615fff' },
+  { workspaceId: 1, name: 'Frontend', color: '#2b7fff' },
+  { workspaceId: 1, name: 'Backend', color: '#00c950' },
+  { workspaceId: 1, name: 'Design', color: '#ad46ff' },
+  { workspaceId: 1, name: 'Bug', color: '#fb2c36' },
+  { workspaceId: 1, name: 'Docs', color: '#ffac6d' },
+  { workspaceId: 1, name: 'Infra', color: '#615fff' },
 ];
 
 // --- 이슈 시드 ---
 const seedIssues = [
-  { name: 'MVP 출시', type: 'GOAL', parentId: null },
-  { name: '사용자 인증 시스템', type: 'STORY', parentId: 1 },
-  { name: '칸반 보드', type: 'STORY', parentId: 1 },
-  { name: '인증 API', type: 'FEATURE', parentId: 2 },
-  { name: '드래그앤드롭', type: 'FEATURE', parentId: 3 },
-  { name: 'JWT 토큰 구현', type: 'TASK', parentId: 4 },
+  { workspaceId: 1, name: 'MVP 출시', type: 'GOAL', parentId: null },
+  { workspaceId: 1, name: '사용자 인증 시스템', type: 'STORY', parentId: 1 },
+  { workspaceId: 1, name: '칸반 보드', type: 'STORY', parentId: 1 },
+  { workspaceId: 1, name: '인증 API', type: 'FEATURE', parentId: 2 },
+  { workspaceId: 1, name: '드래그앤드롭', type: 'FEATURE', parentId: 3 },
+  { workspaceId: 1, name: 'JWT 토큰 구현', type: 'TASK', parentId: 4 },
 ];
 
 // --- 티켓 시드 ---
 const seedTickets = [
   {
+    workspaceId: 1,
     title: '프로젝트 요구사항 정리',
     type: 'TASK',
     status: 'DONE',
@@ -553,31 +707,35 @@ const seedTickets = [
     assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: 'UI 와이어프레임 작성',
     type: 'TASK',
     status: 'DONE',
     priority: 'MEDIUM',
     position: 1024,
-    assigneeId: 3,
+    assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: 'API 설계 문서 작성',
     type: 'FEATURE',
     status: 'IN_PROGRESS',
     priority: 'HIGH',
     position: 0,
     issueId: 4,
-    assigneeId: 2,
+    assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: 'DB 스키마 설계',
     type: 'TASK',
     status: 'IN_PROGRESS',
     priority: 'MEDIUM',
     position: 1024,
-    assigneeId: 2,
+    assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: '칸반 보드 UI 구현',
     type: 'FEATURE',
     status: 'TODO',
@@ -587,6 +745,7 @@ const seedTickets = [
     assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: '드래그앤드롭 기능 구현',
     type: 'TASK',
     status: 'TODO',
@@ -596,6 +755,7 @@ const seedTickets = [
     assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: '알림 기능 조사',
     type: 'STORY',
     status: 'BACKLOG',
@@ -603,20 +763,21 @@ const seedTickets = [
     position: 0,
   },
   {
+    workspaceId: 1,
     title: '성능 테스트 계획',
     type: 'TASK',
     status: 'BACKLOG',
     priority: 'MEDIUM',
     position: 1024,
-    assigneeId: 2,
+    assigneeId: 1,
   },
   {
+    workspaceId: 1,
     title: 'CI/CD 파이프라인 구축',
     type: 'FEATURE',
     status: 'BACKLOG',
     priority: 'LOW',
     position: 2048,
-    assigneeId: 3,
   },
 ];
 ```

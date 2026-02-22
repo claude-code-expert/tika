@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Button 컴포넌트 — Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      width: 28px;
+      height: 28px;
+      background: #629584;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .nav-brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+    .nav-sep { color: var(--border-medium); font-size: 14px; margin: 0 2px; }
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--accent-primary); }
+    .nav-current {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .nav-right {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* MAIN */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .page-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* SECTION */
+    .demo-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .demo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      border: 1px solid transparent;
+      border-radius: var(--radius-button);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+      line-height: 1;
+      text-decoration: none;
+    }
+
+    /* Variants */
+    .btn-primary {
+      background: #629584;
+      color: #fff;
+      border-color: #629584;
+    }
+    .btn-primary:hover { background: #527D6F; border-color: #527D6F; }
+
+    .btn-secondary {
+      background: #F8F9FB;
+      color: #5A6B7F;
+      border-color: #DFE1E6;
+    }
+    .btn-secondary:hover { border-color: #C4C9D1; }
+
+    .btn-danger {
+      background: #FEF2F2;
+      color: #DC2626;
+      border-color: #FECACA;
+    }
+    .btn-danger:hover { background: #FEE2E2; }
+
+    .btn-ghost {
+      background: transparent;
+      color: #5A6B7F;
+      border-color: transparent;
+    }
+    .btn-ghost:hover { background: #F1F3F6; }
+
+    /* Sizes */
+    .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btn-md { height: 34px; padding: 0 14px; font-size: 13px; }
+    .btn-lg { height: 40px; padding: 0 18px; font-size: 14px; }
+
+    /* States */
+    .btn-loading {
+      opacity: 0.8;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .btn-disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .btn-active {
+      background: #527D6F;
+      border-color: #527D6F;
+      color: #fff;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* INTERACTIVE DEMO */
+    .interactive-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .control-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .radio-group, .check-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .radio-group label, .check-group label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .radio-group input, .check-group input {
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+    }
+    .preview-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-app);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-card);
+      padding: 32px;
+      min-height: 100px;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">T</div>
+  <span class="nav-brand">Tika</span>
+  <span class="nav-sep">/</span>
+  <a href="index.html" class="nav-back">← 컴포넌트</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-current">Button</span>
+  <span class="nav-right">Button 컴포넌트</span>
+</nav>
+
+<main>
+  <div class="page-title">Button</div>
+  <div class="page-desc">4가지 variant, 3가지 크기, 다양한 상태를 지원하는 범용 버튼 컴포넌트</div>
+
+  <!-- SECTION 1: VARIANTS -->
+  <div class="demo-section">
+    <div class="section-title">Variants</div>
+    <div class="demo-row">
+      <button class="btn btn-md btn-primary">Primary</button>
+      <button class="btn btn-md btn-secondary">Secondary</button>
+      <button class="btn btn-md btn-danger">Danger</button>
+      <button class="btn btn-md btn-ghost">Ghost</button>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SIZES -->
+  <div class="demo-section">
+    <div class="section-title">Sizes</div>
+    <div class="demo-row">
+      <button class="btn btn-sm btn-primary">Small</button>
+      <button class="btn btn-md btn-primary">Medium (기본)</button>
+      <button class="btn btn-lg btn-primary">Large</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: STATES -->
+  <div class="demo-section">
+    <div class="section-title">States</div>
+    <div class="demo-row">
+      <button class="btn btn-md btn-primary">기본 (Default)</button>
+      <button class="btn btn-md btn-primary btn-loading">
+        <span class="spinner"></span>
+        저장 중...
+      </button>
+      <button class="btn btn-md btn-primary btn-disabled">비활성화 (Disabled)</button>
+      <button class="btn btn-md btn-active">Active / Pressed</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: WITH ICONS -->
+  <div class="demo-section">
+    <div class="section-title">With Icons</div>
+    <div class="demo-row">
+      <button class="btn btn-md btn-primary">+ 새 업무</button>
+      <button class="btn btn-md btn-danger">🗑 삭제</button>
+      <button class="btn btn-md btn-ghost">← 돌아가기</button>
+      <button class="btn btn-md btn-secondary">저장 ↗</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5: INTERACTIVE DEMO -->
+  <div class="demo-section">
+    <div class="section-title">Interactive Demo</div>
+    <div class="interactive-area">
+      <div class="control-group">
+        <div>
+          <div class="control-label">Variant</div>
+          <div class="radio-group">
+            <label><input type="radio" name="variant" value="primary" checked /> Primary</label>
+            <label><input type="radio" name="variant" value="secondary" /> Secondary</label>
+            <label><input type="radio" name="variant" value="danger" /> Danger</label>
+            <label><input type="radio" name="variant" value="ghost" /> Ghost</label>
+          </div>
+        </div>
+        <div>
+          <div class="control-label">Size</div>
+          <div class="radio-group">
+            <label><input type="radio" name="size" value="sm" /> Small</label>
+            <label><input type="radio" name="size" value="md" checked /> Medium</label>
+            <label><input type="radio" name="size" value="lg" /> Large</label>
+          </div>
+        </div>
+        <div>
+          <div class="control-label">States</div>
+          <div class="check-group">
+            <label><input type="checkbox" id="chk-loading" /> 로딩 상태</label>
+            <label><input type="checkbox" id="chk-disabled" /> 비활성화</label>
+          </div>
+        </div>
+      </div>
+      <div class="preview-area">
+        <button class="btn btn-md btn-primary" id="preview-btn">미리보기</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Tika Demo</footer>
+
+<script>
+  function updatePreview() {
+    const btn = document.getElementById('preview-btn');
+    const variant = document.querySelector('input[name="variant"]:checked').value;
+    const size = document.querySelector('input[name="size"]:checked').value;
+    const isLoading = document.getElementById('chk-loading').checked;
+    const isDisabled = document.getElementById('chk-disabled').checked;
+
+    btn.className = ['btn', 'btn-' + size, 'btn-' + variant].join(' ');
+
+    if (isLoading) {
+      btn.classList.add('btn-loading');
+      btn.innerHTML = '<span class="spinner"></span> 저장 중...';
+    } else if (isDisabled) {
+      btn.classList.add('btn-disabled');
+      btn.textContent = '비활성화';
+    } else {
+      btn.textContent = '미리보기';
+    }
+  }
+
+  document.querySelectorAll('input[name="variant"], input[name="size"], #chk-loading, #chk-disabled')
+    .forEach(el => el.addEventListener('change', updatePreview));
+</script>
+</body>
+</html>

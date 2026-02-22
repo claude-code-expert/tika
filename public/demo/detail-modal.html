@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-003 — 티켓 상세 모달 | Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-header:#FFFFFF;--bg-sidebar:#F1F3F6;--bg-card:#FFFFFF;--bg-column:#F4F5F7;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;--radius-tag:4px;
+      --shadow-dropdown:0 8px 24px rgba(0,0,0,0.12);
+      --sp-xs:4px;--sp-sm:8px;--sp-md:12px;--sp-lg:16px;--sp-xl:24px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+    .ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle}
+    .ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(9,30,66,0.54);z-index:300;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+    .modal{background:#fff;border-radius:var(--radius-column);box-shadow:0 16px 48px rgba(0,0,0,0.2);width:100%;position:relative;animation:modalIn .2s ease}
+    @keyframes modalIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+    .modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:var(--radius-button);color:var(--text-muted);cursor:pointer;transition:all .15s;z-index:1}
+    .modal-close:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .modal-detail{max-width:720px}
+
+    /* ══ Detail Top ══ */
+    .detail-top{padding:24px 24px 16px;border-bottom:1px solid var(--border-light)}
+    .dt-tag-editor{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+    .dt-tag{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:var(--radius-tag);font-size:11px;font-weight:var(--fw-medium);color:#fff}
+    .dt-tag-rm{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;border:none;background:rgba(0,0,0,0.2);border-radius:50%;color:inherit;cursor:pointer;font-size:10px;line-height:1;padding:0;transition:background .15s}
+    .dt-tag-rm:hover{background:rgba(0,0,0,0.4)}
+    .dt-tag-add{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:1px dashed var(--border-medium);border-radius:var(--radius-tag);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;font-size:14px}
+    .dt-tag-add:hover{border-color:var(--accent-primary);color:var(--accent-primary);background:var(--accent-light)}
+    .dt-tag-picker{display:none;flex-wrap:wrap;gap:4px;margin-bottom:12px;padding:10px;background:var(--bg-sidebar);border-radius:var(--radius-card)}
+    .dt-tag-picker.open{display:flex}
+    .dt-tag-opt{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-size:11px;font-weight:var(--fw-medium);color:#fff;cursor:pointer;opacity:.7;transition:opacity .15s;border:none}
+    .dt-tag-opt:hover{opacity:1}
+    .dt-tag-opt.used{opacity:.3;pointer-events:none}
+
+    .detail-title{font-family:var(--font-display);font-size:20px;font-weight:var(--fw-bold);line-height:1.4;color:var(--text-primary);margin-bottom:8px}
+
+    /* Category breadcrumb */
+    .cat-breadcrumb{display:flex;align-items:center;gap:4px;font-size:var(--text-body2);color:var(--text-muted);margin-bottom:12px;flex-wrap:wrap}
+    .cat-crumb{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:var(--radius-tag);background:var(--bg-sidebar);color:var(--text-secondary);font-size:11px;font-weight:var(--fw-medium);cursor:default}
+    .cat-crumb .cat-type{font-size:9px;font-weight:var(--fw-semibold);text-transform:uppercase;letter-spacing:.5px;padding:1px 4px;border-radius:3px;color:#fff;margin-right:2px}
+    .cat-type-goal{background:#8B5CF6}
+    .cat-type-story{background:#3B82F6}
+    .cat-type-feature{background:#10B981}
+    .cat-type-task{background:#F59E0B}
+    .cat-sep{color:var(--text-muted);font-size:10px}
+    .cat-edit-btn{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:1px dashed var(--border-medium);border-radius:var(--radius-tag);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;margin-left:2px}
+    .cat-edit-btn:hover{border-color:var(--accent-primary);color:var(--accent-primary);background:var(--accent-light)}
+
+    /* Meta row */
+    .detail-meta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+    .detail-meta-item{display:flex;align-items:center;gap:6px;font-size:var(--text-body2);color:var(--text-secondary)}
+    .detail-meta-label{color:var(--text-muted);font-size:var(--text-small);min-width:50px}
+    .b{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 7px;border-radius:var(--radius-tag);font-size:11px;font-weight:var(--fw-medium);line-height:1;white-space:nowrap}
+    .b svg{flex-shrink:0}
+    .b-high{background:#FFEDD5;color:#C2410C}
+    .b-soon{background:#FEF3C7;color:#92400E}
+    .b-due{background:#F3F4F6;color:var(--text-muted)}
+    .b-status-todo{background:#DBEAFE;color:#1E40AF}
+    .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:var(--fw-semibold);flex-shrink:0}
+
+    /* ══ Detail Body ══ */
+    .detail-body{padding:20px 24px}
+    .detail-section{margin-bottom:20px}
+    .detail-section:last-child{margin-bottom:0}
+    .detail-section-title{font-size:var(--text-body2);font-weight:var(--fw-semibold);color:var(--text-secondary);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .detail-desc{font-size:var(--text-body1);color:var(--text-primary);line-height:1.7;background:var(--bg-sidebar);padding:12px 16px;border-radius:var(--radius-card)}
+    .detail-checklist{list-style:none}
+    .detail-checklist li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:var(--text-body2)}
+    .detail-checklist li:last-child{border-bottom:none}
+    .detail-checklist input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent-primary);cursor:pointer}
+    .detail-checklist .done-item{text-decoration:line-through;color:var(--text-muted)}
+    .cl-rm{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-muted);cursor:pointer;border-radius:50%;font-size:14px;transition:all .15s;flex-shrink:0;margin-left:auto}
+    .cl-rm:hover{background:#FEE2E2;color:#DC2626}
+    .cl-builder-add{display:flex;align-items:center;gap:6px;margin-top:6px}
+    .cl-builder-input{flex:1;height:32px;padding:0 10px;border:1px dashed var(--border-medium);border-radius:var(--radius-button);font-family:var(--font-body);font-size:13px;outline:none;background:transparent;color:var(--text-primary)}
+    .cl-builder-input:focus{border-style:solid;border-color:var(--accent-primary);background:#fff;box-shadow:0 0 0 2px var(--accent-light)}
+    .cl-builder-input::placeholder{color:var(--text-muted)}
+    .tag-creator-btn{height:28px;padding:0 10px;border:none;border-radius:var(--radius-tag);background:var(--accent-primary);color:#fff;font-size:11px;font-weight:var(--fw-medium);cursor:pointer;white-space:nowrap;transition:background .15s}
+    .tag-creator-btn:hover{background:var(--accent-primary-hover)}
+
+    /* Activity */
+    .detail-activity{display:flex;flex-direction:column;gap:12px}
+    .activity-item{display:flex;gap:10px;font-size:var(--text-body2)}
+    .activity-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:var(--fw-semibold);flex-shrink:0}
+    .activity-content{flex:1}
+    .activity-name{font-weight:var(--fw-medium);color:var(--text-primary)}
+    .activity-time{font-size:var(--text-small);color:var(--text-muted);margin-top:2px}
+
+    /* Comment */
+    .comment-box{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-light)}
+    .comment-input-wrap{flex:1;display:flex;flex-direction:column;gap:8px}
+    .comment-input{width:100%;min-height:40px;max-height:120px;padding:8px 12px;border:1px solid var(--border-light);border-radius:var(--radius-button);font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-primary);outline:none;resize:vertical;transition:border-color .15s,box-shadow .15s}
+    .comment-input:focus{border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-light)}
+    .comment-input::placeholder{color:var(--text-muted)}
+    .comment-actions{display:flex;justify-content:flex-end}
+    .comment-submit{height:30px;padding:0 14px;border:none;border-radius:var(--radius-button);background:var(--accent-primary);color:#fff;font-family:var(--font-body);font-size:var(--text-body2);font-weight:var(--fw-medium);cursor:pointer;transition:background .15s}
+    .comment-submit:hover{background:var(--accent-primary-hover)}
+    .comment-submit:disabled{opacity:.4;cursor:default}
+
+    /* ══ Detail Footer ══ */
+    .detail-footer{padding:16px 24px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center}
+    .detail-actions{display:flex;gap:8px}
+    .btn-icon-text{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;border:1px solid var(--border-light);border-radius:var(--radius-button);background:#fff;font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-secondary);cursor:pointer;transition:all .15s}
+    .btn-icon-text:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .btn-icon-text.danger{color:#DC2626;border-color:#FECACA}
+    .btn-icon-text.danger:hover{background:#FEF2F2}
+
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+  </style>
+</head>
+<body>
+<div class="demo-info">SCR-003 · 티켓 상세 모달 데모 — 라벨 편집, 브레드크럼, 체크리스트, 활동 내역, 댓글</div>
+
+<div class="modal-overlay" style="display:flex">
+  <div class="modal modal-detail">
+    <button class="modal-close" onclick="alert('닫기')">
+      <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+    </button>
+
+    <!-- ══ TOP ══ -->
+    <div class="detail-top">
+      <!-- Tag Editor -->
+      <div class="dt-tag-editor" id="dtTags">
+        <span class="dt-tag" style="background:#00c950">Backend <button class="dt-tag-rm" onclick="this.parentElement.remove()">×</button></span>
+        <span class="dt-tag" style="background:#615fff">Infra <button class="dt-tag-rm" onclick="this.parentElement.remove()">×</button></span>
+        <button class="dt-tag-add" onclick="document.getElementById('dtPicker').classList.toggle('open')">+</button>
+      </div>
+      <div class="dt-tag-picker" id="dtPicker">
+        <button class="dt-tag-opt" style="background:#2b7fff" onclick="addTag('Frontend','#2b7fff')">Frontend</button>
+        <button class="dt-tag-opt used" style="background:#00c950">Backend</button>
+        <button class="dt-tag-opt" style="background:#ad46ff" onclick="addTag('Design','#ad46ff')">Design</button>
+        <button class="dt-tag-opt" style="background:#fb2c36" onclick="addTag('Bug','#fb2c36')">Bug</button>
+        <button class="dt-tag-opt" style="background:#ffac6d;color:#3D2200" onclick="addTag('Docs','#ffac6d')">Docs</button>
+        <button class="dt-tag-opt used" style="background:#615fff">Infra</button>
+      </div>
+
+      <div class="detail-title">사용자 인증 API 설계</div>
+
+      <!-- Breadcrumb -->
+      <div class="cat-breadcrumb">
+        <span class="cat-crumb"><span class="cat-type cat-type-goal">G</span>MVP 출시</span>
+        <span class="cat-sep">›</span>
+        <span class="cat-crumb"><span class="cat-type cat-type-story">S</span>사용자 인증 시스템</span>
+        <span class="cat-sep">›</span>
+        <span class="cat-crumb"><span class="cat-type cat-type-feature">F</span>인증 API</span>
+        <button class="cat-edit-btn" onclick="alert('카테고리 에디터 토글')">
+          <span class="ic" style="width:12px;height:12px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>
+        </button>
+      </div>
+
+      <!-- Meta Row -->
+      <div class="detail-meta-row">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">상태</span>
+          <span class="b b-status-todo">TODO</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">우선순위</span>
+          <span class="b b-high"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>높음</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">마감일</span>
+          <span class="b b-soon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 22일</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">담당자</span>
+          <div class="av" style="background:#7EB4A2">홍</div>
+          <span style="font-size:12px">홍길동</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BODY ══ -->
+    <div class="detail-body">
+      <!-- Description -->
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg></span>
+          설명
+        </div>
+        <div class="detail-desc">JWT 기반 인증 시스템의 엔드포인트 설계 및 미들웨어 구현. Access Token / Refresh Token 분리, 토큰 갱신 로직, 미들웨어 체인 설계가 필요합니다.</div>
+      </div>
+
+      <!-- Checklist -->
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+          체크리스트
+        </div>
+        <ul class="detail-checklist" id="checklist">
+          <li><input type="checkbox" checked onchange="toggleDone(this)" /><span class="done-item">JWT 토큰 생성/검증 로직 구현</span><button class="cl-rm" onclick="this.parentElement.remove()">×</button></li>
+          <li><input type="checkbox" onchange="toggleDone(this)" /><span>API 엔드포인트 명세 작성</span><button class="cl-rm" onclick="this.parentElement.remove()">×</button></li>
+          <li><input type="checkbox" checked onchange="toggleDone(this)" /><span class="done-item">미들웨어 체인 설계</span><button class="cl-rm" onclick="this.parentElement.remove()">×</button></li>
+        </ul>
+        <div class="cl-builder-add">
+          <input class="cl-builder-input" type="text" placeholder="항목 추가..." id="clInput" />
+          <button class="tag-creator-btn" style="height:32px" onclick="addCl()">추가</button>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          활동 내역
+        </div>
+        <div class="detail-activity" id="activity">
+          <div class="activity-item"><div class="activity-av" style="background:#7EB4A2">홍</div><div class="activity-content"><div><span class="activity-name">홍길동</span> 카드를 생성했습니다.</div><div class="activity-time">2월 19일 09:30</div></div></div>
+          <div class="activity-item"><div class="activity-av" style="background:#7EB4A2">홍</div><div class="activity-content"><div><span class="activity-name">홍길동</span> 상태를 <strong>TODO</strong>로 변경했습니다.</div><div class="activity-time">2월 20일 14:15</div></div></div>
+          <div class="activity-item"><div class="activity-av" style="background:#60A5FA">김</div><div class="activity-content"><div><span class="activity-name">김민수</span> "리뷰 부탁합니다"</div><div class="activity-time">2월 21일 10:00</div></div></div>
+        </div>
+        <!-- Comment Input -->
+        <div class="comment-box">
+          <div class="av" style="background:#7EB4A2;border:none">홍</div>
+          <div class="comment-input-wrap">
+            <textarea class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." rows="1"></textarea>
+            <div class="comment-actions">
+              <button class="comment-submit" id="commentBtn" disabled onclick="submitComment()">댓글 작성</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="detail-footer">
+      <div class="detail-actions">
+        <button class="btn-icon-text" onclick="alert('편집 모드')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span> 편집
+        </button>
+        <button class="btn-icon-text" onclick="alert('복제')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 복제
+        </button>
+        <button class="btn-icon-text" onclick="alert('이동')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/></svg></span> 이동
+        </button>
+      </div>
+      <button class="btn-icon-text danger" onclick="alert('삭제 확인 다이얼로그')">
+        <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></span> 삭제
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleDone(cb) {
+  const span = cb.nextElementSibling;
+  if (cb.checked) span.classList.add('done-item');
+  else span.classList.remove('done-item');
+}
+function addCl() {
+  const input = document.getElementById('clInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const li = document.createElement('li');
+  li.innerHTML = `<input type="checkbox" onchange="toggleDone(this)" /><span>${text}</span><button class="cl-rm" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById('checklist').appendChild(li);
+  input.value = ''; input.focus();
+}
+document.getElementById('clInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCl(); } });
+
+function addTag(name, bg) {
+  const editor = document.getElementById('dtTags');
+  const addBtn = editor.querySelector('.dt-tag-add');
+  const tag = document.createElement('span');
+  tag.className = 'dt-tag';
+  tag.style.background = bg;
+  tag.innerHTML = `${name} <button class="dt-tag-rm" onclick="this.parentElement.remove()">×</button>`;
+  editor.insertBefore(tag, addBtn);
+  document.getElementById('dtPicker').classList.remove('open');
+}
+
+const commentInput = document.getElementById('commentInput');
+const commentBtn = document.getElementById('commentBtn');
+commentInput.addEventListener('input', () => { commentBtn.disabled = !commentInput.value.trim(); });
+commentInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentInput.value.trim()) submitComment(); }
+});
+function submitComment() {
+  const text = commentInput.value.trim();
+  if (!text) return;
+  const now = new Date();
+  const timeStr = `${now.getMonth()+1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `<div class="activity-av" style="background:#7EB4A2">홍</div><div class="activity-content"><div><span class="activity-name">홍길동</span> "${text}"</div><div class="activity-time">${timeStr}</div></div>`;
+  document.getElementById('activity').appendChild(item);
+  commentInput.value = ''; commentBtn.disabled = true;
+  item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>

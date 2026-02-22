@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-006 — 알림 내역 | Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-header:#FFFFFF;--bg-sidebar:#F1F3F6;--bg-card:#FFFFFF;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;--radius-tag:4px;
+      --shadow-header:0 1px 3px rgba(0,0,0,.06);
+      --shadow-dropdown:0 8px 24px rgba(0,0,0,.12);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+    .ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle}
+    .ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+    /* ═══ Header ═══ */
+    .header{height:60px;background:var(--bg-header);border-bottom:1px solid var(--border-light);box-shadow:var(--shadow-header);display:flex;align-items:center;padding:0 20px;gap:16px;position:fixed;top:0;left:0;right:0;z-index:100}
+    .header-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
+    .logo-icon{width:32px;height:32px;border-radius:8px;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-size:16px;font-weight:var(--fw-bold)}
+    .logo-text{font-family:var(--font-display);font-size:var(--text-h1);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .header-spacer{flex:1}
+    .header-title{font-size:var(--text-h2);font-weight:var(--fw-semibold);color:var(--text-secondary)}
+    .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:var(--fw-semibold);border:2px solid var(--bg-app);cursor:pointer}
+
+    /* ═══ Main ═══ */
+    .main{margin-top:60px;max-width:860px;margin-left:auto;margin-right:auto;padding:32px 24px;min-height:calc(100vh - 60px - 55px)}
+    .page-title{font-family:var(--font-display);font-size:22px;font-weight:var(--fw-bold);margin-bottom:4px}
+    .page-desc{font-size:var(--text-body2);color:var(--text-muted);margin-bottom:20px}
+
+    /* ═══ Filters ═══ */
+    .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center}
+    .filter-group{display:flex;gap:4px;align-items:center}
+    .f-div{width:1px;height:20px;background:var(--border-light);margin:0 6px}
+    .chip{
+      display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 12px;
+      border-radius:20px;border:1px solid var(--border-light);background:var(--bg-header);
+      font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-secondary);
+      cursor:pointer;transition:all .15s;user-select:none;
+    }
+    .chip:hover{border-color:var(--border-medium);background:var(--bg-sidebar)}
+    .chip.on{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+    .chip-count{font-size:10px;background:rgba(0,0,0,.08);padding:1px 6px;border-radius:10px;font-weight:var(--fw-medium)}
+    .chip.on .chip-count{background:rgba(255,255,255,.25)}
+
+    /* ═══ Notification List ═══ */
+    .notif-list{display:flex;flex-direction:column;gap:4px}
+    .notif-item{
+      display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+      background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);
+      cursor:pointer;transition:all .15s;position:relative;
+    }
+    .notif-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.06);border-color:var(--border-medium)}
+
+    .read-chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;font-size:10px;font-weight:var(--fw-semibold);flex-shrink:0;white-space:nowrap;margin-top:2px}
+    .read-chip.unread{background:#FEF3C7;color:#B45309}
+    .read-chip.read{background:var(--bg-sidebar);color:var(--text-muted)}
+
+    .notif-status{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}
+    .notif-status.success{background:#22C55E}
+    .notif-status.fail{background:#EF4444}
+
+    .notif-body{flex:1;min-width:0}
+    .notif-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+    .notif-channel{
+      display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 7px;
+      border-radius:var(--radius-tag);font-size:10px;font-weight:var(--fw-semibold);
+      text-transform:uppercase;letter-spacing:.3px;
+    }
+    .notif-channel.slack{background:#F3E8FF;color:#7C3AED}
+    .notif-channel.telegram{background:#DBEAFE;color:#2563EB}
+    .notif-title{font-size:var(--text-body1);color:var(--text-primary);line-height:1.4}
+    .notif-meta{display:flex;align-items:center;gap:8px;margin-top:4px}
+    .notif-time{font-size:var(--text-small);color:var(--text-muted)}
+    .notif-result{font-size:var(--text-small);color:var(--text-muted)}
+    .notif-result.ok{color:#16A34A}
+    .notif-error{font-size:var(--text-small);color:#DC2626;margin-top:4px;padding:4px 8px;background:#FEF2F2;border-radius:var(--radius-tag)}
+
+    /* ═══ Pagination ═══ */
+    .pagination{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:24px}
+    .page-btn{
+      width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+      border:1px solid var(--border-light);border-radius:var(--radius-button);background:#fff;
+      font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-secondary);
+      cursor:pointer;transition:all .15s;
+    }
+    .page-btn:hover{background:var(--bg-sidebar);border-color:var(--border-medium)}
+    .page-btn.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+    .page-btn.disabled{opacity:.4;pointer-events:none}
+    .page-dots{font-size:var(--text-body2);color:var(--text-muted);padding:0 4px}
+
+    /* Empty State */
+    .notif-empty{text-align:center;padding:48px 16px;color:var(--text-muted);font-size:var(--text-body2)}
+    .notif-empty-icon{font-size:36px;margin-bottom:8px;opacity:.5}
+
+    /* ═══ Footer ═══ */
+    .footer{height:55px;border-top:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;background:var(--bg-header);font-size:var(--text-small);color:var(--text-muted)}
+
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+  </style>
+</head>
+<body>
+<div class="demo-info">SCR-006 · 알림 내역 데모 — 필터, 읽음/안읽음, 성공/실패, 페이지네이션</div>
+
+<!-- ═══ Header ═══ -->
+<header class="header">
+  <a class="header-logo" onclick="alert('메인 보드로 이동')">
+    <div class="logo-icon">T</div>
+    <div class="logo-text">Tika</div>
+  </a>
+  <div class="header-spacer"></div>
+  <span class="header-title">알림 내역</span>
+  <div style="width:16px"></div>
+  <div class="av" style="background:#7EB4A2">홍</div>
+</header>
+
+<!-- ═══ Main ═══ -->
+<div class="main">
+  <h1 class="page-title">알림 내역</h1>
+  <p class="page-desc">발송된 알림의 이력을 확인하고 관련 티켓으로 이동할 수 있습니다.</p>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="chip on" data-filter="channel" data-value="all" onclick="setFilter('channel','all',this)">전체 <span class="chip-count">8</span></span>
+      <span class="chip" data-filter="channel" data-value="slack" onclick="setFilter('channel','slack',this)">Slack <span class="chip-count">5</span></span>
+      <span class="chip" data-filter="channel" data-value="telegram" onclick="setFilter('channel','telegram',this)">Telegram <span class="chip-count">3</span></span>
+    </div>
+    <div class="f-div"></div>
+    <div class="filter-group">
+      <span class="chip on" data-filter="status" data-value="all" onclick="setFilter('status','all',this)">전체</span>
+      <span class="chip" data-filter="status" data-value="success" onclick="setFilter('status','success',this)">성공</span>
+      <span class="chip" data-filter="status" data-value="fail" onclick="setFilter('status','fail',this)">실패</span>
+    </div>
+  </div>
+
+  <!-- Notification List -->
+  <div class="notif-list" id="notifList"></div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- ═══ Footer ═══ -->
+<div class="footer">© 2026 Tika · All rights reserved</div>
+
+<script>
+// ─── Demo Data ───
+const notifications = [
+  { id:1, channel:'slack', status:'success', title:"'API 설계 리뷰' 마감 임박 알림", time:'2026-02-21 09:00', unread:true },
+  { id:2, channel:'telegram', status:'fail', title:"'DB 스키마 리뷰' 마감 임박 알림", time:'2026-02-21 08:30', error:'Connection timeout: Bot API 응답 없음', unread:true },
+  { id:3, channel:'slack', status:'success', title:"'킥오프 미팅 준비' 마감 임박 알림", time:'2026-02-20 09:00', unread:true },
+  { id:4, channel:'slack', status:'success', title:"'프론트엔드 컴포넌트 설계' 완료 알림", time:'2026-02-20 08:00', unread:false },
+  { id:5, channel:'telegram', status:'success', title:"'사용자 인증 API 구현' 마감 임박 알림", time:'2026-02-19 09:00', unread:false },
+  { id:6, channel:'slack', status:'fail', title:"'테스트 커버리지 리포트' 마감 임박 알림", time:'2026-02-19 08:30', error:'Webhook URL 유효하지 않음 (404)', unread:false },
+  { id:7, channel:'telegram', status:'success', title:"'배포 파이프라인 설정' 완료 알림", time:'2026-02-18 09:00', unread:false },
+  { id:8, channel:'slack', status:'success', title:"'디자인 시스템 문서화' 마감 임박 알림", time:'2026-02-18 08:00', unread:false },
+];
+
+let filters = { channel: 'all', status: 'all' };
+let currentPage = 1;
+const pageSize = 5; // smaller for demo
+
+function setFilter(type, value, el) {
+  filters[type] = value;
+  // Update chip state
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  currentPage = 1;
+  render();
+}
+
+function getFiltered() {
+  return notifications.filter(n => {
+    if (filters.channel !== 'all' && n.channel !== filters.channel) return false;
+    if (filters.status !== 'all' && n.status !== filters.status) return false;
+    return true;
+  });
+}
+
+function render() {
+  const filtered = getFiltered();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = filtered.slice(start, start + pageSize);
+
+  const list = document.getElementById('notifList');
+
+  if (pageItems.length === 0) {
+    list.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div>해당 조건의 알림이 없습니다.</div>';
+  } else {
+    list.innerHTML = pageItems.map(n => `
+      <div class="notif-item" onclick="clickNotif(${n.id})">
+        <span class="notif-status ${n.status === 'success' ? 'success' : 'fail'}"></span>
+        <div class="notif-body">
+          <div class="notif-top">
+            <span class="notif-channel ${n.channel}">${n.channel === 'slack' ? 'Slack' : 'Telegram'}</span>
+            <span class="notif-title">${n.title}</span>
+          </div>
+          <div class="notif-meta">
+            <span class="notif-time">${n.time}</span>
+            <span class="notif-result ${n.status === 'success' ? 'ok' : ''}">${n.status === 'success' ? '발송 성공' : '발송 실패'}</span>
+          </div>
+          ${n.error ? `<div class="notif-error">⚠ ${n.error}</div>` : ''}
+        </div>
+        <span class="read-chip ${n.unread ? 'unread' : 'read'}">${n.unread ? '미확인' : '확인'}</span>
+      </div>
+    `).join('');
+  }
+
+  // Pagination
+  const pag = document.getElementById('pagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn${currentPage <= 1 ? ' disabled' : ''}" onclick="goPage(${currentPage-1})">◀</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (totalPages > 7 && i > 3 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
+      if (i === 4) html += '<span class="page-dots">…</span>';
+      continue;
+    }
+    html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn${currentPage >= totalPages ? ' disabled' : ''}" onclick="goPage(${currentPage+1})">▶</button>`;
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(getFiltered().length / pageSize);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clickNotif(id) {
+  const n = notifications.find(x => x.id === id);
+  if (n) {
+    n.unread = false;
+    render();
+    // Update unread counts
+    updateCounts();
+    alert(`티켓 상세 모달(SCR-003)을 엽니다:\n${n.title}`);
+  }
+}
+
+function updateCounts() {
+  // Update filter counts
+  const allCount = notifications.length;
+  const slackCount = notifications.filter(n => n.channel === 'slack').length;
+  const teleCount = notifications.filter(n => n.channel === 'telegram').length;
+  const chips = document.querySelectorAll('[data-filter="channel"] .chip-count');
+  if (chips[0]) chips[0].textContent = allCount;
+  if (chips[1]) chips[1].textContent = slackCount;
+  if (chips[2]) chips[2].textContent = teleCount;
+}
+
+// Init
+render();
+</script>
+</body>
+</html>

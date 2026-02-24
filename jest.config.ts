@@ -48,6 +48,10 @@ const config: Config = {
   testEnvironmentOptions: {
     customExportConditions: [''],
   },
+
+  transformIgnorePatterns: [
+    '/node_modules/(?!(next-auth|@auth)/).*',
+  ],
 };
 
 export default createJestConfig(config);

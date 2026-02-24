@@ -4,48 +4,65 @@
    Design Tokens
    ============================================ */
 :root {
-  /* Colors - Board */
-  --color-board-bg: #f5f6f8;
+  /* Colors - Brand Accent */
+  --color-accent: #629584;
+  --color-accent-hover: #527D6F;
+  --color-accent-light: #E8F5F0;
+
+  /* Colors - Background */
+  --color-board-bg: #E8EDF2;
   --color-header-bg: #ffffff;
+  --color-sidebar-bg: #F1F3F6;
+  --color-footer-bg: #F4F5F7;
   --color-card-bg: #ffffff;
+  --color-col-bg: #F4F5F7;
 
-  /* Colors - Column backgrounds (pastel swimlanes) */
-  --color-col-backlog: #f0edfa;
-  --color-col-todo: #fff8e1;
-  --color-col-in-progress: #e8f4fd;
-  --color-col-done: #e8f5e9;
+  /* Colors - Column header backgrounds */
+  --color-col-backlog: #F4F5F7;
+  --color-col-todo: #DBEAFE;
+  --color-col-in-progress: #FEF3C7;
+  --color-col-done: #D1FAE5;
 
-  /* Colors - Column accents */
-  --color-accent-backlog: #8b7ec8;
-  --color-accent-todo: #f59e0b;
-  --color-accent-in-progress: #3b82f6;
-  --color-accent-done: #22c55e;
+  /* Colors - Priority badges (bg / text pairs) */
+  --color-priority-critical-bg: #FEE2E2;
+  --color-priority-critical: #DC2626;
+  --color-priority-high-bg: #FFEDD5;
+  --color-priority-high: #C2410C;
+  --color-priority-medium-bg: #FEF9C3;
+  --color-priority-medium: #A16207;
+  --color-priority-low-bg: #F3F4F6;
+  --color-priority-low: #6B7280;
 
-  /* Colors - Priority */
-  --color-priority-low: #6b7280;
-  --color-priority-medium: #3b82f6;
-  --color-priority-high: #ef4444;
+  /* Colors - Due date states */
+  --color-due-normal-bg: #F3F4F6;
+  --color-due-normal: #8993A4;
+  --color-due-soon-bg: #FEF3C7;
+  --color-due-soon: #92400E;
+  --color-overdue-bg: #FEE2E2;
+  --color-overdue: #DC2626;
 
-  /* Colors - Semantic */
-  --color-overdue: #ef4444;
-  --color-overdue-bg: #fef2f2;
-  --color-text-primary: #111827;
-  --color-text-secondary: #4b5563;
-  --color-text-muted: #9ca3af;
-  --color-border: #e2e8f0;
-  --color-border-hover: #cbd5e1;
-  --color-divider: #d1d5db;
-  --color-focus-ring: #3b82f6;
+  /* Colors - Text */
+  --color-text-primary: #2C3E50;
+  --color-text-secondary: #5A6B7F;
+  --color-text-muted: #8993A4;
+
+  /* Colors - Border */
+  --color-border: #DFE1E6;
+  --color-border-hover: #C4C9D1;
+  --color-divider: #DFE1E6;
+  --color-focus-ring: #629584;
 
   /* Spacing */
   --spacing-card-gap: 8px;
-  --spacing-column-gap: 0px;
+  --spacing-column-gap: 16px;
 
   /* Shadows */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 4px 8px rgba(0, 0, 0, 0.12);
-  --shadow-card-dragging: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 1px 2px rgba(9, 30, 66, 0.12);
+  --shadow-card-hover: 0 3px 8px rgba(9, 30, 66, 0.18);
+  --shadow-card-dragging: 0 5px 10px rgba(9, 30, 66, 0.25);
   --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.2);
+  --shadow-header: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.12);
 
   /* Border Radius */
   --radius-card: 8px;
@@ -53,14 +70,19 @@
   --radius-button: 6px;
   --radius-input: 6px;
   --radius-modal: 12px;
-  --radius-column: 0px;
+  --radius-column: 12px;
+  --radius-tag: 4px;
 
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
 
-  /* Sidebar width */
-  --sidebar-width: 272px;
+  /* Layout dimensions */
+  --header-height: 60px;
+  --footer-height: 55px;
+  --sidebar-width: 260px;
+  --filter-bar-height: 48px;
+  --column-width: 280px;
 }
 
 /* ============================================
@@ -74,8 +96,8 @@ body {
   height: 100%;
   background-color: var(--color-board-bg);
   color: var(--color-text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 12px;
+  font-family: 'Noto Sans KR', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -321,18 +343,23 @@ body.modal-open {
 }
 
 .badge-priority-low {
-  background-color: #f1f5f9;
+  background-color: var(--color-priority-low-bg);
   color: var(--color-priority-low);
 }
 
 .badge-priority-medium {
-  background-color: #eff6ff;
+  background-color: var(--color-priority-medium-bg);
   color: var(--color-priority-medium);
 }
 
 .badge-priority-high {
-  background-color: #fef2f2;
+  background-color: var(--color-priority-high-bg);
   color: var(--color-priority-high);
+}
+
+.badge-priority-critical {
+  background-color: var(--color-priority-critical-bg);
+  color: var(--color-priority-critical);
 }
 
 .badge-due-date {
@@ -380,11 +407,11 @@ body.modal-open {
 .btn-lg { padding: 10px 20px; font-size: 13px; }
 
 .btn-primary {
-  background-color: var(--color-accent-in-progress);
+  background-color: var(--color-accent);
   color: white;
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--color-accent-hover);
 }
 
 .btn-secondary {
@@ -434,10 +461,15 @@ body.modal-open {
 }
 
 .filter-btn[data-active='true'] {
-  border-color: var(--color-accent-in-progress);
-  background-color: #eff6ff;
-  color: var(--color-accent-in-progress);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: white;
   font-weight: 600;
+}
+
+.filter-btn[data-active='true']:hover {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 .filter-count {
@@ -454,7 +486,7 @@ body.modal-open {
 }
 
 .filter-btn[data-active='true'] .filter-count {
-  background-color: var(--color-accent-in-progress);
+  background-color: rgba(255, 255, 255, 0.25);
   color: white;
 }
 
@@ -464,11 +496,11 @@ body.modal-open {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(9, 30, 66, 0.54);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 200;
   animation: fade-in var(--transition-normal);
 }
 
@@ -546,7 +578,7 @@ body.modal-open {
 .form-input:focus {
   outline: none;
   border-color: var(--color-focus-ring);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 3px var(--color-accent-light);
 }
 
 .form-input::placeholder {

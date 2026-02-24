@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TicketModal } from '@/client/components/ticket/TicketModal';
-import type { TicketWithMeta } from '@/shared/types';
+import { TicketModal } from '@/components/ticket/TicketModal';
+import type { TicketWithMeta } from '@/types/index';
 
 const mockOnClose = jest.fn();
-const mockOnUpdate = jest.fn();
-const mockOnDelete = jest.fn();
+const mockOnUpdate = jest.fn().mockResolvedValue(undefined);
+const mockOnDelete = jest.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -13,147 +13,136 @@ beforeEach(() => {
 
 const ticket: TicketWithMeta = {
   id: 42,
+  workspaceId: 1,
   title: '테스트 티켓',
   description: '설명 텍스트',
+  type: 'TASK',
   status: 'IN_PROGRESS',
   priority: 'HIGH',
   position: 0,
-  plannedStartDate: '2026-03-01',
   dueDate: '2026-03-15',
-  startedAt: new Date('2026-02-10T00:00:00.000Z'),
+  issueId: null,
+  assigneeId: null,
   completedAt: null,
-  createdAt: new Date('2026-02-01T00:00:00.000Z'),
-  updatedAt: new Date('2026-02-17T00:00:00.000Z'),
+  createdAt: '2026-02-01T00:00:00.000Z',
+  updatedAt: '2026-02-17T00:00:00.000Z',
   isOverdue: false,
+  labels: [],
+  checklistItems: [],
+  issue: null,
+  assignee: null,
 };
 
 describe('TicketModal', () => {
-  // C005-1: isOpen에 따라 표시/숨김
-  it('isOpen=false이면 렌더링되지 않는다', () => {
+  it('isOpen=false이면 dialog가 렌더링되지 않는다', () => {
     render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={false}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
+      <TicketModal ticket={ticket} isOpen={false} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
     );
-
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('isOpen=true이면 모달이 티켓 제목과 함께 표시된다', () => {
+  it('isOpen=true이면 dialog와 티켓 제목 input이 표시된다', () => {
     render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={true}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '테스트 티켓' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('테스트 티켓')).toBeInTheDocument();
   });
 
-  // C005-2: 읽기 전용 필드 표시
-  it('읽기 전용 필드(상태, 시작일, 종료일, 생성일)가 표시된다', () => {
+  it('편집 가능한 필드(제목·설명·유형·상태·우선순위·마감일)가 표시된다', () => {
     render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={true}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
     );
 
-    expect(screen.getByText('상태')).toBeInTheDocument();
-    expect(screen.getByText('진행 중')).toBeInTheDocument();
-    expect(screen.getByText('시작일')).toBeInTheDocument();
-    expect(screen.getByText('생성일')).toBeInTheDocument();
-  });
-
-  // C005-3: 편집 가능 필드
-  it('편집 가능한 필드(제목, 설명, 우선순위, 시작예정일, 종료예정일)가 표시된다', () => {
-    render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={true}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
-    );
-
-    expect(screen.getByLabelText('제목')).toBeInTheDocument();
+    expect(screen.getByLabelText('티켓 제목')).toBeInTheDocument();
     expect(screen.getByLabelText('설명')).toBeInTheDocument();
+    expect(screen.getByLabelText('유형')).toBeInTheDocument();
+    expect(screen.getByLabelText('상태')).toBeInTheDocument();
     expect(screen.getByLabelText('우선순위')).toBeInTheDocument();
-    expect(screen.getByLabelText('시작예정일')).toBeInTheDocument();
-    expect(screen.getByLabelText('종료예정일')).toBeInTheDocument();
+    expect(screen.getByLabelText('마감일')).toBeInTheDocument();
   });
 
-  // C005-4: ESC → onClose
+  it('닫기 버튼 클릭 시 onClose가 호출된다', async () => {
+    const user = userEvent.setup();
+    render(
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
+    );
+
+    await user.click(screen.getByLabelText('닫기'));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
   it('ESC 키를 누르면 onClose가 호출된다', async () => {
     const user = userEvent.setup();
-
     render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={true}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
     );
 
     await user.keyboard('{Escape}');
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  // C005-5: 바깥 클릭 → onClose
-  it('오버레이를 클릭하면 onClose가 호출된다', async () => {
+  it('취소 버튼 클릭 시 onClose가 호출된다', async () => {
     const user = userEvent.setup();
-
     render(
-      <TicketModal
-        ticket={ticket}
-        isOpen={true}
-        onClose={mockOnClose}
-        onUpdate={mockOnUpdate}
-        onDelete={mockOnDelete}
-      />
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
     );
 
-    await user.click(screen.getByRole('dialog'));
-    expect(mockOnClose).toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '취소' }));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
-  // C005-6: 삭제 → ConfirmDialog → 확인 → onDelete
-  it('삭제 버튼 클릭 후 확인하면 onDelete가 호출된다', async () => {
-    const user = userEvent.setup();
+  it('변경 없이 저장 버튼이 비활성화된다', () => {
+    render(
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
+    );
 
+    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled();
+  });
+
+  it('삭제 버튼 클릭 → ConfirmDialog 표시 → 삭제 확인 → onDelete 호출', async () => {
+    const user = userEvent.setup();
+    render(
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(screen.getByText(/"테스트 티켓" 티켓을 삭제하시겠습니까\?/)).toBeInTheDocument();
+
+    // ConfirmDialog는 role="alertdialog", 확인 버튼은 "삭제" 텍스트
+    const confirmDialog = screen.getByRole('alertdialog');
+    await user.click(within(confirmDialog).getByRole('button', { name: '삭제' }));
+    expect(mockOnDelete).toHaveBeenCalledWith(42);
+  });
+
+  it('삭제 확인 다이얼로그에서 취소 시 onDelete가 호출되지 않는다', async () => {
+    const user = userEvent.setup();
+    render(
+      <TicketModal ticket={ticket} isOpen={true} onClose={mockOnClose} onUpdate={mockOnUpdate} onDelete={mockOnDelete} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    // alertdialog 내부의 취소 버튼으로 범위 제한
+    const confirmDialog = screen.getByRole('alertdialog');
+    await user.click(within(confirmDialog).getByRole('button', { name: '취소' }));
+
+    expect(mockOnDelete).not.toHaveBeenCalled();
+  });
+
+  it('마감 초과 티켓이면 경고 배너가 표시된다', () => {
     render(
       <TicketModal
-        ticket={ticket}
+        ticket={{ ...ticket, isOverdue: true }}
         isOpen={true}
         onClose={mockOnClose}
         onUpdate={mockOnUpdate}
         onDelete={mockOnDelete}
-      />
+      />,
     );
 
-    // 1단계: 삭제 버튼 클릭
-    await user.click(screen.getByRole('button', { name: '삭제' }));
-
-    // 2단계: ConfirmDialog 표시 확인
-    expect(screen.getByText('정말 삭제하시겠습니까?')).toBeInTheDocument();
-
-    // 3단계: 확인 버튼 클릭
-    await user.click(screen.getByRole('button', { name: '확인' }));
-
-    expect(mockOnDelete).toHaveBeenCalledWith(42);
+    expect(screen.getByText('⚠ 마감 초과')).toBeInTheDocument();
   });
 });

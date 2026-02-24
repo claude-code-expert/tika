@@ -1,25 +1,27 @@
 import { renderHook, act } from '@testing-library/react';
-import { useTickets } from '@/client/hooks/useTickets';
-import { ticketApi } from '@/client/api/ticketApi';
-import type { BoardData, Ticket, TicketWithMeta } from '@/shared/types';
+import { useTickets } from '@/hooks/useTickets';
+import type { BoardData, TicketWithMeta } from '@/types/index';
 
-jest.mock('@/client/api/ticketApi');
-const mockedApi = ticketApi as jest.Mocked<typeof ticketApi>;
-
-const mockTicket: TicketWithMeta = {
+const baseTicket: TicketWithMeta = {
   id: 1,
+  workspaceId: 1,
   title: '테스트 티켓',
-  description: '설명',
+  description: null,
+  type: 'TASK',
   status: 'BACKLOG',
   priority: 'MEDIUM',
-  position: -1024,
-  plannedStartDate: null,
+  position: 0,
   dueDate: null,
-  startedAt: null,
+  issueId: null,
+  assigneeId: null,
   completedAt: null,
-  createdAt: new Date('2026-02-17'),
-  updatedAt: new Date('2026-02-17'),
+  createdAt: '2026-02-17T00:00:00.000Z',
+  updatedAt: '2026-02-17T00:00:00.000Z',
   isOverdue: false,
+  labels: [],
+  checklistItems: [],
+  issue: null,
+  assignee: null,
 };
 
 const emptyBoard: BoardData = {
@@ -28,194 +30,208 @@ const emptyBoard: BoardData = {
 };
 
 const boardWithTicket: BoardData = {
-  board: { BACKLOG: [mockTicket], TODO: [], IN_PROGRESS: [], DONE: [] },
+  board: { BACKLOG: [baseTicket], TODO: [], IN_PROGRESS: [], DONE: [] },
   total: 1,
 };
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  global.fetch = jest.fn();
+  jest.clearAllMocks();
 });
 
-describe('useTickets', () => {
-  // 4-2-1: initialData로 board 상태 초기화
+describe('useTickets 초기화', () => {
   it('initialData로 board 상태를 초기화한다', () => {
-    const { result } = renderHook(() => useTickets(emptyBoard));
+    const { result } = renderHook(() => useTickets(boardWithTicket));
 
-    expect(result.current.board).toEqual(emptyBoard);
+    expect(result.current.board).toEqual(boardWithTicket);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
   });
 
-  // 4-2-2: create 호출 → ticketApi.create + getBoard
-  it('create 호출 시 ticketApi.create 후 getBoard로 갱신한다', async () => {
-    const input = { title: '새 티켓', priority: 'HIGH' as const };
-    mockedApi.create.mockResolvedValueOnce(mockTicket as Ticket);
-    mockedApi.getBoard.mockResolvedValueOnce(boardWithTicket);
+  it('initialData 없으면 빈 board로 시작한다', () => {
+    const { result } = renderHook(() => useTickets());
 
-    const { result } = renderHook(() => useTickets(emptyBoard));
+    expect(result.current.board.total).toBe(0);
+    expect(result.current.board.board.BACKLOG).toHaveLength(0);
+  });
+});
 
-    await act(async () => {
-      await result.current.create(input);
-    });
+describe('라벨 필터 (T057)', () => {
+  it('toggleLabel로 라벨을 activeLabels에 추가한다', () => {
+    const { result } = renderHook(() => useTickets());
 
-    expect(mockedApi.create).toHaveBeenCalledWith(input);
-    expect(mockedApi.getBoard).toHaveBeenCalled();
-    expect(result.current.board).toEqual(boardWithTicket);
+    act(() => { result.current.toggleLabel(1); });
+
+    expect(result.current.activeLabels).toContain(1);
   });
 
-  // 4-2-3: update 호출 → ticketApi.update + getBoard
-  it('update 호출 시 ticketApi.update 후 getBoard로 갱신한다', async () => {
-    const updateData = { title: '수정된 제목' };
-    mockedApi.update.mockResolvedValueOnce({ ...mockTicket, ...updateData } as Ticket);
-    mockedApi.getBoard.mockResolvedValueOnce(boardWithTicket);
+  it('같은 라벨 다시 toggleLabel 하면 제거된다', () => {
+    const { result } = renderHook(() => useTickets());
 
-    const { result } = renderHook(() => useTickets(emptyBoard));
+    act(() => { result.current.toggleLabel(1); });
+    act(() => { result.current.toggleLabel(1); });
 
-    await act(async () => {
-      await result.current.update(1, updateData);
-    });
-
-    expect(mockedApi.update).toHaveBeenCalledWith(1, updateData);
-    expect(mockedApi.getBoard).toHaveBeenCalled();
-    expect(result.current.board).toEqual(boardWithTicket);
+    expect(result.current.activeLabels).not.toContain(1);
   });
 
-  // 4-2-4: remove 호출 → ticketApi.remove + getBoard
-  it('remove 호출 시 ticketApi.remove 후 getBoard로 갱신한다', async () => {
-    mockedApi.remove.mockResolvedValueOnce(undefined);
-    mockedApi.getBoard.mockResolvedValueOnce(emptyBoard);
+  it('clearLabels로 activeLabels가 초기화된다', () => {
+    const { result } = renderHook(() => useTickets());
 
-    const { result } = renderHook(() => useTickets(boardWithTicket));
-
-    await act(async () => {
-      await result.current.remove(1);
-    });
-
-    expect(mockedApi.remove).toHaveBeenCalledWith(1);
-    expect(mockedApi.getBoard).toHaveBeenCalled();
-    expect(result.current.board).toEqual(emptyBoard);
-  });
-
-  // 4-2-5: reorder 호출 → ticketApi.reorder + getBoard
-  it('reorder 호출 시 ticketApi.reorder 후 getBoard로 갱신한다', async () => {
-    const reorderedBoard: BoardData = {
-      board: { BACKLOG: [], TODO: [{ ...mockTicket, status: 'TODO' }], IN_PROGRESS: [], DONE: [] },
-      total: 1,
-    };
-    mockedApi.reorder.mockResolvedValueOnce({
-      ticket: { ...mockTicket, status: 'TODO', position: 0 },
-      affected: [],
-    });
-    mockedApi.getBoard.mockResolvedValueOnce(reorderedBoard);
-
-    const { result } = renderHook(() => useTickets(boardWithTicket));
-
-    await act(async () => {
-      await result.current.reorder(1, 'TODO', 0);
-    });
-
-    expect(mockedApi.reorder).toHaveBeenCalledWith({
-      ticketId: 1,
-      status: 'TODO',
-      position: 0,
-    });
-    expect(mockedApi.getBoard).toHaveBeenCalled();
-    expect(result.current.board).toEqual(reorderedBoard);
-  });
-
-  // 4-2-6: complete 호출 → ticketApi.complete + getBoard
-  it('complete 호출 시 ticketApi.complete 후 getBoard로 갱신한다', async () => {
-    const completedBoard: BoardData = {
-      board: { BACKLOG: [], TODO: [], IN_PROGRESS: [], DONE: [{ ...mockTicket, status: 'DONE' }] },
-      total: 1,
-    };
-    mockedApi.complete.mockResolvedValueOnce({ ...mockTicket, status: 'DONE' } as Ticket);
-    mockedApi.getBoard.mockResolvedValueOnce(completedBoard);
-
-    const { result } = renderHook(() => useTickets(boardWithTicket));
-
-    await act(async () => {
-      await result.current.complete(1);
-    });
-
-    expect(mockedApi.complete).toHaveBeenCalledWith(1);
-    expect(mockedApi.getBoard).toHaveBeenCalled();
-    expect(result.current.board).toEqual(completedBoard);
-  });
-
-  // 4-2-7: 실패 시 error 상태 설정 (create)
-  it('create 실패 시 error 상태를 설정한다', async () => {
-    mockedApi.create.mockRejectedValueOnce(new Error('제목을 입력해주세요'));
-
-    const { result } = renderHook(() => useTickets(emptyBoard));
-
-    await act(async () => {
-      await result.current.create({ title: '' });
-    });
-
-    expect(result.current.error).toBe('제목을 입력해주세요');
-  });
-
-  // 4-2-8: 실패 시 error 상태 설정 (remove)
-  it('remove 실패 시 error 상태를 설정한다', async () => {
-    mockedApi.remove.mockRejectedValueOnce(new Error('티켓을 찾을 수 없습니다'));
-
-    const { result } = renderHook(() => useTickets(emptyBoard));
-
-    await act(async () => {
-      await result.current.remove(999);
-    });
-
-    expect(result.current.error).toBe('티켓을 찾을 수 없습니다');
-  });
-
-  // 4-2-9: API 호출 중 isLoading=true
-  it('API 호출 중 isLoading이 true가 된다', async () => {
-    let resolveCreate: (value: Ticket) => void;
-    mockedApi.create.mockReturnValueOnce(
-      new Promise((resolve) => { resolveCreate = resolve; })
-    );
-    mockedApi.getBoard.mockResolvedValueOnce(boardWithTicket);
-
-    const { result } = renderHook(() => useTickets(emptyBoard));
-
-    // create 호출 시작 (await 하지 않음)
-    let createPromise: Promise<void>;
     act(() => {
-      createPromise = result.current.create({ title: '새 티켓' });
+      result.current.toggleLabel(1);
+      result.current.toggleLabel(2);
     });
+    act(() => { result.current.clearLabels(); });
 
-    // isLoading이 true로 변경됨
-    expect(result.current.isLoading).toBe(true);
-
-    // create 완료
-    await act(async () => {
-      resolveCreate!(mockTicket as Ticket);
-      await createPromise!;
-    });
-
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.activeLabels).toHaveLength(0);
   });
 
-  // 4-2-10: 에러 후 성공 시 error가 null로 초기화
-  it('에러 후 성공하면 error가 null로 초기화된다', async () => {
-    mockedApi.create.mockRejectedValueOnce(new Error('실패'));
+  it('activeLabels 없으면 filteredBoard === board', () => {
+    const { result } = renderHook(() => useTickets(boardWithTicket));
+    expect(result.current.filteredBoard).toEqual(result.current.board);
+  });
+
+  it('filteredBoard는 AND 조건으로 필터링된다', () => {
+    const label1 = { id: 1, workspaceId: 1, name: 'bug', color: '#f00', createdAt: '' };
+    const label2 = { id: 2, workspaceId: 1, name: 'feat', color: '#0f0', createdAt: '' };
+
+    const initialBoard: BoardData = {
+      board: {
+        BACKLOG: [
+          { ...baseTicket, id: 1, labels: [label1, label2] },
+          { ...baseTicket, id: 2, labels: [label1] },
+        ],
+        TODO: [],
+        IN_PROGRESS: [],
+        DONE: [],
+      },
+      total: 2,
+    };
+
+    const { result } = renderHook(() => useTickets(initialBoard));
+
+    // label1 + label2 모두 있는 티켓만
+    act(() => {
+      result.current.toggleLabel(1);
+      result.current.toggleLabel(2);
+    });
+
+    expect(result.current.filteredBoard.board.BACKLOG).toHaveLength(1);
+    expect(result.current.filteredBoard.board.BACKLOG[0].id).toBe(1);
+  });
+});
+
+describe('createTicket', () => {
+  it('POST /api/tickets를 호출하고 board를 갱신한다', async () => {
+    const newTicket = { ...baseTicket, id: 2, title: '새 티켓' };
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ ticket: newTicket }),
+    });
 
     const { result } = renderHook(() => useTickets(emptyBoard));
 
-    // 먼저 실패
     await act(async () => {
-      await result.current.create({ title: '' });
+      await result.current.createTicket({ title: '새 티켓' });
     });
-    expect(result.current.error).toBe('실패');
 
-    // 다시 성공
-    mockedApi.create.mockResolvedValueOnce(mockTicket as Ticket);
-    mockedApi.getBoard.mockResolvedValueOnce(boardWithTicket);
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/tickets',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(result.current.board.board.BACKLOG).toHaveLength(1);
+  });
 
-    await act(async () => {
-      await result.current.create({ title: '새 티켓' });
+  it('API 실패 시 에러를 throw한다', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ error: { message: '제목을 입력해주세요' } }),
     });
-    expect(result.current.error).toBeNull();
+
+    const { result } = renderHook(() => useTickets());
+
+    await expect(
+      act(async () => { await result.current.createTicket({ title: '' }); }),
+    ).rejects.toThrow('제목을 입력해주세요');
+  });
+});
+
+describe('deleteTicket', () => {
+  it('DELETE /api/tickets/:id를 호출하고 board에서 티켓을 제거한다', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+
+    const { result } = renderHook(() => useTickets(boardWithTicket));
+
+    await act(async () => { await result.current.deleteTicket(1); });
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/tickets/1', { method: 'DELETE' });
+    expect(result.current.board.board.BACKLOG).toHaveLength(0);
+    expect(result.current.board.total).toBe(0);
+  });
+});
+
+describe('reorder (Optimistic UI)', () => {
+  it('즉시 Optimistic 이동을 적용한다', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ticket: {} }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(boardWithTicket),
+      });
+
+    const { result } = renderHook(() => useTickets(boardWithTicket));
+
+    act(() => {
+      result.current.reorder(1, 'TODO', 0);
+    });
+
+    // Optimistic: 즉시 반영
+    expect(result.current.board.board.BACKLOG).toHaveLength(0);
+    expect(result.current.board.board.TODO).toHaveLength(1);
+  });
+
+  it('reorder 실패 시 snapshot으로 롤백된다', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ error: { message: '순서 변경에 실패했습니다' } }),
+    });
+
+    const { result } = renderHook(() => useTickets(boardWithTicket));
+
+    await expect(
+      act(async () => { await result.current.reorder(1, 'TODO', 0); }),
+    ).rejects.toThrow();
+
+    // 롤백 확인
+    expect(result.current.board).toEqual(boardWithTicket);
+  });
+});
+
+describe('fetchBoard', () => {
+  it('GET /api/tickets를 호출하고 board를 설정한다', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(boardWithTicket),
+    });
+
+    const { result } = renderHook(() => useTickets());
+
+    await act(async () => { await result.current.fetchBoard(); });
+
+    expect(result.current.board).toEqual(boardWithTicket);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('API 실패 시 error 상태를 설정한다', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false });
+
+    const { result } = renderHook(() => useTickets());
+
+    await act(async () => { await result.current.fetchBoard(); });
+
+    expect(result.current.error).toBe('보드 데이터를 불러오지 못했습니다');
   });
 });

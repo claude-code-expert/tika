@@ -1,25 +1,20 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { BoardContainer } from '@/client/components/board/BoardContainer';
-import { useTickets } from '@/client/hooks/useTickets';
-import type { BoardData, TicketWithMeta } from '@/shared/types';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { BoardContainer } from '@/components/board/BoardContainer';
+import { useTickets } from '@/hooks/useTickets';
+import type { BoardData, TicketWithMeta } from '@/types/index';
 
-// useTickets mock
-jest.mock('@/client/hooks/useTickets');
+jest.mock('@/hooks/useTickets');
 const mockedUseTickets = useTickets as jest.MockedFunction<typeof useTickets>;
 
-// dnd-kit mock
 jest.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DragOverlay: () => null,
   MouseSensor: jest.fn(),
   TouchSensor: jest.fn(),
-  closestCorners: jest.fn(),
   useSensor: jest.fn(),
-  useSensors: jest.fn(),
-  useDroppable: () => ({
-    setNodeRef: jest.fn(),
-    isOver: false,
-  }),
+  useSensors: jest.fn(() => []),
+  useDroppable: jest.fn(() => ({ setNodeRef: jest.fn(), isOver: false })),
 }));
 
 jest.mock('@dnd-kit/sortable', () => ({
@@ -39,125 +34,101 @@ jest.mock('@dnd-kit/utilities', () => ({
   CSS: { Transform: { toString: () => undefined } },
 }));
 
-const overdueTicket: TicketWithMeta = {
+const mockTicket: TicketWithMeta = {
   id: 1,
-  title: '마감 초과 티켓',
+  workspaceId: 1,
+  title: '테스트 티켓',
   description: null,
+  type: 'TASK',
   status: 'TODO',
   priority: 'HIGH',
-  position: -1024,
-  plannedStartDate: null,
-  dueDate: '2026-02-10',
-  startedAt: new Date(),
-  completedAt: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  isOverdue: true,
-};
-
-const normalTicket: TicketWithMeta = {
-  id: 2,
-  title: '정상 티켓',
-  description: null,
-  status: 'TODO',
-  priority: 'MEDIUM',
   position: 0,
-  plannedStartDate: null,
   dueDate: '2026-03-15',
-  startedAt: new Date(),
+  issueId: null,
+  assigneeId: null,
   completedAt: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  createdAt: '2026-02-17T00:00:00.000Z',
+  updatedAt: '2026-02-17T00:00:00.000Z',
   isOverdue: false,
+  labels: [],
+  checklistItems: [],
+  issue: null,
+  assignee: null,
 };
 
 const mockBoard: BoardData = {
-  board: {
-    BACKLOG: [],
-    TODO: [overdueTicket, normalTicket],
-    IN_PROGRESS: [],
-    DONE: [],
-  },
-  total: 2,
+  board: { BACKLOG: [], TODO: [mockTicket], IN_PROGRESS: [], DONE: [] },
+  total: 1,
 };
 
-const mockActions = {
-  create: jest.fn(),
-  update: jest.fn(),
-  remove: jest.fn(),
-  reorder: jest.fn(),
-  complete: jest.fn(),
+const mockHookReturn = {
+  board: mockBoard,
+  filteredBoard: mockBoard,
+  isLoading: false,
+  error: null,
+  activeLabels: [],
+  toggleLabel: jest.fn(),
+  clearLabels: jest.fn(),
+  fetchBoard: jest.fn(),
+  createTicket: jest.fn().mockResolvedValue({}),
+  updateTicket: jest.fn().mockResolvedValue({}),
+  deleteTicket: jest.fn().mockResolvedValue(undefined),
+  reorder: jest.fn().mockResolvedValue(undefined),
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockedUseTickets.mockReturnValue({
-    board: mockBoard,
-    isLoading: false,
-    error: null,
-    ...mockActions,
-  });
+  mockedUseTickets.mockReturnValue(mockHookReturn);
 });
 
 describe('BoardContainer', () => {
-  // 5-3-1: BoardHeader 렌더링
-  it('BoardHeader가 렌더링된다 (Tika 타이틀)', () => {
-    render(<BoardContainer initialData={mockBoard} />);
-
-    expect(screen.getByText('Tika')).toBeInTheDocument();
+  it('"내 워크스페이스" 헤딩이 렌더링된다', () => {
+    render(<BoardContainer />);
+    expect(screen.getByRole('heading', { name: '내 워크스페이스' })).toBeInTheDocument();
   });
 
-  // 5-3-2: FilterBar 렌더링
-  it('FilterBar가 렌더링된다 (이번주 업무, 일정 초과)', () => {
-    render(<BoardContainer initialData={mockBoard} />);
-
-    expect(screen.getByText('이번주 업무')).toBeInTheDocument();
-    expect(screen.getByText('일정 초과')).toBeInTheDocument();
+  it('"+ 새 업무" 버튼이 렌더링된다', () => {
+    render(<BoardContainer />);
+    expect(screen.getByRole('button', { name: '+ 새 업무' })).toBeInTheDocument();
   });
 
-  // 5-3-3: Board 4칼럼 렌더링
-  it('Board 4칼럼이 렌더링된다', () => {
-    render(<BoardContainer initialData={mockBoard} />);
+  it('"+ 새 업무" 클릭 시 생성 모달이 열린다', async () => {
+    const user = userEvent.setup();
+    render(<BoardContainer />);
 
-    expect(screen.getByText('백로그')).toBeInTheDocument();
-    expect(screen.getByText('할 일')).toBeInTheDocument();
-    expect(screen.getByText('진행 중')).toBeInTheDocument();
-    expect(screen.getByText('완료')).toBeInTheDocument();
-  });
-
-  // 5-3-4: "새 업무" 클릭 → 생성 모달 열기
-  it('"새 업무" 클릭 시 생성 모달이 열린다', () => {
-    render(<BoardContainer initialData={mockBoard} />);
-
-    fireEvent.click(screen.getByText('새 업무'));
+    await user.click(screen.getByRole('button', { name: '+ 새 업무' }));
 
     expect(screen.getByText('새 업무 생성')).toBeInTheDocument();
   });
 
-  // 5-3-5: 티켓 카드 클릭 → 상세 모달 열기
-  it('티켓 카드 클릭 시 상세 모달이 열린다', () => {
-    render(<BoardContainer initialData={mockBoard} />);
+  it('4개 칼럼 헤더(Backlog/TODO/In Progress/Done)가 표시된다', () => {
+    render(<BoardContainer />);
 
-    fireEvent.click(screen.getByText('마감 초과 티켓'));
-
-    // TicketModal이 열리면 티켓 제목이 모달 헤더에도 표시됨
-    const titles = screen.getAllByText('마감 초과 티켓');
-    expect(titles.length).toBeGreaterThanOrEqual(2); // 카드 + 모달 헤더
+    // Board.tsx COLUMN_LABELS에 정의된 실제 레이블
+    expect(screen.getByText('Backlog')).toBeInTheDocument();
+    expect(screen.getByText('TODO')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  // 5-3-6: overdue 필터 적용 시 isOverdue=false 티켓 숨기기
-  it('overdue 필터 적용 시 isOverdue=false 티켓이 숨겨진다', () => {
-    render(<BoardContainer initialData={mockBoard} />);
+  it('보드에 티켓 카드가 렌더링된다', () => {
+    render(<BoardContainer />);
+    expect(screen.getByText('테스트 티켓')).toBeInTheDocument();
+  });
 
-    // 필터 적용 전: 두 티켓 모두 보임
-    expect(screen.getByText('마감 초과 티켓')).toBeInTheDocument();
-    expect(screen.getByText('정상 티켓')).toBeInTheDocument();
+  it('티켓 카드 클릭 시 상세 모달이 열린다', async () => {
+    const user = userEvent.setup();
+    render(<BoardContainer />);
 
-    // "일정 초과" 필터 클릭
-    fireEvent.click(screen.getByText('일정 초과'));
+    await user.click(screen.getByRole('button', { name: /테스트 티켓/ }));
 
-    // isOverdue=true인 티켓만 보임
-    expect(screen.getByText('마감 초과 티켓')).toBeInTheDocument();
-    expect(screen.queryByText('정상 티켓')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('isLoading=true이면 로딩 메시지가 표시된다', () => {
+    mockedUseTickets.mockReturnValue({ ...mockHookReturn, isLoading: true });
+    render(<BoardContainer />);
+
+    expect(screen.getByText('보드를 불러오는 중...')).toBeInTheDocument();
   });
 });

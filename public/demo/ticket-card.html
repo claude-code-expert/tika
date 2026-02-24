@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketCard 컴포넌트 - Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-column: #F4F5F7;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-card-hover: 0 3px 8px rgba(9,30,66,0.18);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #DFE1E6;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      width: 28px; height: 28px;
+      background: #629584;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      flex-shrink: 0;
+    }
+    .nav-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700; font-size: 16px; color: #2C3E50;
+    }
+    .nav-sep { color: #DFE1E6; }
+    .nav-back {
+      font-size: 13px; color: #629584; text-decoration: none;
+    }
+    .nav-back:hover { text-decoration: underline; }
+    .nav-current { font-size: 13px; color: #5A6B7F; }
+
+    /* PAGE LAYOUT */
+    .page-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+    .page-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .page-desc {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+    }
+
+    /* SECTION */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--border-light);
+    }
+
+    /* CARD GRID */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    /* TICKET CARD BASE */
+    .ticket-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 12px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      position: relative;
+      user-select: none;
+    }
+    .ticket-card:hover {
+      box-shadow: var(--shadow-card-hover);
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+    .ticket-card.overdue {
+      border: 2px solid #DC2626;
+    }
+    .ticket-card.done {
+      opacity: 0.75;
+    }
+
+    /* ISSUE TAG */
+    .issue-tag {
+      display: inline-flex; align-items: center;
+      height: 18px; padding: 0 6px;
+      border-radius: 3px;
+      font-size: 10px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    /* LABEL BADGES ROW */
+    .label-row {
+      display: flex; flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 7px;
+    }
+    .label-badge {
+      display: inline-flex; align-items: center;
+      height: 16px; padding: 0 6px;
+      border-radius: 3px;
+      font-size: 10px; font-weight: 500;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      white-space: nowrap;
+    }
+    /* Label colors */
+    .label-frontend { background: rgba(43,127,255,0.12); color: #2b7fff; }
+    .label-backend   { background: rgba(0,201,80,0.12);  color: #00c950; }
+    .label-design    { background: rgba(173,70,255,0.12); color: #ad46ff; }
+    .label-bug       { background: rgba(251,44,54,0.12);  color: #fb2c36; }
+    .label-docs      { background: rgba(255,172,109,0.15);color: #d97706; }
+    .label-infra     { background: rgba(97,95,255,0.12);  color: #615fff; }
+
+    /* TITLE */
+    .card-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
+      margin-bottom: 5px;
+    }
+    .card-title.done-title {
+      text-decoration: line-through;
+      color: #8993A4;
+    }
+
+    /* DESCRIPTION */
+    .card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* FOOTER */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+    .footer-badges {
+      display: flex; align-items: center;
+      gap: 4px; flex-wrap: wrap;
+    }
+
+    /* PRIORITY BADGE */
+    .priority-badge {
+      display: inline-flex; align-items: center;
+      height: 18px; padding: 0 7px;
+      border-radius: 3px;
+      font-size: 10px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      white-space: nowrap;
+    }
+    .priority-critical { background: #FEE2E2; color: #DC2626; }
+    .priority-high     { background: #FFEDD5; color: #C2410C; }
+    .priority-medium   { background: #FEF9C3; color: #A16207; }
+    .priority-low      { background: #F3F4F6; color: #6B7280; }
+
+    /* DUE BADGE */
+    .due-badge {
+      display: inline-flex; align-items: center;
+      height: 18px; padding: 0 7px;
+      border-radius: 3px;
+      font-size: 10px; font-weight: 500;
+      white-space: nowrap;
+    }
+    .due-normal   { background: #FEF9C3; color: #A16207; }
+    .due-overdue  { background: #FEE2E2; color: #DC2626; }
+    .due-done     { background: #D1FAE5; color: #065F46; }
+
+    /* CHECKLIST BADGE */
+    .checklist-badge {
+      display: inline-flex; align-items: center;
+      height: 18px; padding: 0 7px;
+      border-radius: 3px;
+      font-size: 10px; font-weight: 500;
+      background: #F3F4F6; color: #6B7280;
+      white-space: nowrap;
+    }
+
+    /* AVATAR */
+    .avatar {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      flex-shrink: 0;
+    }
+
+    /* CARD LABEL */
+    .card-variant-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      top: 64px; left: 50%; transform: translateX(-50%);
+      background: var(--text-primary);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ANATOMY DIAGRAM */
+    .anatomy-wrap {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .anatomy-card-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .anatomy-card {
+      width: 280px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 12px;
+      box-shadow: var(--shadow-card);
+    }
+    .anatomy-legend {
+      display: flex; flex-direction: column;
+      gap: 8px;
+      padding-top: 4px;
+    }
+    .anatomy-item {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .anatomy-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .anatomy-item-label {
+      font-size: 12px; color: var(--text-secondary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .anatomy-item-sub {
+      font-size: 11px; color: var(--text-muted);
+    }
+
+    /* Issue type colors */
+    .issue-goal    { background: #F3E8FF; color: #8B5CF6; }
+    .issue-story   { background: #DBEAFE; color: #3B82F6; }
+    .issue-feature { background: #D1FAE5; color: #10B981; }
+    .issue-task    { background: #FEF3C7; color: #F59E0B; }
+
+    /* highlight ring for anatomy */
+    .highlight-ring {
+      outline: 2px dashed #629584;
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">T</div>
+    <span class="nav-title">Tika</span>
+    <span class="nav-sep">|</span>
+    <a href="index.html" class="nav-back">← 데모 홈</a>
+    <span class="nav-sep">›</span>
+    <span class="nav-current">TicketCard 컴포넌트</span>
+  </nav>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- PAGE -->
+  <div class="page-wrap">
+    <div class="page-header">
+      <div class="page-title">TicketCard 컴포넌트</div>
+      <div class="page-desc">칸반 보드에서 각 티켓을 표시하는 카드 컴포넌트입니다. 우선순위, 라벨, 마감일, 체크리스트, 담당자 등 다양한 상태를 표시할 수 있습니다.</div>
+    </div>
+
+    <!-- CARD VARIANTS -->
+    <div class="section">
+      <div class="section-label">카드 변형 (8가지)</div>
+      <div class="card-grid">
+
+        <!-- CARD 1: 기본 카드 -->
+        <div>
+          <div class="card-variant-label">1. 기본 카드</div>
+          <div class="ticket-card" onclick="showToast('기본 카드: 로그인 페이지 구현')">
+            <div class="card-title">로그인 페이지 구현</div>
+            <div class="card-desc">사용자 인증을 위한 로그인 페이지를 구현합니다. 이메일과 비밀번호 입력 폼을 포함합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-medium">MEDIUM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: 라벨 포함 -->
+        <div>
+          <div class="card-variant-label">2. 라벨 포함</div>
+          <div class="ticket-card" onclick="showToast('라벨 포함: 디자인 시스템 컴포넌트 라이브러리')">
+            <div class="label-row">
+              <span class="label-badge label-frontend">Frontend</span>
+              <span class="label-badge label-design">Design</span>
+            </div>
+            <div class="card-title">디자인 시스템 컴포넌트 라이브러리 구축</div>
+            <div class="card-desc">공통 UI 컴포넌트를 체계적으로 정리하고 스타일 가이드를 작성합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-high">HIGH</span>
+              </div>
+              <div class="avatar" style="background:#629584;">홍</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: 체크리스트 포함 -->
+        <div>
+          <div class="card-variant-label">3. 체크리스트 포함</div>
+          <div class="ticket-card" onclick="showToast('체크리스트 포함: API 설계 및 문서화')">
+            <div class="label-row">
+              <span class="label-badge label-backend">Backend</span>
+            </div>
+            <div class="card-title">API 설계 및 문서화</div>
+            <div class="card-desc">RESTful API 엔드포인트를 설계하고 Swagger 문서를 작성합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-medium">MEDIUM</span>
+                <span class="checklist-badge">☑ 2/4</span>
+              </div>
+              <div class="avatar" style="background:#8B5CF6;">이</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: 이슈 태그 포함 -->
+        <div>
+          <div class="card-variant-label">4. 이슈 태그 포함</div>
+          <div class="ticket-card" onclick="showToast('이슈 태그: 다크 모드 지원 구현')">
+            <div class="issue-tag issue-feature">[F] Feature</div>
+            <div class="label-row">
+              <span class="label-badge label-frontend">Frontend</span>
+            </div>
+            <div class="card-title">다크 모드 지원 구현</div>
+            <div class="card-desc">시스템 설정에 따른 자동 다크 모드 전환 기능을 구현합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge due-normal">📅 내일</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 5: 마감 초과 -->
+        <div>
+          <div class="card-variant-label">5. 마감 초과</div>
+          <div class="ticket-card overdue" onclick="showToast('마감 초과: 성능 최적화 작업')">
+            <div class="label-row">
+              <span class="label-badge label-backend">Backend</span>
+            </div>
+            <div class="card-title">성능 최적화 작업</div>
+            <div class="card-desc">데이터베이스 쿼리 최적화 및 캐싱 전략을 수립하고 적용합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge due-overdue">⚠ 1일 초과</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 6: CRITICAL 우선순위 -->
+        <div>
+          <div class="card-variant-label">6. CRITICAL 우선순위</div>
+          <div class="ticket-card" onclick="showToast('CRITICAL: 보안 취약점 패치')">
+            <div class="label-row">
+              <span class="label-badge label-bug">Bug</span>
+              <span class="label-badge label-infra">Infra</span>
+            </div>
+            <div class="card-title">보안 취약점 패치 및 긴급 배포</div>
+            <div class="card-desc">SQL 인젝션 취약점을 즉시 패치하고 프로덕션에 긴급 배포합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-critical">CRITICAL</span>
+              </div>
+              <div class="avatar" style="background:#3B82F6;">김</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 7: 완료됨 -->
+        <div>
+          <div class="card-variant-label">7. 완료됨</div>
+          <div class="ticket-card done" onclick="showToast('완료됨: 초기 프로젝트 셋업')">
+            <div class="label-row">
+              <span class="label-badge label-infra">Infra</span>
+            </div>
+            <div class="card-title done-title">초기 프로젝트 셋업 및 환경 구성</div>
+            <div class="card-desc" style="text-decoration:line-through; color:#8993A4;">Next.js 프로젝트를 초기화하고 개발 환경을 구성합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-medium">MEDIUM</span>
+                <span class="due-badge due-done">✓ 완료</span>
+              </div>
+              <div class="avatar" style="background:#629584;">홍</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 8: 다중 라벨 -->
+        <div>
+          <div class="card-variant-label">8. 다중 라벨</div>
+          <div class="ticket-card" onclick="showToast('다중 라벨: 전체 화면 E2E 테스트')">
+            <div class="label-row">
+              <span class="label-badge label-frontend">Frontend</span>
+              <span class="label-badge label-backend">Backend</span>
+              <span class="label-badge label-bug">Bug</span>
+            </div>
+            <div class="card-title">전체 화면 E2E 테스트 작성</div>
+            <div class="card-desc">Playwright를 사용하여 주요 사용자 흐름에 대한 E2E 테스트를 작성합니다.</div>
+            <div class="card-footer">
+              <div class="footer-badges">
+                <span class="priority-badge priority-low">LOW</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ANATOMY DIAGRAM -->
+    <div class="section">
+      <div class="section-label">카드 구성 요소</div>
+      <div class="anatomy-wrap">
+        <!-- Labeled anatomy card -->
+        <div class="anatomy-card-wrap">
+          <div class="anatomy-card">
+            <div class="issue-tag issue-feature highlight-ring" style="margin-bottom:8px;">[F] Feature</div>
+            <div class="label-row highlight-ring" style="margin-bottom:8px;">
+              <span class="label-badge label-frontend">Frontend</span>
+              <span class="label-badge label-design">Design</span>
+            </div>
+            <div class="card-title highlight-ring" style="margin-bottom:6px;">카드 제목이 여기에 표시됩니다</div>
+            <div class="card-desc highlight-ring" style="margin-bottom:10px;">카드 설명 텍스트가 최대 2줄까지 표시됩니다. 초과되는 내용은 말줄임표로 처리됩니다.</div>
+            <div class="card-footer highlight-ring">
+              <div class="footer-badges">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge due-normal">📅 내일</span>
+                <span class="checklist-badge">☑ 1/3</span>
+              </div>
+              <div class="avatar" style="background:#629584;">홍</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="anatomy-legend">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">구성 요소</div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#D1FAE5; border:1.5px solid #10B981;"></div>
+            <div>
+              <div class="anatomy-item-label">이슈 태그 (선택)</div>
+              <div class="anatomy-item-sub">Goal / Story / Feature / Task</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#DBEAFE; border:1.5px solid #3B82F6;"></div>
+            <div>
+              <div class="anatomy-item-label">라벨 뱃지 행 (선택)</div>
+              <div class="anatomy-item-sub">Frontend / Backend / Design / Bug 등</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#2C3E50;"></div>
+            <div>
+              <div class="anatomy-item-label">카드 제목 (필수)</div>
+              <div class="anatomy-item-sub">13px, font-weight 600, line-height 1.4</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#8993A4;"></div>
+            <div>
+              <div class="anatomy-item-label">설명 텍스트 (선택)</div>
+              <div class="anatomy-item-sub">11px, muted, 최대 2줄 클램프</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#FEF9C3; border:1.5px solid #A16207;"></div>
+            <div>
+              <div class="anatomy-item-label">우선순위 뱃지 (필수)</div>
+              <div class="anatomy-item-sub">CRITICAL / HIGH / MEDIUM / LOW</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#FEF9C3; border:1.5px solid #A16207;"></div>
+            <div>
+              <div class="anatomy-item-label">마감일 뱃지 (선택)</div>
+              <div class="anatomy-item-sub">정상 / 초과 / 완료 상태별 색상</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#F3F4F6; border:1.5px solid #6B7280;"></div>
+            <div>
+              <div class="anatomy-item-label">체크리스트 뱃지 (선택)</div>
+              <div class="anatomy-item-sub">완료/전체 개수 표시</div>
+            </div>
+          </div>
+          <div class="anatomy-item">
+            <div class="anatomy-dot" style="background:#629584;"></div>
+            <div>
+              <div class="anatomy-item-label">담당자 아바타 (선택)</div>
+              <div class="anatomy-item-sub">22px 원형, 이니셜 표시</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; padding:12px; background:#F8F9FB; border-radius:6px; border:1px solid var(--border-light);">
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">특수 상태</div>
+            <div class="anatomy-item" style="margin-bottom:5px;">
+              <div class="anatomy-dot" style="background:#FEE2E2; border:1.5px solid #DC2626;"></div>
+              <div class="anatomy-item-sub">마감 초과: 카드 테두리 2px solid #DC2626</div>
+            </div>
+            <div class="anatomy-item" style="margin-bottom:5px;">
+              <div class="anatomy-dot" style="background:#DDD;"></div>
+              <div class="anatomy-item-sub">완료됨: opacity 0.75, 제목 취소선</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUE TYPE & LABEL COLOR REFERENCE -->
+    <div class="section">
+      <div class="section-label">색상 참조</div>
+      <div style="display:flex; gap:32px; flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">이슈 유형</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <span class="issue-tag issue-goal" style="width:fit-content;">[G] Goal</span>
+            <span class="issue-tag issue-story" style="width:fit-content;">[S] Story</span>
+            <span class="issue-tag issue-feature" style="width:fit-content;">[F] Feature</span>
+            <span class="issue-tag issue-task" style="width:fit-content;">[T] Task</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">라벨</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; max-width:280px;">
+            <span class="label-badge label-frontend">Frontend</span>
+            <span class="label-badge label-backend">Backend</span>
+            <span class="label-badge label-design">Design</span>
+            <span class="label-badge label-bug">Bug</span>
+            <span class="label-badge label-docs">Docs</span>
+            <span class="label-badge label-infra">Infra</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">우선순위</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <span class="priority-badge priority-critical" style="width:fit-content;">CRITICAL</span>
+            <span class="priority-badge priority-high" style="width:fit-content;">HIGH</span>
+            <span class="priority-badge priority-medium" style="width:fit-content;">MEDIUM</span>
+            <span class="priority-badge priority-low" style="width:fit-content;">LOW</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">마감일 상태</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <span class="due-badge due-normal" style="width:fit-content;">📅 2025-02-28</span>
+            <span class="due-badge due-overdue" style="width:fit-content;">⚠ 1일 초과</span>
+            <span class="due-badge due-done" style="width:fit-content;">✓ 완료</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let toastTimer = null;
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = '클릭됨: ' + msg;
+      el.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.remove('show');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

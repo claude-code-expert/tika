@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika — Kanban Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --text-h1: 20px; --text-h2: 16px; --text-body1: 14px; --text-body2: 12px; --text-small: 11px;
+      --fw-bold: 700; --fw-semibold: 600; --fw-medium: 500; --fw-regular: 400;
+      --bg-app: #F8F9FB; --bg-header: #FFFFFF; --bg-sidebar: #F1F3F6;
+      --bg-board: #E8EDF2; --bg-footer: #F4F5F7; --bg-card: #FFFFFF; --bg-column: #F4F5F7;
+      --text-primary: #2C3E50; --text-secondary: #5A6B7F; --text-muted: #8993A4;
+      --accent-primary: #629584; --accent-primary-hover: #527D6F; --accent-light: #E8F5F0;
+      --col-todo: #DBEAFE; --col-todo-text: #1E40AF;
+      --col-inprogress: #FEF3C7; --col-inprogress-text: #92400E;
+      --col-done: #D1FAE5; --col-done-text: #065F46;
+      --border-light: #DFE1E6; --border-medium: #C4C9D1;
+      --radius-card: 8px; --radius-column: 12px; --radius-button: 6px; --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12); --shadow-card-hover: 0 3px 8px rgba(9,30,66,0.18);
+      --shadow-card-drag: 0 5px 10px rgba(9,30,66,0.25); --shadow-header: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+      --z-sidebar: 10; --z-header: 50; --z-modal: 200;
+      --sp-xs: 4px; --sp-sm: 8px; --sp-md: 12px; --sp-lg: 16px; --sp-xl: 24px;
+      --header-height: 60px; --footer-height: 55px; --sidebar-width: 260px; --column-width: 280px; --filter-bar-height: 48px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: var(--font-body); font-size: var(--text-body1); color: var(--text-primary); background: var(--bg-app); -webkit-font-smoothing: antialiased; }
+    .ic { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; }
+    .ic svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ═══ Header ═══ */
+    .header { height: var(--header-height); background: var(--bg-header); border-bottom: 1px solid var(--border-light); box-shadow: var(--shadow-header); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--sp-lg); z-index: var(--z-header); flex-shrink: 0; }
+    .header-left { display: flex; align-items: center; gap: var(--sp-md); }
+    .logo { display: flex; align-items: center; gap: var(--sp-sm); text-decoration: none; color: var(--text-primary); }
+    .logo-icon { width: 32px; height: 32px; background: var(--accent-primary); border-radius: var(--radius-button); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: var(--fw-bold); font-size: 16px; }
+    .logo-text { font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--text-h1); letter-spacing: -0.5px; }
+    .header-center { flex: 1; display: flex; justify-content: center; padding: 0 var(--sp-xl); }
+    .search-box { position: relative; width: 300px; }
+    .search-box input { width: 100%; height: 36px; padding: 0 var(--sp-md) 0 36px; background: var(--bg-sidebar); border: 1px solid transparent; border-radius: var(--radius-button); font-family: var(--font-body); font-size: var(--text-body2); color: var(--text-primary); outline: none; transition: all 0.2s; }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box input:focus { background: #fff; border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-light); }
+    .search-box .s-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .header-right { display: flex; align-items: center; gap: var(--sp-xs); }
+    .btn-new { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; background: var(--accent-primary); color: #fff; border: none; border-radius: var(--radius-button); font-family: var(--font-body); font-size: var(--text-body2); font-weight: var(--fw-semibold); cursor: pointer; transition: background 0.15s; }
+    .btn-new:hover { background: var(--accent-primary-hover); }
+    .icon-btn { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-button); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; position: relative; }
+    .icon-btn:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+    .badge-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid var(--bg-header); }
+    .divider-v { width: 1px; height: 24px; background: var(--border-light); margin: 0 var(--sp-sm); }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #7EB4A2; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: var(--fw-semibold); font-size: var(--text-body2); cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+    .user-avatar:hover { border-color: var(--accent-primary); }
+
+    /* Dropdown */
+    .dd { position: relative; }
+    .dd-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 200px; background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-card); box-shadow: var(--shadow-dropdown); z-index: var(--z-modal); opacity: 0; visibility: hidden; transform: translateY(-4px); transition: all 0.15s ease; padding: var(--sp-xs) 0; }
+    .dd.open .dd-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    .dd-label { padding: var(--sp-sm) var(--sp-lg); font-size: var(--text-small); color: var(--text-muted); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.5px; }
+    .dd-item { display: flex; align-items: center; gap: var(--sp-sm); padding: 8px var(--sp-lg); font-size: var(--text-body2); color: var(--text-primary); cursor: pointer; transition: background 0.1s; }
+    .dd-item:hover { background: var(--bg-sidebar); }
+    .dd-item.danger { color: #DC2626; }
+    .dd-sep { height: 1px; background: var(--border-light); margin: var(--sp-xs) 0; }
+
+    /* ═══ Main ═══ */
+    .main-area { display: flex; flex: 1; overflow: hidden; }
+
+    /* ═══ Sidebar ═══ */
+    .sidebar { width: var(--sidebar-width); min-width: 0; background: var(--bg-sidebar); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; transition: width 0.3s ease; z-index: var(--z-sidebar); position: relative; overflow: hidden; flex-shrink: 0; }
+    .sidebar.collapsed { width: 0 !important; border-right: none; }
+    .sb-header { display: flex; align-items: center; gap: var(--sp-sm); padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--border-light); min-height: 52px; }
+    .sb-toggle { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-tag); color: var(--text-muted); cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+    .sb-toggle:hover { background: var(--border-light); color: var(--text-primary); }
+    .sb-nav { flex: 1; overflow-y: auto; padding: var(--sp-sm) 0; }
+    .nav-sec { padding: var(--sp-sm) var(--sp-lg); font-size: var(--text-small); font-weight: var(--fw-semibold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .nav-item { display: flex; align-items: center; gap: var(--sp-sm); padding: 8px var(--sp-lg); font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+    .nav-item:hover { background: #E2E5EA; color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-light); color: var(--accent-primary); font-weight: var(--fw-medium); }
+    .nav-cnt { margin-left: auto; font-size: var(--text-small); color: var(--text-muted); background: var(--bg-header); padding: 2px 8px; border-radius: 10px; min-width: 24px; text-align: center; line-height: 1.4; }
+    .nav-item.active .nav-cnt { background: var(--accent-primary); color: #fff; }
+    .ws-sel { display: flex; align-items: center; gap: var(--sp-sm); padding: var(--sp-sm); border-radius: var(--radius-button); cursor: pointer; transition: background 0.1s; white-space: nowrap; flex: 1; }
+    .ws-sel:hover { background: var(--border-light); }
+    .ws-ic { width: 28px; height: 28px; border-radius: var(--radius-button); background: var(--accent-primary); color: #fff; font-size: var(--text-body2); font-weight: var(--fw-bold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ws-name { font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-primary); }
+    .ws-type { font-size: var(--text-small); color: var(--text-muted); }
+    .ws-chev { margin-left: auto; color: var(--text-muted); }
+
+    /* Workspace dropdown (contains nav + workspace list) */
+    .ws-dd { position: relative; flex: 1; min-width: 0; }
+    .ws-dd-menu {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; min-width: 240px;
+      background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-dropdown); z-index: var(--z-modal);
+      opacity: 0; visibility: hidden; transform: translateY(-4px);
+      transition: all 0.15s ease; padding: var(--sp-xs) 0; max-height: 400px; overflow-y: auto;
+    }
+    .ws-dd.open .ws-dd-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+
+    /* Sidebar backlog list */
+    .sb-list { flex: 1; overflow-y: auto; padding: var(--sp-sm); display: flex; flex-direction: column; gap: var(--sp-sm); }
+    .sb-list-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px var(--sp-sm); margin-bottom: 4px;
+    }
+    .sb-list-title { font-size: var(--text-body2); font-weight: var(--fw-semibold); color: var(--text-secondary); }
+    .sb-list-cnt { font-size: var(--text-small); color: var(--text-muted); }
+    .sb-task {
+      background: var(--bg-card); padding: var(--sp-md); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card); cursor: pointer; transition: box-shadow 0.2s, transform 0.15s;
+    }
+    .sb-task:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+    .sb-task-title {
+      font-size: var(--text-body1); font-weight: var(--fw-medium); color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45;
+    }
+    .sb-task-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+    .sb-task-time { font-size: var(--text-small); color: var(--text-muted); margin-left: auto; }
+
+    .sb-resizer { position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; z-index: 20; }
+    .sb-resizer::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 2px; height: 32px; border-radius: 2px; background: transparent; transition: background 0.2s; }
+    .sb-resizer:hover::after, .sb-resizer.active::after { background: var(--accent-primary); }
+
+    /* Expand button — controlled by JS */
+    .expand-btn { position: absolute; left: 0; top: 12px; width: 28px; height: 28px; background: var(--bg-sidebar); border: 1px solid var(--border-light); border-left: none; border-radius: 0 var(--radius-button) var(--radius-button) 0; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 30; color: var(--text-muted); transition: all 0.15s; box-shadow: 2px 0 4px rgba(0,0,0,0.08); }
+    .expand-btn:hover { background: var(--accent-light); color: var(--accent-primary); }
+    .expand-btn.show { display: flex; }
+
+    /* ═══ Board Wrapper ═══ */
+    .board-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+    /* Filter */
+    .filters { height: var(--filter-bar-height); display: flex; align-items: center; gap: var(--sp-sm); padding: 0 var(--sp-lg); background: var(--bg-app); border-bottom: 1px solid var(--border-light); flex-shrink: 0; overflow-x: auto; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--bg-header); font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--font-body); line-height: 1; }
+    .chip:hover { border-color: var(--accent-primary); color: var(--accent-primary); background: var(--accent-light); }
+    .chip.on { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+    .chip-n { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.25); line-height: 1.3; }
+    .chip:not(.on) .chip-n { background: var(--bg-sidebar); color: var(--text-muted); }
+    .f-div { width: 1px; height: 20px; background: var(--border-light); flex-shrink: 0; }
+
+    /* ═══ Board ═══ */
+    .board { flex: 1; display: flex; gap: var(--sp-lg); padding: var(--sp-lg); overflow-x: auto; overflow-y: hidden; background: var(--bg-board); }
+    .lane { min-width: var(--column-width); width: var(--column-width); background: var(--bg-column); border-radius: var(--radius-column); display: flex; flex-direction: column; max-height: 100%; flex-shrink: 0; }
+    .lane-head { padding: var(--sp-md) var(--sp-lg); border-radius: var(--radius-column) var(--radius-column) 0 0; display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+    .lane-head-l { display: flex; align-items: center; gap: var(--sp-sm); }
+    .lane-title { font-family: var(--font-display); font-size: var(--text-h2); font-weight: var(--fw-semibold); }
+    .lane-cnt { font-size: var(--text-small); font-weight: var(--fw-medium); padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,0.08); line-height: 1.3; }
+    .lane-menu { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-tag); cursor: pointer; color: inherit; opacity: 0.5; transition: all 0.15s; }
+    .lane-menu:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+    .lane.todo .lane-head { background: var(--col-todo); color: var(--text-primary); }
+    .lane.inp .lane-head { background: var(--col-inprogress); color: var(--text-primary); }
+    .lane.done .lane-head { background: var(--col-done); color: var(--text-primary); }
+    .lane-body { flex: 1; overflow-y: auto; padding: var(--sp-sm); display: flex; flex-direction: column; gap: var(--sp-sm); }
+    .lane-body::-webkit-scrollbar { width: 4px; }
+    .lane-body::-webkit-scrollbar-track { background: transparent; }
+    .lane-body::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 2px; }
+
+    /* Lane context menu */
+    .lctx { position: relative; }
+    .lctx-menu { position: absolute; top: calc(100% + 4px); right: 0; min-width: 180px; background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-card); box-shadow: var(--shadow-dropdown); z-index: var(--z-modal); opacity: 0; visibility: hidden; transform: translateY(-4px); transition: all 0.15s ease; padding: var(--sp-xs) 0; }
+    .lctx.open .lctx-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    .lctx-menu .lm { display: flex; align-items: center; gap: var(--sp-sm); padding: 8px var(--sp-md); font-size: var(--text-body2); color: var(--text-primary); cursor: pointer; transition: background 0.1s; white-space: nowrap; }
+    .lctx-menu .lm:hover { background: var(--bg-sidebar); }
+    .lctx-menu .lm.danger { color: #DC2626; }
+    .lctx-menu .lm-sep { height: 1px; background: var(--border-light); margin: var(--sp-xs) 0; }
+
+    /* ═══ Card ═══ */
+    .card { background: var(--bg-card); padding: var(--sp-md); border-radius: var(--radius-card); box-shadow: var(--shadow-card); cursor: grab; transition: box-shadow 0.2s, transform 0.15s; }
+    .card:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+    .card:active { cursor: grabbing; box-shadow: var(--shadow-card-drag); }
+    .tags { display: flex; gap: var(--sp-xs); flex-wrap: wrap; margin-bottom: var(--sp-sm); }
+    .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: var(--radius-tag); font-size: 10px; font-weight: var(--fw-medium); line-height: 1; }
+    .tag.fe { background: #2b7fff; color: #fff; }
+    .tag.be { background: #00c950; color: #fff; }
+    .tag.ui { background: #ad46ff; color: #fff; }
+    .tag.bug { background: #fb2c36; color: #fff; }
+    .tag.doc { background: #ffac6d; color: #3D2200; }
+    .tag.inf { background: #615fff; color: #fff; }
+    .tag.c7 { background: #ff29d3; color: #fff; }
+    .tag.c8 { background: #a0628c; color: #fff; }
+    .tag.c9 { background: #89d0f0; color: #1A3D4D; }
+    .tag.c10 { background: #71e4bf; color: #0A3D2A; }
+    .tag.c11 { background: #46e264; color: #0D3A14; }
+    .tag.c12 { background: #caee68; color: #3A4200; }
+    .tag.c13 { background: #fffe92; color: #4A4500; }
+    .tag.c14 { background: #f7d1d1; color: #5C1A1A; }
+    .tag.c15 { background: #f7a2ff; color: #4A0050; }
+    .tag.c16 { background: #c1d1ff; color: #1A2A5C; }
+    .tag.c17 { background: #c5dbdc; color: #2A3D3E; }
+    .card-title { font-size: var(--text-body1); font-weight: var(--fw-medium); line-height: 1.45; word-wrap: break-word; }
+    .card-desc { font-size: var(--text-body2); color: var(--text-muted); line-height: 1.4; margin-top: var(--sp-xs); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+    .badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .b { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 7px; border-radius: var(--radius-tag); font-size: 11px; font-weight: var(--fw-medium); line-height: 1; white-space: nowrap; }
+    .b svg { flex-shrink: 0; }
+    .b-crit { background: #FEE2E2; color: #DC2626; }
+    .b-high { background: #FFEDD5; color: #C2410C; }
+    .b-med { background: #FEF9C3; color: #A16207; }
+    .b-low { background: #F3F4F6; color: #6B7280; }
+    .b-done { background: #D1FAE5; color: #065F46; }
+    .b-due { background: #F3F4F6; color: var(--text-muted); }
+    .b-over { background: #FEE2E2; color: #DC2626; }
+    .b-soon { background: #FEF3C7; color: #92400E; }
+    .meta { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-small); color: var(--text-muted); }
+    .av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: var(--fw-semibold); flex-shrink: 0; border: 2px solid var(--bg-card); }
+    .avs { display: flex; }
+    .avs .av:not(:first-child) { margin-left: -6px; }
+    .card.fin { opacity: 0.7; }
+    .card.fin .card-title { text-decoration: line-through; color: var(--text-muted); }
+
+    /* ═══ Footer ═══ */
+    .footer { height: var(--footer-height); background: var(--bg-footer); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .footer span { font-size: var(--text-small); color: var(--text-muted); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C4C9D1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #A0A7B4; }
+
+    /* ═══════════════════════════════════════════
+       Modal System
+       ═══════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(9,30,66,0.54);
+      z-index: 300; display: none; align-items: flex-start; justify-content: center;
+      padding: 60px 16px; overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: var(--radius-column); box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+      width: 100%; position: relative;
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; border-radius: var(--radius-button);
+      color: var(--text-muted); cursor: pointer; transition: all 0.15s; z-index: 1;
+    }
+    .modal-close:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+
+    /* ── New Task Modal ── */
+    .modal-new { max-width: 560px; }
+    .modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border-light);
+    }
+    .modal-header h2 {
+      font-family: var(--font-display); font-size: 18px; font-weight: var(--fw-semibold);
+    }
+    .modal-body { padding: 20px 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+      display: block; font-size: var(--text-body2); font-weight: var(--fw-medium);
+      color: var(--text-secondary); margin-bottom: 6px;
+    }
+    .form-label .req { color: #EF4444; margin-left: 2px; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--border-light);
+      border-radius: var(--radius-button); font-family: var(--font-body);
+      font-size: var(--text-body1); color: var(--text-primary); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s; background: #fff;
+    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-light);
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .form-tags-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .form-tag-chip {
+      display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px;
+      border-radius: 13px; font-size: 11px; font-weight: var(--fw-medium);
+      cursor: pointer; border: 2px solid transparent; color: #fff;
+      transition: all 0.15s; opacity: 0.45;
+    }
+    .form-tag-chip:hover { opacity: 0.75; }
+    .form-tag-chip.selected { opacity: 1; border-color: var(--text-primary); }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border-light);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    .btn-cancel {
+      height: 36px; padding: 0 16px; border: 1px solid var(--border-light);
+      border-radius: var(--radius-button); background: #fff; font-family: var(--font-body);
+      font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-secondary);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: var(--bg-sidebar); }
+    .btn-submit {
+      height: 36px; padding: 0 20px; border: none; border-radius: var(--radius-button);
+      background: var(--accent-primary); color: #fff; font-family: var(--font-body);
+      font-size: var(--text-body2); font-weight: var(--fw-semibold); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover { background: var(--accent-primary-hover); }
+
+    /* ── Detail Modal ── */
+    .modal-detail { max-width: 720px; }
+    .detail-top {
+      padding: 24px 24px 16px; border-bottom: 1px solid var(--border-light);
+    }
+    .detail-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .detail-title {
+      font-family: var(--font-display); font-size: 20px; font-weight: var(--fw-bold);
+      line-height: 1.4; color: var(--text-primary);
+    }
+    .detail-meta-row {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px;
+    }
+    .detail-meta-item {
+      display: flex; align-items: center; gap: 6px; font-size: var(--text-body2);
+      color: var(--text-secondary);
+    }
+    .detail-meta-label { color: var(--text-muted); font-size: var(--text-small); min-width: 50px; }
+    .detail-body { padding: 20px 24px; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section:last-child { margin-bottom: 0; }
+    .detail-section-title {
+      font-size: var(--text-body2); font-weight: var(--fw-semibold); color: var(--text-secondary);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .detail-desc {
+      font-size: var(--text-body1); color: var(--text-primary); line-height: 1.7;
+      background: var(--bg-sidebar); padding: 12px 16px; border-radius: var(--radius-card);
+    }
+    .detail-checklist { list-style: none; }
+    .detail-checklist li {
+      display: flex; align-items: center; gap: 8px; padding: 8px 0;
+      border-bottom: 1px solid var(--border-light); font-size: var(--text-body2);
+    }
+    .detail-checklist li:last-child { border-bottom: none; }
+    .detail-checklist input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent-primary); cursor: pointer;
+    }
+    .detail-checklist .done-item { text-decoration: line-through; color: var(--text-muted); }
+    .detail-activity { display: flex; flex-direction: column; gap: 12px; }
+    .activity-item { display: flex; gap: 10px; font-size: var(--text-body2); }
+    .activity-av {
+      width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 10px; font-weight: var(--fw-semibold);
+      flex-shrink: 0;
+    }
+    .activity-content { flex: 1; }
+    .activity-name { font-weight: var(--fw-medium); color: var(--text-primary); }
+    .activity-time { font-size: var(--text-small); color: var(--text-muted); margin-top: 2px; }
+    .detail-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border-light);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .detail-actions { display: flex; gap: 8px; }
+    .btn-icon-text {
+      display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px;
+      border: 1px solid var(--border-light); border-radius: var(--radius-button);
+      background: #fff; font-family: var(--font-body); font-size: var(--text-body2);
+      color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+    }
+    .btn-icon-text:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+    .btn-icon-text.danger { color: #DC2626; border-color: #FECACA; }
+    .btn-icon-text.danger:hover { background: #FEF2F2; }
+
+    /* Detail tag editor */
+    .dt-tag-editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .dt-tag { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: var(--radius-tag); font-size: 11px; font-weight: var(--fw-medium); color: #fff; }
+    .dt-tag-rm { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; border: none; background: rgba(0,0,0,0.2); border-radius: 50%; color: inherit; cursor: pointer; font-size: 10px; line-height: 1; padding: 0; transition: background 0.15s; }
+    .dt-tag-rm:hover { background: rgba(0,0,0,0.4); }
+    .dt-tag-add { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--border-medium); border-radius: var(--radius-tag); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-size: 14px; }
+    .dt-tag-add:hover { border-color: var(--accent-primary); color: var(--accent-primary); background: var(--accent-light); }
+    .dt-tag-picker { display: none; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding: 10px; background: var(--bg-sidebar); border-radius: var(--radius-card); }
+    .dt-tag-picker.open { display: flex; }
+    .dt-tag-opt { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; font-size: 11px; font-weight: var(--fw-medium); color: #fff; cursor: pointer; opacity: 0.7; transition: opacity 0.15s; border: none; }
+    .dt-tag-opt:hover { opacity: 1; }
+    .dt-tag-opt.used { opacity: 0.3; pointer-events: none; }
+
+    /* Comment input */
+    .comment-box { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light); }
+    .comment-box .av { flex-shrink: 0; }
+    .comment-input-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .comment-input {
+      width: 100%; min-height: 40px; max-height: 120px; padding: 8px 12px; border: 1px solid var(--border-light);
+      border-radius: var(--radius-button); font-family: var(--font-body); font-size: var(--text-body2);
+      color: var(--text-primary); outline: none; resize: vertical; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .comment-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-light); }
+    .comment-input::placeholder { color: var(--text-muted); }
+    .comment-actions { display: flex; justify-content: flex-end; }
+    .comment-submit {
+      height: 30px; padding: 0 14px; border: none; border-radius: var(--radius-button);
+      background: var(--accent-primary); color: #fff; font-family: var(--font-body);
+      font-size: var(--text-body2); font-weight: var(--fw-medium); cursor: pointer; transition: background 0.15s;
+    }
+    .comment-submit:hover { background: var(--accent-primary-hover); }
+    .comment-submit:disabled { opacity: 0.4; cursor: default; }
+
+    /* Category breadcrumb & selector */
+    .cat-breadcrumb {
+      display: flex; align-items: center; gap: 4px; font-size: var(--text-body2);
+      color: var(--text-muted); margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .cat-crumb {
+      display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px;
+      border-radius: var(--radius-tag); background: var(--bg-sidebar); color: var(--text-secondary);
+      font-size: 11px; font-weight: var(--fw-medium); cursor: default;
+    }
+    .cat-crumb .cat-type {
+      font-size: 9px; font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 1px 4px; border-radius: 3px; color: #fff; margin-right: 2px;
+    }
+    .cat-type-goal { background: #8B5CF6; }
+    .cat-type-story { background: #3B82F6; }
+    .cat-type-feature { background: #10B981; }
+    .cat-type-task { background: #F59E0B; }
+    .cat-sep { color: var(--text-muted); font-size: 10px; }
+    .cat-edit-btn {
+      width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px dashed var(--border-medium); border-radius: var(--radius-tag); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all 0.15s; margin-left: 2px;
+    }
+    .cat-edit-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); background: var(--accent-light); }
+    .cat-select-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cat-select-row .form-group { flex: 1; min-width: 120px; }
+    .cat-select-row .form-select { font-size: 12px; padding: 6px 8px; }
+    .cat-editor { display: none; margin-top: 8px; padding: 12px; background: var(--bg-sidebar); border-radius: var(--radius-card); }
+    .cat-editor.open { display: block; }
+
+    /* Label creator inline form */
+    .tag-creator { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+    .tag-creator-input {
+      flex: 1; height: 28px; padding: 0 8px; border: 1px solid var(--border-light);
+      border-radius: var(--radius-tag); font-family: var(--font-body); font-size: 12px;
+      outline: none; min-width: 80px; max-width: 140px;
+    }
+    .tag-creator-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--accent-light); }
+    .tag-creator-input::placeholder { color: var(--text-muted); }
+    .tag-color-swatches { display: flex; gap: 3px; flex-wrap: wrap; }
+    .tag-swatch {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+    }
+    .tag-swatch:hover { transform: scale(1.15); }
+    .tag-swatch.sel { border-color: var(--text-primary); }
+    .tag-creator-btn {
+      height: 28px; padding: 0 10px; border: none; border-radius: var(--radius-tag);
+      background: var(--accent-primary); color: #fff; font-size: 11px; font-weight: var(--fw-medium);
+      cursor: pointer; white-space: nowrap; transition: background 0.15s;
+    }
+    .tag-creator-btn:hover { background: var(--accent-primary-hover); }
+
+    /* Checklist builder */
+    .cl-builder { display: flex; flex-direction: column; gap: 4px; }
+    .cl-builder-items { display: flex; flex-direction: column; gap: 2px; }
+    .cl-builder-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+      background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-button);
+    }
+    .cl-builder-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent-primary); cursor: pointer; flex-shrink: 0; }
+    .cl-builder-item span { flex: 1; font-size: 13px; color: var(--text-primary); }
+    .cl-builder-item .cl-rm {
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+      border-radius: 50%; font-size: 14px; transition: all 0.15s; flex-shrink: 0;
+    }
+    .cl-builder-item .cl-rm:hover { background: #FEE2E2; color: #DC2626; }
+    .cl-builder-add {
+      display: flex; align-items: center; gap: 6px; margin-top: 4px;
+    }
+    .cl-builder-input {
+      flex: 1; height: 32px; padding: 0 10px; border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-button); font-family: var(--font-body); font-size: 13px;
+      outline: none; background: transparent; color: var(--text-primary);
+    }
+    .cl-builder-input:focus { border-style: solid; border-color: var(--accent-primary); background: #fff; box-shadow: 0 0 0 2px var(--accent-light); }
+    .cl-builder-input::placeholder { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="header">
+    <div class="header-left">
+      <a href="#" class="logo"><div class="logo-icon">T</div><span class="logo-text">Tika</span></a>
+    </div>
+    <div class="header-center">
+      <div class="search-box">
+        <span class="s-icon ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+        <input type="text" placeholder="업무 검색..." />
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-new">
+        <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span> 새 업무
+      </button>
+      <div class="divider-v"></div>
+      <!-- Notifications -->
+      <div class="dd" id="dd-noti">
+        <button class="icon-btn" onclick="td('dd-noti')" title="알림">
+          <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+          <span class="badge-dot"></span>
+        </button>
+        <div class="dd-menu">
+          <div class="dd-label">알림</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px;color:#22C55E"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span> '로그인 페이지 구현' 완료됨</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px;color:#F59E0B"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span> 'API 설계 리뷰' 마감 임박</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px;color:#3B82F6"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> 새 댓글 2건</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item" style="color:var(--accent-primary);font-weight:500;">모든 알림 보기</div>
+        </div>
+      </div>
+      <!-- Settings -->
+      <div class="dd" id="dd-set">
+        <button class="icon-btn" onclick="td('dd-set')" title="설정">
+          <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        </button>
+        <div class="dd-menu">
+          <div class="dd-label">설정</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg></span> 보드 관리</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> 멤버 관리</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></span> 관리자 콘솔</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg></span> 단축키</div>
+        </div>
+      </div>
+      <div class="divider-v"></div>
+      <!-- User -->
+      <div class="dd" id="dd-user">
+        <div class="user-avatar" onclick="td('dd-user')">홍</div>
+        <div class="dd-menu">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);">
+            <div style="font-weight:600;font-size:13px;">홍길동</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f0989f9e97b0939f9d80919e89de939f9d">[email&#160;protected]</a></div>
+          </div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> 내 프로필</div>
+          <div class="dd-item"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span> 도움말</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item danger"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></span> 로그아웃</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════ MAIN ══════ -->
+  <div class="main-area">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar" id="sb">
+      <!-- Workspace dropdown at top -->
+      <div class="sb-header">
+        <div class="ws-dd" id="ws-dd">
+          <div class="ws-sel" onclick="toggleWsDD()">
+            <div class="ws-ic">P</div>
+            <div style="overflow:hidden"><div class="ws-name">Project Alpha</div><div class="ws-type">프로젝트</div></div>
+            <span class="ws-chev ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
+          </div>
+          <div class="ws-dd-menu">
+            <div class="dd-label">메뉴</div>
+            <div class="dd-item" style="font-weight:500;color:var(--accent-primary);">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
+              칸반 보드
+            </div>
+            <div class="dd-item">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>
+              Inbox
+            </div>
+            <div class="dd-item">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+              내 업무
+            </div>
+            <div class="dd-item">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span>
+              일정 보기
+            </div>
+            <div class="dd-item">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
+              아카이브
+            </div>
+            <div class="dd-sep"></div>
+            <div class="dd-label">워크스페이스</div>
+            <div class="dd-item" style="font-weight:500;">
+              <div class="ws-ic" style="width:22px;height:22px;font-size:10px;border-radius:4px;">P</div>
+              Project Alpha
+            </div>
+            <div class="dd-item">
+              <div class="ws-ic" style="width:22px;height:22px;font-size:10px;border-radius:4px;background:#60A5FA;">D</div>
+              Design Team
+            </div>
+            <div class="dd-item">
+              <div class="ws-ic" style="width:22px;height:22px;font-size:10px;border-radius:4px;background:#A78BFA;">B</div>
+              Backend Squad
+            </div>
+            <div class="dd-sep"></div>
+            <div class="dd-item" style="color:var(--accent-primary);">
+              <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span>
+              워크스페이스 추가
+            </div>
+          </div>
+        </div>
+        <button class="sb-toggle" onclick="tsb()" title="사이드바 접기">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg></span>
+        </button>
+      </div>
+
+      <!-- Backlog task list -->
+      <div class="sb-list-header">
+        <span class="sb-list-title">내 업무</span>
+        <span class="sb-list-cnt" id="sbTaskCnt">9건</span>
+      </div>
+      <div class="sb-list" id="sbList">
+        <div class="sb-task" data-card-id="5">
+          <div class="sb-task-title">칸반 보드 드래그앤드롭 구현</div>
+          <div class="sb-task-meta">
+            <span class="b b-crit">긴급</span>
+            <span class="b b-over" style="font-size:10px">2월 18일</span>
+            <span class="sb-task-time">오늘</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="1">
+          <div class="sb-task-title">사용자 인증 API 설계</div>
+          <div class="sb-task-meta">
+            <span class="b b-high">높음</span>
+            <span class="b b-soon" style="font-size:10px">2월 22일</span>
+            <span class="sb-task-time">어제</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="6">
+          <div class="sb-task-title">REST API 엔드포인트 테스트 작성</div>
+          <div class="sb-task-meta">
+            <span class="b b-high">높음</span>
+            <span class="b b-due" style="font-size:10px">2월 24일</span>
+            <span class="sb-task-time">어제</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="2">
+          <div class="sb-task-title">데이터베이스 스키마 리뷰</div>
+          <div class="sb-task-meta">
+            <span class="b b-med">중간</span>
+            <span class="b b-due" style="font-size:10px">2월 25일</span>
+            <span class="sb-task-time">2일 전</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="7">
+          <div class="sb-task-title">Sidebar 리사이즈 기능 개선</div>
+          <div class="sb-task-meta">
+            <span class="b b-med">중간</span>
+            <span class="sb-task-time">2일 전</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="3">
+          <div class="sb-task-title">Figma 디자인 시안 확정</div>
+          <div class="sb-task-meta">
+            <span class="b b-low">낮음</span>
+            <span class="sb-task-time">3일 전</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="4">
+          <div class="sb-task-title">프로젝트 킥오프 미팅 준비</div>
+          <div class="sb-task-meta">
+            <span class="b b-low">낮음</span>
+            <span class="b b-due" style="font-size:10px">3월 1일</span>
+            <span class="sb-task-time">3일 전</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="8" style="opacity:0.6">
+          <div class="sb-task-title" style="text-decoration:line-through">프로젝트 초기 세팅</div>
+          <div class="sb-task-meta">
+            <span class="b b-done">완료</span>
+            <span class="sb-task-time">5일 전</span>
+          </div>
+        </div>
+        <div class="sb-task" data-card-id="9" style="opacity:0.6">
+          <div class="sb-task-title" style="text-decoration:line-through">PRD 및 TRD 작성</div>
+          <div class="sb-task-meta">
+            <span class="b b-done">완료</span>
+            <span class="sb-task-time">6일 전</span>
+          </div>
+        </div>
+      </div>
+      <div class="sb-resizer" id="sbR"></div>
+    </aside>
+
+    <!-- ── Board Wrapper ── -->
+    <div class="board-wrap">
+      <button class="expand-btn" id="expandBtn" onclick="tsb()" title="사이드바 열기">
+        <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+      </button>
+
+      <div class="filters">
+        <button class="chip on">전체 <span class="chip-n">24</span></button>
+        <button class="chip">이번 주 업무 <span class="chip-n">6</span></button>
+        <button class="chip">일정 초과 <span class="chip-n">2</span></button>
+        <div class="f-div"></div>
+        <button class="chip">높은 우선순위</button>
+        <button class="chip">내게 할당됨</button>
+        <button class="chip">라벨</button>
+      </div>
+
+      <div class="board">
+
+        <!-- ── TODO ── -->
+        <div class="lane todo">
+          <div class="lane-head">
+            <div class="lane-head-l"><span class="lane-title">TODO</span><span class="lane-cnt">4</span></div>
+            <div class="lctx" id="lm-todo">
+              <button class="lane-menu" onclick="tlm('lm-todo')"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span></button>
+              <div class="lctx-menu">
+                <div class="lm" onclick="alert('WIP 제한 설정')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M21 6H3"/><path d="M17 12H3"/><path d="M15 18H3"/></svg></span>WIP 제한 설정</div>
+                <div class="lm" onclick="alert('이름 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>이름 변경</div>
+                <div class="lm" onclick="alert('색상 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5Z"/><path d="M2 12h20"/></svg></span>색상 변경</div>
+                <div class="lm-sep"></div>
+                <div class="lm" onclick="alert('레인 추가')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>오른쪽에 레인 추가</div>
+                <div class="lm" onclick="alert('레인 분할')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M8 3v18"/><path d="M16 3v18"/></svg></span>레인 분할</div>
+                <div class="lm-sep"></div>
+                <div class="lm danger" onclick="alert('레인 삭제')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>레인 삭제</div>
+              </div>
+            </div>
+          </div>
+          <div class="lane-body">
+            <div class="card" data-id="1" data-goal="G1" data-story="S1" data-feature="F1" data-title="사용자 인증 API 설계" data-desc="JWT 기반 인증 시스템의 엔드포인트 설계 및 미들웨어 구현. Access Token / Refresh Token 분리, 토큰 갱신 로직, 미들웨어 체인 설계가 필요합니다." data-tags="Backend,Infra" data-priority="높음" data-priority-class="b-high" data-due="2025-02-22" data-due-label="2월 22일" data-status="TODO" data-assignee="홍길동" data-assignee-color="#7EB4A2">
+              <div class="tags"><span class="tag be">Backend</span><span class="tag inf">Infra</span></div>
+              <div class="card-title">사용자 인증 API 설계</div>
+              <div class="card-desc">JWT 기반 인증 시스템의 엔드포인트 설계 및 미들웨어 구현</div>
+              <div class="card-foot"><div class="badges"><span class="b b-high"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>높음</span><span class="b b-soon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 22일</span></div><div class="avs"><div class="av" style="background:#7EB4A2">홍</div></div></div>
+            </div>
+            <div class="card" data-id="2" data-goal="G1" data-story="S1" data-feature="F2" data-title="데이터베이스 스키마 리뷰" data-desc="엔티티 설계서 기반 PostgreSQL 스키마 리뷰. 인덱스 전략, 정규화 수준, FK 관계 점검." data-tags="Design" data-priority="중간" data-priority-class="b-med" data-due="2025-02-25" data-due-label="2월 25일" data-status="TODO">
+              <div class="card-foot"><div class="badges"><span class="b b-med"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>중간</span><span class="b b-due"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 25일</span></div></div>
+            </div>
+            <div class="card" data-id="3" data-goal="G1" data-story="S2" data-feature="F3" data-title="Figma 디자인 시안 확정" data-desc="메인 대시보드와 상세 페이지 UI/UX 확정. 디자인 시스템 컴포넌트 정의 및 반응형 breakpoint 설정." data-tags="Frontend,Design" data-priority="낮음" data-priority-class="b-low" data-status="TODO">
+              <div class="card-desc">메인 대시보드와 상세 페이지 UI/UX 확정</div>
+              <div class="card-foot"><div class="badges"><span class="b b-low"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>낮음</span></div></div>
+            </div>
+            <div class="card" data-id="4" data-goal="G2" data-story="" data-feature="" data-title="프로젝트 킥오프 미팅 준비" data-desc="스프린트 1 목표 설정, 팀 역할 분배, 커뮤니케이션 채널 확정. 회의 안건 및 타임라인 초안 작성." data-tags="" data-priority="낮음" data-priority-class="b-low" data-due="2025-03-01" data-due-label="3월 1일" data-status="TODO">
+              <div class="card-foot"><div class="badges"><span class="b b-low"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>낮음</span><span class="b b-due"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>3월 1일</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── In Progress ── -->
+        <div class="lane inp">
+          <div class="lane-head">
+            <div class="lane-head-l"><span class="lane-title">In Progress</span><span class="lane-cnt">3</span></div>
+            <div class="lctx" id="lm-inp">
+              <button class="lane-menu" onclick="tlm('lm-inp')"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span></button>
+              <div class="lctx-menu">
+                <div class="lm" onclick="alert('WIP 제한 설정')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M21 6H3"/><path d="M17 12H3"/><path d="M15 18H3"/></svg></span>WIP 제한 설정</div>
+                <div class="lm" onclick="alert('이름 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>이름 변경</div>
+                <div class="lm" onclick="alert('색상 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5Z"/><path d="M2 12h20"/></svg></span>색상 변경</div>
+                <div class="lm-sep"></div>
+                <div class="lm" onclick="alert('레인 추가')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>오른쪽에 레인 추가</div>
+                <div class="lm" onclick="alert('레인 분할')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M8 3v18"/><path d="M16 3v18"/></svg></span>레인 분할</div>
+                <div class="lm-sep"></div>
+                <div class="lm danger" onclick="alert('레인 삭제')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>레인 삭제</div>
+              </div>
+            </div>
+          </div>
+          <div class="lane-body">
+            <div class="card" data-id="5" data-goal="G1" data-story="S2" data-feature="F4" data-title="칸반 보드 드래그앤드롭 구현" data-desc="@dnd-kit 라이브러리 적용 및 레인 간 이동 처리. 카드 순서 변경, 레인 이동 시 상태 자동 업데이트, 애니메이션 적용." data-tags="Bug,Frontend" data-priority="긴급" data-priority-class="b-crit" data-due="2025-02-18" data-due-label="2월 18일" data-status="In Progress" data-assignee="김민수" data-assignee-color="#60A5FA">
+              <div class="card-desc">@dnd-kit 라이브러리 적용 및 레인 간 이동 처리</div>
+              <div class="card-foot"><div class="badges"><span class="b b-crit"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>긴급</span><span class="b b-over"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 18일</span></div><div class="avs"><div class="av" style="background:#60A5FA">김</div></div></div>
+            </div>
+            <div class="card" data-id="6" data-goal="G1" data-story="S1" data-feature="F1" data-title="REST API 엔드포인트 테스트 작성" data-desc="백로그 CRUD와 칸반 이동 API에 대한 통합 테스트. Jest + Supertest 환경에서 각 엔드포인트 성공/실패 케이스 커버." data-tags="Backend" data-priority="높음" data-priority-class="b-high" data-due="2025-02-24" data-due-label="2월 24일" data-status="In Progress" data-assignee="홍길동,이서연" data-assignee-color="#7EB4A2,#A78BFA">
+              <div class="card-desc">백로그 CRUD와 칸반 이동 API에 대한 통합 테스트</div>
+              <div class="card-foot"><div class="badges"><span class="b b-high"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>높음</span><span class="b b-due"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 24일</span></div><div class="avs"><div class="av" style="background:#7EB4A2">홍</div><div class="av" style="background:#A78BFA">이</div></div></div>
+            </div>
+            <div class="card" data-id="7" data-goal="G1" data-story="S2" data-feature="F3" data-title="Sidebar 리사이즈 기능 개선" data-desc="사이드바 리사이즈 핸들 UX 개선. 최소/최대 너비 제한, 드래그 중 시각적 피드백, 더블 클릭 시 기본 너비 복원." data-tags="" data-priority="중간" data-priority-class="b-med" data-status="In Progress">
+              <div class="card-foot"><div class="badges"><span class="b b-med"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>중간</span><span class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>3</span><span class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>1</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Done ── -->
+        <div class="lane done">
+          <div class="lane-head">
+            <div class="lane-head-l"><span class="lane-title">Done</span><span class="lane-cnt">2</span></div>
+            <div class="lctx" id="lm-done">
+              <button class="lane-menu" onclick="tlm('lm-done')"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span></button>
+              <div class="lctx-menu">
+                <div class="lm" onclick="alert('WIP 제한 설정')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M21 6H3"/><path d="M17 12H3"/><path d="M15 18H3"/></svg></span>WIP 제한 설정</div>
+                <div class="lm" onclick="alert('이름 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>이름 변경</div>
+                <div class="lm" onclick="alert('색상 변경')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5Z"/><path d="M2 12h20"/></svg></span>색상 변경</div>
+                <div class="lm-sep"></div>
+                <div class="lm" onclick="alert('레인 추가')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>오른쪽에 레인 추가</div>
+                <div class="lm" onclick="alert('레인 분할')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M8 3v18"/><path d="M16 3v18"/></svg></span>레인 분할</div>
+                <div class="lm-sep"></div>
+                <div class="lm danger" onclick="alert('레인 삭제')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>레인 삭제</div>
+              </div>
+            </div>
+          </div>
+          <div class="lane-body">
+            <div class="card fin" data-id="8" data-goal="G1" data-story="S2" data-feature="" data-title="프로젝트 초기 세팅" data-desc="React + TypeScript + Tailwind 초기 프로젝트 구성 완료. ESLint, Prettier, Husky 설정 및 CI/CD 파이프라인 기본 구성." data-tags="Infra" data-priority="완료" data-priority-class="b-done" data-due="2025-02-15" data-due-label="2월 15일" data-status="Done" data-assignee="홍길동" data-assignee-color="#7EB4A2">
+              <div class="card-desc">React + TypeScript + Tailwind 초기 프로젝트 구성 완료</div>
+              <div class="card-foot"><div class="badges"><span class="b b-done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>완료</span><span class="b b-done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>2월 15일</span></div><div class="avs"><div class="av" style="background:#7EB4A2">홍</div></div></div>
+            </div>
+            <div class="card fin" data-id="9" data-goal="G2" data-story="S3" data-feature="F5" data-title="PRD 및 TRD 작성" data-desc="프로젝트 요구사항 정의서(PRD)와 기술 설계서(TRD) 초안 작성 완료. 기능 요구사항 8건, API 엔드포인트 명세, DB 스키마 설계 포함." data-tags="Docs" data-priority="완료" data-priority-class="b-done" data-status="Done">
+              <div class="card-foot"><div class="badges"><span class="b b-done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>완료</span></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>© 2026 Tika. All rights reserved. | Built with ♥ by CodeVillain</span>
+  </footer>
+</div>
+
+<!-- ══════ NEW TASK MODAL ══════ -->
+<div class="modal-overlay" id="modalNew">
+  <div class="modal modal-new">
+    <button class="modal-close" onclick="closeModal('modalNew')">
+      <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+    </button>
+    <div class="modal-header">
+      <h2>새 업무 만들기</h2>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">제목 <span class="req">*</span></label>
+        <input class="form-input" type="text" placeholder="업무 제목을 입력하세요" id="newTitle" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-textarea" placeholder="업무에 대한 상세 설명을 작성하세요..." id="newDesc"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">체크리스트</label>
+        <div class="cl-builder" id="newClBuilder">
+          <div class="cl-builder-items" id="newClItems"></div>
+          <div class="cl-builder-add">
+            <input class="cl-builder-input" type="text" placeholder="항목 추가..." id="newClInput" />
+            <button class="tag-creator-btn" onclick="addClItem('new')" style="height:32px">추가</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">라벨</label>
+        <div class="form-tags-input" id="newTags">
+          <span class="form-tag-chip" data-tag="Frontend" style="background:#2b7fff">Frontend</span>
+          <span class="form-tag-chip" data-tag="Backend" style="background:#00c950">Backend</span>
+          <span class="form-tag-chip" data-tag="Design" style="background:#ad46ff">Design</span>
+          <span class="form-tag-chip" data-tag="Bug" style="background:#fb2c36">Bug</span>
+          <span class="form-tag-chip" data-tag="Docs" style="background:#ffac6d;color:#3D2200">Docs</span>
+          <span class="form-tag-chip" data-tag="Infra" style="background:#615fff">Infra</span>
+        </div>
+        <div class="tag-creator" id="newTagCreator">
+          <input class="tag-creator-input" type="text" placeholder="라벨명" id="newTagName" maxlength="20" />
+          <div class="tag-color-swatches" id="newTagSwatches"></div>
+          <button class="tag-creator-btn" onclick="addCustomTag('new')">추가</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">상위 카테고리</label>
+        <div class="cat-select-row">
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="newGoal" onchange="onGoalChange('new')">
+              <option value="">Goal 선택</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="newStory" onchange="onStoryChange('new')" disabled>
+              <option value="">Story 선택</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="newFeature" disabled>
+              <option value="">Feature 선택</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">상태 <span class="req">*</span></label>
+          <select class="form-select" id="newStatus">
+            <option value="TODO" selected>TODO</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">우선순위</label>
+          <select class="form-select" id="newPriority">
+            <option value="">선택 안 함</option>
+            <option value="긴급">🔴 긴급</option>
+            <option value="높음">🟠 높음</option>
+            <option value="중간" selected>🟡 중간</option>
+            <option value="낮음">⚪ 낮음</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">마감일</label>
+          <input class="form-input" type="date" id="newDue" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">담당자</label>
+          <select class="form-select" id="newAssignee">
+            <option value="">미배정</option>
+            <option value="홍길동">홍길동</option>
+            <option value="김민수">김민수</option>
+            <option value="이서연">이서연</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modalNew')">취소</button>
+      <button class="btn-submit" onclick="submitNewTask()">업무 생성</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ DETAIL MODAL ══════ -->
+<div class="modal-overlay" id="modalDetail">
+  <div class="modal modal-detail">
+    <button class="modal-close" onclick="closeModal('modalDetail')">
+      <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+    </button>
+    <div class="detail-top">
+      <div class="dt-tag-editor" id="dtTags"></div>
+      <div class="dt-tag-picker" id="dtTagPicker">
+        <button class="dt-tag-opt" data-tag="Frontend" style="background:#2b7fff" onclick="addDetailTag('Frontend')">Frontend</button>
+        <button class="dt-tag-opt" data-tag="Backend" style="background:#00c950" onclick="addDetailTag('Backend')">Backend</button>
+        <button class="dt-tag-opt" data-tag="Design" style="background:#ad46ff" onclick="addDetailTag('Design')">Design</button>
+        <button class="dt-tag-opt" data-tag="Bug" style="background:#fb2c36" onclick="addDetailTag('Bug')">Bug</button>
+        <button class="dt-tag-opt" data-tag="Docs" style="background:#ffac6d;color:#3D2200" onclick="addDetailTag('Docs')">Docs</button>
+        <button class="dt-tag-opt" data-tag="Infra" style="background:#615fff" onclick="addDetailTag('Infra')">Infra</button>
+        <div style="width:100%;border-top:1px solid var(--border-light);margin:6px 0 4px;"></div>
+        <div class="tag-creator" style="margin-top:0;width:100%" id="dtTagCreator">
+          <input class="tag-creator-input" type="text" placeholder="새 라벨" id="dtTagName" maxlength="20" />
+          <div class="tag-color-swatches" id="dtTagSwatches"></div>
+          <button class="tag-creator-btn" onclick="addCustomTag('dt')">추가</button>
+        </div>
+      </div>
+      <div class="detail-title" id="dtTitle"></div>
+      <div class="cat-breadcrumb" id="dtCatBreadcrumb"></div>
+      <div class="cat-editor" id="dtCatEditor">
+        <div class="cat-select-row">
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="dtGoal" onchange="onGoalChange('dt')">
+              <option value="">Goal 선택</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="dtStory" onchange="onStoryChange('dt')" disabled>
+              <option value="">Story 선택</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <select class="form-select" id="dtFeature" disabled>
+              <option value="">Feature 선택</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:8px;text-align:right">
+          <button class="btn-cancel" onclick="document.getElementById('dtCatEditor').classList.remove('open')" style="height:28px;font-size:11px;padding:0 10px">취소</button>
+          <button class="btn-submit" onclick="saveCatFromEditor()" style="height:28px;font-size:11px;padding:0 12px">저장</button>
+        </div>
+      </div>
+      <div class="detail-meta-row">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">상태</span>
+          <span class="b" id="dtStatus"></span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">우선순위</span>
+          <span class="b" id="dtPriority"></span>
+        </div>
+        <div class="detail-meta-item" id="dtDueWrap">
+          <span class="detail-meta-label">마감일</span>
+          <span class="b b-due" id="dtDue">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="dtDueText"></span>
+          </span>
+        </div>
+        <div class="detail-meta-item" id="dtAssignWrap">
+          <span class="detail-meta-label">담당자</span>
+          <div class="avs" id="dtAssignees"></div>
+          <span id="dtAssignNames" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+          설명
+        </div>
+        <div class="detail-desc" id="dtDesc"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+          체크리스트
+        </div>
+        <ul class="detail-checklist" id="dtChecklist"></ul>
+        <div class="cl-builder-add" style="margin-top:6px">
+          <input class="cl-builder-input" type="text" placeholder="항목 추가..." id="dtClInput" />
+          <button class="tag-creator-btn" onclick="addDtClItem()" style="height:32px">추가</button>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          활동 내역
+        </div>
+        <div class="detail-activity" id="dtActivity"></div>
+        <!-- Comment input -->
+        <div class="comment-box">
+          <div class="av" style="background:#7EB4A2;width:28px;height:28px;font-size:10px;border:none">홍</div>
+          <div class="comment-input-wrap">
+            <textarea class="comment-input" id="dtCommentInput" placeholder="댓글을 입력하세요..." rows="1"></textarea>
+            <div class="comment-actions">
+              <button class="comment-submit" id="dtCommentBtn" disabled onclick="submitComment()">댓글 작성</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="detail-footer">
+      <div class="detail-actions">
+        <button class="btn-icon-text" onclick="alert('편집 모드')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>
+          편집
+        </button>
+        <button class="btn-icon-text" onclick="alert('복제')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>
+          복제
+        </button>
+        <button class="btn-icon-text" onclick="alert('이동')">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/></svg></span>
+          이동
+        </button>
+      </div>
+      <button class="btn-icon-text danger" onclick="alert('삭제')">
+        <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>
+        삭제
+      </button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── Dropdown / Context Menus ──
+function td(id){const w=document.getElementById(id),o=w.classList.contains('open');closeAll();if(!o)w.classList.add('open');}
+function tlm(id){const w=document.getElementById(id),o=w.classList.contains('open');closeAll();if(!o)w.classList.add('open');}
+function toggleWsDD(){const w=document.getElementById('ws-dd'),o=w.classList.contains('open');closeAll();if(!o)w.classList.add('open');}
+function closeAll(){document.querySelectorAll('.dd,.lctx,.ws-dd').forEach(d=>d.classList.remove('open'));}
+document.addEventListener('click',e=>{if(!e.target.closest('.dd') && !e.target.closest('.lctx') && !e.target.closest('.ws-dd'))closeAll();});
+
+// ── Sidebar Toggle ──
+function tsb(){
+  const sb=document.getElementById('sb');
+  const btn=document.getElementById('expandBtn');
+  sb.classList.toggle('collapsed');
+  if(sb.classList.contains('collapsed')){
+    setTimeout(()=>btn.classList.add('show'),300);
+  } else {
+    btn.classList.remove('show');
+  }
+}
+
+// ── Sidebar Resize ──
+(function(){const s=document.getElementById('sb'),r=document.getElementById('sbR');let on=false,sx,sw;
+r.addEventListener('mousedown',e=>{on=true;sx=e.clientX;sw=s.offsetWidth;r.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none';e.preventDefault();});
+document.addEventListener('mousemove',e=>{if(!on)return;s.style.width=Math.max(200,Math.min(400,sw+e.clientX-sx))+'px';});
+document.addEventListener('mouseup',()=>{if(on){on=false;r.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect='';}});
+})();
+
+// ── Filter Chips ──
+document.querySelectorAll('.chip').forEach(c=>{c.addEventListener('click',()=>{
+  if(c.textContent.includes('전체')){document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');}
+  else{document.querySelector('.chip:first-child')?.classList.remove('on');c.classList.toggle('on');}
+});});
+
+// ══════════════════════════════════════
+//  MODAL SYSTEM
+// ══════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click',e=>{ if(e.target===ov) closeModal(ov.id); });
+});
+// Close on Escape
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id));
+  }
+});
+
+// ── New Task Modal ──
+document.querySelector('.btn-new').addEventListener('click',()=>{
+  // Reset form
+  document.getElementById('newTitle').value='';
+  document.getElementById('newDesc').value='';
+  document.getElementById('newStatus').value='TODO';
+  document.getElementById('newPriority').value='중간';
+  document.getElementById('newDue').value='';
+  document.getElementById('newAssignee').value='';
+  document.querySelectorAll('#newTags .form-tag-chip').forEach(t=>t.classList.remove('selected'));
+  document.getElementById('newClItems').innerHTML='';
+  document.getElementById('newClInput').value='';
+  if(document.getElementById('newTagName')) document.getElementById('newTagName').value='';
+  // Reset category
+  populateGoals('new');
+  document.getElementById('newStory').innerHTML='<option value="">Story 선택</option>';
+  document.getElementById('newStory').disabled=true;
+  document.getElementById('newFeature').innerHTML='<option value="">Feature 선택</option>';
+  document.getElementById('newFeature').disabled=true;
+  openModal('modalNew');
+  setTimeout(()=>document.getElementById('newTitle').focus(),200);
+});
+
+// Tag chip toggle
+document.querySelectorAll('#newTags .form-tag-chip').forEach(t=>{
+  t.addEventListener('click',()=>t.classList.toggle('selected'));
+});
+
+function submitNewTask(){
+  const title=document.getElementById('newTitle').value.trim();
+  if(!title){
+    document.getElementById('newTitle').style.borderColor='#EF4444';
+    document.getElementById('newTitle').focus();
+    return;
+  }
+  // Gather data
+  const data={
+    title,
+    desc: document.getElementById('newDesc').value.trim(),
+    status: document.getElementById('newStatus').value,
+    priority: document.getElementById('newPriority').value,
+    due: document.getElementById('newDue').value,
+    assignee: document.getElementById('newAssignee').value,
+    tags: [...document.querySelectorAll('#newTags .form-tag-chip.selected')].map(t=>t.dataset.tag),
+    checklist: [...document.querySelectorAll('#newClItems .cl-builder-item')].map(li=>({
+      text: li.querySelector('span').textContent,
+      done: li.querySelector('input[type="checkbox"]').checked
+    })),
+    goal: document.getElementById('newGoal').value,
+    story: document.getElementById('newStory').value,
+    feature: document.getElementById('newFeature').value
+  };
+  console.log('New task created:',data);
+
+  // Visual feedback — add card to target lane
+  const laneMap={'TODO':'.lane.todo','In Progress':'.lane.inp','Done':'.lane.done'};
+  const lane=document.querySelector(laneMap[data.status]+' .lane-body');
+  if(lane){
+    const tagClassMap={Frontend:'fe',Backend:'be',Design:'ui',Bug:'bug',Docs:'doc',Infra:'inf'};
+    const prioClassMap={'긴급':'b-crit','높음':'b-high','중간':'b-med','낮음':'b-low'};
+    let tagsHTML='';
+    if(data.tags.length){
+      tagsHTML='<div class="tags">'+data.tags.map(t=>{
+        if(tagClassMap[t]) return '<span class="tag '+tagClassMap[t]+'">'+t+'</span>';
+        const bg=tagColorMap[t]||'#8993A4';
+        const tc=tagTextColorMap[t]||(needsDarkText(bg)?'#1a1a1a':'#fff');
+        return '<span class="tag" style="background:'+bg+';color:'+tc+'">'+t+'</span>';
+      }).join('')+'</div>';
+    }
+    let badgesHTML='';
+    if(data.priority){
+      badgesHTML+='<span class="b '+(prioClassMap[data.priority]||'b-med')+'">'+data.priority+'</span>';
+    }
+    if(data.due){
+      const d=new Date(data.due);
+      const label=(d.getMonth()+1)+'월 '+d.getDate()+'일';
+      badgesHTML+='<span class="b b-due"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'+label+'</span>';
+    }
+    const card=document.createElement('div');
+    card.className='card';
+    card.dataset.title=data.title;
+    card.dataset.desc=data.desc;
+    card.dataset.tags=data.tags.join(',');
+    card.dataset.priority=data.priority;
+    card.dataset.priorityClass=prioClassMap[data.priority]||'';
+    card.dataset.status=data.status;
+    card.dataset.dueLabel=data.due?((new Date(data.due).getMonth()+1)+'월 '+(new Date(data.due).getDate())+'일'):'';
+    card.dataset.goal=data.goal;
+    card.dataset.story=data.story;
+    card.dataset.feature=data.feature;
+    card.innerHTML=tagsHTML
+      +'<div class="card-title">'+data.title+'</div>'
+      +(data.desc?'<div class="card-desc">'+data.desc+'</div>':'')
+      +(badgesHTML?'<div class="card-foot"><div class="badges">'+badgesHTML+'</div></div>':'');
+    card.addEventListener('click',e=>{if(!e.target.closest('.lctx'))openDetailFor(card);});
+    lane.prepend(card);
+    // Update lane count
+    const cnt=lane.closest('.lane').querySelector('.lane-cnt');
+    if(cnt) cnt.textContent=lane.children.length;
+  }
+  // Also add to sidebar backlog list
+  const sbList=document.getElementById('sbList');
+  const sbTask=document.createElement('div');
+  sbTask.className='sb-task';
+  sbTask.dataset.cardId=card?card.dataset.id||'':'';
+  let sbMetaHTML='';
+  if(data.priority) sbMetaHTML+='<span class="b '+(prioClassMap[data.priority]||'b-med')+'">'+data.priority+'</span>';
+  if(data.due){
+    const d=new Date(data.due);
+    sbMetaHTML+='<span class="b b-due" style="font-size:10px">'+(d.getMonth()+1)+'월 '+d.getDate()+'일</span>';
+  }
+  sbMetaHTML+='<span class="sb-task-time">방금</span>';
+  sbTask.innerHTML='<div class="sb-task-title">'+data.title+'</div><div class="sb-task-meta">'+sbMetaHTML+'</div>';
+  sbTask.addEventListener('click',()=>{if(card)openDetailFor(card);});
+  sbList.prepend(sbTask);
+  // Update sidebar count
+  document.getElementById('sbTaskCnt').textContent=sbList.children.length+'건';
+
+  // Store checklist in cardExtras for detail view
+  if(card&&card.dataset.id&&data.checklist.length){
+    cardExtras[card.dataset.id]={
+      checklist: data.checklist,
+      activity:[{name:'홍길동',color:'#7EB4A2',text:'카드를 생성했습니다.',time:((new Date().getMonth()+1)+'월 '+new Date().getDate()+'일 '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0'))}]
+    };
+  }
+
+  closeModal('modalNew');
+}
+
+// Reset border on input
+document.getElementById('newTitle').addEventListener('input',function(){this.style.borderColor='';});
+
+// ══════════════════════════════════════
+//  HIERARCHY DATA (Goal → Story → Feature → Task)
+// ══════════════════════════════════════
+const hierarchy={
+  goals:[
+    {id:'G1',name:'MVP 출시'},
+    {id:'G2',name:'팀 협업 확장'}
+  ],
+  stories:[
+    {id:'S1',goalId:'G1',name:'사용자 인증 시스템'},
+    {id:'S2',goalId:'G1',name:'칸반 보드 핵심 기능'},
+    {id:'S3',goalId:'G2',name:'프로젝트 관리 기반'}
+  ],
+  features:[
+    {id:'F1',storyId:'S1',name:'인증 API'},
+    {id:'F2',storyId:'S1',name:'데이터베이스 설계'},
+    {id:'F3',storyId:'S2',name:'보드 UI'},
+    {id:'F4',storyId:'S2',name:'드래그앤드롭'},
+    {id:'F5',storyId:'S3',name:'문서화'}
+  ]
+};
+
+function getGoalName(id){ return (hierarchy.goals.find(g=>g.id===id)||{}).name||''; }
+function getStoryName(id){ return (hierarchy.stories.find(s=>s.id===id)||{}).name||''; }
+function getFeatureName(id){ return (hierarchy.features.find(f=>f.id===id)||{}).name||''; }
+
+function populateGoals(prefix){
+  const sel=document.getElementById(prefix+'Goal');
+  sel.innerHTML='<option value="">Goal 선택</option>';
+  hierarchy.goals.forEach(g=>{
+    sel.innerHTML+='<option value="'+g.id+'">'+g.name+'</option>';
+  });
+}
+
+function onGoalChange(prefix){
+  const goalId=document.getElementById(prefix+'Goal').value;
+  const storySel=document.getElementById(prefix+'Story');
+  const featSel=document.getElementById(prefix+'Feature');
+  storySel.innerHTML='<option value="">Story 선택</option>';
+  featSel.innerHTML='<option value="">Feature 선택</option>';
+  featSel.disabled=true;
+  if(goalId){
+    storySel.disabled=false;
+    hierarchy.stories.filter(s=>s.goalId===goalId).forEach(s=>{
+      storySel.innerHTML+='<option value="'+s.id+'">'+s.name+'</option>';
+    });
+  } else {
+    storySel.disabled=true;
+  }
+}
+
+function onStoryChange(prefix){
+  const storyId=document.getElementById(prefix+'Story').value;
+  const featSel=document.getElementById(prefix+'Feature');
+  featSel.innerHTML='<option value="">Feature 선택</option>';
+  if(storyId){
+    featSel.disabled=false;
+    hierarchy.features.filter(f=>f.storyId===storyId).forEach(f=>{
+      featSel.innerHTML+='<option value="'+f.id+'">'+f.name+'</option>';
+    });
+  } else {
+    featSel.disabled=true;
+  }
+}
+
+function setCategorySelectors(prefix,goalId,storyId,featureId){
+  populateGoals(prefix);
+  const goalSel=document.getElementById(prefix+'Goal');
+  const storySel=document.getElementById(prefix+'Story');
+  const featSel=document.getElementById(prefix+'Feature');
+  if(goalId){
+    goalSel.value=goalId;
+    onGoalChange(prefix);
+    if(storyId){
+      storySel.value=storyId;
+      onStoryChange(prefix);
+      if(featureId) featSel.value=featureId;
+    }
+  }
+}
+
+function buildCatBreadcrumb(goalId,storyId,featureId){
+  const parts=[];
+  if(goalId&&getGoalName(goalId)){
+    parts.push('<span class="cat-crumb"><span class="cat-type cat-type-goal">G</span>'+getGoalName(goalId)+'</span>');
+  }
+  if(storyId&&getStoryName(storyId)){
+    parts.push('<span class="cat-crumb"><span class="cat-type cat-type-story">S</span>'+getStoryName(storyId)+'</span>');
+  }
+  if(featureId&&getFeatureName(featureId)){
+    parts.push('<span class="cat-crumb"><span class="cat-type cat-type-feature">F</span>'+getFeatureName(featureId)+'</span>');
+  }
+  if(parts.length===0) return '<span style="font-size:12px;color:var(--text-muted)">상위 카테고리 없음</span>';
+  return parts.join('<span class="cat-sep">›</span>');
+}
+
+function toggleCatEditor(){
+  document.getElementById('dtCatEditor').classList.toggle('open');
+}
+
+function saveCatFromEditor(){
+  if(!currentDetailCard) return;
+  currentDetailCard.dataset.goal=document.getElementById('dtGoal').value;
+  currentDetailCard.dataset.story=document.getElementById('dtStory').value;
+  currentDetailCard.dataset.feature=document.getElementById('dtFeature').value;
+  renderCatBreadcrumb();
+  document.getElementById('dtCatEditor').classList.remove('open');
+}
+
+function renderCatBreadcrumb(){
+  if(!currentDetailCard) return;
+  const d=currentDetailCard.dataset;
+  const bc=document.getElementById('dtCatBreadcrumb');
+  bc.innerHTML=buildCatBreadcrumb(d.goal,d.story,d.feature)
+    +'<button class="cat-edit-btn" onclick="toggleCatEditor()" title="카테고리 변경">'
+    +'<span class="ic" style="width:12px;height:12px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>'
+    +'</button>';
+}
+
+// Init new task form goals on page load
+populateGoals('new');
+
+// ══════════════════════════════════════
+//  COLOR SWATCHES & LABEL CREATOR
+// ══════════════════════════════════════
+const tagPalette=['#fb2c36','#615fff','#00c950','#2b7fff','#ad46ff','#ff29d3','#a0628c','#89d0f0','#71e4bf','#46e264','#caee68','#fffe92','#ffac6d','#f7d1d1','#f7a2ff','#c1d1ff','#c5dbdc'];
+
+function initSwatches(containerId){
+  const c=document.getElementById(containerId);
+  if(!c) return;
+  c.innerHTML=tagPalette.map((col,i)=>
+    '<div class="tag-swatch'+(i===0?' sel':'')+'" style="background:'+col+'" data-color="'+col+'" onclick="pickSwatch(this)"></div>'
+  ).join('');
+}
+function pickSwatch(el){
+  el.parentElement.querySelectorAll('.tag-swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function getSelectedColor(containerId){
+  const sel=document.querySelector('#'+containerId+' .tag-swatch.sel');
+  return sel?sel.dataset.color:'#8993A4';
+}
+// Light or dark text for a bg color
+function needsDarkText(hex){
+  const r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16);
+  return (r*0.299+g*0.587+b*0.114)>160;
+}
+
+initSwatches('newTagSwatches');
+initSwatches('dtTagSwatches');
+
+function addCustomTag(prefix){
+  const nameInput=document.getElementById(prefix+'TagName');
+  const name=nameInput.value.trim();
+  if(!name) return;
+  const swatchContainer=prefix==='new'?'newTagSwatches':'dtTagSwatches';
+  const color=getSelectedColor(swatchContainer);
+  const textColor=needsDarkText(color)?'#1a1a1a':'#fff';
+
+  if(prefix==='new'){
+    // Add chip to new task form
+    const container=document.getElementById('newTags');
+    const chip=document.createElement('span');
+    chip.className='form-tag-chip selected';
+    chip.dataset.tag=name;
+    chip.style.background=color;
+    chip.style.color=textColor;
+    chip.textContent=name;
+    chip.addEventListener('click',()=>chip.classList.toggle('selected'));
+    container.appendChild(chip);
+  } else {
+    // Add directly to detail card
+    addDetailTag(name, color, textColor);
+  }
+
+  // Register in tagClassMap + tagColorMap dynamically
+  if(!tagColorMap[name]) tagColorMap[name]=color;
+  if(!tagTextColorMap[name]&&needsDarkText(color)) tagTextColorMap[name]=textColor;
+
+  nameInput.value='';
+}
+
+// Enter key for tag creator inputs
+['newTagName','dtTagName'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault(); addCustomTag(id.startsWith('new')?'new':'dt');}
+  });
+});
+
+// ══════════════════════════════════════
+//  CHECKLIST BUILDER
+// ══════════════════════════════════════
+function addClItem(prefix){
+  const input=document.getElementById(prefix+'ClInput');
+  const text=input.value.trim();
+  if(!text) return;
+  const container=document.getElementById(prefix+'ClItems');
+  const item=document.createElement('div');
+  item.className='cl-builder-item';
+  item.innerHTML='<input type="checkbox" /><span>'+text+'</span><button class="cl-rm" onclick="this.parentElement.remove()">×</button>';
+  container.appendChild(item);
+  input.value='';
+  input.focus();
+}
+
+// Enter key for new task checklist input
+document.getElementById('newClInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault(); addClItem('new');}
+});
+
+// Detail modal: add checklist item
+function addDtClItem(){
+  const input=document.getElementById('dtClInput');
+  const text=input.value.trim();
+  if(!text) return;
+  const cl=document.getElementById('dtChecklist');
+  const li=document.createElement('li');
+  li.innerHTML='<input type="checkbox" /><span>'+text+'</span><button class="cl-rm" onclick="this.parentElement.remove()" style="margin-left:auto">×</button>';
+  li.querySelector('input[type="checkbox"]').addEventListener('change',function(){
+    const span=this.nextElementSibling;
+    if(this.checked) span.classList.add('done-item');
+    else span.classList.remove('done-item');
+  });
+  cl.appendChild(li);
+  input.value='';
+  input.focus();
+}
+
+// Enter key for detail checklist input
+document.getElementById('dtClInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault(); addDtClItem();}
+});
+
+// ── Detail Modal ──
+const tagClassMap={Frontend:'fe',Backend:'be',Design:'ui',Bug:'bug',Docs:'doc',Infra:'inf'};
+const statusColorMap={
+  'TODO':'background:#DBEAFE;color:#1E40AF',
+  'In Progress':'background:#FEF3C7;color:#92400E',
+  'Done':'background:#D1FAE5;color:#065F46'
+};
+
+// Sample checklist & activity per card
+const cardExtras={
+  '1':{
+    checklist:[
+      {text:'JWT 토큰 생성/검증 로직 구현',done:true},
+      {text:'Refresh Token 저장 전략 결정',done:true},
+      {text:'미들웨어 체인 설계',done:false},
+      {text:'에러 응답 포맷 통일',done:false}
+    ],
+    activity:[
+      {name:'홍길동',color:'#7EB4A2',text:'카드를 생성했습니다.',time:'2월 19일 09:30'},
+      {name:'김민수',color:'#60A5FA',text:'"Refresh Token은 Redis에 저장하는 건 어떨까요?"',time:'2월 19일 14:20'},
+      {name:'홍길동',color:'#7EB4A2',text:'우선순위를 높음으로 변경했습니다.',time:'2월 20일 10:00'}
+    ]
+  },
+  '5':{
+    checklist:[
+      {text:'@dnd-kit 라이브러리 설치 및 기본 설정',done:true},
+      {text:'DragOverlay 컴포넌트 구현',done:true},
+      {text:'레인 간 카드 이동 핸들러',done:false},
+      {text:'카드 순서 persist (API 연동)',done:false},
+      {text:'드래그 중 placeholder 애니메이션',done:false}
+    ],
+    activity:[
+      {name:'김민수',color:'#60A5FA',text:'카드를 TODO에서 In Progress로 이동했습니다.',time:'2월 17일 11:00'},
+      {name:'김민수',color:'#60A5FA',text:'"레인 간 이동에서 sortable 충돌 이슈 발생 중"',time:'2월 18일 16:45'},
+      {name:'홍길동',color:'#7EB4A2',text:'우선순위를 긴급으로 변경했습니다.',time:'2월 19일 09:00'}
+    ]
+  }
+};
+
+// Default checklist/activity for cards without extras
+const defaultExtras={
+  checklist:[
+    {text:'요구사항 분석',done:true},
+    {text:'구현 진행',done:false},
+    {text:'코드 리뷰',done:false}
+  ],
+  activity:[
+    {name:'홍길동',color:'#7EB4A2',text:'카드를 생성했습니다.',time:'2월 18일 10:00'}
+  ]
+};
+
+// Current detail card reference
+let currentDetailCard=null;
+
+const tagColorMap={
+  Frontend:'#2b7fff', Backend:'#00c950', Design:'#ad46ff',
+  Bug:'#fb2c36', Docs:'#ffac6d', Infra:'#615fff'
+};
+const tagTextColorMap={ Docs:'#3D2200' };
+
+function renderDetailTags(){
+  const tagsEl=document.getElementById('dtTags');
+  const d=currentDetailCard.dataset;
+  const tags=d.tags?d.tags.split(',').filter(Boolean):[];
+  let html=tags.map(t=>
+    '<span class="dt-tag" style="background:'+(tagColorMap[t]||'#8993A4')
+    +';color:'+(tagTextColorMap[t]||'#fff')+'">'
+    +t+'<button class="dt-tag-rm" onclick="removeDetailTag(\''+t+'\')">×</button></span>'
+  ).join('');
+  html+='<button class="dt-tag-add" onclick="toggleTagPicker()" title="라벨 추가">+</button>';
+  tagsEl.innerHTML=html;
+  // Update picker used states
+  document.querySelectorAll('#dtTagPicker .dt-tag-opt').forEach(opt=>{
+    opt.classList.toggle('used',tags.includes(opt.dataset.tag));
+  });
+}
+
+function removeDetailTag(tag){
+  if(!currentDetailCard) return;
+  const d=currentDetailCard.dataset;
+  const tags=d.tags?d.tags.split(',').filter(Boolean):[];
+  d.tags=tags.filter(t=>t!==tag).join(',');
+  // Also update card visual tags
+  updateCardVisualTags(currentDetailCard);
+  renderDetailTags();
+}
+
+function addDetailTag(tag, color, textColor){
+  if(!currentDetailCard) return;
+  const d=currentDetailCard.dataset;
+  const tags=d.tags?d.tags.split(',').filter(Boolean):[];
+  if(!tags.includes(tag)) tags.push(tag);
+  d.tags=tags.join(',');
+  // Register color if custom
+  if(color&&!tagColorMap[tag]) tagColorMap[tag]=color;
+  if(textColor&&!tagTextColorMap[tag]) tagTextColorMap[tag]=textColor;
+  updateCardVisualTags(currentDetailCard);
+  renderDetailTags();
+  document.getElementById('dtTagPicker').classList.remove('open');
+  if(document.getElementById('dtTagName')) document.getElementById('dtTagName').value='';
+}
+
+function toggleTagPicker(){
+  document.getElementById('dtTagPicker').classList.toggle('open');
+}
+
+function updateCardVisualTags(card){
+  const tags=card.dataset.tags?card.dataset.tags.split(',').filter(Boolean):[];
+  let existingTagsEl=card.querySelector('.tags');
+  if(tags.length===0){
+    if(existingTagsEl) existingTagsEl.remove();
+    return;
+  }
+  const html=tags.map(t=>{
+    if(tagClassMap[t]) return '<span class="tag '+tagClassMap[t]+'">'+t+'</span>';
+    const bg=tagColorMap[t]||'#8993A4';
+    const tc=tagTextColorMap[t]||(needsDarkText(bg)?'#1a1a1a':'#fff');
+    return '<span class="tag" style="background:'+bg+';color:'+tc+'">'+t+'</span>';
+  }).join('');
+  if(existingTagsEl){
+    existingTagsEl.innerHTML=html;
+  } else {
+    const div=document.createElement('div');
+    div.className='tags';
+    div.innerHTML=html;
+    card.prepend(div);
+  }
+}
+
+// Comment submit
+function submitComment(){
+  const input=document.getElementById('dtCommentInput');
+  const text=input.value.trim();
+  if(!text||!currentDetailCard) return;
+  const now=new Date();
+  const timeStr=(now.getMonth()+1)+'월 '+now.getDate()+'일 '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const actEl=document.getElementById('dtActivity');
+  const item=document.createElement('div');
+  item.className='activity-item';
+  item.innerHTML=
+    '<div class="activity-av" style="background:#7EB4A2">홍</div>'
+    +'<div class="activity-content">'
+      +'<div><span class="activity-name">홍길동</span> "'+text+'"</div>'
+      +'<div class="activity-time">'+timeStr+'</div>'
+    +'</div>';
+  actEl.appendChild(item);
+  input.value='';
+  document.getElementById('dtCommentBtn').disabled=true;
+  // Scroll to bottom
+  item.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Comment input enable/disable
+document.getElementById('dtCommentInput').addEventListener('input',function(){
+  document.getElementById('dtCommentBtn').disabled=!this.value.trim();
+});
+// Enter to submit (Shift+Enter for newline)
+document.getElementById('dtCommentInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    if(this.value.trim()) submitComment();
+  }
+});
+
+function openDetailFor(cardEl){
+  currentDetailCard=cardEl;
+  const d=cardEl.dataset;
+  // Tags (editable)
+  renderDetailTags();
+  document.getElementById('dtTagPicker').classList.remove('open');
+  // Title
+  document.getElementById('dtTitle').textContent=d.title||'';
+  // Category breadcrumb
+  renderCatBreadcrumb();
+  document.getElementById('dtCatEditor').classList.remove('open');
+  setCategorySelectors('dt',d.goal||'',d.story||'',d.feature||'');
+  // Status
+  const statusEl=document.getElementById('dtStatus');
+  statusEl.textContent=d.status||'TODO';
+  statusEl.setAttribute('style',statusColorMap[d.status]||statusColorMap['TODO']);
+  // Priority
+  const prioEl=document.getElementById('dtPriority');
+  prioEl.textContent=d.priority||'없음';
+  prioEl.className='b '+(d.priorityClass||'b-due');
+  // Due
+  const dueWrap=document.getElementById('dtDueWrap');
+  const dueText=document.getElementById('dtDueText');
+  if(d.dueLabel){
+    dueWrap.style.display='flex';
+    dueText.textContent=d.dueLabel;
+  } else {
+    dueWrap.style.display='none';
+  }
+  // Assignees
+  const assignWrap=document.getElementById('dtAssignWrap');
+  const assignAv=document.getElementById('dtAssignees');
+  const assignNames=document.getElementById('dtAssignNames');
+  if(d.assignee){
+    assignWrap.style.display='flex';
+    const names=d.assignee.split(',');
+    const colors=(d.assigneeColor||'').split(',');
+    assignAv.innerHTML=names.map((n,i)=>
+      '<div class="av" style="background:'+(colors[i]||'#8993A4')+'">'+n.charAt(0)+'</div>'
+    ).join('');
+    assignNames.textContent=names.join(', ');
+  } else {
+    assignWrap.style.display='none';
+  }
+  // Description
+  document.getElementById('dtDesc').textContent=d.desc||'설명이 없습니다.';
+  // Checklist & Activity
+  const extras=cardExtras[d.id]||defaultExtras;
+  const clEl=document.getElementById('dtChecklist');
+  clEl.innerHTML=extras.checklist.map((item,i)=>
+    '<li><input type="checkbox" '+(item.done?'checked':'')+' /><span class="'+(item.done?'done-item':'')+'">'+item.text+'</span><button class="cl-rm" onclick="this.parentElement.remove()" style="margin-left:auto">×</button></li>'
+  ).join('');
+  clEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    cb.addEventListener('change',function(){
+      const span=this.nextElementSibling;
+      if(this.checked) span.classList.add('done-item');
+      else span.classList.remove('done-item');
+    });
+  });
+  const actEl=document.getElementById('dtActivity');
+  actEl.innerHTML=extras.activity.map(a=>
+    '<div class="activity-item">'
+      +'<div class="activity-av" style="background:'+a.color+'">'+a.name.charAt(0)+'</div>'
+      +'<div class="activity-content">'
+        +'<div><span class="activity-name">'+a.name+'</span> '+a.text+'</div>'
+        +'<div class="activity-time">'+a.time+'</div>'
+      +'</div>'
+    +'</div>'
+  ).join('');
+
+  // Reset comment & checklist input
+  document.getElementById('dtCommentInput').value='';
+  document.getElementById('dtCommentBtn').disabled=true;
+  document.getElementById('dtClInput').value='';
+
+  openModal('modalDetail');
+}
+
+// Attach click to all cards
+document.querySelectorAll('.card').forEach(card=>{
+  card.addEventListener('click',e=>{
+    if(e.target.closest('.lctx')) return;
+    openDetailFor(card);
+  });
+});
+
+// ── Sidebar task click → open matching card detail ──
+document.querySelectorAll('.sb-task').forEach(st=>{
+  st.addEventListener('click',()=>{
+    const cid=st.dataset.cardId;
+    const card=document.querySelector('.card[data-id="'+cid+'"]');
+    if(card) openDetailFor(card);
+  });
+});
+</script>
+</body>
+</html>

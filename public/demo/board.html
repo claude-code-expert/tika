@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika - 칸반 보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== 디자인 토큰 ===== */
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --text-h1: 20px; --text-h2: 16px; --text-body1: 14px; --text-body2: 12px; --text-small: 11px;
+      --fw-bold: 700; --fw-semibold: 600; --fw-medium: 500; --fw-regular: 400;
+      --bg-app: #F8F9FB; --bg-header: #FFFFFF; --bg-sidebar: #F1F3F6;
+      --bg-board: #E8EDF2; --bg-footer: #F4F5F7; --bg-card: #FFFFFF; --bg-column: #F4F5F7;
+      --text-primary: #2C3E50; --text-secondary: #5A6B7F; --text-muted: #8993A4;
+      --accent-primary: #629584; --accent-hover: #527D6F; --accent-light: #E8F5F0;
+      --col-todo: #DBEAFE; --col-inprogress: #FEF3C7; --col-done: #D1FAE5;
+      --border-light: #DFE1E6; --border-medium: #C4C9D1;
+      --radius-card: 8px; --radius-column: 12px; --radius-button: 6px; --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12); --shadow-card-hover: 0 3px 8px rgba(9,30,66,0.18);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+      --z-sidebar: 10; --z-header: 50; --z-modal: 300;
+      --header-height: 60px; --footer-height: 55px; --sidebar-width: 260px;
+      --column-width: 280px; --filter-bar-height: 48px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== 헤더 ===== */
+    .header {
+      height: var(--header-height);
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: var(--z-header);
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: var(--accent-primary);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 15px;
+    }
+    .logo-text { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .header-search { flex: 1; max-width: 400px; margin: 0 auto; }
+    .search-input {
+      width: 100%; height: 34px;
+      padding: 0 14px 0 36px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-size: 13px; font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg-app) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' stroke='%238993A4' stroke-width='2'/%3E%3Cpath d='m21 21-4.35-4.35' stroke='%238993A4' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 10px center no-repeat;
+      outline: none; transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--accent-primary); }
+    .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+    .btn-new {
+      height: 32px; padding: 0 14px;
+      background: var(--accent-primary); color: #fff;
+      border: none; border-radius: var(--radius-button);
+      font-size: 13px; font-weight: 600; font-family: var(--font-body);
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .btn-new:hover { background: var(--accent-hover); }
+    .icon-btn {
+      width: 32px; height: 32px;
+      border: none; background: transparent;
+      border-radius: var(--radius-button);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); font-size: 16px;
+      transition: background 0.15s; position: relative;
+    }
+    .icon-btn:hover { background: var(--bg-sidebar); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-primary); color: #fff;
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-family: var(--font-display);
+    }
+    .notification-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: #ef4444; border-radius: 50%; border: 1.5px solid #fff;
+    }
+
+    /* ===== 드롭다운 ===== */
+    .dropdown-wrap { position: relative; }
+    .dropdown-menu {
+      display: none; position: absolute; top: 40px; right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-dropdown);
+      min-width: 160px; z-index: 200; padding: 4px;
+    }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item {
+      padding: 8px 12px; font-size: 13px;
+      color: var(--text-secondary); cursor: pointer;
+      border-radius: 4px; transition: background 0.1s;
+    }
+    .dropdown-item:hover { background: var(--bg-app); color: var(--text-primary); }
+    .dropdown-divider { height: 1px; background: var(--border-light); margin: 4px 0; }
+
+    /* ===== 메인 레이아웃 ===== */
+    .main-area { flex: 1; display: flex; overflow: hidden; }
+
+    /* ===== 사이드바 ===== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-light);
+      display: flex; flex-direction: column; flex-shrink: 0;
+      transition: width 0.2s ease, opacity 0.2s ease;
+      overflow: hidden;
+    }
+    .sidebar.collapsed { width: 0; opacity: 0; }
+    .sidebar-workspace { padding: 16px; border-bottom: 1px solid var(--border-light); }
+    .workspace-selector {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: var(--radius-button);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .workspace-selector:hover { background: var(--border-light); }
+    .workspace-dot {
+      width: 24px; height: 24px; background: var(--accent-primary);
+      border-radius: var(--radius-button);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .workspace-name { font-size: 14px; font-weight: 600; color: var(--text-primary); flex: 1; }
+    .workspace-arrow { font-size: 10px; color: var(--text-muted); }
+    .sidebar-nav { padding: 12px 10px; border-bottom: 1px solid var(--border-light); }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 5px;
+      font-size: 13px; color: var(--text-secondary);
+      cursor: pointer; transition: background 0.1s, color 0.1s;
+    }
+    .nav-item:hover { background: var(--border-light); color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-light); color: var(--accent-primary); font-weight: 600; }
+    .nav-item-icon { font-size: 15px; }
+    .sidebar-section-title {
+      padding: 12px 16px 6px;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .sidebar-tasks { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+    .sidebar-task { padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; transition: background 0.1s; }
+    .sidebar-task:hover { background: var(--border-light); }
+    .sidebar-task-title { font-size: 13px; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-task-meta { display: flex; align-items: center; gap: 6px; }
+
+    /* ===== 컨텐츠 영역 ===== */
+    .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .toggle-sidebar-btn {
+      position: absolute; left: 0; top: calc(50% - 60px);
+      width: 18px; height: 44px;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-medium); border-left: none;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 10px;
+      z-index: 10; transition: background 0.15s;
+    }
+    .toggle-sidebar-btn:hover { background: var(--border-light); color: var(--text-primary); }
+
+    /* ===== 필터바 ===== */
+    .filter-bar {
+      height: var(--filter-bar-height); padding: 0 20px;
+      background: var(--bg-header); border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .filter-chip {
+      padding: 4px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border-light);
+      background: var(--bg-card); color: var(--text-secondary);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .filter-chip:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .filter-chip.active { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+    .filter-divider { width: 1px; height: 20px; background: var(--border-light); margin: 0 6px; }
+
+    /* ===== 보드 ===== */
+    .board-area {
+      flex: 1; background: var(--bg-board);
+      overflow-x: auto; overflow-y: hidden;
+      padding: 20px; display: flex; gap: 16px; align-items: flex-start;
+    }
+    .column { width: var(--column-width); min-width: var(--column-width); display: flex; flex-direction: column; max-height: 100%; }
+    .column-header { display: flex; align-items: center; padding: 8px 12px; border-radius: 8px 8px 0 0; gap: 8px; }
+    .column-header.backlog { background: var(--bg-column); }
+    .column-header.todo    { background: var(--col-todo); }
+    .column-header.inprog  { background: var(--col-inprogress); }
+    .column-header.done    { background: var(--col-done); }
+    .column-title { font-size: 13px; font-weight: 700; color: var(--text-primary); flex: 1; }
+    .column-count { background: rgba(0,0,0,0.08); color: var(--text-secondary); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+    .column-add-btn {
+      width: 24px; height: 24px; border: none; background: transparent;
+      border-radius: 4px; cursor: pointer; color: var(--text-muted); font-size: 16px;
+      display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+    }
+    .column-add-btn:hover { background: rgba(0,0,0,0.07); color: var(--text-primary); }
+    .column-body {
+      flex: 1; overflow-y: auto; padding: 8px;
+      background: rgba(0,0,0,0.02); border-radius: 0 0 8px 8px;
+      display: flex; flex-direction: column; gap: 8px; min-height: 100px;
+    }
+
+    /* ===== 카드 ===== */
+    .ticket-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 7px; padding: 12px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .ticket-card:hover { box-shadow: var(--shadow-card-hover); border-color: var(--border-medium); }
+    .ticket-card.overdue { border: 2px solid #DC2626; }
+    .card-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+    .issue-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-tag); margin-bottom: 6px; }
+    .issue-tag.goal    { background: #F3E8FF; color: #8B5CF6; }
+    .issue-tag.story   { background: #DBEAFE; color: #3B82F6; }
+    .issue-tag.feature { background: #D1FAE5; color: #10B981; }
+    .issue-tag.task    { background: #FEF3C7; color: #F59E0B; }
+    .label-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-tag); white-space: nowrap; }
+    .label-frontend { background: #2b7fff; color: #fff; }
+    .label-backend  { background: #00c950; color: #fff; }
+    .label-design   { background: #ad46ff; color: #fff; }
+    .label-bug      { background: #fb2c36; color: #fff; }
+    .label-docs     { background: #ffac6d; color: #3D2200; }
+    .label-infra    { background: #615fff; color: #fff; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4; margin-bottom: 5px; }
+    .card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
+    .card-footer { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .card-footer-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+    .priority-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-tag); }
+    .priority-critical { background: #FEE2E2; color: #DC2626; }
+    .priority-high     { background: #FFEDD5; color: #C2410C; }
+    .priority-medium   { background: #FEF9C3; color: #A16207; }
+    .priority-low      { background: #F3F4F6; color: #6B7280; }
+    .due-badge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: var(--radius-tag); display: flex; align-items: center; gap: 3px; }
+    .due-badge.normal  { background: #F0FDF4; color: #16A34A; }
+    .due-badge.soon    { background: #FEF9C3; color: #A16207; }
+    .due-badge.overdue { background: #FEE2E2; color: #DC2626; }
+    .checklist-badge { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; }
+    .mini-avatar { width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); }
+    .avatar-hong { background: #629584; }
+    .avatar-kim  { background: #3B82F6; }
+    .avatar-lee  { background: #8B5CF6; }
+
+    /* ===== 푸터 ===== */
+    .footer { height: var(--footer-height); background: var(--bg-footer); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+    .footer span { color: #e25555; margin: 0 2px; }
+
+    /* ===== 스크롤바 ===== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
+
+    /* ===== 모달 공통 ===== */
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(9,30,66,0.54);
+      z-index: var(--z-modal);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-panel {
+      background: var(--bg-card); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-dropdown);
+      display: flex; flex-direction: column;
+      animation: modalIn 0.2s ease-out; overflow: hidden;
+      width: 100%; max-height: 92vh;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;
+    }
+    .modal-title { font-size: var(--text-h2); font-weight: var(--fw-semibold); color: var(--text-primary); }
+    .modal-close {
+      width: 30px; height: 30px; border: none; background: transparent;
+      border-radius: 4px; cursor: pointer; font-size: 18px; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+    }
+    .modal-close:hover { background: var(--bg-app); color: var(--text-primary); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .modal-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 8px; padding: 14px 20px;
+      border-top: 1px solid var(--border-light); flex-shrink: 0;
+    }
+    .btn {
+      height: 34px; padding: 0 16px; border-radius: var(--radius-button);
+      font-size: 13px; font-weight: 600; font-family: var(--font-body);
+      cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border-color: var(--border-medium); }
+    .btn-secondary:hover { background: var(--bg-app); color: var(--text-primary); }
+    .btn-danger { background: #FEE2E2; color: #DC2626; border-color: #FECACA; }
+    .btn-danger:hover { background: #DC2626; color: #fff; border-color: #DC2626; }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border-color: transparent; }
+    .btn-ghost:hover { background: var(--bg-app); color: var(--text-primary); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 8px 12px;
+      border: 1px solid var(--border-light); border-radius: var(--radius-button);
+      font-size: 13px; font-family: var(--font-body); color: var(--text-primary);
+      background: var(--bg-card); outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent-primary); }
+    .form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ===== 새 업무 모달 ===== */
+    #newModal .modal-panel { max-width: 560px; }
+
+    /* 이슈 타입 선택 */
+    .type-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+    .type-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 10px 6px; border: 2px solid var(--border-light);
+      border-radius: var(--radius-button); cursor: pointer; background: var(--bg-card);
+      transition: all 0.15s; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    }
+    .type-btn:hover { border-color: var(--border-medium); }
+    .type-btn.active { border-color: currentColor; }
+    .type-btn.goal    { color: #8B5CF6; } .type-btn.goal.active    { background: #F3E8FF; }
+    .type-btn.story   { color: #3B82F6; } .type-btn.story.active   { background: #DBEAFE; }
+    .type-btn.feature { color: #10B981; } .type-btn.feature.active { background: #D1FAE5; }
+    .type-btn.task    { color: #F59E0B; } .type-btn.task.active    { background: #FEF3C7; }
+    .type-icon { font-size: 18px; }
+
+    /* 라벨 선택 */
+    .label-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .label-chip {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      cursor: pointer; border: 2px solid transparent; opacity: 0.5; transition: opacity 0.15s;
+    }
+    .label-chip.selected { opacity: 1; }
+    .label-chip.Frontend { background: #2b7fff; color: #fff; }
+    .label-chip.Backend  { background: #00c950; color: #fff; }
+    .label-chip.Design   { background: #ad46ff; color: #fff; }
+    .label-chip.Bug      { background: #fb2c36; color: #fff; }
+    .label-chip.Docs     { background: #ffac6d; color: #3D2200; }
+    .label-chip.Infra    { background: #615fff; color: #fff; }
+
+    /* 체크리스트 빌더 */
+    .checklist-items { list-style: none; margin-bottom: 8px; }
+    .checklist-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border-light); }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item-text { flex: 1; font-size: 13px; color: var(--text-primary); }
+    .checklist-del { background: transparent; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 2px 4px; border-radius: 3px; }
+    .checklist-del:hover { background: #FEE2E2; color: #DC2626; }
+    .checklist-add-row { display: flex; gap: 6px; }
+    .checklist-add-input { flex: 1; }
+
+    /* 계층 구조 선택기 */
+    .cascade-select { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-app); border-radius: var(--radius-button); margin-top: 8px; }
+    .cascade-row { display: flex; align-items: center; gap: 8px; }
+    .cascade-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ===== 상세 모달 ===== */
+    #detailModal .modal-panel { max-width: 720px; }
+
+    .detail-top { padding: 20px 24px 16px; border-bottom: 1px solid var(--border-light); flex-shrink: 0; }
+    .detail-top-bar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+    .detail-label-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .detail-label-item {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    }
+    .detail-label-item .remove-label { cursor: pointer; font-size: 10px; opacity: 0.7; transition: opacity 0.1s; }
+    .detail-label-item .remove-label:hover { opacity: 1; }
+    .btn-add-label {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border: 1px dashed var(--border-medium); border-radius: 20px;
+      cursor: pointer; background: transparent; color: var(--text-muted);
+      transition: all 0.15s; position: relative;
+    }
+    .btn-add-label:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .label-picker-dropdown {
+      display: none; position: absolute; top: 28px; left: 0;
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-button); box-shadow: var(--shadow-dropdown);
+      padding: 8px; z-index: 10; min-width: 180px;
+    }
+    .label-picker-dropdown.show { display: block; }
+    .label-picker-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+      border-radius: 4px; cursor: pointer; font-size: 12px;
+      font-weight: 600; color: var(--text-primary); transition: background 0.1s;
+    }
+    .label-picker-item:hover { background: var(--bg-app); }
+    .label-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .detail-title { font-size: var(--text-h1); font-weight: var(--fw-bold); color: var(--text-primary); line-height: 1.4; margin-bottom: 10px; }
+    .detail-breadcrumb { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .breadcrumb-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: var(--radius-tag);
+    }
+    .breadcrumb-arrow { color: var(--text-muted); font-size: 12px; }
+    .btn-edit-crumb { background: transparent; border: 1px solid var(--border-light); border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; color: var(--text-muted); transition: all 0.1s; }
+    .btn-edit-crumb:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .detail-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .meta-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: var(--radius-tag);
+    }
+    .meta-badge.status-backlog   { background: var(--bg-column); color: var(--text-secondary); }
+    .meta-badge.status-todo      { background: var(--col-todo); color: #1D4ED8; }
+    .meta-badge.status-inprogress { background: var(--col-inprogress); color: #92400E; }
+    .meta-badge.status-done      { background: var(--col-done); color: #065F46; }
+    .meta-due { background: #FEE2E2; color: #DC2626; }
+    .meta-due.normal { background: #F0FDF4; color: #16A34A; }
+    .meta-assignee { background: var(--bg-app); color: var(--text-secondary); border: 1px solid var(--border-light); }
+
+    .detail-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .section-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .section-block { margin-bottom: 24px; }
+    .desc-text { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+
+    /* 체크리스트 상세 */
+    .progress-bar-wrap { background: var(--border-light); border-radius: 4px; height: 6px; margin-bottom: 10px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent-primary); border-radius: 4px; transition: width 0.3s; }
+    .detail-checklist { list-style: none; }
+    .detail-checklist-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-light); }
+    .detail-checklist-item:last-child { border-bottom: none; }
+    .detail-checklist-item input[type="checkbox"] { accent-color: var(--accent-primary); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+    .detail-checklist-item label { flex: 1; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+    .detail-checklist-item label.done { text-decoration: line-through; color: var(--text-muted); }
+    .detail-checklist-item .del-check { background: transparent; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 2px; border-radius: 3px; opacity: 0; transition: opacity 0.1s; }
+    .detail-checklist-item:hover .del-check { opacity: 1; }
+    .detail-checklist-item .del-check:hover { color: #DC2626; }
+    .checklist-add-detail { display: flex; gap: 6px; margin-top: 8px; }
+
+    /* 활동 내역 */
+    .activity-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+    .activity-item { display: flex; gap: 10px; }
+    .activity-avatar { width: 28px; height: 28px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); flex-shrink: 0; }
+    .activity-content { flex: 1; }
+    .activity-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .activity-meta strong { color: var(--text-secondary); }
+    .activity-bubble { background: var(--bg-app); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+    .comment-row { display: flex; gap: 8px; align-items: flex-start; }
+    .comment-input-wrap { flex: 1; }
+    .comment-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: var(--radius-button); font-size: 13px; font-family: var(--font-body); color: var(--text-primary); background: var(--bg-card); outline: none; resize: none; min-height: 36px; line-height: 1.5; transition: border-color 0.15s; }
+    .comment-input:focus { border-color: var(--accent-primary); }
+
+    /* 카테고리 편집기 */
+    .crumb-editor { display: none; margin-top: 10px; padding: 12px; background: var(--bg-app); border-radius: var(--radius-button); border: 1px solid var(--border-light); }
+    .crumb-editor.show { display: block; }
+    .crumb-editor-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .crumb-editor-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 50px; }
+
+    /* 색상 스와치 */
+    .color-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+    .color-swatch:hover { transform: scale(1.2); }
+    .color-swatch.selected { border-color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+  <!-- ===== 헤더 ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-icon">T</div>
+      <span class="logo-text">Tika</span>
+    </div>
+    <div class="header-search">
+      <input class="search-input" type="text" placeholder="업무 검색..." />
+    </div>
+    <div class="header-right">
+      <button class="btn-new" onclick="showNewModal()">+ 새 업무</button>
+      <button class="icon-btn" title="알림" style="position:relative;">
+        🔔<span class="notification-dot"></span>
+      </button>
+      <div class="dropdown-wrap">
+        <button class="icon-btn" title="설정" onclick="toggleDropdown('settings-dd')">⚙️</button>
+        <div class="dropdown-menu" id="settings-dd">
+          <div class="dropdown-item">프로필 설정</div>
+          <div class="dropdown-item">테마 설정</div>
+          <div class="dropdown-item">언어 설정</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" style="color:#DC2626;">로그아웃</div>
+        </div>
+      </div>
+      <div class="dropdown-wrap">
+        <div class="avatar" title="홍길동" onclick="toggleDropdown('avatar-dd')">홍</div>
+        <div class="dropdown-menu" id="avatar-dd">
+          <div class="dropdown-item" style="font-weight:600;color:var(--text-primary);">홍길동</div>
+          <div class="dropdown-item" style="font-size:12px;color:var(--text-muted);">hong@example.com</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item">내 프로필</div>
+          <div class="dropdown-item" style="color:#DC2626;">로그아웃</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== 메인 영역 ===== -->
+  <div class="main-area">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-workspace">
+        <div class="workspace-selector">
+          <div class="workspace-dot">P</div>
+          <span class="workspace-name">Project Alpha</span>
+          <span class="workspace-arrow">▾</span>
+        </div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-item active"><span class="nav-item-icon">📋</span> 칸반 보드</div>
+        <div class="nav-item"><span class="nav-item-icon">📅</span> 캘린더</div>
+        <div class="nav-item"><span class="nav-item-icon">📊</span> 리포트</div>
+        <div class="nav-item"><span class="nav-item-icon">⚙️</span> 설정</div>
+      </div>
+      <div class="sidebar-section-title">내 업무</div>
+      <div class="sidebar-tasks">
+        <div class="sidebar-task" onclick="handleCardClick('kanban-ui')">
+          <div class="sidebar-task-title">칸반 보드 UI 구현</div>
+          <div class="sidebar-task-meta">
+            <span class="priority-badge priority-high" style="font-size:9px;padding:1px 5px;">HIGH</span>
+            <span style="font-size:11px;color:var(--text-muted);">내일까지</span>
+          </div>
+        </div>
+        <div class="sidebar-task" onclick="handleCardClick('api-doc')">
+          <div class="sidebar-task-title">API 설계 문서 작성</div>
+          <div class="sidebar-task-meta">
+            <span class="priority-badge priority-high" style="font-size:9px;padding:1px 5px;">HIGH</span>
+            <span style="font-size:11px;color:#DC2626;">1일 초과</span>
+          </div>
+        </div>
+        <div class="sidebar-task" onclick="handleCardClick('unit-test')">
+          <div class="sidebar-task-title">단위 테스트 작성</div>
+          <div class="sidebar-task-meta">
+            <span class="priority-badge priority-high" style="font-size:9px;padding:1px 5px;">HIGH</span>
+            <span style="font-size:11px;color:var(--text-muted);">2일 후</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="content-area">
+      <button class="toggle-sidebar-btn" id="toggleSidebarBtn" onclick="toggleSidebar()" title="사이드바 접기/펼치기">◀</button>
+
+      <!-- 필터바 -->
+      <div class="filter-bar">
+        <button class="filter-chip active" onclick="toggleChip(this)">전체 9</button>
+        <button class="filter-chip" onclick="toggleChip(this)">이번 주 업무 3</button>
+        <button class="filter-chip" onclick="toggleChip(this)">일정 초과 1</button>
+        <div class="filter-divider"></div>
+        <button class="filter-chip" onclick="toggleChip(this)">높은 우선순위</button>
+        <button class="filter-chip" onclick="toggleChip(this)">내게 할당됨</button>
+        <button class="filter-chip" onclick="toggleChip(this)">라벨 ▾</button>
+      </div>
+
+      <!-- 보드 -->
+      <div class="board-area">
+
+        <!-- Backlog -->
+        <div class="column">
+          <div class="column-header backlog">
+            <span class="column-title">Backlog</span>
+            <span class="column-count" id="cnt-backlog">3</span>
+            <button class="column-add-btn" onclick="showNewModal('BACKLOG')" title="새 업무 추가">+</button>
+          </div>
+          <div class="column-body" id="lane-backlog">
+            <div class="ticket-card" onclick="handleCardClick('notify-research')">
+              <div class="card-labels"><span class="label-badge label-backend">Backend</span></div>
+              <div class="card-title">알림 기능 조사</div>
+              <div class="card-desc">웹 푸시 알림 및 이메일 알림 기능 구현을 위한 기술 스택을 조사한다.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-low">LOW</span>
+                <span class="checklist-badge">☑ 1/2</span>
+              </div>
+            </div>
+            <div class="ticket-card" onclick="handleCardClick('perf-plan')">
+              <div class="card-labels"><span class="label-badge label-docs">Docs</span></div>
+              <div class="card-title">성능 테스트 계획</div>
+              <div class="card-desc">API 응답 시간 및 동시 사용자 수에 대한 성능 테스트 시나리오 작성.</div>
+              <div class="card-footer"><span class="priority-badge priority-medium">MEDIUM</span></div>
+            </div>
+            <div class="ticket-card" onclick="handleCardClick('cicd')">
+              <div class="card-labels"><span class="label-badge label-infra">Infra</span></div>
+              <div class="card-title">CI/CD 파이프라인 구축</div>
+              <div class="card-desc">GitHub Actions를 이용한 자동 빌드, 테스트, 배포 파이프라인을 구성한다.</div>
+              <div class="card-footer"><span class="priority-badge priority-low">LOW</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TODO -->
+        <div class="column">
+          <div class="column-header todo">
+            <span class="column-title">TODO</span>
+            <span class="column-count" id="cnt-todo">3</span>
+            <button class="column-add-btn" onclick="showNewModal('TODO')" title="새 업무 추가">+</button>
+          </div>
+          <div class="column-body" id="lane-todo">
+            <div class="ticket-card" onclick="handleCardClick('kanban-ui')">
+              <div style="margin-bottom:5px;"><span class="issue-tag feature">[F] 보드 UI</span></div>
+              <div class="card-labels">
+                <span class="label-badge label-frontend">Frontend</span>
+                <span class="label-badge label-design">Design</span>
+              </div>
+              <div class="card-title">칸반 보드 UI 구현</div>
+              <div class="card-desc">4단계 워크플로우 칸반 보드의 UI 컴포넌트를 구현한다.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge soon">📅 내일</span>
+                <div class="card-footer-right"><div class="mini-avatar avatar-hong" title="홍길동">홍</div></div>
+              </div>
+            </div>
+            <div class="ticket-card" onclick="handleCardClick('dnd')">
+              <div class="card-labels"><span class="label-badge label-frontend">Frontend</span></div>
+              <div class="card-title">드래그앤드롭 기능 구현</div>
+              <div class="card-desc">@dnd-kit 라이브러리를 사용하여 칼럼 간 드래그앤드롭 기능을 구현한다.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-medium">MEDIUM</span>
+                <div class="card-footer-right"><div class="mini-avatar avatar-kim" title="김민수">김</div></div>
+              </div>
+            </div>
+            <div class="ticket-card" onclick="handleCardClick('unit-test')">
+              <div class="card-labels"><span class="label-badge label-docs">Docs</span></div>
+              <div class="card-title">단위 테스트 작성</div>
+              <div class="card-desc">Jest와 Testing Library를 이용한 컴포넌트 및 유틸 함수 단위 테스트 작성.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge normal">📅 2일 후</span>
+                <span class="checklist-badge">☑ 0/3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="column">
+          <div class="column-header inprog">
+            <span class="column-title">In Progress</span>
+            <span class="column-count" id="cnt-inprogress">2</span>
+            <button class="column-add-btn" onclick="showNewModal('IN_PROGRESS')" title="새 업무 추가">+</button>
+          </div>
+          <div class="column-body" id="lane-inprogress">
+            <div class="ticket-card overdue" onclick="handleCardClick('api-doc')">
+              <div class="card-labels"><span class="label-badge label-backend">Backend</span></div>
+              <div class="card-title">API 설계 문서 작성</div>
+              <div class="card-desc">REST API 엔드포인트 설계 및 요청/응답 형식 정의. OpenAPI 스펙 문서 작성.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge overdue">⚠ 1일 초과</span>
+                <div class="card-footer-right"><div class="mini-avatar avatar-hong" title="홍길동">홍</div></div>
+              </div>
+            </div>
+            <div class="ticket-card" onclick="handleCardClick('db-schema')">
+              <div class="card-labels">
+                <span class="label-badge label-backend">Backend</span>
+                <span class="label-badge label-infra">Infra</span>
+              </div>
+              <div class="card-title">DB 스키마 설계</div>
+              <div class="card-desc">Drizzle ORM을 이용한 PostgreSQL 테이블 스키마 설계 및 마이그레이션 작성.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-medium">MEDIUM</span>
+                <span class="checklist-badge">☑ 2/4</span>
+                <div class="card-footer-right"><div class="mini-avatar avatar-lee" title="이서연">이</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Done -->
+        <div class="column">
+          <div class="column-header done">
+            <span class="column-title">Done</span>
+            <span class="column-count" id="cnt-done">1</span>
+            <button class="column-add-btn" onclick="showNewModal('DONE')" title="새 업무 추가">+</button>
+          </div>
+          <div class="column-body" id="lane-done">
+            <div class="ticket-card" style="opacity:0.75;" onclick="handleCardClick('requirements')">
+              <div class="card-labels"><span class="label-badge label-docs">Docs</span></div>
+              <div class="card-title" style="text-decoration:line-through;color:var(--text-muted);">프로젝트 요구사항 정리</div>
+              <div class="card-desc">PRD, TRD, 요구사항 명세서 작성 완료. 팀 리뷰 통과.</div>
+              <div class="card-footer">
+                <span class="priority-badge priority-high">HIGH</span>
+                <span class="due-badge normal" style="background:#D1FAE5;color:#065F46;">✓ 완료</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /board-area -->
+    </div><!-- /content-area -->
+  </div><!-- /main-area -->
+
+  <footer class="footer">
+    &copy; 2026 Tika. All rights reserved. &nbsp;|&nbsp; Built with <span>♥</span> by CodeVillain
+  </footer>
+
+  <!-- ================================================================ -->
+  <!-- 새 업무 생성 모달                                                  -->
+  <!-- ================================================================ -->
+  <div class="modal-overlay" id="newModal" onclick="overlayClick(event,'newModal')">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">새 업무 생성</span>
+        <button class="modal-close" onclick="closeNewModal()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- 이슈 타입 -->
+        <div class="form-group">
+          <div class="form-label">이슈 타입</div>
+          <div class="type-selector">
+            <button class="type-btn goal" data-type="Goal" onclick="selectType(this)">
+              <span class="type-icon">🎯</span>Goal
+            </button>
+            <button class="type-btn story" data-type="Story" onclick="selectType(this)">
+              <span class="type-icon">📖</span>Story
+            </button>
+            <button class="type-btn feature active" data-type="Feature" onclick="selectType(this)">
+              <span class="type-icon">⚡</span>Feature
+            </button>
+            <button class="type-btn task" data-type="Task" onclick="selectType(this)">
+              <span class="type-icon">✅</span>Task
+            </button>
+          </div>
+        </div>
+
+        <!-- 제목 -->
+        <div class="form-group">
+          <label class="form-label" for="newTitle">제목 <span style="color:#DC2626;">*</span></label>
+          <input class="form-input" type="text" id="newTitle" placeholder="업무 제목을 입력하세요 (최대 200자)" maxlength="200" />
+        </div>
+
+        <!-- 설명 -->
+        <div class="form-group">
+          <label class="form-label" for="newDesc">설명</label>
+          <textarea class="form-textarea" id="newDesc" placeholder="업무에 대한 상세 설명을 입력하세요..."></textarea>
+        </div>
+
+        <!-- 체크리스트 -->
+        <div class="form-group">
+          <div class="form-label">체크리스트</div>
+          <ul class="checklist-items" id="newChecklistItems"></ul>
+          <div class="checklist-add-row">
+            <input class="form-input checklist-add-input" type="text" id="newChecklistInput" placeholder="항목 추가 후 Enter" />
+            <button class="btn btn-secondary" onclick="addChecklistItem()">추가</button>
+          </div>
+        </div>
+
+        <!-- 라벨 -->
+        <div class="form-group">
+          <div class="form-label">라벨</div>
+          <div class="label-chips" id="newLabelChips">
+            <span class="label-chip Frontend" onclick="toggleLabelChip(this)">Frontend</span>
+            <span class="label-chip Backend"  onclick="toggleLabelChip(this)">Backend</span>
+            <span class="label-chip Design"   onclick="toggleLabelChip(this)">Design</span>
+            <span class="label-chip Bug"      onclick="toggleLabelChip(this)">Bug</span>
+            <span class="label-chip Docs"     onclick="toggleLabelChip(this)">Docs</span>
+            <span class="label-chip Infra"    onclick="toggleLabelChip(this)">Infra</span>
+          </div>
+        </div>
+
+        <!-- 계층 구조 (Goal 제외 시 표시) -->
+        <div class="form-group" id="cascadeGroup">
+          <div class="form-label">계층 구조</div>
+          <div class="cascade-select">
+            <div class="cascade-row">
+              <span class="cascade-dot" style="background:#8B5CF6;"></span>
+              <span style="font-size:12px;color:var(--text-muted);min-width:50px;">Goal</span>
+              <select class="form-select" id="cascadeGoal" style="flex:1;" onchange="updateCascade()">
+                <option value="">Goal 선택...</option>
+                <option>Tika MVP 출시</option>
+                <option>사용자 경험 개선</option>
+              </select>
+            </div>
+            <div class="cascade-row" id="cascadeStoryRow">
+              <span class="cascade-dot" style="background:#3B82F6;"></span>
+              <span style="font-size:12px;color:var(--text-muted);min-width:50px;">Story</span>
+              <select class="form-select" id="cascadeStory" style="flex:1;" onchange="updateCascade()">
+                <option value="">Story 선택...</option>
+                <option>칸반 보드 구현</option>
+                <option>API 개발</option>
+              </select>
+            </div>
+            <div class="cascade-row" id="cascadeFeatureRow">
+              <span class="cascade-dot" style="background:#10B981;"></span>
+              <span style="font-size:12px;color:var(--text-muted);min-width:50px;">Feature</span>
+              <select class="form-select" id="cascadeFeature" style="flex:1;">
+                <option value="">Feature 선택...</option>
+                <option>보드 UI 컴포넌트</option>
+                <option>드래그앤드롭</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 상태 / 우선순위 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newStatus">상태</label>
+            <select class="form-select" id="newStatus">
+              <option value="BACKLOG">Backlog</option>
+              <option value="TODO">TODO</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newPriority">우선순위</label>
+            <select class="form-select" id="newPriority">
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM" selected>MEDIUM</option>
+              <option value="LOW">LOW</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 마감일 / 담당자 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newDueDate">마감일</label>
+            <input class="form-input" type="date" id="newDueDate" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newAssignee">담당자</label>
+            <select class="form-select" id="newAssignee">
+              <option value="">담당자 없음</option>
+              <option value="홍">홍길동</option>
+              <option value="김">김민수</option>
+              <option value="이">이서연</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeNewModal()">취소</button>
+        <button class="btn btn-primary" onclick="handleSubmit()">업무 생성</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- 상세 모달                                                          -->
+  <!-- ================================================================ -->
+  <div class="modal-overlay" id="detailModal" onclick="overlayClick(event,'detailModal')">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+
+      <!-- 상단 영역 -->
+      <div class="detail-top">
+        <div class="detail-top-bar">
+          <div class="detail-label-row" id="detailLabels"></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <div style="position:relative;">
+              <button class="btn-add-label" id="btnAddLabel" onclick="toggleLabelPicker()">+ 라벨 추가</button>
+              <div class="label-picker-dropdown" id="labelPickerDd">
+                <div class="label-picker-item" onclick="addDetailLabel('Frontend','#2b7fff','#fff')">
+                  <span class="label-color-dot" style="background:#2b7fff;"></span>Frontend
+                </div>
+                <div class="label-picker-item" onclick="addDetailLabel('Backend','#00c950','#fff')">
+                  <span class="label-color-dot" style="background:#00c950;"></span>Backend
+                </div>
+                <div class="label-picker-item" onclick="addDetailLabel('Design','#ad46ff','#fff')">
+                  <span class="label-color-dot" style="background:#ad46ff;"></span>Design
+                </div>
+                <div class="label-picker-item" onclick="addDetailLabel('Bug','#fb2c36','#fff')">
+                  <span class="label-color-dot" style="background:#fb2c36;"></span>Bug
+                </div>
+                <div class="label-picker-item" onclick="addDetailLabel('Docs','#ffac6d','#3D2200')">
+                  <span class="label-color-dot" style="background:#ffac6d;"></span>Docs
+                </div>
+                <div class="label-picker-item" onclick="addDetailLabel('Infra','#615fff','#fff')">
+                  <span class="label-color-dot" style="background:#615fff;"></span>Infra
+                </div>
+              </div>
+            </div>
+            <button class="modal-close" onclick="closeDetailModal()">✕</button>
+          </div>
+        </div>
+
+        <h2 class="detail-title" id="detailTitle">업무 제목</h2>
+
+        <!-- 카테고리 브레드크럼 -->
+        <div class="detail-breadcrumb" id="detailBreadcrumb"></div>
+
+        <!-- 카테고리 편집기 -->
+        <div class="crumb-editor" id="crumbEditor">
+          <div class="crumb-editor-row">
+            <span class="crumb-editor-label">Goal</span>
+            <select class="form-select" style="flex:1;">
+              <option>Tika MVP 출시</option><option>사용자 경험 개선</option>
+            </select>
+          </div>
+          <div class="crumb-editor-row">
+            <span class="crumb-editor-label">Story</span>
+            <select class="form-select" style="flex:1;">
+              <option>칸반 보드 구현</option><option>API 개발</option>
+            </select>
+          </div>
+          <div class="crumb-editor-row">
+            <span class="crumb-editor-label">Feature</span>
+            <select class="form-select" style="flex:1;">
+              <option>보드 UI 컴포넌트</option><option>드래그앤드롭</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-primary" style="height:28px;font-size:12px;" onclick="saveCrumb()">저장</button>
+            <button class="btn btn-secondary" style="height:28px;font-size:12px;" onclick="cancelCrumb()">취소</button>
+          </div>
+        </div>
+
+        <!-- 메타 정보 -->
+        <div class="detail-meta-row" id="detailMeta"></div>
+      </div>
+
+      <!-- 본문 -->
+      <div class="detail-body">
+
+        <!-- 설명 -->
+        <div class="section-block">
+          <div class="section-title">설명</div>
+          <div class="desc-text" id="detailDesc">설명이 없습니다.</div>
+        </div>
+
+        <!-- 체크리스트 -->
+        <div class="section-block" id="detailChecklistBlock">
+          <div class="section-title" id="detailChecklistTitle">체크리스트 (0/0)</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="detailProgressBar" style="width:0%;"></div>
+          </div>
+          <ul class="detail-checklist" id="detailChecklistItems"></ul>
+          <div class="checklist-add-detail">
+            <input class="form-input checklist-add-input" type="text" id="detailCheckInput" placeholder="항목 추가 후 Enter" />
+            <button class="btn btn-secondary" onclick="addDetailCheckItem()">추가</button>
+          </div>
+        </div>
+
+        <!-- 활동 내역 -->
+        <div class="section-block">
+          <div class="section-title">활동 내역</div>
+          <div class="activity-list" id="activityList"></div>
+          <div class="comment-row">
+            <div class="mini-avatar avatar-hong" style="width:28px;height:28px;font-size:11px;">홍</div>
+            <div class="comment-input-wrap">
+              <textarea class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." rows="1"></textarea>
+            </div>
+            <button class="btn btn-primary" style="height:34px;" onclick="submitComment()">등록</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 푸터 -->
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn btn-danger" onclick="deleteCurrentCard()">삭제</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="duplicateCard()">복제</button>
+          <button class="btn btn-ghost" onclick="moveCard()">이동</button>
+          <button class="btn btn-secondary" onclick="editCard()">편집</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- JavaScript                                                         -->
+  <!-- ================================================================ -->
+  <script>
+    /* ------------------------------------------------------------------ */
+    /* 카드 데이터                                                          */
+    /* ------------------------------------------------------------------ */
+    const CARDS = {
+      'notify-research': {
+        title: '알림 기능 조사',
+        desc: '웹 푸시 알림 및 이메일 알림 기능 구현을 위한 기술 스택을 조사한다. Firebase Cloud Messaging, Web Push API, SendGrid 등의 옵션을 비교 분석한다.',
+        labels: [{ name:'Backend', bg:'#00c950', color:'#fff' }],
+        status: 'BACKLOG', priority: 'LOW',
+        due: null, assignee: null,
+        checklist: [{ text:'FCM 조사', done:true },{ text:'SendGrid 검토', done:false }],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'S', label:'알림 시스템', bg:'#DBEAFE', color:'#3B82F6' },
+          { type:'T', label:'알림 기능 조사', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: [
+          { who:'김민수', whoAvatar:'김', avatarBg:'#3B82F6', time:'2일 전', msg:'백엔드 조사 항목을 2개로 나눴어요.' }
+        ]
+      },
+      'perf-plan': {
+        title: '성능 테스트 계획',
+        desc: 'API 응답 시간 및 동시 사용자 수에 대한 성능 테스트 시나리오를 작성한다. k6, Locust 등의 도구를 활용한 부하 테스트 계획 수립.',
+        labels: [{ name:'Docs', bg:'#ffac6d', color:'#3D2200' }],
+        status: 'BACKLOG', priority: 'MEDIUM',
+        due: null, assignee: null,
+        checklist: [],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'T', label:'성능 테스트 계획', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: []
+      },
+      'cicd': {
+        title: 'CI/CD 파이프라인 구축',
+        desc: 'GitHub Actions를 이용한 자동 빌드, 테스트, 배포 파이프라인을 구성한다. main 브랜치 머지 시 Vercel 자동 배포까지 연결한다.',
+        labels: [{ name:'Infra', bg:'#615fff', color:'#fff' }],
+        status: 'BACKLOG', priority: 'LOW',
+        due: null, assignee: null,
+        checklist: [],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'T', label:'CI/CD 구축', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: []
+      },
+      'kanban-ui': {
+        title: '칸반 보드 UI 구현',
+        desc: '4단계 워크플로우 칸반 보드의 UI 컴포넌트를 구현한다. Backlog / TODO / In Progress / Done 칼럼, 카드 렌더링, 칼럼 헤더 및 필터바를 포함한다.',
+        labels: [
+          { name:'Frontend', bg:'#2b7fff', color:'#fff' },
+          { name:'Design', bg:'#ad46ff', color:'#fff' }
+        ],
+        status: 'TODO', priority: 'HIGH',
+        due: '내일', assignee: '홍',
+        checklist: [],
+        type: 'Feature',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'S', label:'칸반 보드 구현', bg:'#DBEAFE', color:'#3B82F6' },
+          { type:'F', label:'보드 UI 컴포넌트', bg:'#D1FAE5', color:'#10B981' },
+          { type:'T', label:'칸반 보드 UI 구현', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: [
+          { who:'홍길동', whoAvatar:'홍', avatarBg:'#629584', time:'1일 전', msg:'디자인 시스템 토큰을 반영해서 작업 시작했습니다.' },
+          { who:'이서연', whoAvatar:'이', avatarBg:'#8B5CF6', time:'오늘', msg:'컬럼 색상 스펙 확인 완료. LGTM!' }
+        ]
+      },
+      'dnd': {
+        title: '드래그앤드롭 기능 구현',
+        desc: '@dnd-kit 라이브러리를 사용하여 칼럼 간 드래그앤드롭 기능을 구현한다. Optimistic UI 업데이트와 실패 시 롤백 패턴도 포함한다.',
+        labels: [{ name:'Frontend', bg:'#2b7fff', color:'#fff' }],
+        status: 'TODO', priority: 'MEDIUM',
+        due: null, assignee: '김',
+        checklist: [],
+        type: 'Feature',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'S', label:'칸반 보드 구현', bg:'#DBEAFE', color:'#3B82F6' },
+          { type:'F', label:'드래그앤드롭', bg:'#D1FAE5', color:'#10B981' }
+        ],
+        activity: [
+          { who:'김민수', whoAvatar:'김', avatarBg:'#3B82F6', time:'어제', msg:'@dnd-kit 6.x 기준으로 작업 진행합니다.' }
+        ]
+      },
+      'unit-test': {
+        title: '단위 테스트 작성',
+        desc: 'Jest와 @testing-library/react를 이용한 컴포넌트 및 유틸 함수 단위 테스트 작성. 커버리지 80% 이상을 목표로 한다.',
+        labels: [{ name:'Docs', bg:'#ffac6d', color:'#3D2200' }],
+        status: 'TODO', priority: 'HIGH',
+        due: '2일 후', assignee: null,
+        checklist: [
+          { text:'BoardContainer 테스트', done:false },
+          { text:'useTickets 훅 테스트', done:false },
+          { text:'유틸 함수 테스트', done:false }
+        ],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'T', label:'단위 테스트 작성', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: []
+      },
+      'api-doc': {
+        title: 'API 설계 문서 작성',
+        desc: 'REST API 엔드포인트 설계 및 요청/응답 형식 정의. OpenAPI 3.0 스펙 문서 작성 및 Swagger UI 연동.',
+        labels: [{ name:'Backend', bg:'#00c950', color:'#fff' }],
+        status: 'IN_PROGRESS', priority: 'HIGH',
+        due: '1일 초과', assignee: '홍', overdue: true,
+        checklist: [],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'S', label:'API 개발', bg:'#DBEAFE', color:'#3B82F6' },
+          { type:'T', label:'API 설계 문서', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: [
+          { who:'홍길동', whoAvatar:'홍', avatarBg:'#629584', time:'2일 전', msg:'티켓 CRUD API 스펙 초안 작성 완료.' },
+          { who:'이서연', whoAvatar:'이', avatarBg:'#8B5CF6', time:'1일 전', msg:'reorder 엔드포인트 추가 요청드립니다.' }
+        ]
+      },
+      'db-schema': {
+        title: 'DB 스키마 설계',
+        desc: 'Drizzle ORM을 이용한 PostgreSQL 테이블 스키마 설계 및 마이그레이션 작성. tickets 테이블, 인덱스, 제약 조건 포함.',
+        labels: [
+          { name:'Backend', bg:'#00c950', color:'#fff' },
+          { name:'Infra', bg:'#615fff', color:'#fff' }
+        ],
+        status: 'IN_PROGRESS', priority: 'MEDIUM',
+        due: null, assignee: '이',
+        checklist: [
+          { text:'tickets 테이블 정의', done:true },
+          { text:'인덱스 설계', done:true },
+          { text:'마이그레이션 스크립트', done:false },
+          { text:'시드 데이터 작성', done:false }
+        ],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'S', label:'API 개발', bg:'#DBEAFE', color:'#3B82F6' },
+          { type:'T', label:'DB 스키마 설계', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: [
+          { who:'이서연', whoAvatar:'이', avatarBg:'#8B5CF6', time:'3일 전', msg:'Drizzle 스키마 초안 작성했습니다. 리뷰 부탁드려요.' }
+        ]
+      },
+      'requirements': {
+        title: '프로젝트 요구사항 정리',
+        desc: 'PRD, TRD, 요구사항 명세서 작성 완료. 팀 리뷰 통과. REQUIREMENTS.md, PRD.md, TRD.md 문서 완성.',
+        labels: [{ name:'Docs', bg:'#ffac6d', color:'#3D2200' }],
+        status: 'DONE', priority: 'HIGH',
+        due: null, assignee: null, done: true,
+        checklist: [
+          { text:'PRD 작성', done:true },
+          { text:'TRD 작성', done:true },
+          { text:'팀 리뷰', done:true }
+        ],
+        type: 'Task',
+        breadcrumb: [
+          { type:'G', label:'Tika MVP 출시', bg:'#F3E8FF', color:'#8B5CF6' },
+          { type:'T', label:'요구사항 정리', bg:'#FEF3C7', color:'#F59E0B' }
+        ],
+        activity: [
+          { who:'홍길동', whoAvatar:'홍', avatarBg:'#629584', time:'5일 전', msg:'요구사항 문서 초안 완성. 팀 검토 요청.' },
+          { who:'김민수', whoAvatar:'김', avatarBg:'#3B82F6', time:'4일 전', msg:'리뷰 완료. LGTM!' }
+        ]
+      }
+    };
+
+    let currentCardId = null;
+
+    /* ------------------------------------------------------------------ */
+    /* 사이드바                                                             */
+    /* ------------------------------------------------------------------ */
+    let sidebarOpen = true;
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const btn = document.getElementById('toggleSidebarBtn');
+      sidebarOpen = !sidebarOpen;
+      sidebar.classList.toggle('collapsed', !sidebarOpen);
+      btn.textContent = sidebarOpen ? '◀' : '▶';
+      btn.title = sidebarOpen ? '사이드바 접기' : '사이드바 펼치기';
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 필터 칩                                                              */
+    /* ------------------------------------------------------------------ */
+    function toggleChip(el) { el.classList.toggle('active'); }
+
+    /* ------------------------------------------------------------------ */
+    /* 드롭다운                                                             */
+    /* ------------------------------------------------------------------ */
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id);
+      const isOpen = menu.classList.contains('show');
+      document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+      if (!isOpen) menu.classList.add('show');
+    }
+    document.addEventListener('click', e => {
+      if (!e.target.closest('[onclick*="toggleDropdown"]') && !e.target.closest('.dropdown-menu')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+      }
+      if (!e.target.closest('#btnAddLabel') && !e.target.closest('#labelPickerDd')) {
+        const dd = document.getElementById('labelPickerDd');
+        if (dd) dd.classList.remove('show');
+      }
+    });
+
+    /* ------------------------------------------------------------------ */
+    /* 새 업무 모달                                                         */
+    /* ------------------------------------------------------------------ */
+    function showNewModal(status) {
+      const overlay = document.getElementById('newModal');
+      if (status) document.getElementById('newStatus').value = status;
+      overlay.classList.add('open');
+    }
+
+    function closeNewModal() {
+      document.getElementById('newModal').classList.remove('open');
+      resetNewForm();
+    }
+
+    function resetNewForm() {
+      document.getElementById('newTitle').value = '';
+      document.getElementById('newDesc').value = '';
+      document.getElementById('newDueDate').value = '';
+      document.getElementById('newAssignee').value = '';
+      document.getElementById('newStatus').value = 'BACKLOG';
+      document.getElementById('newPriority').value = 'MEDIUM';
+      document.getElementById('newChecklistItems').innerHTML = '';
+      document.getElementById('newChecklistInput').value = '';
+      document.querySelectorAll('#newLabelChips .label-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.type-btn.feature').classList.add('active');
+      document.getElementById('cascadeGroup').style.display = '';
+    }
+
+    function selectType(btn) {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.type;
+      const cascadeGroup = document.getElementById('cascadeGroup');
+      const storyRow = document.getElementById('cascadeStoryRow');
+      const featureRow = document.getElementById('cascadeFeatureRow');
+      cascadeGroup.style.display = (type === 'Goal') ? 'none' : '';
+      storyRow.style.display = (type === 'Story') ? 'none' : '';
+      featureRow.style.display = (type === 'Feature' || type === 'Task') ? '' : 'none';
+    }
+
+    function toggleLabelChip(el) { el.classList.toggle('selected'); }
+
+    function updateCascade() {}
+
+    function addChecklistItem() {
+      const input = document.getElementById('newChecklistInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const li = document.createElement('li');
+      li.className = 'checklist-item';
+      li.innerHTML = `
+        <input type="checkbox" disabled />
+        <span class="checklist-item-text">${escHtml(text)}</span>
+        <button class="checklist-del" onclick="this.closest('li').remove()">✕</button>
+      `;
+      document.getElementById('newChecklistItems').appendChild(li);
+      input.value = '';
+      input.focus();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('newChecklistInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); }
+      });
+      document.getElementById('detailCheckInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addDetailCheckItem(); }
+      });
+      document.getElementById('commentInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); }
+      });
+    });
+
+    function handleSubmit() {
+      const title = document.getElementById('newTitle').value.trim();
+      if (!title) {
+        document.getElementById('newTitle').focus();
+        document.getElementById('newTitle').style.borderColor = '#DC2626';
+        setTimeout(() => { document.getElementById('newTitle').style.borderColor = ''; }, 2000);
+        return;
+      }
+
+      const status = document.getElementById('newStatus').value;
+      const priority = document.getElementById('newPriority').value;
+      const dueDate = document.getElementById('newDueDate').value;
+      const assignee = document.getElementById('newAssignee').value;
+      const selectedLabels = [];
+      document.querySelectorAll('#newLabelChips .label-chip.selected').forEach(c => {
+        const name = c.textContent.trim();
+        const styles = { Frontend:['#2b7fff','#fff'], Backend:['#00c950','#fff'], Design:['#ad46ff','#fff'], Bug:['#fb2c36','#fff'], Docs:['#ffac6d','#3D2200'], Infra:['#615fff','#fff'] };
+        selectedLabels.push({ name, bg: styles[name][0], color: styles[name][1] });
+      });
+      const checklist = [];
+      document.querySelectorAll('#newChecklistItems .checklist-item').forEach(li => {
+        checklist.push({ text: li.querySelector('.checklist-item-text').textContent, done: false });
+      });
+      const activeType = document.querySelector('.type-btn.active');
+      const type = activeType ? activeType.dataset.type : 'Task';
+
+      const laneMap = { BACKLOG:'lane-backlog', TODO:'lane-todo', IN_PROGRESS:'lane-inprogress', DONE:'lane-done' };
+      const cntMap  = { BACKLOG:'cnt-backlog', TODO:'cnt-todo', IN_PROGRESS:'cnt-inprogress', DONE:'cnt-done' };
+
+      const cardId = 'card-' + Date.now();
+      const priorityClasses = { CRITICAL:'priority-critical', HIGH:'priority-high', MEDIUM:'priority-medium', LOW:'priority-low' };
+      const priorityClass = priorityClasses[priority] || 'priority-medium';
+
+      let labelsHtml = selectedLabels.map(l =>
+        `<span class="label-badge" style="background:${l.bg};color:${l.color};">${escHtml(l.name)}</span>`
+      ).join('');
+
+      let dueBadgeHtml = '';
+      if (dueDate) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const due = new Date(dueDate); due.setHours(0,0,0,0);
+        const diff = Math.round((due - today) / 86400000);
+        const cls = diff < 0 ? 'overdue' : diff <= 2 ? 'soon' : 'normal';
+        const label = diff < 0 ? `⚠ ${Math.abs(diff)}일 초과` : diff === 0 ? '📅 오늘' : diff === 1 ? '📅 내일' : `📅 ${diff}일 후`;
+        dueBadgeHtml = `<span class="due-badge ${cls}">${label}</span>`;
+      }
+
+      let assigneeHtml = '';
+      const avatarMap = { '홍':'avatar-hong', '김':'avatar-kim', '이':'avatar-lee' };
+      if (assignee) {
+        assigneeHtml = `<div class="card-footer-right"><div class="mini-avatar ${avatarMap[assignee] || ''}" title="${escHtml(assignee)}">${escHtml(assignee)}</div></div>`;
+      }
+
+      const checkDone = checklist.filter(c => c.done).length;
+      const checklistHtml = checklist.length > 0
+        ? `<span class="checklist-badge">☑ ${checkDone}/${checklist.length}</span>` : '';
+
+      const cardHtml = `
+        <div class="ticket-card" id="${cardId}" onclick="handleCardClick('${cardId}')">
+          ${selectedLabels.length ? `<div class="card-labels">${labelsHtml}</div>` : ''}
+          <div class="card-title">${escHtml(title)}</div>
+          <div class="card-footer">
+            <span class="priority-badge ${priorityClass}">${priority}</span>
+            ${dueBadgeHtml}
+            ${checklistHtml}
+            ${assigneeHtml}
+          </div>
+        </div>
+      `;
+
+      CARDS[cardId] = {
+        title, desc: document.getElementById('newDesc').value.trim(),
+        labels: selectedLabels, status, priority, due: dueDate, assignee, checklist, type,
+        breadcrumb: [], activity: [], _new: true
+      };
+
+      const lane = document.getElementById(laneMap[status]);
+      lane.insertAdjacentHTML('afterbegin', cardHtml);
+
+      const cnt = document.getElementById(cntMap[status]);
+      cnt.textContent = parseInt(cnt.textContent) + 1;
+
+      closeNewModal();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 상세 모달                                                            */
+    /* ------------------------------------------------------------------ */
+    function handleCardClick(id) {
+      const card = CARDS[id];
+      if (!card) return;
+      currentCardId = id;
+
+      // 라벨
+      const labelRow = document.getElementById('detailLabels');
+      labelRow.innerHTML = card.labels.map(l =>
+        `<span class="detail-label-item" style="background:${l.bg};color:${l.color};">
+          ${escHtml(l.name)}
+          <span class="remove-label" onclick="removeDetailLabel(this,'${escHtml(l.name)}')">✕</span>
+        </span>`
+      ).join('');
+
+      // 제목
+      document.getElementById('detailTitle').textContent = card.title;
+
+      // 브레드크럼
+      const crumbEl = document.getElementById('detailBreadcrumb');
+      if (card.breadcrumb && card.breadcrumb.length) {
+        let html = '';
+        card.breadcrumb.forEach((b, i) => {
+          if (i > 0) html += '<span class="breadcrumb-arrow">›</span>';
+          html += `<span class="breadcrumb-badge" style="background:${b.bg};color:${b.color};">[${b.type}] ${escHtml(b.label)}</span>`;
+        });
+        html += ` <button class="btn-edit-crumb" onclick="toggleCrumbEditor()">✏ 편집</button>`;
+        crumbEl.innerHTML = html;
+      } else {
+        crumbEl.innerHTML = `<button class="btn-edit-crumb" onclick="toggleCrumbEditor()">✏ 계층 설정</button>`;
+      }
+
+      // 크럼 편집기 초기 숨김
+      document.getElementById('crumbEditor').classList.remove('show');
+
+      // 메타
+      const statusLabels = { BACKLOG:'Backlog', TODO:'TODO', IN_PROGRESS:'In Progress', DONE:'Done' };
+      const statusClasses = { BACKLOG:'status-backlog', TODO:'status-todo', IN_PROGRESS:'status-inprogress', DONE:'status-done' };
+      const priorityClasses = { CRITICAL:'priority-critical', HIGH:'priority-high', MEDIUM:'priority-medium', LOW:'priority-low' };
+      const assigneeColors = { '홍':'#629584', '김':'#3B82F6', '이':'#8B5CF6' };
+      let metaHtml = `<span class="meta-badge ${statusClasses[card.status] || ''}">${statusLabels[card.status] || card.status}</span>`;
+      metaHtml += `<span class="priority-badge ${priorityClasses[card.priority] || ''}">${card.priority}</span>`;
+      if (card.due) {
+        const overdueCls = card.overdue ? '' : 'normal';
+        metaHtml += `<span class="meta-badge meta-due ${overdueCls}">📅 ${escHtml(card.due)}</span>`;
+      }
+      if (card.assignee) {
+        const bg = assigneeColors[card.assignee] || '#629584';
+        metaHtml += `<span class="meta-badge meta-assignee" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="width:18px;height:18px;border-radius:50%;background:${bg};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">${escHtml(card.assignee)}</span>
+          ${escHtml({'홍':'홍길동','김':'김민수','이':'이서연'}[card.assignee] || card.assignee)}
+        </span>`;
+      }
+      document.getElementById('detailMeta').innerHTML = metaHtml;
+
+      // 설명
+      document.getElementById('detailDesc').textContent = card.desc || '설명이 없습니다.';
+
+      // 체크리스트
+      renderDetailChecklist(card.checklist || []);
+
+      // 활동 내역
+      const actList = document.getElementById('activityList');
+      actList.innerHTML = (card.activity || []).map(a => `
+        <div class="activity-item">
+          <div class="activity-avatar" style="background:${a.avatarBg};">${escHtml(a.whoAvatar)}</div>
+          <div class="activity-content">
+            <div class="activity-meta"><strong>${escHtml(a.who)}</strong> &nbsp;${escHtml(a.time)}</div>
+            <div class="activity-bubble">${escHtml(a.msg)}</div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('commentInput').value = '';
+      document.getElementById('detailModal').classList.add('open');
+    }
+
+    function renderDetailChecklist(items) {
+      const list = document.getElementById('detailChecklistItems');
+      const title = document.getElementById('detailChecklistTitle');
+      const bar = document.getElementById('detailProgressBar');
+      const done = items.filter(i => i.done).length;
+      const total = items.length;
+      title.textContent = `체크리스트 (${done}/${total})`;
+      bar.style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+      list.innerHTML = items.map((item, idx) => `
+        <li class="detail-checklist-item">
+          <input type="checkbox" id="chk${idx}" ${item.done?'checked':''} onchange="toggleDetailCheck(${idx})" />
+          <label for="chk${idx}" class="${item.done?'done':''}">${escHtml(item.text)}</label>
+          <button class="del-check" onclick="deleteDetailCheck(${idx})">✕</button>
+        </li>
+      `).join('');
+    }
+
+    function toggleDetailCheck(idx) {
+      if (!currentCardId) return;
+      CARDS[currentCardId].checklist[idx].done = !CARDS[currentCardId].checklist[idx].done;
+      renderDetailChecklist(CARDS[currentCardId].checklist);
+    }
+
+    function deleteDetailCheck(idx) {
+      if (!currentCardId) return;
+      CARDS[currentCardId].checklist.splice(idx, 1);
+      renderDetailChecklist(CARDS[currentCardId].checklist);
+    }
+
+    function addDetailCheckItem() {
+      const input = document.getElementById('detailCheckInput');
+      const text = input.value.trim();
+      if (!text || !currentCardId) return;
+      CARDS[currentCardId].checklist.push({ text, done: false });
+      renderDetailChecklist(CARDS[currentCardId].checklist);
+      input.value = '';
+      input.focus();
+    }
+
+    function submitComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text || !currentCardId) return;
+      const now = new Date();
+      const timeStr = '방금';
+      const activity = { who:'홍길동', whoAvatar:'홍', avatarBg:'#629584', time:timeStr, msg:text };
+      CARDS[currentCardId].activity.push(activity);
+      const actList = document.getElementById('activityList');
+      const item = document.createElement('div');
+      item.className = 'activity-item';
+      item.innerHTML = `
+        <div class="activity-avatar" style="background:#629584;">홍</div>
+        <div class="activity-content">
+          <div class="activity-meta"><strong>홍길동</strong> &nbsp;방금</div>
+          <div class="activity-bubble">${escHtml(text)}</div>
+        </div>
+      `;
+      actList.appendChild(item);
+      item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      input.value = '';
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('open');
+      document.getElementById('labelPickerDd').classList.remove('show');
+      currentCardId = null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 라벨 피커 (상세 모달)                                                */
+    /* ------------------------------------------------------------------ */
+    function toggleLabelPicker() {
+      document.getElementById('labelPickerDd').classList.toggle('show');
+    }
+
+    function addDetailLabel(name, bg, color) {
+      if (!currentCardId) return;
+      const card = CARDS[currentCardId];
+      if (card.labels.some(l => l.name === name)) {
+        document.getElementById('labelPickerDd').classList.remove('show');
+        return;
+      }
+      card.labels.push({ name, bg, color });
+      const row = document.getElementById('detailLabels');
+      const span = document.createElement('span');
+      span.className = 'detail-label-item';
+      span.style.background = bg;
+      span.style.color = color;
+      span.innerHTML = `${escHtml(name)}<span class="remove-label" onclick="removeDetailLabel(this,'${escHtml(name)}')">✕</span>`;
+      row.appendChild(span);
+      document.getElementById('labelPickerDd').classList.remove('show');
+    }
+
+    function removeDetailLabel(btn, name) {
+      if (!currentCardId) return;
+      CARDS[currentCardId].labels = CARDS[currentCardId].labels.filter(l => l.name !== name);
+      btn.closest('.detail-label-item').remove();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 카테고리 편집기                                                       */
+    /* ------------------------------------------------------------------ */
+    function toggleCrumbEditor() {
+      document.getElementById('crumbEditor').classList.toggle('show');
+    }
+    function saveCrumb() {
+      document.getElementById('crumbEditor').classList.remove('show');
+    }
+    function cancelCrumb() {
+      document.getElementById('crumbEditor').classList.remove('show');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 상세 모달 - 기타 버튼                                                 */
+    /* ------------------------------------------------------------------ */
+    function deleteCurrentCard() {
+      if (!currentCardId) return;
+      const card = CARDS[currentCardId];
+      if (!confirm(`"${card.title}" 업무를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
+      const el = document.getElementById(currentCardId);
+      if (el) {
+        const lane = el.closest('.column-body');
+        el.remove();
+        if (lane) {
+          const col = lane.closest('.column');
+          if (col) {
+            const cnt = col.querySelector('.column-count');
+            if (cnt) cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
+          }
+        }
+      }
+      delete CARDS[currentCardId];
+      closeDetailModal();
+    }
+
+    function duplicateCard() {
+      if (!currentCardId) return;
+      const card = CARDS[currentCardId];
+      const newId = 'card-' + Date.now();
+      CARDS[newId] = JSON.parse(JSON.stringify(card));
+      CARDS[newId].title = card.title + ' (복사본)';
+      closeDetailModal();
+      const laneMap = { BACKLOG:'lane-backlog', TODO:'lane-todo', IN_PROGRESS:'lane-inprogress', DONE:'lane-done' };
+      const cntMap  = { BACKLOG:'cnt-backlog', TODO:'cnt-todo', IN_PROGRESS:'cnt-inprogress', DONE:'cnt-done' };
+      const lane = document.getElementById(laneMap[card.status]);
+      if (lane) {
+        const priorityClasses = { CRITICAL:'priority-critical', HIGH:'priority-high', MEDIUM:'priority-medium', LOW:'priority-low' };
+        const labelsHtml = CARDS[newId].labels.map(l =>
+          `<span class="label-badge" style="background:${l.bg};color:${l.color};">${escHtml(l.name)}</span>`
+        ).join('');
+        const html = `
+          <div class="ticket-card" id="${newId}" onclick="handleCardClick('${newId}')">
+            ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ''}
+            <div class="card-title">${escHtml(CARDS[newId].title)}</div>
+            <div class="card-footer">
+              <span class="priority-badge ${priorityClasses[card.priority] || 'priority-medium'}">${card.priority}</span>
+            </div>
+          </div>
+        `;
+        lane.insertAdjacentHTML('afterbegin', html);
+        const cnt = document.getElementById(cntMap[card.status]);
+        if (cnt) cnt.textContent = parseInt(cnt.textContent) + 1;
+      }
+    }
+
+    function moveCard() {
+      if (!currentCardId) return;
+      const card = CARDS[currentCardId];
+      const statuses = ['BACKLOG','TODO','IN_PROGRESS','DONE'];
+      const labels   = ['Backlog','TODO','In Progress','Done'];
+      const current = statuses.indexOf(card.status);
+      const opts = statuses.map((s,i) => `${i}: ${labels[i]}${s===card.status?' (현재)':''}`).join('\n');
+      const input = prompt(`이동할 칼럼을 선택하세요:\n\n${opts}\n\n번호 입력:`);
+      if (input === null) return;
+      const idx = parseInt(input);
+      if (isNaN(idx) || idx < 0 || idx > 3) return;
+      const newStatus = statuses[idx];
+      if (newStatus === card.status) return;
+
+      const laneMap = { BACKLOG:'lane-backlog', TODO:'lane-todo', IN_PROGRESS:'lane-inprogress', DONE:'lane-done' };
+      const cntMap  = { BACKLOG:'cnt-backlog', TODO:'cnt-todo', IN_PROGRESS:'cnt-inprogress', DONE:'cnt-done' };
+
+      const el = document.getElementById(currentCardId);
+      if (el) {
+        const oldCnt = document.getElementById(cntMap[card.status]);
+        if (oldCnt) oldCnt.textContent = Math.max(0, parseInt(oldCnt.textContent) - 1);
+        document.getElementById(laneMap[newStatus]).insertAdjacentElement('afterbegin', el);
+        const newCnt = document.getElementById(cntMap[newStatus]);
+        if (newCnt) newCnt.textContent = parseInt(newCnt.textContent) + 1;
+      }
+      CARDS[currentCardId].status = newStatus;
+      closeDetailModal();
+    }
+
+    function editCard() {
+      if (!currentCardId) return;
+      const card = CARDS[currentCardId];
+      closeDetailModal();
+      showNewModal(card.status);
+      setTimeout(() => {
+        document.getElementById('newTitle').value = card.title;
+        document.getElementById('newDesc').value = card.desc || '';
+        document.getElementById('newStatus').value = card.status;
+        document.getElementById('newPriority').value = card.priority;
+        if (card.assignee) document.getElementById('newAssignee').value = card.assignee;
+        card.labels.forEach(l => {
+          const chip = document.querySelector(`#newLabelChips .label-chip.${l.name}`);
+          if (chip) chip.classList.add('selected');
+        });
+      }, 50);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 오버레이 클릭 & ESC                                                  */
+    /* ------------------------------------------------------------------ */
+    function overlayClick(e, modalId) {
+      if (e.target.id === modalId) {
+        if (modalId === 'newModal') closeNewModal();
+        else closeDetailModal();
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (document.getElementById('detailModal').classList.contains('open')) closeDetailModal();
+        else if (document.getElementById('newModal').classList.contains('open')) closeNewModal();
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+      }
+    });
+
+    /* ------------------------------------------------------------------ */
+    /* 유틸                                                                 */
+    /* ------------------------------------------------------------------ */
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+  </script>
+</body>
+</html>

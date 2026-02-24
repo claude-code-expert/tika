@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Label 컴포넌트 - Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .page-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 32px;
+    }
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    /* Label badge base */
+    .label-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 20px;
+      padding: 0 8px;
+      border-radius: var(--radius-tag);
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--font-display);
+      white-space: nowrap;
+      user-select: none;
+    }
+    .label-badge .remove-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.15);
+      border: none;
+      cursor: pointer;
+      font-size: 9px;
+      line-height: 1;
+      color: inherit;
+      padding: 0;
+      transition: background 0.15s;
+    }
+    .label-badge .remove-btn:hover {
+      background: rgba(0,0,0,0.3);
+    }
+    /* Preset row */
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    /* Palette swatches */
+    .palette-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    /* Label selector area */
+    .label-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      min-height: 32px;
+    }
+    .add-label-btn {
+      height: 20px;
+      padding: 0 10px;
+      border: 1px dashed var(--border-medium);
+      border-radius: 20px;
+      background: transparent;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      position: relative;
+      white-space: nowrap;
+    }
+    .add-label-btn:hover:not(:disabled) {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    .add-label-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    /* Dropdown */
+    .dropdown-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .label-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      box-shadow: var(--shadow-dropdown);
+      padding: 8px;
+      z-index: 100;
+      min-width: 180px;
+    }
+    .label-dropdown.open {
+      display: block;
+    }
+    .dropdown-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 8px;
+      border-radius: var(--radius-tag);
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--font-display);
+      cursor: pointer;
+      margin: 3px;
+      transition: opacity 0.15s;
+      border: none;
+    }
+    .dropdown-chip.used {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .dropdown-chip:not(.used):hover {
+      filter: brightness(0.9);
+    }
+    /* Selected count */
+    .selected-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+    /* Tooltip */
+    .tooltip-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2C3E50;
+      color: #fff;
+      font-size: 11px;
+      font-family: var(--font-body);
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #2C3E50;
+    }
+    .tooltip-wrap:hover .tooltip {
+      display: block;
+    }
+    /* Custom creator */
+    .creator-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .creator-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .creator-label-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      width: 72px;
+      flex-shrink: 0;
+    }
+    .creator-input {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-size: 13px;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      width: 200px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .creator-input:focus {
+      border-color: var(--accent-primary);
+    }
+    .creator-input.error {
+      border-color: #DC2626;
+    }
+    .color-swatch-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .color-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s, border-color 0.1s;
+      flex-shrink: 0;
+    }
+    .color-swatch.selected {
+      border-color: var(--text-primary);
+      transform: scale(1.2);
+    }
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+    .preview-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .create-btn {
+      height: 32px;
+      padding: 0 16px;
+      background: var(--accent-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-button);
+      font-size: 13px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .create-btn:hover {
+      background: var(--accent-hover);
+    }
+    .error-msg {
+      font-size: 11px;
+      color: #DC2626;
+      display: none;
+    }
+    .error-msg.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <nav style="height:52px;background:#fff;border-bottom:1px solid #DFE1E6;display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;">
+    <div style="width:28px;height:28px;background:#629584;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">T</div>
+    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#2C3E50;">Tika</span>
+    <span style="color:#DFE1E6;">|</span>
+    <a href="index.html" style="font-size:13px;color:#629584;text-decoration:none;">← 데모 홈</a>
+    <span style="color:#DFE1E6;">›</span>
+    <span style="font-size:13px;color:#5A6B7F;">Label 컴포넌트</span>
+  </nav>
+
+  <div class="page-content">
+    <h1 class="page-title">Label 컴포넌트</h1>
+
+    <!-- SECTION 1: Preset Labels -->
+    <div class="section">
+      <div class="section-title">LabelBadge - 프리셋 라벨</div>
+      <div class="card">
+        <div class="badge-row">
+          <span class="label-badge" style="background:#2b7fff;color:#fff;">Frontend</span>
+          <span class="label-badge" style="background:#00c950;color:#fff;">Backend</span>
+          <span class="label-badge" style="background:#ad46ff;color:#fff;">Design</span>
+          <span class="label-badge" style="background:#fb2c36;color:#fff;">Bug</span>
+          <span class="label-badge" style="background:#ffac6d;color:#3D2200;">Docs</span>
+          <span class="label-badge" style="background:#615fff;color:#fff;">Infra</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Full 17-color palette -->
+    <div class="section">
+      <div class="section-title">LabelBadge - 전체 17색 팔레트</div>
+      <div class="card">
+        <div class="palette-grid">
+          <span class="label-badge" style="background:#2b7fff;color:#fff;">Frontend</span>
+          <span class="label-badge" style="background:#00c950;color:#fff;">Backend</span>
+          <span class="label-badge" style="background:#ad46ff;color:#fff;">Design</span>
+          <span class="label-badge" style="background:#fb2c36;color:#fff;">Bug</span>
+          <span class="label-badge" style="background:#ffac6d;color:#3D2200;">Docs</span>
+          <span class="label-badge" style="background:#615fff;color:#fff;">Infra</span>
+          <span class="label-badge" style="background:#ff29d3;color:#fff;">커스텀 1</span>
+          <span class="label-badge" style="background:#a0628c;color:#fff;">커스텀 2</span>
+          <span class="label-badge" style="background:#89d0f0;color:#1A3D4D;">커스텀 3</span>
+          <span class="label-badge" style="background:#71e4bf;color:#0A3D2A;">커스텀 4</span>
+          <span class="label-badge" style="background:#46e264;color:#0D3A14;">커스텀 5</span>
+          <span class="label-badge" style="background:#caee68;color:#3A4200;">커스텀 6</span>
+          <span class="label-badge" style="background:#fffe92;color:#4A4500;">커스텀 7</span>
+          <span class="label-badge" style="background:#f7d1d1;color:#5C1A1A;">커스텀 8</span>
+          <span class="label-badge" style="background:#f7a2ff;color:#4A0050;">커스텀 9</span>
+          <span class="label-badge" style="background:#c1d1ff;color:#1A2A5C;">커스텀 10</span>
+          <span class="label-badge" style="background:#c5dbdc;color:#2A3D3E;">커스텀 11</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Interactive Label Selector -->
+    <div class="section">
+      <div class="section-title">LabelSelector - 인터랙티브 라벨 선택기</div>
+      <div class="card">
+        <div class="label-area" id="label-area">
+          <!-- Labels rendered by JS -->
+        </div>
+        <div class="selected-count" id="selected-count">선택된 라벨: <strong id="label-count-num">0</strong>개</div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Custom Label Creator -->
+    <div class="section">
+      <div class="section-title">커스텀 라벨 생성기</div>
+      <div class="card">
+        <div class="creator-panel">
+          <div class="creator-row">
+            <span class="creator-label-text">라벨 이름</span>
+            <input class="creator-input" id="custom-name" type="text" placeholder="라벨 이름" maxlength="20" />
+            <span class="error-msg" id="creator-error">이미 존재하는 이름입니다.</span>
+          </div>
+          <div class="creator-row" style="align-items:flex-start;">
+            <span class="creator-label-text" style="padding-top:2px;">색상</span>
+            <div class="color-swatch-row" id="swatch-row"></div>
+          </div>
+          <div class="creator-row">
+            <span class="creator-label-text">미리보기</span>
+            <div class="preview-area">
+              <span class="label-badge" id="preview-badge" style="background:#2b7fff;color:#fff;">미리보기</span>
+              <span class="preview-text">라벨 이름을 입력하세요</span>
+            </div>
+          </div>
+          <div class="creator-row">
+            <span class="creator-label-text"></span>
+            <button class="create-btn" id="create-btn">생성</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Preset labels
+    const PRESETS = [
+      { name: 'Frontend', bg: '#2b7fff', text: '#fff' },
+      { name: 'Backend',  bg: '#00c950', text: '#fff' },
+      { name: 'Design',   bg: '#ad46ff', text: '#fff' },
+      { name: 'Bug',      bg: '#fb2c36', text: '#fff' },
+      { name: 'Docs',     bg: '#ffac6d', text: '#3D2200' },
+      { name: 'Infra',    bg: '#615fff', text: '#fff' },
+    ];
+
+    // All 17 colors for custom creator
+    const PALETTE = [
+      { bg: '#2b7fff', text: '#fff' },
+      { bg: '#00c950', text: '#fff' },
+      { bg: '#ad46ff', text: '#fff' },
+      { bg: '#fb2c36', text: '#fff' },
+      { bg: '#ffac6d', text: '#3D2200' },
+      { bg: '#615fff', text: '#fff' },
+      { bg: '#ff29d3', text: '#fff' },
+      { bg: '#a0628c', text: '#fff' },
+      { bg: '#89d0f0', text: '#1A3D4D' },
+      { bg: '#71e4bf', text: '#0A3D2A' },
+      { bg: '#46e264', text: '#0D3A14' },
+      { bg: '#caee68', text: '#3A4200' },
+      { bg: '#fffe92', text: '#4A4500' },
+      { bg: '#f7d1d1', text: '#5C1A1A' },
+      { bg: '#f7a2ff', text: '#4A0050' },
+      { bg: '#c1d1ff', text: '#1A2A5C' },
+      { bg: '#c5dbdc', text: '#2A3D3E' },
+    ];
+
+    const MAX_LABELS = 5;
+    let selectedLabels = [
+      { name: 'Backend',  bg: '#00c950', text: '#fff' },
+      { name: 'Infra',    bg: '#615fff', text: '#fff' },
+    ];
+    // Available label pool (presets + custom additions)
+    let availablePool = [...PRESETS];
+    let dropdownOpen = false;
+    let selectedColorIdx = 0;
+
+    const labelArea = document.getElementById('label-area');
+    const labelCountNum = document.getElementById('label-count-num');
+
+    function renderLabelArea() {
+      labelArea.innerHTML = '';
+
+      selectedLabels.forEach((lbl, idx) => {
+        const badge = document.createElement('span');
+        badge.className = 'label-badge';
+        badge.style.background = lbl.bg;
+        badge.style.color = lbl.text;
+        badge.innerHTML = `${lbl.name} <button class="remove-btn" data-idx="${idx}" title="제거">✕</button>`;
+        labelArea.appendChild(badge);
+      });
+
+      // Add button (with tooltip if at max)
+      const atMax = selectedLabels.length >= MAX_LABELS;
+
+      if (atMax) {
+        const tipWrap = document.createElement('div');
+        tipWrap.className = 'tooltip-wrap';
+        tipWrap.innerHTML = `
+          <button class="add-label-btn" disabled>+ 라벨 추가</button>
+          <span class="tooltip">최대 5개까지 추가 가능합니다</span>
+        `;
+        labelArea.appendChild(tipWrap);
+      } else {
+        const dropWrap = document.createElement('div');
+        dropWrap.className = 'dropdown-wrap';
+        dropWrap.id = 'dropdown-wrap';
+
+        const btn = document.createElement('button');
+        btn.className = 'add-label-btn';
+        btn.id = 'add-label-btn';
+        btn.textContent = '+ 라벨 추가';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleDropdown();
+        });
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'label-dropdown' + (dropdownOpen ? ' open' : '');
+        dropdown.id = 'label-dropdown';
+
+        availablePool.forEach((lbl) => {
+          const isUsed = selectedLabels.some(s => s.name === lbl.name);
+          const chip = document.createElement('button');
+          chip.className = 'dropdown-chip' + (isUsed ? ' used' : '');
+          chip.style.background = lbl.bg;
+          chip.style.color = lbl.text;
+          chip.textContent = lbl.name;
+          chip.disabled = isUsed;
+          if (!isUsed) {
+            chip.addEventListener('click', (e) => {
+              e.stopPropagation();
+              addLabel(lbl);
+            });
+          }
+          dropdown.appendChild(chip);
+        });
+
+        dropWrap.appendChild(btn);
+        dropWrap.appendChild(dropdown);
+        labelArea.appendChild(dropWrap);
+      }
+
+      labelCountNum.textContent = selectedLabels.length;
+
+      // Remove button listeners
+      labelArea.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.idx);
+          removeLabel(idx);
+        });
+      });
+    }
+
+    function toggleDropdown() {
+      dropdownOpen = !dropdownOpen;
+      renderLabelArea();
+    }
+
+    function addLabel(lbl) {
+      if (selectedLabels.length >= MAX_LABELS) return;
+      selectedLabels.push({ ...lbl });
+      dropdownOpen = false;
+      renderLabelArea();
+    }
+
+    function removeLabel(idx) {
+      selectedLabels.splice(idx, 1);
+      renderLabelArea();
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (dropdownOpen) {
+        dropdownOpen = false;
+        renderLabelArea();
+      }
+    });
+
+    // --- Custom label creator ---
+    const swatchRow = document.getElementById('swatch-row');
+    const customNameInput = document.getElementById('custom-name');
+    const previewBadge = document.getElementById('preview-badge');
+    const creatorError = document.getElementById('creator-error');
+    const createBtn = document.getElementById('create-btn');
+
+    function renderSwatches() {
+      swatchRow.innerHTML = '';
+      PALETTE.forEach((c, i) => {
+        const sw = document.createElement('div');
+        sw.className = 'color-swatch' + (i === selectedColorIdx ? ' selected' : '');
+        sw.style.background = c.bg;
+        sw.title = c.bg;
+        sw.addEventListener('click', () => {
+          selectedColorIdx = i;
+          updatePreview();
+          renderSwatches();
+        });
+        swatchRow.appendChild(sw);
+      });
+    }
+
+    function updatePreview() {
+      const name = customNameInput.value.trim() || '미리보기';
+      const color = PALETTE[selectedColorIdx];
+      previewBadge.textContent = name;
+      previewBadge.style.background = color.bg;
+      previewBadge.style.color = color.text;
+    }
+
+    customNameInput.addEventListener('input', () => {
+      customNameInput.classList.remove('error');
+      creatorError.classList.remove('visible');
+      updatePreview();
+    });
+
+    createBtn.addEventListener('click', () => {
+      const name = customNameInput.value.trim();
+      if (!name) {
+        customNameInput.classList.add('error');
+        creatorError.textContent = '이름을 입력해 주세요.';
+        creatorError.classList.add('visible');
+        customNameInput.focus();
+        return;
+      }
+      const duplicate = availablePool.some(l => l.name === name);
+      if (duplicate) {
+        customNameInput.classList.add('error');
+        creatorError.textContent = '이미 존재하는 이름입니다.';
+        creatorError.classList.add('visible');
+        return;
+      }
+      const color = PALETTE[selectedColorIdx];
+      const newLabel = { name, bg: color.bg, text: color.text };
+      availablePool.push(newLabel);
+      customNameInput.value = '';
+      customNameInput.classList.remove('error');
+      creatorError.classList.remove('visible');
+      updatePreview();
+      renderLabelArea();
+    });
+
+    // Init
+    renderSwatches();
+    updatePreview();
+    renderLabelArea();
+  </script>
+</body>
+</html>

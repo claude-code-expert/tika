@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IssueBreadcrumb 컴포넌트 - Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .page-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 32px;
+    }
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    /* Type badge */
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-weight: 700;
+      font-family: var(--font-display);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .type-badge.large { width: 24px; height: 24px; font-size: 12px; }
+    .type-badge.small { width: 18px; height: 18px; font-size: 10px; }
+    .type-badge.goal    { background: #8B5CF6; color: #fff; }
+    .type-badge.story   { background: #3B82F6; color: #fff; }
+    .type-badge.feature { background: #10B981; color: #fff; }
+    .type-badge.task    { background: #F59E0B; color: #fff; }
+    /* Breadcrumb */
+    .breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .bc-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bc-sep {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin: 0 4px;
+    }
+    .bc-name {
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    /* Edit button */
+    .edit-btn {
+      height: 22px;
+      padding: 0 8px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background: transparent;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: border-color 0.15s, color 0.15s;
+      margin-left: 6px;
+    }
+    .edit-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    /* Section 1 rows */
+    .bc-demo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .bc-demo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .bc-row-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      width: 60px;
+      flex-shrink: 0;
+    }
+    /* Editor panel */
+    .editor-panel {
+      display: none;
+      background: #F8F9FB;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .editor-panel.open {
+      display: flex;
+    }
+    .editor-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .editor-field label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .editor-select {
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border-light);
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: #fff;
+      outline: none;
+      min-width: 130px;
+      transition: border-color 0.15s;
+    }
+    .editor-select:focus {
+      border-color: var(--accent-primary);
+    }
+    .editor-select:disabled {
+      opacity: 0.5;
+      background: #F8F9FB;
+      cursor: not-allowed;
+    }
+    .editor-actions {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      padding-bottom: 0;
+    }
+    .btn-save {
+      height: 30px;
+      padding: 0 14px;
+      background: var(--accent-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-button);
+      font-size: 12px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save:hover { background: var(--accent-hover); }
+    .btn-cancel {
+      height: 30px;
+      padding: 0 12px;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-size: 12px;
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--border-medium); }
+    /* Badge demo grid */
+    .badge-demo-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .badge-demo-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-demo-item .sizes {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-type-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2C3E50;
+      color: #fff;
+      font-size: 13px;
+      font-family: var(--font-body);
+      padding: 10px 20px;
+      border-radius: 20px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    /* Builder section */
+    .builder-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .builder-selects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .builder-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .builder-field label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .builder-select {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-button);
+      font-size: 13px;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: #fff;
+      outline: none;
+      min-width: 150px;
+      transition: border-color 0.15s;
+    }
+    .builder-select:focus { border-color: var(--accent-primary); }
+    .builder-select:disabled { opacity: 0.4; background: #F8F9FB; cursor: not-allowed; }
+    .builder-preview {
+      background: #F8F9FB;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 12px 16px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .builder-preview-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <nav style="height:52px;background:#fff;border-bottom:1px solid #DFE1E6;display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;">
+    <div style="width:28px;height:28px;background:#629584;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">T</div>
+    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#2C3E50;">Tika</span>
+    <span style="color:#DFE1E6;">|</span>
+    <a href="index.html" style="font-size:13px;color:#629584;text-decoration:none;">← 데모 홈</a>
+    <span style="color:#DFE1E6;">›</span>
+    <span style="font-size:13px;color:#5A6B7F;">IssueBreadcrumb 컴포넌트</span>
+  </nav>
+
+  <div class="page-content">
+    <h1 class="page-title">IssueBreadcrumb 컴포넌트</h1>
+
+    <!-- SECTION 1: Hierarchy Examples -->
+    <div class="section">
+      <div class="section-title">계층 구조 예시</div>
+      <div class="card">
+        <div class="bc-demo-list">
+          <!-- 4-level -->
+          <div class="bc-demo-row">
+            <span class="bc-row-label">4단계</span>
+            <div id="live-breadcrumb" class="breadcrumb">
+              <div class="bc-item">
+                <span class="type-badge small goal">G</span>
+                <span class="bc-name">MVP 출시</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small story">S</span>
+                <span class="bc-name">사용자 인증</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small feature">F</span>
+                <span class="bc-name">인증 API</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small task">T</span>
+                <span class="bc-name">JWT 구현</span>
+              </div>
+            </div>
+            <button class="edit-btn" id="edit-btn-1">✏ 편집</button>
+          </div>
+
+          <!-- Editor panel for 4-level -->
+          <div class="editor-panel" id="editor-panel-1">
+            <div class="editor-field">
+              <label>Goal</label>
+              <select class="editor-select" id="ep1-goal">
+                <option value="">선택</option>
+                <option value="MVP 출시" selected>MVP 출시</option>
+                <option value="팀 협업 확장">팀 협업 확장</option>
+              </select>
+            </div>
+            <div class="editor-field">
+              <label>Story</label>
+              <select class="editor-select" id="ep1-story">
+                <option value="">선택</option>
+              </select>
+            </div>
+            <div class="editor-field">
+              <label>Feature</label>
+              <select class="editor-select" id="ep1-feature">
+                <option value="">선택</option>
+              </select>
+            </div>
+            <div class="editor-field">
+              <label>Task</label>
+              <select class="editor-select" id="ep1-task" disabled>
+                <option value="">선택</option>
+              </select>
+            </div>
+            <div class="editor-actions">
+              <button class="btn-save" id="ep1-save">저장</button>
+              <button class="btn-cancel" id="ep1-cancel">취소</button>
+            </div>
+          </div>
+
+          <!-- 3-level -->
+          <div class="bc-demo-row">
+            <span class="bc-row-label">3단계</span>
+            <div class="breadcrumb">
+              <div class="bc-item">
+                <span class="type-badge small goal">G</span>
+                <span class="bc-name">MVP 출시</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small story">S</span>
+                <span class="bc-name">칸반 보드 핵심 기능</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small feature">F</span>
+                <span class="bc-name">드래그앤드롭</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2-level -->
+          <div class="bc-demo-row">
+            <span class="bc-row-label">2단계</span>
+            <div class="breadcrumb">
+              <div class="bc-item">
+                <span class="type-badge small goal">G</span>
+                <span class="bc-name">팀 협업 확장</span>
+              </div>
+              <span class="bc-sep">›</span>
+              <div class="bc-item">
+                <span class="type-badge small story">S</span>
+                <span class="bc-name">팀 초대 시스템</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1-level -->
+          <div class="bc-demo-row">
+            <span class="bc-row-label">1단계</span>
+            <div class="breadcrumb">
+              <div class="bc-item">
+                <span class="type-badge small goal">G</span>
+                <span class="bc-name">MVP 출시</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Edit Mode Category Editor -->
+    <div class="section">
+      <div class="section-title">편집 모드 (Category Editor)</div>
+      <div class="card">
+        <div style="margin-bottom: 10px; font-size: 12px; color: var(--text-muted);">편집 버튼을 클릭하여 카테고리를 변경하세요.</div>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <div id="sec2-breadcrumb" class="breadcrumb">
+            <div class="bc-item">
+              <span class="type-badge small goal">G</span>
+              <span class="bc-name" id="s2-goal-name">MVP 출시</span>
+            </div>
+            <span class="bc-sep">›</span>
+            <div class="bc-item">
+              <span class="type-badge small story">S</span>
+              <span class="bc-name" id="s2-story-name">사용자 인증 시스템</span>
+            </div>
+            <span class="bc-sep">›</span>
+            <div class="bc-item">
+              <span class="type-badge small feature">F</span>
+              <span class="bc-name" id="s2-feature-name">인증 API</span>
+            </div>
+          </div>
+          <button class="edit-btn" id="sec2-edit-btn">✏ 편집</button>
+        </div>
+
+        <div class="editor-panel" id="sec2-editor">
+          <div class="editor-field">
+            <label>Goal</label>
+            <select class="editor-select" id="s2-goal-sel">
+              <option value="">선택</option>
+              <option value="MVP 출시" selected>MVP 출시</option>
+              <option value="팀 협업 확장">팀 협업 확장</option>
+            </select>
+          </div>
+          <div class="editor-field">
+            <label>Story</label>
+            <select class="editor-select" id="s2-story-sel">
+              <option value="">선택</option>
+            </select>
+          </div>
+          <div class="editor-field">
+            <label>Feature</label>
+            <select class="editor-select" id="s2-feature-sel">
+              <option value="">선택</option>
+            </select>
+          </div>
+          <div class="editor-field">
+            <label>Task</label>
+            <select class="editor-select" id="s2-task-sel" disabled>
+              <option value="">선택</option>
+            </select>
+          </div>
+          <div class="editor-actions">
+            <button class="btn-save" id="s2-save-btn">저장</button>
+            <button class="btn-cancel" id="s2-cancel-btn">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Type Badge System -->
+    <div class="section">
+      <div class="section-title">타입 배지 시스템</div>
+      <div class="card">
+        <div class="badge-demo-grid">
+          <div class="badge-demo-item">
+            <div class="sizes">
+              <span class="type-badge large goal">G</span>
+              <span class="type-badge small goal">G</span>
+            </div>
+            <span class="badge-type-label">Goal</span>
+          </div>
+          <div class="badge-demo-item">
+            <div class="sizes">
+              <span class="type-badge large story">S</span>
+              <span class="type-badge small story">S</span>
+            </div>
+            <span class="badge-type-label">Story</span>
+          </div>
+          <div class="badge-demo-item">
+            <div class="sizes">
+              <span class="type-badge large feature">F</span>
+              <span class="type-badge small feature">F</span>
+            </div>
+            <span class="badge-type-label">Feature</span>
+          </div>
+          <div class="badge-demo-item">
+            <div class="sizes">
+              <span class="type-badge large task">T</span>
+              <span class="type-badge small task">T</span>
+            </div>
+            <span class="badge-type-label">Task</span>
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted);">
+          Large: 24px, font-size 12px &nbsp;|&nbsp; Small: 18px, font-size 10px
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Interactive Breadcrumb Builder -->
+    <div class="section">
+      <div class="section-title">인터랙티브 브레드크럼 빌더</div>
+      <div class="card">
+        <div class="builder-panel">
+          <div class="builder-selects">
+            <div class="builder-field">
+              <label>Goal</label>
+              <select class="builder-select" id="b-goal">
+                <option value="">Goal 선택</option>
+                <option value="MVP 출시">MVP 출시</option>
+                <option value="팀 협업 확장">팀 협업 확장</option>
+              </select>
+            </div>
+            <div class="builder-field">
+              <label>Story</label>
+              <select class="builder-select" id="b-story" disabled>
+                <option value="">Story 선택</option>
+              </select>
+            </div>
+            <div class="builder-field">
+              <label>Feature</label>
+              <select class="builder-select" id="b-feature" disabled>
+                <option value="">Feature 선택</option>
+              </select>
+            </div>
+            <div class="builder-field">
+              <label>Task</label>
+              <select class="builder-select" id="b-task" disabled>
+                <option value="">Task 선택</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="builder-preview-label">미리보기</div>
+            <div class="builder-preview" id="builder-preview">
+              <span style="font-size:12px;color:var(--text-muted);">위에서 항목을 선택하면 브레드크럼이 표시됩니다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Shared hierarchy data
+    const DATA = {
+      goals: ['MVP 출시', '팀 협업 확장'],
+      stories: {
+        'MVP 출시': ['사용자 인증 시스템', '칸반 보드 핵심 기능'],
+        '팀 협업 확장': ['팀 초대 시스템'],
+      },
+      features: {
+        '사용자 인증 시스템': ['인증 API', 'DB 설계'],
+        '칸반 보드 핵심 기능': ['보드 UI', '드래그앤드롭'],
+        '팀 초대 시스템': ['초대 이메일'],
+      },
+      tasks: {
+        '인증 API': ['JWT 구현', '리프레시 토큰'],
+        'DB 설계': ['ERD 작성', '마이그레이션'],
+        '보드 UI': ['컬럼 레이아웃', '카드 컴포넌트'],
+        '드래그앤드롭': ['드롭존 이벤트', '애니메이션'],
+        '초대 이메일': ['이메일 템플릿', '발송 API'],
+      },
+    };
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function populateSelect(sel, options, placeholder) {
+      const current = sel.value;
+      sel.innerHTML = `<option value="">${placeholder}</option>`;
+      options.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        if (opt === current) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
+    function resetSelect(sel, placeholder) {
+      sel.innerHTML = `<option value="">${placeholder}</option>`;
+      sel.disabled = true;
+    }
+
+    // ---- SECTION 1 & 2 shared editor logic ----
+    function makeEditorLogic(ids, onSave) {
+      const goalSel    = document.getElementById(ids.goal);
+      const storySel   = document.getElementById(ids.story);
+      const featureSel = document.getElementById(ids.feature);
+      const taskSel    = document.getElementById(ids.task);
+
+      // Init goal -> populate story if already selected
+      function init() {
+        const g = goalSel.value;
+        if (g && DATA.stories[g]) {
+          populateSelect(storySel, DATA.stories[g], '선택');
+          storySel.disabled = false;
+        } else {
+          resetSelect(storySel, '선택');
+        }
+        const s = storySel.value;
+        if (s && DATA.features[s]) {
+          populateSelect(featureSel, DATA.features[s], '선택');
+          featureSel.disabled = false;
+        } else {
+          resetSelect(featureSel, '선택');
+        }
+        const f = featureSel.value;
+        if (f && DATA.tasks[f]) {
+          populateSelect(taskSel, DATA.tasks[f], '선택');
+          taskSel.disabled = false;
+        } else {
+          resetSelect(taskSel, '선택');
+        }
+      }
+
+      goalSel.addEventListener('change', () => {
+        resetSelect(storySel, '선택');
+        resetSelect(featureSel, '선택');
+        resetSelect(taskSel, '선택');
+        const g = goalSel.value;
+        if (g && DATA.stories[g]) {
+          populateSelect(storySel, DATA.stories[g], '선택');
+          storySel.disabled = false;
+        }
+      });
+
+      storySel.addEventListener('change', () => {
+        resetSelect(featureSel, '선택');
+        resetSelect(taskSel, '선택');
+        const s = storySel.value;
+        if (s && DATA.features[s]) {
+          populateSelect(featureSel, DATA.features[s], '선택');
+          featureSel.disabled = false;
+        }
+      });
+
+      featureSel.addEventListener('change', () => {
+        resetSelect(taskSel, '선택');
+        const f = featureSel.value;
+        if (f && DATA.tasks[f]) {
+          populateSelect(taskSel, DATA.tasks[f], '선택');
+          taskSel.disabled = false;
+        }
+      });
+
+      init();
+
+      return { goalSel, storySel, featureSel, taskSel };
+    }
+
+    // ---- Section 1: 4-level edit button ----
+    (function() {
+      const editBtn    = document.getElementById('edit-btn-1');
+      const panel      = document.getElementById('editor-panel-1');
+      const saveBtn    = document.getElementById('ep1-save');
+      const cancelBtn  = document.getElementById('ep1-cancel');
+      const liveBc     = document.getElementById('live-breadcrumb');
+
+      // Pre-set initial values
+      document.getElementById('ep1-goal').value    = 'MVP 출시';
+      document.getElementById('ep1-story').value   = '';
+      document.getElementById('ep1-feature').value = '';
+      document.getElementById('ep1-task').value    = '';
+
+      const sels = makeEditorLogic({
+        goal: 'ep1-goal', story: 'ep1-story', feature: 'ep1-feature', task: 'ep1-task'
+      });
+
+      // Restore to defaults after init
+      setTimeout(() => {
+        sels.goalSel.value = 'MVP 출시';
+        sels.goalSel.dispatchEvent(new Event('change'));
+        setTimeout(() => {
+          sels.storySel.value = '사용자 인증 시스템';
+          sels.storySel.dispatchEvent(new Event('change'));
+          setTimeout(() => {
+            sels.featureSel.value = '인증 API';
+            sels.featureSel.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+              sels.taskSel.value = 'JWT 구현';
+            }, 0);
+          }, 0);
+        }, 0);
+      }, 0);
+
+      editBtn.addEventListener('click', () => {
+        panel.classList.toggle('open');
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        panel.classList.remove('open');
+      });
+
+      saveBtn.addEventListener('click', () => {
+        const g = sels.goalSel.value;
+        const s = sels.storySel.value;
+        const f = sels.featureSel.value;
+        const t = sels.taskSel.value;
+
+        liveBc.innerHTML = '';
+        const parts = [];
+        if (g) parts.push({ type: 'goal',    letter: 'G', name: g });
+        if (s) parts.push({ type: 'story',   letter: 'S', name: s });
+        if (f) parts.push({ type: 'feature', letter: 'F', name: f });
+        if (t) parts.push({ type: 'task',    letter: 'T', name: t });
+
+        parts.forEach((p, i) => {
+          if (i > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'bc-sep';
+            sep.textContent = '›';
+            liveBc.appendChild(sep);
+          }
+          const item = document.createElement('div');
+          item.className = 'bc-item';
+          item.innerHTML = `<span class="type-badge small ${p.type}">${p.letter}</span><span class="bc-name">${p.name}</span>`;
+          liveBc.appendChild(item);
+        });
+
+        panel.classList.remove('open');
+        showToast('카테고리가 저장되었습니다');
+      });
+    })();
+
+    // ---- Section 2 editor ----
+    (function() {
+      const editBtn   = document.getElementById('sec2-edit-btn');
+      const panel     = document.getElementById('sec2-editor');
+      const saveBtn   = document.getElementById('s2-save-btn');
+      const cancelBtn = document.getElementById('s2-cancel-btn');
+
+      document.getElementById('s2-goal-sel').value = 'MVP 출시';
+
+      const sels = makeEditorLogic({
+        goal: 's2-goal-sel', story: 's2-story-sel', feature: 's2-feature-sel', task: 's2-task-sel'
+      });
+
+      setTimeout(() => {
+        sels.goalSel.value = 'MVP 출시';
+        sels.goalSel.dispatchEvent(new Event('change'));
+        setTimeout(() => {
+          sels.storySel.value = '사용자 인증 시스템';
+          sels.storySel.dispatchEvent(new Event('change'));
+          setTimeout(() => {
+            sels.featureSel.value = '인증 API';
+          }, 0);
+        }, 0);
+      }, 0);
+
+      editBtn.addEventListener('click', () => {
+        panel.classList.toggle('open');
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        panel.classList.remove('open');
+      });
+
+      saveBtn.addEventListener('click', () => {
+        const g = sels.goalSel.value || '';
+        const s = sels.storySel.value || '';
+        const f = sels.featureSel.value || '';
+        const t = sels.taskSel.value || '';
+
+        // Update displayed breadcrumb
+        const bc = document.getElementById('sec2-breadcrumb');
+        bc.innerHTML = '';
+        const parts = [];
+        if (g) parts.push({ type: 'goal',    letter: 'G', id: 's2-goal-name',    name: g });
+        if (s) parts.push({ type: 'story',   letter: 'S', id: 's2-story-name',   name: s });
+        if (f) parts.push({ type: 'feature', letter: 'F', id: 's2-feature-name', name: f });
+        if (t) parts.push({ type: 'task',    letter: 'T', id: 's2-task-name',    name: t });
+
+        parts.forEach((p, i) => {
+          if (i > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'bc-sep';
+            sep.textContent = '›';
+            bc.appendChild(sep);
+          }
+          const item = document.createElement('div');
+          item.className = 'bc-item';
+          item.innerHTML = `<span class="type-badge small ${p.type}">${p.letter}</span><span class="bc-name">${p.name}</span>`;
+          bc.appendChild(item);
+        });
+
+        panel.classList.remove('open');
+        showToast('카테고리가 저장되었습니다');
+      });
+    })();
+
+    // ---- Section 4: Builder ----
+    (function() {
+      const goalSel    = document.getElementById('b-goal');
+      const storySel   = document.getElementById('b-story');
+      const featureSel = document.getElementById('b-feature');
+      const taskSel    = document.getElementById('b-task');
+      const preview    = document.getElementById('builder-preview');
+
+      function updatePreview() {
+        const g = goalSel.value;
+        const s = storySel.value;
+        const f = featureSel.value;
+        const t = taskSel.value;
+
+        const parts = [];
+        if (g) parts.push({ type: 'goal',    letter: 'G', name: g });
+        if (s) parts.push({ type: 'story',   letter: 'S', name: s });
+        if (f) parts.push({ type: 'feature', letter: 'F', name: f });
+        if (t) parts.push({ type: 'task',    letter: 'T', name: t });
+
+        if (parts.length === 0) {
+          preview.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">위에서 항목을 선택하면 브레드크럼이 표시됩니다.</span>';
+          return;
+        }
+
+        let html = '<div class="breadcrumb">';
+        parts.forEach((p, i) => {
+          if (i > 0) html += '<span class="bc-sep">›</span>';
+          html += `<div class="bc-item"><span class="type-badge small ${p.type}">${p.letter}</span><span class="bc-name">${p.name}</span></div>`;
+        });
+        html += '</div>';
+        preview.innerHTML = html;
+      }
+
+      goalSel.addEventListener('change', () => {
+        resetSelect(storySel, 'Story 선택');
+        resetSelect(featureSel, 'Feature 선택');
+        resetSelect(taskSel, 'Task 선택');
+        const g = goalSel.value;
+        if (g && DATA.stories[g]) {
+          populateSelect(storySel, DATA.stories[g], 'Story 선택');
+          storySel.disabled = false;
+        }
+        updatePreview();
+      });
+
+      storySel.addEventListener('change', () => {
+        resetSelect(featureSel, 'Feature 선택');
+        resetSelect(taskSel, 'Task 선택');
+        const s = storySel.value;
+        if (s && DATA.features[s]) {
+          populateSelect(featureSel, DATA.features[s], 'Feature 선택');
+          featureSel.disabled = false;
+        }
+        updatePreview();
+      });
+
+      featureSel.addEventListener('change', () => {
+        resetSelect(taskSel, 'Task 선택');
+        const f = featureSel.value;
+        if (f && DATA.tasks[f]) {
+          populateSelect(taskSel, DATA.tasks[f], 'Task 선택');
+          taskSel.disabled = false;
+        }
+        updatePreview();
+      });
+
+      taskSel.addEventListener('change', updatePreview);
+    })();
+  </script>
+</body>
+</html>

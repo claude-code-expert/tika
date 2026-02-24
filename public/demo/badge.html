@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badge 컴포넌트 — Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      width: 28px;
+      height: 28px;
+      background: #629584;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .nav-brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+    .nav-sep { color: var(--border-medium); font-size: 14px; margin: 0 2px; }
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--accent-primary); }
+    .nav-current { font-size: 13px; color: var(--text-muted); }
+    .nav-right {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* MAIN */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .page-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* SECTION */
+    .demo-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .demo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* BASE BADGE */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 600;
+      border-radius: 4px;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* PRIORITY BADGES — height 22px */
+    .badge-priority {
+      height: 22px;
+      padding: 0 8px;
+      font-size: 11px;
+    }
+    .priority-critical { background: #FEE2E2; color: #DC2626; }
+    .priority-high     { background: #FFEDD5; color: #C2410C; }
+    .priority-medium   { background: #FEF9C3; color: #A16207; }
+    .priority-low      { background: #F3F4F6; color: #6B7280; }
+
+    /* STATUS BADGES — height 22px */
+    .badge-status {
+      height: 22px;
+      padding: 0 8px;
+      font-size: 11px;
+    }
+    .status-backlog     { background: #F1F3F6; color: #5A6B7F; }
+    .status-todo        { background: #DBEAFE; color: #1D4ED8; }
+    .status-in-progress { background: #FEF3C7; color: #92400E; }
+    .status-done        { background: #D1FAE5; color: #065F46; }
+
+    /* LABEL BADGES — height 20px */
+    .badge-label {
+      height: 20px;
+      padding: 0 8px;
+      font-size: 10px;
+    }
+    .label-frontend { background: #2b7fff; color: #fff; }
+    .label-backend  { background: #00c950; color: #fff; }
+    .label-design   { background: #ad46ff; color: #fff; }
+    .label-bug      { background: #fb2c36; color: #fff; }
+    .label-docs     { background: #ffac6d; color: #3D2200; }
+    .label-infra    { background: #615fff; color: #fff; }
+    .label-c7       { background: #ff29d3; color: #fff; }
+    .label-c9       { background: #89d0f0; color: #1A3D4D; }
+    .label-c12      { background: #caee68; color: #3A4200; }
+    .label-c17      { background: #c5dbdc; color: #2A3D3E; }
+
+    /* ISSUE TYPE BADGES — height 20px */
+    .badge-issue {
+      height: 20px;
+      padding: 0 8px;
+      font-size: 10px;
+    }
+    .issue-goal    { background: #F3E8FF; color: #8B5CF6; }
+    .issue-story   { background: #DBEAFE; color: #3B82F6; }
+    .issue-feature { background: #D1FAE5; color: #10B981; }
+    .issue-task    { background: #FEF3C7; color: #F59E0B; }
+
+    /* DUE DATE BADGES */
+    .badge-due {
+      height: 22px;
+      padding: 0 8px;
+      font-size: 11px;
+    }
+    .due-normal  { background: #F0FDF4; color: #16A34A; }
+    .due-soon    { background: #FEF9C3; color: #A16207; }
+    .due-overdue { background: #FEE2E2; color: #DC2626; }
+    .due-done    { background: #D1FAE5; color: #065F46; }
+
+    /* CHECKLIST BADGES */
+    .badge-checklist {
+      height: 20px;
+      padding: 0 7px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-app);
+      border: 1px solid var(--border-light);
+    }
+    .badge-checklist.done { color: #065F46; background: #D1FAE5; border-color: #A7F3D0; }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">T</div>
+  <span class="nav-brand">Tika</span>
+  <span class="nav-sep">/</span>
+  <a href="index.html" class="nav-back">← 컴포넌트</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-current">Badge</span>
+  <span class="nav-right">Badge 컴포넌트</span>
+</nav>
+
+<main>
+  <div class="page-title">Badge</div>
+  <div class="page-desc">우선순위, 상태, 라벨, 이슈 타입, 마감일 등 다양한 컨텍스트에서 사용되는 배지 컴포넌트</div>
+
+  <!-- SECTION 1: 우선순위 배지 -->
+  <div class="demo-section">
+    <div class="section-title">우선순위 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-priority priority-critical">CRITICAL</span>
+      <span class="badge badge-priority priority-high">HIGH</span>
+      <span class="badge badge-priority priority-medium">MEDIUM</span>
+      <span class="badge badge-priority priority-low">LOW</span>
+    </div>
+  </div>
+
+  <!-- SECTION 2: 상태 배지 -->
+  <div class="demo-section">
+    <div class="section-title">상태 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-status status-backlog">BACKLOG</span>
+      <span class="badge badge-status status-todo">TODO</span>
+      <span class="badge badge-status status-in-progress">IN PROGRESS</span>
+      <span class="badge badge-status status-done">DONE</span>
+    </div>
+  </div>
+
+  <!-- SECTION 3: 라벨 배지 -->
+  <div class="demo-section">
+    <div class="section-title">라벨 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-label label-frontend">Frontend</span>
+      <span class="badge badge-label label-backend">Backend</span>
+      <span class="badge badge-label label-design">Design</span>
+      <span class="badge badge-label label-bug">Bug</span>
+      <span class="badge badge-label label-docs">Docs</span>
+      <span class="badge badge-label label-infra">Infra</span>
+      <span class="badge badge-label label-c7">c7</span>
+      <span class="badge badge-label label-c9">c9</span>
+      <span class="badge badge-label label-c12">c12</span>
+      <span class="badge badge-label label-c17">c17</span>
+    </div>
+  </div>
+
+  <!-- SECTION 4: 이슈 타입 배지 -->
+  <div class="demo-section">
+    <div class="section-title">이슈 타입 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-issue issue-goal">[G] Goal</span>
+      <span class="badge badge-issue issue-story">[S] Story</span>
+      <span class="badge badge-issue issue-feature">[F] Feature</span>
+      <span class="badge badge-issue issue-task">[T] Task</span>
+    </div>
+  </div>
+
+  <!-- SECTION 5: 마감일 배지 -->
+  <div class="demo-section">
+    <div class="section-title">마감일 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-due due-normal">📅 3일 후</span>
+      <span class="badge badge-due due-soon">📅 내일</span>
+      <span class="badge badge-due due-overdue">⚠ 2일 초과</span>
+      <span class="badge badge-due due-done">✓ 완료</span>
+    </div>
+  </div>
+
+  <!-- SECTION 6: 체크리스트 배지 -->
+  <div class="demo-section">
+    <div class="section-title">체크리스트 배지</div>
+    <div class="demo-row">
+      <span class="badge badge-checklist">☑ 2/4</span>
+      <span class="badge badge-checklist">☑ 0/3</span>
+      <span class="badge badge-checklist done">☑ 4/4</span>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Tika Demo</footer>
+
+</body>
+</html>

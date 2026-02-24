@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tika — UI 데모</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-card: #FFFFFF;
+      --bg-sidebar: #FFFFFF;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --shadow-header: 0 1px 3px rgba(9,30,66,0.10);
+      --nav-item-hover: #F4F5F7;
+      --nav-item-active-bg: #E8F5F0;
+      --nav-item-active-text: #3D6B5E;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Header ─── */
+    .app-header {
+      height: 52px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: var(--shadow-header);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .header-logo {
+      width: 28px; height: 28px;
+      background: var(--accent-primary);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 14px;
+      font-family: var(--font-display);
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 16px;
+      color: var(--text-primary);
+    }
+    .header-badge {
+      padding: 2px 8px;
+      background: var(--accent-light);
+      color: var(--accent-primary);
+      font-size: 10px; font-weight: 600;
+      border-radius: 4px;
+    }
+    .header-preview-label {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+    }
+    #preview-title {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* ─── Body ─── */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      padding: 12px 0 20px;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+    /* Section header */
+    .nav-section { margin-bottom: 2px; }
+    .nav-section-title {
+      padding: 8px 14px 4px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .nav-list { list-style: none; }
+
+    /* Nav item */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--nav-item-hover); }
+    .nav-item.active { background: var(--nav-item-active-bg); }
+    .nav-item.active .nav-label {
+      color: var(--nav-item-active-text);
+      font-weight: 700;
+    }
+    .nav-item.active .nav-scr { color: var(--accent-primary); }
+    .nav-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+    }
+    .nav-text { flex: 1; min-width: 0; }
+    .nav-label {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-scr {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Menlo', monospace;
+    }
+
+    /* Sub-nav items (settings sections) */
+    .nav-sub-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px 5px 40px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: background 0.1s;
+      user-select: none;
+      border-left: 2px solid transparent;
+    }
+    .nav-sub-item:hover { background: var(--nav-item-hover); }
+    .nav-sub-item.active {
+      background: var(--nav-item-active-bg);
+      color: var(--nav-item-active-text);
+      font-weight: 700;
+      border-left-color: var(--accent-primary);
+    }
+    .nav-sub-icon { font-size: 12px; flex-shrink: 0; }
+
+    /* Divider */
+    .nav-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 8px 14px;
+    }
+
+    /* ─── Preview Pane ─── */
+    .preview-pane {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s;
+    }
+
+    /* Screen mode: full-width, no padding */
+    .preview-pane.mode-screen {
+      background: var(--bg-app);
+      padding: 0;
+    }
+    .preview-pane.mode-screen iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    /* Doc mode: padded grey bg, iframe floats with shadow */
+    .preview-pane.mode-doc {
+      background: #D5D9DF;
+      padding: 16px;
+      overflow: auto;
+    }
+    .preview-pane.mode-doc iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">T</div>
+    <span class="header-title">Tika</span>
+    <span class="header-badge">Demo</span>
+    <span class="header-preview-label">미리보기: <span id="preview-title">메인 보드 뷰</span></span>
+  </header>
+
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+
+      <!-- Screens -->
+      <div class="nav-section">
+        <div class="nav-section-title">Screens</div>
+        <ul class="nav-list">
+          <li class="nav-item active" onclick="loadPage('board.html', this, '메인 보드 뷰', 'screen')">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-001</span>
+              <div class="nav-label">메인 보드 뷰</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('modal-new.html', this, '새 업무 생성 모달', 'screen')">
+            <span class="nav-icon">✏️</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-002</span>
+              <div class="nav-label">새 업무 생성 모달</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('modal-detail.html', this, '티켓 상세 모달', 'screen')">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-003</span>
+              <div class="nav-label">티켓 상세 모달</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('login.html', this, '로그인', 'screen')">
+            <span class="nav-icon">🔐</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-004</span>
+              <div class="nav-label">로그인</div>
+            </span>
+          </li>
+
+          <!-- SCR-005: 설정 (자체 사이드바) — 하위 섹션 직접 접근 -->
+          <li class="nav-item" onclick="loadPage('settings.html', this, '설정', 'screen')">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-005</span>
+              <div class="nav-label">설정</div>
+            </span>
+          </li>
+          <li class="nav-sub-item" id="sub-general" onclick="loadSettings('general', this, '설정 — 일반')">
+            <span class="nav-sub-icon">🔧</span> 일반
+          </li>
+          <li class="nav-sub-item" id="sub-notification" onclick="loadSettings('notification', this, '설정 — 알림 채널')">
+            <span class="nav-sub-icon">🔔</span> 알림 채널
+          </li>
+          <li class="nav-sub-item" id="sub-labels" onclick="loadSettings('labels', this, '설정 — 라벨 관리')">
+            <span class="nav-sub-icon">🏷️</span> 라벨 관리
+          </li>
+          <li class="nav-sub-item" id="sub-members" onclick="loadSettings('members', this, '설정 — 멤버 관리')">
+            <span class="nav-sub-icon">👥</span> 멤버 관리
+          </li>
+
+          <li class="nav-item" onclick="loadPage('notifications.html', this, '알림 내역', 'screen')">
+            <span class="nav-icon">🔔</span>
+            <span class="nav-text">
+              <span class="nav-scr">SCR-006</span>
+              <div class="nav-label">알림 내역</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('tika-main.html', this, '메인 보드 (v2)', 'screen')">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">메인 보드 (v2)</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('detail-modal.html', this, '상세 모달 (alt)', 'screen')">
+            <span class="nav-icon">📄</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">상세 모달 (alt)</div>
+            </span>
+          </li>
+          <li class="nav-item" onclick="loadPage('new-task-modal.html', this, '생성 모달 (alt)', 'screen')">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">
+              <span class="nav-scr">alt</span>
+              <div class="nav-label">생성 모달 (alt)</div>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-divider"></div>
+
+      <!-- Components -->
+      <div class="nav-section">
+        <div class="nav-section-title">Components</div>
+        <ul class="nav-list">
+          <li class="nav-item" onclick="loadPage('button.html', this, 'Button', 'doc')">
+            <span class="nav-icon">🔘</span>
+            <span class="nav-text"><div class="nav-label">Button</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('badge.html', this, 'Badge', 'doc')">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-text"><div class="nav-label">Badge</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('avatar.html', this, 'Avatar', 'doc')">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text"><div class="nav-label">Avatar</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('ticket-card.html', this, 'TicketCard', 'doc')">
+            <span class="nav-icon">🎫</span>
+            <span class="nav-text"><div class="nav-label">TicketCard</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('confirm-dialog.html', this, 'ConfirmDialog', 'doc')">
+            <span class="nav-icon">⚠️</span>
+            <span class="nav-text"><div class="nav-label">ConfirmDialog</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('filter-bar.html', this, 'FilterBar', 'doc')">
+            <span class="nav-icon">🔎</span>
+            <span class="nav-text"><div class="nav-label">FilterBar</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('label-selector.html', this, 'LabelSelector', 'doc')">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-text"><div class="nav-label">LabelSelector</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('checklist.html', this, 'ChecklistSection', 'doc')">
+            <span class="nav-icon">☑️</span>
+            <span class="nav-text"><div class="nav-label">ChecklistSection</div></span>
+          </li>
+          <li class="nav-item" onclick="loadPage('breadcrumb.html', this, 'IssueBreadcrumb', 'doc')">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-text"><div class="nav-label">IssueBreadcrumb</div></span>
+          </li>
+        </ul>
+      </div>
+
+    </nav>
+
+    <!-- Preview Pane (mode-screen: full-width / mode-doc: padded with shadow) -->
+    <main class="preview-pane mode-screen">
+      <iframe id="preview" src="board.html" title="데모 미리보기"></iframe>
+    </main>
+
+  </div>
+
+  <script>
+    /**
+     * 일반 페이지 로드
+     * @param {string} file  - 로드할 파일명
+     * @param {Element} el   - 클릭한 nav 항목
+     * @param {string} label - 헤더에 표시할 이름
+     * @param {string} type  - 'screen' | 'doc'
+     */
+    function loadPage(file, el, label, type) {
+      var iframe = document.getElementById('preview');
+      iframe.src = file;
+      document.getElementById('preview-title').textContent = label;
+
+      // active 상태 초기화
+      document.querySelectorAll('.nav-item, .nav-sub-item').forEach(function(i) {
+        i.classList.remove('active');
+      });
+      el.classList.add('active');
+
+      // 프리뷰 모드 전환
+      setPreviewMode(type);
+    }
+
+    /**
+     * 설정 페이지 섹션 직접 이동
+     * settings.html의 switchSection(id, el) 함수를 호출
+     */
+    function loadSettings(sectionId, el, label) {
+      var iframe = document.getElementById('preview');
+      document.getElementById('preview-title').textContent = label;
+
+      // active 상태 초기화
+      document.querySelectorAll('.nav-item, .nav-sub-item').forEach(function(i) {
+        i.classList.remove('active');
+      });
+      el.classList.add('active');
+      setPreviewMode('screen');
+
+      function switchAfterLoad() {
+        try {
+          var iDoc = iframe.contentWindow.document;
+          // settings.html nav 항목에서 해당 sectionId를 가진 요소 찾기
+          var navEl = iDoc.querySelector('.nav-item[onclick*="\'' + sectionId + '\'"]');
+          if (navEl) {
+            iframe.contentWindow.switchSection(sectionId, navEl);
+          }
+        } catch (e) {
+          // cross-origin 등 예외 무시
+        }
+      }
+
+      // 이미 settings.html 로드된 경우 섹션만 전환
+      if (iframe.src && iframe.src.indexOf('settings.html') !== -1) {
+        switchAfterLoad();
+      } else {
+        iframe.onload = function() {
+          switchAfterLoad();
+          iframe.onload = null;
+        };
+        iframe.src = 'settings.html';
+      }
+    }
+
+    /**
+     * 프리뷰 모드 전환
+     * mode-screen: 패딩 없이 full-width
+     * mode-doc:    회색 배경 + 16px 패딩 + 아이프레임 shadow
+     */
+    function setPreviewMode(type) {
+      var pane = document.querySelector('.preview-pane');
+      pane.classList.remove('mode-screen', 'mode-doc');
+      pane.classList.add(type === 'doc' ? 'mode-doc' : 'mode-screen');
+    }
+  </script>
+
+</body>
+</html>

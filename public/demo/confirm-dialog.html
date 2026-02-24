@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConfirmDialog 컴포넌트 - Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-column: #F4F5F7;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #DFE1E6;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .nav-logo {
+      width: 28px; height: 28px;
+      background: #629584; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      flex-shrink: 0;
+    }
+    .nav-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; color: #2C3E50; }
+    .nav-sep { color: #DFE1E6; }
+    .nav-back { font-size: 13px; color: #629584; text-decoration: none; }
+    .nav-back:hover { text-decoration: underline; }
+    .nav-current { font-size: 13px; color: #5A6B7F; }
+
+    /* PAGE LAYOUT */
+    .page-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    .page-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .page-desc {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    /* SECTION */
+    .section { margin-bottom: 48px; }
+    .section-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border-light);
+    }
+
+    /* TRIGGER BUTTONS ROW */
+    .trigger-row {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px;
+      height: 36px; padding: 0 16px;
+      border-radius: var(--radius-button);
+      font-size: 13px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn-danger {
+      background: #DC2626; color: #fff; border-color: #DC2626;
+    }
+    .btn-danger:hover { background: #B91C1C; border-color: #B91C1C; }
+    .btn-warning {
+      background: #A16207; color: #fff; border-color: #A16207;
+    }
+    .btn-warning:hover { background: #854d0e; border-color: #854d0e; }
+    .btn-info {
+      background: #629584; color: #fff; border-color: #629584;
+    }
+    .btn-info:hover { background: #527D6F; border-color: #527D6F; }
+    .btn-secondary {
+      background: #fff; color: var(--text-secondary);
+      border-color: var(--border-light);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-app); border-color: var(--border-medium);
+    }
+    .btn-blue {
+      background: #3B82F6; color: #fff; border-color: #3B82F6;
+    }
+    .btn-blue:hover { background: #2563EB; border-color: #2563EB; }
+
+    /* MODAL OVERLAY */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9,30,66,0.54);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* DIALOG PANEL */
+    .dialog-panel {
+      background: #fff;
+      border-radius: var(--radius-card);
+      padding: 24px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      transform: scale(0.96) translateY(8px);
+      transition: transform 0.2s ease;
+    }
+    .modal-overlay.open .dialog-panel {
+      transform: scale(1) translateY(0);
+    }
+
+    /* DIALOG ICON */
+    .dialog-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+    .icon-danger  { background: #FEF2F2; }
+    .icon-warning { background: #FEF9C3; }
+    .icon-info    { background: #DBEAFE; }
+
+    /* DIALOG CONTENT */
+    .dialog-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px; font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .dialog-body {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    /* DIALOG BUTTONS */
+    .dialog-footer {
+      display: flex; justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* STATIC PREVIEW CARD */
+    .preview-card {
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      max-width: 400px;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: #2C3E50; color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      white-space: nowrap;
+      transform: translateX(-50%) translateY(10px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* VARIANTS GRID */
+    .variants-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .variant-card {
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+    }
+    .variant-card-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* SPEC TABLE */
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .spec-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: var(--bg-column);
+      color: var(--text-secondary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .spec-table td {
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-light);
+      line-height: 1.5;
+      vertical-align: top;
+    }
+    .spec-table tr:last-child td { border-bottom: none; }
+    .spec-table tr:hover td { background: #F8F9FB; }
+
+    code {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 11px;
+      background: #F4F5F7;
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #629584;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">T</div>
+    <span class="nav-title">Tika</span>
+    <span class="nav-sep">|</span>
+    <a href="index.html" class="nav-back">← 데모 홈</a>
+    <span class="nav-sep">›</span>
+    <span class="nav-current">ConfirmDialog 컴포넌트</span>
+  </nav>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- MODAL OVERLAY (shared, content swapped by JS) -->
+  <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+    <div class="dialog-panel" id="dialogPanel" onclick="event.stopPropagation()">
+      <div class="dialog-icon" id="dialogIcon"></div>
+      <div class="dialog-title" id="dialogTitle"></div>
+      <div class="dialog-body" id="dialogBody"></div>
+      <div class="dialog-footer">
+        <button class="btn btn-secondary" onclick="closeDialog()">취소</button>
+        <button class="btn" id="confirmBtn" onclick="handleConfirm()"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <div class="page-wrap">
+    <div class="page-title">ConfirmDialog 컴포넌트</div>
+    <div class="page-desc">파괴적 또는 중요한 작업 전에 사용자의 명시적 확인을 받는 모달 다이얼로그 컴포넌트입니다. ESC 키, 오버레이 클릭, 취소 버튼으로 닫을 수 있습니다.</div>
+
+    <!-- INTERACTIVE DEMO -->
+    <div class="section">
+      <div class="section-label">인터랙티브 데모 — 버튼 클릭으로 다이얼로그 열기</div>
+      <div class="trigger-row">
+        <button class="btn btn-danger" onclick="openDialog('danger')">🗑 티켓 삭제</button>
+        <button class="btn btn-warning" onclick="openDialog('warning')">↔ 이동 확인</button>
+        <button class="btn btn-blue" onclick="openDialog('info')">ℹ 확인 필요</button>
+      </div>
+    </div>
+
+    <!-- STATIC PREVIEW -->
+    <div class="section">
+      <div class="section-label">정적 프리뷰 — 세 가지 변형</div>
+      <div class="variants-grid">
+
+        <!-- Danger preview -->
+        <div class="variant-card">
+          <div class="variant-card-label">위험 (Danger)</div>
+          <div class="preview-card">
+            <div class="dialog-icon icon-danger">⚠️</div>
+            <div class="dialog-title">티켓을 삭제하시겠습니까?</div>
+            <div class="dialog-body">이 작업은 되돌릴 수 없습니다. 티켓과 관련된 모든 체크리스트 항목도 함께 삭제됩니다.</div>
+            <div class="dialog-footer">
+              <button class="btn btn-secondary" style="pointer-events:none;">취소</button>
+              <button class="btn btn-danger" style="pointer-events:none;">삭제</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning preview -->
+        <div class="variant-card">
+          <div class="variant-card-label">경고 (Warning)</div>
+          <div class="preview-card">
+            <div class="dialog-icon icon-warning" style="font-size:18px;">↔</div>
+            <div class="dialog-title">칼럼을 이동하시겠습니까?</div>
+            <div class="dialog-body">IN PROGRESS에서 DONE으로 이동합니다. 완료 시각이 자동으로 기록됩니다.</div>
+            <div class="dialog-footer">
+              <button class="btn btn-secondary" style="pointer-events:none;">취소</button>
+              <button class="btn btn-warning" style="pointer-events:none;">이동</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info preview -->
+        <div class="variant-card">
+          <div class="variant-card-label">정보 (Info)</div>
+          <div class="preview-card">
+            <div class="dialog-icon icon-info" style="font-size:18px; color:#3B82F6; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif;">ℹ</div>
+            <div class="dialog-title">변경사항을 저장하시겠습니까?</div>
+            <div class="dialog-body">입력한 내용이 저장되지 않을 수 있습니다.</div>
+            <div class="dialog-footer">
+              <button class="btn btn-secondary" style="pointer-events:none;">취소</button>
+              <button class="btn btn-info" style="pointer-events:none;">확인</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BEHAVIOR SPEC -->
+    <div class="section">
+      <div class="section-label">동작 명세</div>
+      <div style="background:#fff; border-radius:var(--radius-card); border:1px solid var(--border-light); overflow:hidden; box-shadow:var(--shadow-card);">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th style="width:160px;">트리거 / 이벤트</th>
+              <th>동작</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>오버레이 클릭</td>
+              <td>다이얼로그 닫기 (다이얼로그 패널 클릭 시 닫히지 않음)</td>
+            </tr>
+            <tr>
+              <td><code>ESC</code> 키</td>
+              <td>다이얼로그 닫기</td>
+            </tr>
+            <tr>
+              <td>취소 버튼</td>
+              <td>다이얼로그 닫기, 아무 작업 수행하지 않음</td>
+            </tr>
+            <tr>
+              <td>확인 버튼 (삭제)</td>
+              <td>다이얼로그 닫기 → "삭제가 완료되었습니다" 토스트 표시</td>
+            </tr>
+            <tr>
+              <td>확인 버튼 (이동)</td>
+              <td>다이얼로그 닫기 → "이동이 완료되었습니다" 토스트 표시</td>
+            </tr>
+            <tr>
+              <td>확인 버튼 (저장)</td>
+              <td>다이얼로그 닫기 → "변경사항이 저장되었습니다" 토스트 표시</td>
+            </tr>
+            <tr>
+              <td>다이얼로그 열기</td>
+              <td><code>opacity</code> + <code>scale</code> 트랜지션으로 등장, 배경 스크롤 잠금</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DESIGN TOKENS -->
+    <div class="section">
+      <div class="section-label">디자인 토큰</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">오버레이</div>
+          <div style="width:48px;height:24px;background:rgba(9,30,66,0.54);border-radius:4px;margin-bottom:6px;"></div>
+          <code>rgba(9,30,66,0.54)</code>
+        </div>
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">패널 배경</div>
+          <div style="width:48px;height:24px;background:#fff;border-radius:4px;border:1px solid #DFE1E6;margin-bottom:6px;"></div>
+          <code>#ffffff</code>
+        </div>
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">위험 아이콘 배경</div>
+          <div style="width:48px;height:24px;background:#FEF2F2;border-radius:4px;margin-bottom:6px;"></div>
+          <code>#FEF2F2</code>
+        </div>
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">경고 아이콘 배경</div>
+          <div style="width:48px;height:24px;background:#FEF9C3;border-radius:4px;margin-bottom:6px;"></div>
+          <code>#FEF9C3</code>
+        </div>
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">정보 아이콘 배경</div>
+          <div style="width:48px;height:24px;background:#DBEAFE;border-radius:4px;margin-bottom:6px;"></div>
+          <code>#DBEAFE</code>
+        </div>
+        <div style="background:#fff; border-radius:6px; border:1px solid var(--border-light); padding:14px;">
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">최대 너비</div>
+          <div style="font-size:20px; font-weight:700; color:var(--text-primary); font-family:'Plus Jakarta Sans',sans-serif; margin-bottom:4px;">400px</div>
+          <code>max-width: 400px</code>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentVariant = null;
+    let toastTimer = null;
+
+    const variants = {
+      danger: {
+        iconContent: '⚠️',
+        iconClass: 'icon-danger',
+        title: '티켓을 삭제하시겠습니까?',
+        body: '이 작업은 되돌릴 수 없습니다. 티켓과 관련된 모든 체크리스트 항목도 함께 삭제됩니다.',
+        confirmLabel: '삭제',
+        confirmClass: 'btn-danger',
+        toastMsg: '삭제가 완료되었습니다',
+      },
+      warning: {
+        iconContent: '↔',
+        iconClass: 'icon-warning',
+        iconStyle: 'font-size:18px; font-weight:700; color:#A16207; font-family:"Plus Jakarta Sans",sans-serif;',
+        title: '칼럼을 이동하시겠습니까?',
+        body: 'IN PROGRESS에서 DONE으로 이동합니다. 완료 시각이 자동으로 기록됩니다.',
+        confirmLabel: '이동',
+        confirmClass: 'btn-warning',
+        toastMsg: '이동이 완료되었습니다',
+      },
+      info: {
+        iconContent: 'ℹ',
+        iconClass: 'icon-info',
+        iconStyle: 'font-size:18px; font-weight:700; color:#3B82F6; font-family:"Plus Jakarta Sans",sans-serif;',
+        title: '변경사항을 저장하시겠습니까?',
+        body: '입력한 내용이 저장되지 않을 수 있습니다.',
+        confirmLabel: '확인',
+        confirmClass: 'btn-info',
+        toastMsg: '변경사항이 저장되었습니다',
+      },
+    };
+
+    function openDialog(variant) {
+      currentVariant = variant;
+      const v = variants[variant];
+
+      const icon = document.getElementById('dialogIcon');
+      icon.className = 'dialog-icon ' + v.iconClass;
+      icon.textContent = v.iconContent;
+      if (v.iconStyle) icon.style.cssText += v.iconStyle;
+
+      document.getElementById('dialogTitle').textContent = v.title;
+      document.getElementById('dialogBody').textContent = v.body;
+
+      const confirmBtn = document.getElementById('confirmBtn');
+      confirmBtn.textContent = v.confirmLabel;
+      confirmBtn.className = 'btn ' + v.confirmClass;
+
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDialog() {
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      currentVariant = null;
+    }
+
+    function handleOverlayClick(e) {
+      closeDialog();
+    }
+
+    function handleConfirm() {
+      const v = variants[currentVariant];
+      const msg = v ? v.toastMsg : '완료되었습니다';
+      closeDialog();
+      showToast(msg);
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.remove('show');
+      }, 2500);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const overlay = document.getElementById('modalOverlay');
+        if (overlay.classList.contains('open')) closeDialog();
+      }
+    });
+  </script>
+</body>
+</html>

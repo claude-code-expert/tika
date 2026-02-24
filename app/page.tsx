@@ -1,14 +1,17 @@
-import { ticketService } from '@/server/services';
-import { BoardContainer } from '@/client/components/board/BoardContainer';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { AppShell } from '@/components/layout/AppShell';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const initialData = await ticketService.getBoard();
+  let session = null;
+  try {
+    session = await auth();
+  } catch (err) {
+    console.error('[home] auth() 에러:', err);
+  }
+  if (!session?.user) redirect('/login');
 
-  return (
-    <div className="board-layout">
-      <BoardContainer initialData={initialData} />
-    </div>
-  );
+  return <AppShell />;
 }

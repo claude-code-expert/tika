@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TicketCard } from '@/client/components/ticket/TicketCard';
-import type { TicketWithMeta } from '@/shared/types';
+import { TicketCard } from '@/components/board/TicketCard';
+import type { TicketWithMeta } from '@/types/index';
 
-// dnd-kit mock
 jest.mock('@dnd-kit/sortable', () => ({
   useSortable: () => ({
     attributes: {},
@@ -21,86 +20,143 @@ jest.mock('@dnd-kit/utilities', () => ({
 
 const baseTicket: TicketWithMeta = {
   id: 1,
+  workspaceId: 1,
   title: 'API 설계 문서 작성',
   description: 'REST API 엔드포인트를 정의한다',
+  type: 'TASK',
   status: 'TODO',
   priority: 'MEDIUM',
   position: 0,
-  plannedStartDate: null,
   dueDate: '2026-03-01',
-  startedAt: null,
+  issueId: null,
+  assigneeId: null,
   completedAt: null,
-  createdAt: new Date('2026-02-17'),
-  updatedAt: new Date('2026-02-17'),
+  createdAt: '2026-02-17T00:00:00.000Z',
+  updatedAt: '2026-02-17T00:00:00.000Z',
   isOverdue: false,
+  labels: [],
+  checklistItems: [],
+  issue: null,
+  assignee: null,
 };
 
 describe('TicketCard', () => {
-  // C001-1: 기본 렌더링
-  it('제목, 우선순위 뱃지, 종료예정일이 표시된다', () => {
+  it('제목과 우선순위 뱃지가 표시된다', () => {
     render(<TicketCard ticket={baseTicket} />);
 
     expect(screen.getByText('API 설계 문서 작성')).toBeInTheDocument();
-    expect(screen.getByText('보통')).toBeInTheDocument();
+    expect(screen.getByText('Med')).toBeInTheDocument();
+  });
+
+  it('타입 인디케이터가 표시된다', () => {
+    render(<TicketCard ticket={baseTicket} />);
+    expect(screen.getByText('T')).toBeInTheDocument(); // TASK → T
+  });
+
+  it('마감일이 표시된다', () => {
+    render(<TicketCard ticket={baseTicket} />);
     expect(screen.getByText('2026-03-01')).toBeInTheDocument();
   });
 
-  // C001-2: 오버듀 표시
-  it('isOverdue=true이면 data-overdue 속성이 설정된다', () => {
-    const overdueTicket = { ...baseTicket, isOverdue: true };
-    const { container } = render(<TicketCard ticket={overdueTicket} />);
-
-    const card = container.querySelector('.ticket-card');
-    expect(card).toHaveAttribute('data-overdue', 'true');
-  });
-
-  // C001-3: 완료 상태
-  it('status=DONE이면 ticket-card--done 클래스가 적용된다', () => {
-    const doneTicket = { ...baseTicket, status: 'DONE' as const };
-    const { container } = render(<TicketCard ticket={doneTicket} />);
-
-    const card = container.querySelector('.ticket-card');
-    expect(card).toHaveClass('ticket-card--done');
-  });
-
-  // C001-4: 종료예정일 없는 티켓
-  it('dueDate=null이면 종료예정일이 표시되지 않는다', () => {
-    const noDueDateTicket = { ...baseTicket, dueDate: null };
-    render(<TicketCard ticket={noDueDateTicket} />);
-
+  it('dueDate=null이면 날짜가 표시되지 않는다', () => {
+    render(<TicketCard ticket={{ ...baseTicket, dueDate: null }} />);
     expect(screen.queryByText('2026-03-01')).not.toBeInTheDocument();
   });
 
-  // C001-5: 클릭 이벤트
-  it('카드를 클릭하면 onClick이 호출된다', async () => {
+  it('isOverdue=true이면 마감 초과 경고가 표시된다', () => {
+    render(<TicketCard ticket={{ ...baseTicket, isOverdue: true }} />);
+    expect(screen.getByLabelText('마감 초과')).toBeInTheDocument();
+  });
+
+  it('isOverdue=false이면 마감 초과 경고가 없다', () => {
+    render(<TicketCard ticket={baseTicket} />);
+    expect(screen.queryByLabelText('마감 초과')).not.toBeInTheDocument();
+  });
+
+  it('카드 클릭 시 onClick이 호출된다', async () => {
     const user = userEvent.setup();
     const onClick = jest.fn();
     render(<TicketCard ticket={baseTicket} onClick={onClick} />);
 
-    await user.click(screen.getByText('API 설계 문서 작성'));
+    await user.click(screen.getByRole('button', { name: /API 설계 문서 작성/ }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  // C001-6: 긴 제목 말줄임
-  it('제목에 ticket-card-title 클래스가 적용된다', () => {
-    const longTitle = 'a'.repeat(200);
-    const longTicket = { ...baseTicket, title: longTitle };
-    render(<TicketCard ticket={longTicket} />);
+  it('라벨이 있으면 라벨 이름이 표시된다', () => {
+    const withLabels: TicketWithMeta = {
+      ...baseTicket,
+      labels: [
+        { id: 1, workspaceId: 1, name: 'Frontend', color: '#2b7fff', createdAt: '2026-02-17T00:00:00.000Z' },
+        { id: 2, workspaceId: 1, name: 'Bug', color: '#fb2c36', createdAt: '2026-02-17T00:00:00.000Z' },
+      ],
+    };
+    render(<TicketCard ticket={withLabels} />);
 
-    const titleEl = screen.getByText(longTitle);
-    expect(titleEl).toHaveClass('ticket-card-title');
+    expect(screen.getByText('Frontend')).toBeInTheDocument();
+    expect(screen.getByText('Bug')).toBeInTheDocument();
   });
 
-  // C001-7: 우선순위별 뱃지 data-priority 속성
-  it.each([
-    ['LOW', '낮음'],
-    ['MEDIUM', '보통'],
-    ['HIGH', '높음'],
-  ] as const)('priority=%s이면 data-priority="%s" 뱃지가 표시된다', (priority, label) => {
-    const ticket = { ...baseTicket, priority };
-    render(<TicketCard ticket={ticket} />);
+  it('라벨이 4개 이상이면 +N 오버플로우가 표시된다', () => {
+    const withManyLabels: TicketWithMeta = {
+      ...baseTicket,
+      labels: Array.from({ length: 5 }, (_, i) => ({
+        id: i + 1,
+        workspaceId: 1,
+        name: `라벨${i + 1}`,
+        color: '#000000',
+        createdAt: '2026-02-17T00:00:00.000Z',
+      })),
+    };
+    render(<TicketCard ticket={withManyLabels} />);
+    expect(screen.getByText('+2')).toBeInTheDocument();
+  });
 
-    const badge = screen.getByText(label);
-    expect(badge).toHaveAttribute('data-priority', priority);
+  it('체크리스트가 있으면 완료/전체 카운트가 표시된다', () => {
+    const withChecklist: TicketWithMeta = {
+      ...baseTicket,
+      checklistItems: [
+        { id: 1, ticketId: 1, text: '항목 1', isCompleted: true, createdAt: '2026-02-17T00:00:00.000Z' },
+        { id: 2, ticketId: 1, text: '항목 2', isCompleted: false, createdAt: '2026-02-17T00:00:00.000Z' },
+        { id: 3, ticketId: 1, text: '항목 3', isCompleted: false, createdAt: '2026-02-17T00:00:00.000Z' },
+      ],
+    };
+    render(<TicketCard ticket={withChecklist} />);
+    expect(screen.getByText('1/3')).toBeInTheDocument();
+  });
+
+  it('담당자가 있으면 이니셜이 표시된다', () => {
+    const withAssignee: TicketWithMeta = {
+      ...baseTicket,
+      assignee: {
+        id: 1,
+        userId: 'user-1',
+        workspaceId: 1,
+        displayName: '홍길동',
+        color: '#7EB4A2',
+        createdAt: '2026-02-17T00:00:00.000Z',
+      },
+    };
+    render(<TicketCard ticket={withAssignee} />);
+    expect(screen.getByTitle('홍길동')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['LOW', 'Low'],
+    ['MEDIUM', 'Med'],
+    ['HIGH', 'High'],
+    ['CRITICAL', 'Crit'],
+  ] as const)('priority=%s → "%s" 뱃지가 표시된다', (priority, label) => {
+    render(<TicketCard ticket={{ ...baseTicket, priority }} />);
+    expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['GOAL', 'G'],
+    ['STORY', 'S'],
+    ['FEATURE', 'F'],
+    ['TASK', 'T'],
+  ] as const)('type=%s → "%s" 인디케이터가 표시된다', (type, letter) => {
+    render(<TicketCard ticket={{ ...baseTicket, type }} />);
+    expect(screen.getByText(letter)).toBeInTheDocument();
   });
 });

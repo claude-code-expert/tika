@@ -1,246 +1,176 @@
 /**
  * @jest-environment node
  *
- * TC-API-001: POST /api/tickets — 티켓 생성
- * TDD Red 단계: 테스트만 작성, 구현 없음
+ * GET /api/tickets, POST /api/tickets Route Handler 테스트
+ * next-auth ESM 이슈 방지: @/lib/auth를 mock해서 next-auth가 로드되지 않도록 함
  */
 
-import { POST } from '@/app/api/tickets/route';
+jest.mock('@/lib/auth', () => ({
+  auth: jest.fn(),
+}));
+
+jest.mock('@/db/queries/tickets', () => ({
+  getBoardData: jest.fn(),
+  createTicket: jest.fn(),
+  getTicketCount: jest.fn(),
+}));
+
 import { NextRequest } from 'next/server';
+import { GET, POST } from '@/app/api/tickets/route';
+import { auth } from '@/lib/auth';
+import { getBoardData, createTicket, getTicketCount } from '@/db/queries/tickets';
+import { TICKET_MAX_PER_WORKSPACE } from '@/lib/constants';
+import type { BoardData } from '@/types/index';
 
-function futureDate(daysFromNow: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysFromNow);
-  return d.toISOString().split('T')[0];
-}
+const mockedAuth = auth as jest.Mock;
+const mockedGetBoardData = getBoardData as jest.Mock;
+const mockedCreateTicket = createTicket as jest.Mock;
+const mockedGetTicketCount = getTicketCount as jest.Mock;
 
-function createRequest(body: object) {
-  return new NextRequest('http://localhost:3000/api/tickets', {
+const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
+
+const mockBoardData: BoardData = {
+  board: { BACKLOG: [], TODO: [], IN_PROGRESS: [], DONE: [] },
+  total: 0,
+};
+
+function makePostRequest(body: unknown): NextRequest {
+  return new NextRequest('http://localhost/api/tickets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe('GET /api/tickets', () => {
+  it('인증되지 않으면 401을 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(null);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('workspaceId 없는 세션이면 401을 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce({ user: { id: 'user-1' } });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('인증된 요청에 board 데이터를 200으로 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetBoardData.mockResolvedValueOnce(mockBoardData);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual(mockBoardData);
+    expect(mockedGetBoardData).toHaveBeenCalledWith(1);
+  });
+
+  it('DB 오류 시 500 INTERNAL_ERROR를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetBoardData.mockRejectedValueOnce(new Error('DB connection error'));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+});
+
 describe('POST /api/tickets', () => {
-  describe('정상 생성', () => {
-    it('모든 필드를 포함한 티켓을 생성한다', async () => {
-      // Given
-      const request = createRequest({
-        title: 'API 설계 문서 작성',
-        description: 'REST API 엔드포인트와 요청/응답 형식을 정의한다',
-        priority: 'HIGH',
-        plannedStartDate: '2026-02-10',
-        dueDate: futureDate(7),
-      });
+  it('인증되지 않으면 401을 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(null);
 
-      // When
-      const response = await POST(request);
-      const data = await response.json();
+    const response = await POST(makePostRequest({ title: '테스트' }));
+    const body = await response.json();
 
-      // Then
-      expect(response.status).toBe(201);
-      expect(data).toMatchObject({
-        title: 'API 설계 문서 작성',
-        description: 'REST API 엔드포인트와 요청/응답 형식을 정의한다',
-        status: 'BACKLOG',
-        priority: 'HIGH',
-        plannedStartDate: '2026-02-10',
-        dueDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-        startedAt: null,
-        completedAt: null,
-      });
-      expect(data.id).toBeDefined();
-      expect(data.position).toBeDefined();
-      expect(data.createdAt).toBeDefined();
-      expect(data.updatedAt).toBeDefined();
-    });
-
-    it('제목만으로 티켓을 생성하면 기본값이 적용된다', async () => {
-      // Given
-      const request = createRequest({
-        title: '테스트 할일',
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(201);
-      expect(data).toMatchObject({
-        title: '테스트 할일',
-        description: null,
-        status: 'BACKLOG',
-        priority: 'MEDIUM',
-        plannedStartDate: null,
-        dueDate: null,
-        startedAt: null,
-        completedAt: null,
-      });
-    });
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe('UNAUTHORIZED');
   });
 
-  describe('검증 에러', () => {
-    it('제목이 없으면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({});
+  it('title이 없으면 400 VALIDATION_ERROR를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
 
-      // When
-      const response = await POST(request);
-      const data = await response.json();
+    const response = await POST(makePostRequest({ title: '' }));
+    const body = await response.json();
 
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '제목을 입력해주세요',
-      });
-    });
-
-    it('빈 제목이면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: '',
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '제목을 입력해주세요',
-      });
-    });
-
-    it('공백만 있는 제목이면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: '   ',
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '제목을 입력해주세요',
-      });
-    });
-
-    it('제목이 200자를 초과하면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: 'a'.repeat(201),
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '제목은 200자 이내로 입력해주세요',
-      });
-    });
-
-    it('설명이 1000자를 초과하면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: '테스트',
-        description: 'a'.repeat(1001),
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '설명은 1000자 이내로 입력해주세요',
-      });
-    });
-
-    it('과거 마감일이면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: '테스트',
-        dueDate: '2020-01-01',
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '종료예정일은 오늘 이후 날짜를 선택해주세요',
-      });
-    });
-
-    it('잘못된 우선순위면 400 에러를 반환한다', async () => {
-      // Given
-      const request = createRequest({
-        title: '테스트',
-        priority: 'URGENT',
-      });
-
-      // When
-      const response = await POST(request);
-      const data = await response.json();
-
-      // Then
-      expect(response.status).toBe(400);
-      expect(data.error).toEqual({
-        code: 'VALIDATION_ERROR',
-        message: '우선순위는 LOW, MEDIUM, HIGH 중 선택해주세요',
-      });
-    });
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toBe('제목을 입력해주세요');
   });
 
-  describe('비즈니스 로직', () => {
-    it('연속으로 생성된 티켓은 나중 티켓의 position이 더 작다', async () => {
-      // Given: 첫 번째 티켓 생성
-      const request1 = createRequest({ title: '첫 번째 티켓' });
-      const response1 = await POST(request1);
-      const ticket1 = await response1.json();
+  it('title이 200자를 초과하면 400 VALIDATION_ERROR를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
 
-      // When: 두 번째 티켓 생성
-      const request2 = createRequest({ title: '두 번째 티켓' });
-      const response2 = await POST(request2);
-      const ticket2 = await response2.json();
+    const response = await POST(makePostRequest({ title: 'a'.repeat(201) }));
+    const body = await response.json();
 
-      // Then: 나중 생성된 티켓의 position이 더 작음 (맨 위에 배치)
-      expect(response2.status).toBe(201);
-      expect(ticket2.position).toBeLessThan(ticket1.position);
-    });
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
 
-    it('생성된 티켓의 startedAt과 completedAt은 null이다', async () => {
-      // Given
-      const request = createRequest({
-        title: '테스트 티켓',
-      });
+  it('dueDate 형식이 잘못되면 400 VALIDATION_ERROR를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
 
-      // When
-      const response = await POST(request);
-      const data = await response.json();
+    const response = await POST(makePostRequest({ title: '제목', dueDate: '2026/02/24' }));
+    const body = await response.json();
 
-      // Then
-      expect(response.status).toBe(201);
-      expect(data.startedAt).toBeNull();
-      expect(data.completedAt).toBeNull();
-    });
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toBe('날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)');
+  });
+
+  it('티켓 수 한도 초과 시 400 TICKET_LIMIT_EXCEEDED를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetTicketCount.mockResolvedValueOnce(TICKET_MAX_PER_WORKSPACE);
+
+    const response = await POST(makePostRequest({ title: '제목' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('TICKET_LIMIT_EXCEEDED');
+  });
+
+  it('유효한 요청에 201과 생성된 티켓을 반환한다', async () => {
+    const newTicket = { id: 1, workspaceId: 1, title: '새 티켓', status: 'BACKLOG', position: 1024 };
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetTicketCount.mockResolvedValueOnce(0);
+    mockedCreateTicket.mockResolvedValueOnce(newTicket);
+
+    const response = await POST(makePostRequest({ title: '새 티켓', priority: 'HIGH' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.ticket).toEqual(newTicket);
+    expect(mockedCreateTicket).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ title: '새 티켓', priority: 'HIGH' }),
+    );
+  });
+
+  it('DB 오류 시 500 INTERNAL_ERROR를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetTicketCount.mockResolvedValueOnce(0);
+    mockedCreateTicket.mockRejectedValueOnce(new Error('DB error'));
+
+    const response = await POST(makePostRequest({ title: '새 티켓' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

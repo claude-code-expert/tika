@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilterBar 컴포넌트 - Tika Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --bg-app: #F8F9FB;
+      --bg-header: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-column: #F4F5F7;
+      --text-primary: #2C3E50;
+      --text-secondary: #5A6B7F;
+      --text-muted: #8993A4;
+      --accent-primary: #629584;
+      --accent-hover: #527D6F;
+      --accent-light: #E8F5F0;
+      --border-light: #DFE1E6;
+      --border-medium: #C4C9D1;
+      --radius-card: 8px;
+      --radius-button: 6px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      height: 52px; background: #fff;
+      border-bottom: 1px solid #DFE1E6;
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      width: 28px; height: 28px; background: #629584;
+      border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-weight: 700;
+      font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif;
+      flex-shrink: 0;
+    }
+    .nav-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; color: #2C3E50; }
+    .nav-sep { color: #DFE1E6; }
+    .nav-back { font-size: 13px; color: #629584; text-decoration: none; }
+    .nav-back:hover { text-decoration: underline; }
+    .nav-current { font-size: 13px; color: #5A6B7F; }
+
+    /* PAGE */
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+    .page-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;
+    }
+    .page-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 36px; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 48px; }
+    .section-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+
+    /* ================================================================
+       CHIP / FILTER-BAR STYLES
+       ================================================================ */
+
+    /* Base filter bar */
+    .filter-bar {
+      height: 48px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border-light);
+      position: relative;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    /* Divider */
+    .chip-divider {
+      width: 1px; height: 20px;
+      background: var(--border-light);
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* Chip base */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-light);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.12s, background 0.12s, color 0.12s;
+      user-select: none;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .chip:hover {
+      border-color: #629584;
+      color: #629584;
+      background: #E8F5F0;
+    }
+    .chip.active {
+      background: #629584;
+      color: #fff;
+      border-color: #629584;
+    }
+    .chip.active:hover {
+      background: #527D6F;
+      border-color: #527D6F;
+    }
+
+    /* Count badge inside chip */
+    .chip-count {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: #F1F3F6;
+      color: #8993A4;
+      font-weight: 600;
+      transition: background 0.12s, color 0.12s;
+    }
+    .chip.active .chip-count {
+      background: rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* Chip icon */
+    .chip-icon {
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    /* ================================================================
+       ACTIVE FILTER COUNT BAR
+       ================================================================ */
+    .filter-status {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+    }
+    .filter-status-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .filter-status-count {
+      font-weight: 700;
+      color: #629584;
+    }
+    .clear-btn {
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+      background: none; border: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 0;
+    }
+    .clear-btn:hover { color: #DC2626; }
+
+    /* ================================================================
+       LABEL DROPDOWN
+       ================================================================ */
+    .label-dropdown-wrap {
+      position: relative;
+    }
+    .label-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      box-shadow: var(--shadow-dropdown);
+      padding: 8px;
+      z-index: 200;
+      min-width: 220px;
+      display: none;
+    }
+    .label-dropdown.open { display: block; }
+    .label-dropdown-header {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 4px 4px 8px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 8px;
+    }
+    .label-chips-grid {
+      display: flex; flex-wrap: wrap; gap: 5px; padding: 0 2px;
+    }
+    .label-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 24px; padding: 0 9px;
+      border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: opacity 0.12s, border-color 0.12s;
+    }
+    .label-chip:hover { opacity: 0.85; }
+    .label-chip.selected { border-color: currentColor; }
+
+    .lc-frontend { background: rgba(43,127,255,0.12); color: #2b7fff; }
+    .lc-backend   { background: rgba(0,201,80,0.12);  color: #00a844; }
+    .lc-design    { background: rgba(173,70,255,0.12); color: #ad46ff; }
+    .lc-bug       { background: rgba(251,44,54,0.12);  color: #fb2c36; }
+    .lc-docs      { background: rgba(255,172,109,0.15);color: #d97706; }
+    .lc-infra     { background: rgba(97,95,255,0.12);  color: #615fff; }
+
+    .dropdown-footer {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: flex-end;
+    }
+    .deselect-btn {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-muted);
+      background: none; border: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer; padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .deselect-btn:hover { color: #DC2626; background: #FEF2F2; }
+
+    /* Active label pill in filter bar */
+    .active-label-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 24px; padding: 0 8px 0 10px;
+      border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      flex-shrink: 0;
+      border: none;
+    }
+    .active-label-remove {
+      cursor: pointer;
+      opacity: 0.6;
+      font-size: 13px;
+      line-height: 1;
+      margin-left: 1px;
+    }
+    .active-label-remove:hover { opacity: 1; }
+
+    /* ================================================================
+       VARIANT ROWS (Section 2)
+       ================================================================ */
+    .variant-section {
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .variant-row {
+      margin-bottom: 20px;
+    }
+    .variant-row:last-child { margin-bottom: 0; }
+    .variant-row-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .chip-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+
+    /* Simulated hover for demo (state display section) */
+    .chip-hover-demo {
+      border-color: #629584;
+      color: #629584;
+      background: #E8F5F0;
+    }
+
+    /* ================================================================
+       STATE DISPLAY SECTION
+       ================================================================ */
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .state-card {
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      text-align: center;
+    }
+    .state-card-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .state-chip-demo {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 30px; padding: 0 12px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* SECTION 3: Label filter full UI */
+    .label-filter-wrap {
+      background: #fff;
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+    .label-filter-bar {
+      height: 48px;
+      padding: 0 16px;
+      display: flex; align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--border-light);
+      overflow-x: auto;
+    }
+    .label-filter-bar::-webkit-scrollbar { display: none; }
+    .label-filter-body {
+      padding: 16px;
+    }
+    .label-filter-dropdown-inline {
+      background: #F8F9FB;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 12px;
+      max-width: 280px;
+      box-shadow: var(--shadow-card);
+    }
+
+    @media (max-width: 600px) {
+      .state-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">T</div>
+    <span class="nav-title">Tika</span>
+    <span class="nav-sep">|</span>
+    <a href="index.html" class="nav-back">← 데모 홈</a>
+    <span class="nav-sep">›</span>
+    <span class="nav-current">FilterBar 컴포넌트</span>
+  </nav>
+
+  <!-- PAGE -->
+  <div class="page-wrap">
+    <div class="page-title">FilterBar 컴포넌트</div>
+    <div class="page-desc">칸반 보드 상단에 위치하여 티켓을 빠르게 필터링하는 인터랙티브 칩 기반 필터 컴포넌트입니다. 활성 필터 개수를 실시간으로 표시하고 라벨 드롭다운 선택기를 포함합니다.</div>
+
+    <!-- SECTION 1: 기본 필터바 -->
+    <div class="section">
+      <div class="section-label">1. 기본 필터바 — 인터랙티브</div>
+
+      <div class="filter-bar" id="mainFilterBar">
+        <!-- Quick filters -->
+        <button class="chip active" data-group="quick" data-id="all" onclick="toggleChip(this, 'quick')">
+          전체 <span class="chip-count">9</span>
+        </button>
+        <button class="chip" data-group="quick" data-id="week" onclick="toggleChip(this, 'quick')">
+          이번 주 업무 <span class="chip-count">3</span>
+        </button>
+        <button class="chip" data-group="quick" data-id="overdue" onclick="toggleChip(this, 'quick')">
+          일정 초과 <span class="chip-count">1</span>
+        </button>
+        <div class="chip-divider"></div>
+        <!-- Toggle filters -->
+        <button class="chip" data-group="toggle" data-id="high" onclick="toggleChip(this, 'toggle')">
+          높은 우선순위
+        </button>
+        <button class="chip" data-group="toggle" data-id="assigned" onclick="toggleChip(this, 'toggle')">
+          내게 할당됨
+        </button>
+        <!-- Label chip with dropdown -->
+        <div class="label-dropdown-wrap" id="labelDropdownWrap">
+          <button class="chip" id="labelChipBtn" onclick="toggleLabelDropdown(event)">
+            라벨 ▾
+          </button>
+          <div class="label-dropdown" id="labelDropdown">
+            <div class="label-dropdown-header">라벨 필터</div>
+            <div class="label-chips-grid">
+              <span class="label-chip lc-frontend" data-label="Frontend" onclick="toggleLabel('Frontend', this)">Frontend</span>
+              <span class="label-chip lc-backend" data-label="Backend" onclick="toggleLabel('Backend', this)">Backend</span>
+              <span class="label-chip lc-design" data-label="Design" onclick="toggleLabel('Design', this)">Design</span>
+              <span class="label-chip lc-bug" data-label="Bug" onclick="toggleLabel('Bug', this)">Bug</span>
+              <span class="label-chip lc-docs" data-label="Docs" onclick="toggleLabel('Docs', this)">Docs</span>
+              <span class="label-chip lc-infra" data-label="Infra" onclick="toggleLabel('Infra', this)">Infra</span>
+            </div>
+            <div class="dropdown-footer">
+              <button class="deselect-btn" onclick="clearLabels()">선택 해제</button>
+            </div>
+          </div>
+        </div>
+        <!-- Active labels will be inserted here by JS -->
+        <div id="activeLabelPills"></div>
+      </div>
+
+      <div class="filter-status">
+        <span class="filter-status-text">활성 필터: <span class="filter-status-count" id="activeFilterCount">1</span>개</span>
+        <button class="clear-btn" onclick="clearAll()">모두 초기화</button>
+      </div>
+    </div>
+
+    <!-- SECTION 2: 칩 변형 -->
+    <div class="section">
+      <div class="section-label">2. 칩 변형</div>
+      <div class="variant-section">
+
+        <div class="variant-row">
+          <div class="variant-row-label">텍스트만 (기본)</div>
+          <div class="chip-row">
+            <button class="chip" onclick="toggleChip(this)">전체 보기</button>
+            <button class="chip" onclick="toggleChip(this)">진행 중</button>
+            <button class="chip" onclick="toggleChip(this)">완료됨</button>
+            <button class="chip" onclick="toggleChip(this)">보류 중</button>
+          </div>
+        </div>
+
+        <div class="variant-row">
+          <div class="variant-row-label">카운트 뱃지 포함</div>
+          <div class="chip-row">
+            <button class="chip active" onclick="toggleChip(this)">전체 <span class="chip-count">12</span></button>
+            <button class="chip" onclick="toggleChip(this)">이번 주 <span class="chip-count">5</span></button>
+            <button class="chip" onclick="toggleChip(this)">오늘 <span class="chip-count">2</span></button>
+            <button class="chip" onclick="toggleChip(this)">초과 <span class="chip-count">1</span></button>
+          </div>
+        </div>
+
+        <div class="variant-row">
+          <div class="variant-row-label">아이콘 포함</div>
+          <div class="chip-row">
+            <button class="chip" onclick="toggleChip(this)"><span class="chip-icon">⚡</span>높은 우선순위</button>
+            <button class="chip" onclick="toggleChip(this)"><span class="chip-icon">👤</span>내게 할당됨</button>
+            <button class="chip" onclick="toggleChip(this)"><span class="chip-icon">📅</span>마감 임박</button>
+            <button class="chip" onclick="toggleChip(this)"><span class="chip-icon">🏷️</span>라벨 ▾</button>
+          </div>
+        </div>
+
+        <div class="variant-row">
+          <div class="variant-row-label">모두 활성 상태</div>
+          <div class="chip-row">
+            <button class="chip active">전체 <span class="chip-count">9</span></button>
+            <button class="chip active">이번 주 <span class="chip-count">3</span></button>
+            <button class="chip active">높은 우선순위</button>
+            <button class="chip active">내게 할당됨</button>
+          </div>
+        </div>
+
+        <div class="variant-row">
+          <div class="variant-row-label">혼합 (활성 + 비활성)</div>
+          <div class="chip-row">
+            <button class="chip active" onclick="toggleChip(this)">전체 <span class="chip-count">9</span></button>
+            <button class="chip" onclick="toggleChip(this)">이번 주 <span class="chip-count">3</span></button>
+            <button class="chip active" onclick="toggleChip(this)">높은 우선순위</button>
+            <button class="chip" onclick="toggleChip(this)">내게 할당됨</button>
+            <button class="chip" onclick="toggleChip(this)">초과 <span class="chip-count">1</span></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 3: 라벨 필터 -->
+    <div class="section">
+      <div class="section-label">3. 라벨 필터 — 드롭다운 선택기</div>
+      <div class="label-filter-wrap">
+        <div class="label-filter-bar" id="labelFilterBar">
+          <button class="chip active">전체 <span class="chip-count">9</span></button>
+          <div class="chip-divider"></div>
+          <!-- selected labels appear here via JS -->
+          <div id="labelFilterPills" style="display:flex;gap:6px;align-items:center;"></div>
+          <button class="chip" id="labelFilterChipBtn" onclick="toggleLabelDropdown2(event)">🏷️ 라벨 ▾</button>
+        </div>
+
+        <div class="label-filter-body">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:12px;">라벨 선택 시 칩이 필터바에 추가됩니다.</div>
+
+          <div class="label-filter-dropdown-inline" id="labelDropdown2Inner" style="display:none;">
+            <div class="label-dropdown-header">라벨 필터</div>
+            <div class="label-chips-grid">
+              <span class="label-chip lc-frontend" data-label="Frontend" onclick="toggleLabel2('Frontend', this)">Frontend</span>
+              <span class="label-chip lc-backend" data-label="Backend" onclick="toggleLabel2('Backend', this)">Backend</span>
+              <span class="label-chip lc-design" data-label="Design" onclick="toggleLabel2('Design', this)">Design</span>
+              <span class="label-chip lc-bug" data-label="Bug" onclick="toggleLabel2('Bug', this)">Bug</span>
+              <span class="label-chip lc-docs" data-label="Docs" onclick="toggleLabel2('Docs', this)">Docs</span>
+              <span class="label-chip lc-infra" data-label="Infra" onclick="toggleLabel2('Infra', this)">Infra</span>
+            </div>
+            <div class="dropdown-footer">
+              <button class="deselect-btn" onclick="clearLabels2()">선택 해제</button>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; font-size:12px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif;">
+            활성 라벨: <span id="activeLabelList2" style="color:#629584; font-weight:600;">없음</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: 상태 표시 -->
+    <div class="section">
+      <div class="section-label">4. 칩 상태 표시</div>
+      <div class="state-grid">
+
+        <!-- Inactive -->
+        <div class="state-card">
+          <div class="state-card-label">비활성 (Default)</div>
+          <div style="margin-bottom:16px;">
+            <div class="state-chip-demo" style="border:1px solid #DFE1E6; background:#fff; color:#5A6B7F;">
+              이번 주 업무 <span style="font-size:10px; padding:1px 6px; border-radius:10px; background:#F1F3F6; color:#8993A4; font-weight:600;">3</span>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; line-height:1.7;">
+            <div>border: 1px solid <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#DFE1E6</code></div>
+            <div>background: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#ffffff</code></div>
+            <div>color: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#5A6B7F</code></div>
+            <div>count bg: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#F1F3F6</code></div>
+          </div>
+        </div>
+
+        <!-- Active -->
+        <div class="state-card">
+          <div class="state-card-label">활성 (Active)</div>
+          <div style="margin-bottom:16px;">
+            <div class="state-chip-demo" style="border:1px solid #629584; background:#629584; color:#fff;">
+              이번 주 업무 <span style="font-size:10px; padding:1px 6px; border-radius:10px; background:rgba(255,255,255,0.25); color:rgba(255,255,255,0.9); font-weight:600;">3</span>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; line-height:1.7;">
+            <div>border: 1px solid <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#629584</code></div>
+            <div>background: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#629584</code></div>
+            <div>color: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#ffffff</code></div>
+            <div>count bg: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">rgba(255,255,255,0.25)</code></div>
+          </div>
+        </div>
+
+        <!-- Hover (simulated) -->
+        <div class="state-card">
+          <div class="state-card-label">호버 (Hover)</div>
+          <div style="margin-bottom:16px;">
+            <div class="state-chip-demo chip-hover-demo" style="border-radius:20px;">
+              이번 주 업무 <span style="font-size:10px; padding:1px 6px; border-radius:10px; background:#F1F3F6; color:#8993A4; font-weight:600;">3</span>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); font-family:'Plus Jakarta Sans',sans-serif; line-height:1.7;">
+            <div>border: 1px solid <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#629584</code></div>
+            <div>background: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#E8F5F0</code></div>
+            <div>color: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">#629584</code></div>
+            <div>transition: <code style="font-size:10px; background:#F4F5F7; padding:1px 4px; border-radius:3px; color:#629584;">0.12s ease</code></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ================================================================
+       SECTION 1: MAIN FILTER BAR
+       ================================================================ */
+    const activeLabels = new Set();
+
+    // Toggling quick filter chips (radio-like within group)
+    // or simple toggle for 'toggle' group
+    function toggleChip(el, group) {
+      if (!group) {
+        el.classList.toggle('active');
+        updateCount();
+        return;
+      }
+      if (group === 'quick') {
+        // radio-like: only one active at a time
+        const bar = document.getElementById('mainFilterBar');
+        bar.querySelectorAll('[data-group="quick"]').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+      } else {
+        el.classList.toggle('active');
+      }
+      updateCount();
+    }
+
+    function updateCount() {
+      const bar = document.getElementById('mainFilterBar');
+      let count = 0;
+      bar.querySelectorAll('.chip.active').forEach(() => count++);
+      count += activeLabels.size;
+      document.getElementById('activeFilterCount').textContent = count;
+    }
+
+    function toggleLabelDropdown(e) {
+      e.stopPropagation();
+      const dd = document.getElementById('labelDropdown');
+      dd.classList.toggle('open');
+    }
+
+    function toggleLabel(label, el) {
+      if (activeLabels.has(label)) {
+        activeLabels.delete(label);
+        el.classList.remove('selected');
+      } else {
+        activeLabels.add(label);
+        el.classList.add('selected');
+      }
+      renderActiveLabelPills();
+      updateCount();
+    }
+
+    function renderActiveLabelPills() {
+      const container = document.getElementById('activeLabelPills');
+      container.innerHTML = '';
+      activeLabels.forEach(label => {
+        const cls = 'lc-' + label.toLowerCase();
+        const pill = document.createElement('span');
+        pill.className = 'active-label-chip ' + cls;
+        pill.innerHTML = label + '<span class="active-label-remove" onclick="removeLabel(\'' + label + '\', this)">×</span>';
+        container.appendChild(pill);
+      });
+      // Update label chip btn appearance
+      const btn = document.getElementById('labelChipBtn');
+      if (activeLabels.size > 0) {
+        btn.classList.add('active');
+        btn.textContent = '라벨 (' + activeLabels.size + ') ▾';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '라벨 ▾';
+      }
+    }
+
+    function removeLabel(label, el) {
+      activeLabels.delete(label);
+      // uncheck in dropdown
+      const dd = document.getElementById('labelDropdown');
+      dd.querySelectorAll('[data-label="' + label + '"]').forEach(c => c.classList.remove('selected'));
+      renderActiveLabelPills();
+      updateCount();
+    }
+
+    function clearLabels() {
+      activeLabels.clear();
+      document.getElementById('labelDropdown').querySelectorAll('.label-chip').forEach(c => c.classList.remove('selected'));
+      renderActiveLabelPills();
+      updateCount();
+    }
+
+    function clearAll() {
+      // Reset quick filters to "all"
+      const bar = document.getElementById('mainFilterBar');
+      bar.querySelectorAll('[data-group="quick"]').forEach(c => c.classList.remove('active'));
+      const allChip = bar.querySelector('[data-id="all"]');
+      if (allChip) allChip.classList.add('active');
+      bar.querySelectorAll('[data-group="toggle"]').forEach(c => c.classList.remove('active'));
+      clearLabels();
+      updateCount();
+    }
+
+    // Close label dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('labelDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('labelDropdown').classList.remove('open');
+      }
+    });
+
+
+    /* ================================================================
+       SECTION 3: LABEL FILTER (inline)
+       ================================================================ */
+    const activeLabels2 = new Set();
+    let labelDropdown2Open = false;
+
+    function toggleLabelDropdown2(e) {
+      e.stopPropagation();
+      labelDropdown2Open = !labelDropdown2Open;
+      const inner = document.getElementById('labelDropdown2Inner');
+      inner.style.display = labelDropdown2Open ? 'block' : 'none';
+    }
+
+    function toggleLabel2(label, el) {
+      if (activeLabels2.has(label)) {
+        activeLabels2.delete(label);
+        el.classList.remove('selected');
+      } else {
+        activeLabels2.add(label);
+        el.classList.add('selected');
+      }
+      renderLabelPills2();
+    }
+
+    function renderLabelPills2() {
+      const container = document.getElementById('labelFilterPills');
+      container.innerHTML = '';
+      activeLabels2.forEach(label => {
+        const cls = 'lc-' + label.toLowerCase();
+        const pill = document.createElement('span');
+        pill.className = 'active-label-chip ' + cls;
+        pill.innerHTML = label + '<span class="active-label-remove" onclick="removeLabel2(\'' + label + '\', this)">×</span>';
+        container.appendChild(pill);
+      });
+      // Update text
+      const listEl = document.getElementById('activeLabelList2');
+      if (activeLabels2.size === 0) {
+        listEl.textContent = '없음';
+      } else {
+        listEl.textContent = Array.from(activeLabels2).join(', ');
+      }
+      // Update chip btn
+      const btn = document.getElementById('labelFilterChipBtn');
+      if (activeLabels2.size > 0) {
+        btn.classList.add('active');
+        btn.textContent = '🏷️ 라벨 (' + activeLabels2.size + ') ▾';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '🏷️ 라벨 ▾';
+      }
+    }
+
+    function removeLabel2(label, el) {
+      activeLabels2.delete(label);
+      const dd = document.getElementById('labelDropdown2Inner');
+      dd.querySelectorAll('[data-label="' + label + '"]').forEach(c => c.classList.remove('selected'));
+      renderLabelPills2();
+    }
+
+    function clearLabels2() {
+      activeLabels2.clear();
+      document.getElementById('labelDropdown2Inner').querySelectorAll('.label-chip').forEach(c => c.classList.remove('selected'));
+      renderLabelPills2();
+    }
+  </script>
+</body>
+</html>

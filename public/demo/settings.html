@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-005 — 설정 | Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-header:#FFFFFF;--bg-sidebar:#F1F3F6;--bg-card:#FFFFFF;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;--radius-tag:4px;
+      --shadow-header:0 1px 3px rgba(0,0,0,.06);
+      --shadow-dropdown:0 8px 24px rgba(0,0,0,.12);
+      --sp-xs:4px;--sp-sm:8px;--sp-md:12px;--sp-lg:16px;--sp-xl:24px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+    .ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle}
+    .ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+    /* ═══ Header ═══ */
+    .header{height:60px;background:var(--bg-header);border-bottom:1px solid var(--border-light);box-shadow:var(--shadow-header);display:flex;align-items:center;padding:0 20px;gap:16px;position:fixed;top:0;left:0;right:0;z-index:100}
+    .header-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
+    .logo-icon{width:32px;height:32px;border-radius:8px;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-size:16px;font-weight:var(--fw-bold)}
+    .logo-text{font-family:var(--font-display);font-size:var(--text-h1);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .header-spacer{flex:1}
+    .header-title{font-size:var(--text-h2);font-weight:var(--fw-semibold);color:var(--text-secondary)}
+    .av-header{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:var(--fw-semibold);border:2px solid var(--bg-app);cursor:pointer}
+
+    /* ═══ Layout ═══ */
+    .page-body{display:flex;margin-top:60px;min-height:calc(100vh - 60px - 55px)}
+    .side-nav{width:220px;background:var(--bg-sidebar);border-right:1px solid var(--border-light);padding:20px 0;flex-shrink:0}
+    .nav-title{font-size:var(--text-body2);font-weight:var(--fw-semibold);color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:0 20px;margin-bottom:8px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:var(--text-body2);color:var(--text-secondary);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+    .nav-item:hover{background:rgba(0,0,0,.04);color:var(--text-primary)}
+    .nav-item.active{background:var(--accent-light);color:var(--accent-primary);border-left-color:var(--accent-primary);font-weight:var(--fw-medium)}
+    .settings-content{flex:1;padding:32px 40px;max-width:800px;overflow-y:auto}
+    .settings-section{margin-bottom:40px;display:none}
+    .settings-section.visible{display:block}
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .section-title{font-family:var(--font-display);font-size:18px;font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .section-desc{font-size:var(--text-body2);color:var(--text-muted);margin-bottom:20px;line-height:1.6}
+
+    /* ═══ Shared Card ═══ */
+    .card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:20px;margin-bottom:12px;transition:box-shadow .15s}
+    .card:hover{box-shadow:0 2px 8px rgba(0,0,0,.04)}
+    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .card-title{display:flex;align-items:center;gap:8px;font-size:var(--text-h2);font-weight:var(--fw-semibold)}
+    .card-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .card-icon svg{stroke:none}
+    .card-subtitle{font-size:var(--text-body2);color:var(--text-muted);margin-bottom:16px;line-height:1.5}
+    .card-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+    .field-row{display:flex;align-items:center;gap:12px}
+    .field-label{min-width:110px;font-size:var(--text-body2);color:var(--text-secondary);font-weight:var(--fw-medium);flex-shrink:0}
+    .field-input{flex:1;height:36px;padding:0 12px;border:1px solid var(--border-light);border-radius:var(--radius-button);font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-primary);outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
+    .field-input:focus{border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-light)}
+    .field-input::placeholder{color:var(--text-muted)}
+    .field-input:disabled{background:var(--bg-sidebar);opacity:.6;cursor:not-allowed}
+    select.field-input{cursor:pointer;appearance:auto}
+    textarea.field-input{height:auto;min-height:60px;padding:10px 12px;resize:vertical}
+    .field-hint{font-size:var(--text-small);color:var(--text-muted);margin-top:2px;padding-left:122px}
+    .card-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+    /* ═══ Buttons ═══ */
+    .btn{height:32px;padding:0 14px;border-radius:var(--radius-button);font-family:var(--font-body);font-size:var(--text-body2);font-weight:var(--fw-medium);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;border:none}
+    .btn-primary{background:var(--accent-primary);color:#fff}.btn-primary:hover{background:var(--accent-primary-hover)}
+    .btn-secondary{background:#fff;border:1px solid var(--border-light)!important;color:var(--text-secondary)}.btn-secondary:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .btn-danger{background:#fff;border:1px solid #FECACA!important;color:#DC2626}.btn-danger:hover{background:#FEF2F2}
+    .btn-ghost{background:transparent;color:var(--text-muted);padding:0 8px}.btn-ghost:hover{color:var(--text-primary);background:var(--bg-sidebar)}
+    .btn-icon{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:var(--radius-tag);color:var(--text-muted);cursor:pointer;transition:all .15s}
+    .btn-icon:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .btn-icon.danger:hover{background:#FEE2E2;color:#DC2626}
+    .btn.st-success{background:#ECFDF5;border-color:#A7F3D0!important;color:#059669}
+    .btn.st-fail{background:#FEF2F2;border-color:#FECACA!important;color:#DC2626}
+
+    /* ═══ Toggle ═══ */
+    .toggle-wrap{display:flex;align-items:center;gap:8px}
+    .toggle-label{font-size:var(--text-body2);color:var(--text-muted);min-width:24px}
+    .toggle{width:40px;height:22px;border-radius:11px;background:var(--border-medium);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+    .toggle.on{background:var(--accent-primary)}
+    .toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+    .toggle.on .toggle-knob{left:20px}
+
+    /* ═══ Label List ═══ */
+    .label-list{display:flex;flex-direction:column;gap:6px}
+    .label-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-button);transition:box-shadow .15s}
+    .label-row:hover{box-shadow:0 2px 6px rgba(0,0,0,.06)}
+    .label-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;transition:transform .15s}
+    .label-row:hover .label-dot{transform:scale(1.2)}
+    .label-chip{display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:11px;font-size:11px;font-weight:var(--fw-medium);flex-shrink:0}
+    .label-name-text{flex:1;font-size:var(--text-body2);font-weight:var(--fw-medium);min-width:0}
+    .label-hex{font-size:var(--text-small);color:var(--text-muted);font-family:'Plus Jakarta Sans',monospace;min-width:60px}
+    .label-count{font-size:var(--text-small);color:var(--text-muted);white-space:nowrap}
+    .row-actions{display:flex;gap:2px;flex-shrink:0}
+
+    /* Label Edit Inline */
+    .label-edit-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;background:var(--accent-light);border:2px solid var(--accent-primary);border-radius:var(--radius-button)}
+    .le-input{height:30px;padding:0 8px;border:1px solid var(--border-light);border-radius:var(--radius-tag);font-family:var(--font-body);font-size:var(--text-body2);outline:none;background:#fff}
+    .le-input:focus{border-color:var(--accent-primary);box-shadow:0 0 0 2px rgba(98,149,132,.2)}
+
+    /* Creator / Invite (shared dashed box) */
+    .creator-box{display:none;flex-wrap:wrap;align-items:center;gap:8px;padding:14px;background:var(--bg-sidebar);border:1px dashed var(--border-medium);border-radius:var(--radius-card);margin-bottom:12px}
+    .creator-box.open{display:flex}
+    .lc-swatches{display:flex;gap:3px;flex-wrap:wrap}
+    .lc-swatch{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .1s,border-color .1s}
+    .lc-swatch:hover{transform:scale(1.15)}
+    .lc-swatch.sel{border-color:var(--text-primary);transform:scale(1.1)}
+
+    /* ═══ Member List ═══ */
+    .member-list{display:flex;flex-direction:column;gap:6px}
+    .member-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-button);transition:box-shadow .15s}
+    .member-row:hover{box-shadow:0 2px 6px rgba(0,0,0,.06)}
+    .member-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:var(--fw-semibold);flex-shrink:0}
+    .member-info{flex:1;min-width:0}
+    .member-name{font-size:var(--text-body2);font-weight:var(--fw-medium)}
+    .member-email{font-size:var(--text-small);color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .member-role{font-size:10px;font-weight:var(--fw-medium);padding:3px 10px;border-radius:10px;flex-shrink:0;white-space:nowrap}
+    .role-admin{background:#E0E7FF;color:#4338CA}
+    .role-member{background:var(--bg-sidebar);color:var(--text-muted)}
+    .member-date{font-size:var(--text-small);color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+
+    /* ═══ Danger Zone ═══ */
+    .danger-zone{border:1px solid #FECACA;border-radius:var(--radius-card);padding:20px;background:#FFFBFB}
+    .dz-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #FEE2E2;gap:16px}
+    .dz-row:last-child{border-bottom:none;padding-bottom:0}
+    .dz-row:first-child{padding-top:0}
+    .dz-label{font-size:var(--text-body2);font-weight:var(--fw-medium);color:#991B1B}
+    .dz-desc{font-size:var(--text-small);color:#B91C1C;margin-top:2px}
+
+    /* ═══ Footer ═══ */
+    .footer{height:55px;border-top:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;background:var(--bg-header);font-size:var(--text-small);color:var(--text-muted)}
+
+    /* ═══ Toast ═══ */
+    .toast{position:fixed;top:80px;right:20px;padding:10px 16px;border-radius:var(--radius-button);font-size:var(--text-body2);font-weight:var(--fw-medium);box-shadow:var(--shadow-dropdown);z-index:500;display:none;animation:toastIn .2s ease}
+    .toast.show{display:flex;align-items:center;gap:6px}
+    .toast.success{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0}
+    .toast.fail{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+    .toast.info{background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE}
+    @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    /* ═══ Confirm Dialog ═══ */
+    .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(9,30,66,0.54);z-index:400;align-items:center;justify-content:center}
+    .confirm-overlay.open{display:flex}
+    .confirm-box{background:#fff;border-radius:var(--radius-column);box-shadow:0 16px 48px rgba(0,0,0,.2);padding:24px;max-width:380px;width:90%;animation:modalIn .2s ease}
+    @keyframes modalIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+    .confirm-title{font-family:var(--font-display);font-size:var(--text-h2);font-weight:var(--fw-semibold);margin-bottom:8px}
+    .confirm-msg{font-size:var(--text-body2);color:var(--text-secondary);line-height:1.6;margin-bottom:20px}
+    .confirm-actions{display:flex;justify-content:flex-end;gap:8px}
+
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border-light);border-top-color:var(--accent-primary);border-radius:50%;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+  </style>
+</head>
+<body>
+<div class="demo-info">SCR-005 · 설정 페이지 데모 — 일반 · 알림 채널 · 라벨 관리 · 멤버 관리</div>
+<div class="toast" id="toast"></div>
+
+<!-- ═══ Confirm Dialog ═══ -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">확인</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">취소</button>
+      <button class="btn btn-danger" id="confirmOk" onclick="doConfirm()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Header ═══ -->
+<header class="header">
+  <a class="header-logo" onclick="alert('메인 보드로 이동')">
+    <div class="logo-icon">T</div>
+    <div class="logo-text">Tika</div>
+  </a>
+  <div class="header-spacer"></div>
+  <span class="header-title">설정</span>
+  <div style="width:16px"></div>
+  <div class="av-header" style="background:#7EB4A2">홍</div>
+</header>
+
+<!-- ═══ Page Body ═══ -->
+<div class="page-body">
+
+  <!-- Side Nav -->
+  <nav class="side-nav">
+    <div class="nav-title">설정</div>
+    <div class="nav-item active" onclick="switchSection('general',this)">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/></svg></span>
+      일반
+    </div>
+    <div class="nav-item" onclick="switchSection('notification',this)">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+      알림 채널
+    </div>
+    <div class="nav-item" onclick="switchSection('labels',this)">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg></span>
+      라벨 관리
+    </div>
+    <div class="nav-item" onclick="switchSection('members',this)">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      멤버 관리
+    </div>
+  </nav>
+
+  <!-- ═══ Content ═══ -->
+  <main class="settings-content">
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━ 일반 설정 ━━━━━━━━━━━━━━━━━━━━ -->
+    <div class="settings-section visible" id="sec-general">
+      <div class="section-header"><h2 class="section-title">일반 설정</h2></div>
+      <p class="section-desc">프로젝트의 기본 정보와 환경을 설정합니다.</p>
+
+      <!-- 프로젝트 정보 카드 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background:var(--accent-light);color:var(--accent-primary)">
+              <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24" stroke="var(--accent-primary)"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg></span>
+            </span>
+            프로젝트 정보
+          </div>
+        </div>
+        <div class="card-subtitle">프로젝트의 기본 식별 정보를 관리합니다.</div>
+        <div class="card-fields">
+          <div class="field-row">
+            <span class="field-label">프로젝트 이름</span>
+            <input class="field-input" type="text" value="Project Alpha" id="projName" />
+          </div>
+          <div class="field-row" style="align-items:flex-start">
+            <span class="field-label" style="margin-top:10px">프로젝트 설명</span>
+            <textarea class="field-input" rows="2" id="projDesc">Tika MVP 개발 프로젝트 — 칸반 보드 기반 할 일 관리 시스템</textarea>
+          </div>
+          <div class="field-hint">프로젝트 설명은 사이드바와 초대 이메일에 표시됩니다.</div>
+          <div class="field-row">
+            <span class="field-label">프로젝트 키</span>
+            <input class="field-input" type="text" value="TIKA" disabled style="max-width:120px" />
+            <span style="font-size:var(--text-small);color:var(--text-muted)">티켓 번호 접두사 (예: TIKA-42)</span>
+          </div>
+        </div>
+        <div class="card-actions" style="justify-content:flex-end">
+          <button class="btn btn-primary" onclick="showToast('프로젝트 정보가 저장되었습니다','success')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+            저장
+          </button>
+        </div>
+      </div>
+
+      <!-- 환경 설정 카드 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background:#EFF6FF;color:#2563EB">
+              <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24" stroke="#2563EB"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            </span>
+            환경 설정
+          </div>
+        </div>
+        <div class="card-subtitle">시간대, 언어, 날짜 형식 등 프로젝트의 환경 설정을 관리합니다.</div>
+        <div class="card-fields">
+          <div class="field-row">
+            <span class="field-label">시간대</span>
+            <select class="field-input">
+              <option selected>Asia/Seoul (UTC+9)</option>
+              <option>Asia/Tokyo (UTC+9)</option>
+              <option>America/New_York (UTC-5)</option>
+              <option>America/Los_Angeles (UTC-8)</option>
+              <option>Europe/London (UTC+0)</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <span class="field-label">언어</span>
+            <select class="field-input">
+              <option selected>한국어</option>
+              <option>English</option>
+              <option>日本語</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <span class="field-label">날짜 형식</span>
+            <select class="field-input">
+              <option selected>YYYY-MM-DD</option>
+              <option>MM/DD/YYYY</option>
+              <option>DD.MM.YYYY</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <span class="field-label">주간 시작일</span>
+            <select class="field-input">
+              <option selected>월요일</option>
+              <option>일요일</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-actions" style="justify-content:flex-end">
+          <button class="btn btn-primary" onclick="showToast('환경 설정이 저장되었습니다','success')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+            저장
+          </button>
+        </div>
+      </div>
+
+      <!-- 위험 영역 -->
+      <div class="danger-zone">
+        <div class="card-title" style="margin-bottom:12px;color:#DC2626">
+          <span class="card-icon" style="background:#FEE2E2;color:#DC2626">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24" stroke="#DC2626"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+          </span>
+          위험 영역
+        </div>
+        <div class="dz-row">
+          <div style="flex:1">
+            <div class="dz-label">프로젝트 데이터 초기화</div>
+            <div class="dz-desc">모든 티켓, 라벨, 활동 내역이 삭제됩니다. 되돌릴 수 없습니다.</div>
+          </div>
+          <button class="btn btn-danger" onclick="showConfirm('프로젝트 초기화','모든 데이터가 영구적으로 삭제됩니다. 정말로 초기화하시겠습니까?','초기화',function(){showToast('프로젝트가 초기화되었습니다','fail')})">초기화</button>
+        </div>
+        <div class="dz-row">
+          <div style="flex:1">
+            <div class="dz-label">프로젝트 삭제</div>
+            <div class="dz-desc">프로젝트 및 관련 모든 데이터가 영구 삭제됩니다.</div>
+          </div>
+          <button class="btn btn-danger" onclick="showConfirm('프로젝트 삭제','이 작업은 되돌릴 수 없습니다. 프로젝트를 삭제하시겠습니까?','삭제',function(){showToast('프로젝트가 삭제되었습니다','fail')})">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━ 알림 채널 ━━━━━━━━━━━━━━━━━━━━ -->
+    <div class="settings-section" id="sec-notification">
+      <div class="section-header"><h2 class="section-title">알림 채널 설정</h2></div>
+      <p class="section-desc">마감일 D-1 알림을 수신할 채널을 설정합니다. Slack과 Telegram 각각 하나씩, 최대 2개 채널을 사용할 수 있습니다.</p>
+
+      <!-- Slack -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background:#4A154B">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M14.5 2a2.5 2.5 0 0 0 0 5H17V4.5A2.5 2.5 0 0 0 14.5 2zM7 7a2.5 2.5 0 0 1 0 5h-2.5a2.5 2.5 0 0 1 0-5H7zm2.5 7a2.5 2.5 0 0 0-5 0V16.5a2.5 2.5 0 0 0 5 0V14zm5 2.5a2.5 2.5 0 0 1 5 0v2.5a2.5 2.5 0 0 1-5 0v-2.5zm2.5-9.5a2.5 2.5 0 0 0 0 5h2.5a2.5 2.5 0 0 0 0-5H17zm-7 7a2.5 2.5 0 0 0 0 5h2.5v-2.5a2.5 2.5 0 0 0-2.5-2.5z"/></svg>
+            </span>
+            Slack
+          </div>
+          <div class="toggle-wrap">
+            <span class="toggle-label" id="slackLabel">OFF</span>
+            <div class="toggle" id="slackToggle" onclick="toggleChannel('slack')"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+        <div class="card-subtitle">Incoming Webhook을 통해 마감 알림을 Slack 채널로 전송합니다.</div>
+        <div class="card-fields">
+          <div class="field-row">
+            <span class="field-label">Webhook URL</span>
+            <input class="field-input" type="text" placeholder="https://hooks.slack.com/services/T.../B.../..." id="slackUrl" />
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-secondary" id="slackTest" onclick="testChannel('slack')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg></span>
+            테스트 발송
+          </button>
+          <button class="btn btn-primary" onclick="showToast('Slack 설정이 저장되었습니다','success')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+            저장
+          </button>
+        </div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background:#0088CC">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+            </span>
+            Telegram
+          </div>
+          <div class="toggle-wrap">
+            <span class="toggle-label" id="teleLabel">OFF</span>
+            <div class="toggle" id="teleToggle" onclick="toggleChannel('tele')"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+        <div class="card-subtitle">Telegram Bot API를 통해 마감 알림을 채팅방으로 전송합니다.</div>
+        <div class="card-fields">
+          <div class="field-row">
+            <span class="field-label">Bot Token</span>
+            <input class="field-input" type="text" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyz" id="teleToken" />
+          </div>
+          <div class="field-row">
+            <span class="field-label">Chat ID</span>
+            <input class="field-input" type="text" placeholder="@channel_name 또는 -1001234567890" id="teleChatId" />
+          </div>
+          <div class="field-hint">@BotFather에서 봇을 생성하고 토큰을 발급받으세요.</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-secondary" id="teleTest" onclick="testChannel('tele')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg></span>
+            테스트 발송
+          </button>
+          <button class="btn btn-primary" onclick="showToast('Telegram 설정이 저장되었습니다','success')">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━ 라벨 관리 ━━━━━━━━━━━━━━━━━━━━ -->
+    <div class="settings-section" id="sec-labels">
+      <div class="section-header">
+        <h2 class="section-title">라벨 관리 <span style="font-size:var(--text-body2);font-weight:var(--fw-regular);color:var(--text-muted);margin-left:4px" id="labelCounter"></span></h2>
+        <button class="btn btn-primary" onclick="toggleCreator('labelCreator')">
+          <span style="font-size:15px;line-height:1">+</span> 새 라벨 추가
+        </button>
+      </div>
+      <p class="section-desc">티켓에 사용할 라벨을 관리합니다. 최대 20개까지 생성할 수 있으며, 라벨 삭제 시 연결된 티켓에서 자동으로 제거됩니다.</p>
+
+      <!-- Label Creator -->
+      <div class="creator-box" id="labelCreator">
+        <input class="le-input" type="text" placeholder="라벨 이름" maxlength="20" id="lcName" style="width:140px" oninput="updateLcPreview()" onkeydown="if(event.key==='Enter')addLabel();if(event.key==='Escape')toggleCreator('labelCreator')" />
+        <div class="lc-swatches" id="lcSwatches"></div>
+        <span id="lcPreview" class="label-chip" style="display:none"></span>
+        <button class="btn btn-primary" onclick="addLabel()" style="height:30px">추가</button>
+        <button class="btn btn-ghost" onclick="toggleCreator('labelCreator')" style="height:30px">취소</button>
+      </div>
+
+      <div class="label-list" id="labelList"></div>
+    </div>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━ 멤버 관리 ━━━━━━━━━━━━━━━━━━━━ -->
+    <div class="settings-section" id="sec-members">
+      <div class="section-header">
+        <h2 class="section-title">멤버 관리 <span style="font-size:var(--text-body2);font-weight:var(--fw-regular);color:var(--text-muted);margin-left:4px" id="memberCounter"></span></h2>
+        <button class="btn btn-primary" onclick="toggleCreator('inviteForm')">
+          <span style="font-size:15px;line-height:1">+</span> 멤버 초대
+        </button>
+      </div>
+      <p class="section-desc">프로젝트 멤버를 관리합니다. Google OAuth로 가입된 사용자를 이메일로 초대할 수 있습니다.</p>
+
+      <!-- Invite Form -->
+      <div class="creator-box" id="inviteForm">
+        <input class="le-input" type="email" placeholder="이메일 주소" id="inviteEmail" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')inviteMember();if(event.key==='Escape')toggleCreator('inviteForm')" />
+        <select class="le-input" id="inviteRole" style="width:100px">
+          <option value="member">멤버</option>
+          <option value="admin">관리자</option>
+        </select>
+        <button class="btn btn-primary" onclick="inviteMember()" style="height:30px">초대</button>
+        <button class="btn btn-ghost" onclick="toggleCreator('inviteForm')" style="height:30px">취소</button>
+      </div>
+
+      <div class="member-list" id="memberList"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ Footer ═══ -->
+<div class="footer">© 2026 Tika · All rights reserved</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  공통 유틸
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/* Section Switch */
+function switchSection(id, el) {
+  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('visible'));
+  document.getElementById('sec-' + id).classList.add('visible');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* Toast */
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const icon = type === 'success' ? '✓' : type === 'fail' ? '✕' : 'ℹ';
+  t.className = 'toast show ' + type;
+  t.textContent = icon + ' ' + msg;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* Confirm Dialog */
+let _confirmCb = null;
+function showConfirm(title, msg, btnText, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOk').textContent = btnText;
+  _confirmCb = cb;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); _confirmCb = null; }
+function doConfirm() { if (_confirmCb) _confirmCb(); closeConfirm(); }
+
+/* Creator Toggle */
+function toggleCreator(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    const inp = el.querySelector('input');
+    if (inp) inp.focus();
+  }
+}
+
+/* Color Helpers */
+function hexLum(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return .299*r + .587*g + .114*b;
+}
+function labelTc(bg) { return hexLum(bg) > 160 ? '#333' : '#fff'; }
+
+/* Swatch Builder */
+const palette = ['#fb2c36','#615fff','#00c950','#2b7fff','#ad46ff','#ff29d3','#a0628c','#89d0f0','#71e4bf','#46e264','#caee68','#fffe92','#ffac6d','#f7d1d1','#f7a2ff','#c1d1ff','#c5dbdc'];
+
+function buildSwatches(container, selectedColor, onSelect) {
+  container.innerHTML = '';
+  palette.forEach(c => {
+    const s = document.createElement('span');
+    s.className = 'lc-swatch' + (c === selectedColor ? ' sel' : '');
+    s.style.background = c;
+    s.onclick = () => {
+      container.querySelectorAll('.lc-swatch').forEach(x => x.classList.remove('sel'));
+      s.classList.add('sel');
+      onSelect(c);
+    };
+    container.appendChild(s);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  알림 채널
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function toggleChannel(ch) {
+  const toggle = document.getElementById(ch + 'Toggle');
+  const label = document.getElementById(ch + 'Label');
+  toggle.classList.toggle('on');
+  const isOn = toggle.classList.contains('on');
+  label.textContent = isOn ? 'ON' : 'OFF';
+  showToast(isOn ? '채널이 활성화되었습니다' : '채널이 비활성화되었습니다', isOn ? 'success' : 'info');
+}
+
+function testChannel(ch) {
+  const btn = document.getElementById(ch + 'Test');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> 발송 중...';
+  btn.disabled = true;
+  btn.className = 'btn btn-secondary';
+
+  setTimeout(() => {
+    const ok = Math.random() > 0.3;
+    btn.className = 'btn ' + (ok ? 'st-success' : 'st-fail');
+    btn.innerHTML = ok ? '✓ 테스트 성공' : '✕ 발송 실패';
+    btn.disabled = false;
+    showToast(ok ? '테스트 메시지가 성공적으로 발송되었습니다.' : '발송 실패 — 설정값을 확인해주세요.', ok ? 'success' : 'fail');
+    setTimeout(() => { btn.className = 'btn btn-secondary'; btn.innerHTML = origHTML; }, 2500);
+  }, 1200);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  라벨 관리
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let selectedLabelColor = palette[3];
+const labels = [
+  { name:'Frontend', color:'#2b7fff', count:5 },
+  { name:'Backend',  color:'#00c950', count:8 },
+  { name:'Design',   color:'#ad46ff', count:3 },
+  { name:'Bug',      color:'#fb2c36', count:2 },
+  { name:'Docs',     color:'#ffac6d', count:1 },
+  { name:'Infra',    color:'#615fff', count:4 },
+];
+let editingLabelIdx = -1;
+let editLabelColor = null;
+
+function renderLabels() {
+  document.getElementById('labelCounter').textContent = '(' + labels.length + '/20)';
+  const list = document.getElementById('labelList');
+  list.innerHTML = labels.map((l, i) => {
+    const tc = labelTc(l.color);
+    if (editingLabelIdx === i) {
+      return '<div class="label-edit-row" id="editRow">' +
+        '<input class="le-input" type="text" value="' + l.name + '" maxlength="20" id="editLabelName" onkeydown="if(event.key===\'Enter\')saveEditLabel(' + i + ');if(event.key===\'Escape\')cancelEditLabel()" />' +
+        '<div class="lc-swatches" id="editSwatches"></div>' +
+        '<span class="label-chip" id="editPreview" style="background:' + (editLabelColor || l.color) + ';color:' + labelTc(editLabelColor || l.color) + '">' + l.name + '</span>' +
+        '<button class="btn btn-primary" onclick="saveEditLabel(' + i + ')" style="height:28px;font-size:11px">저장</button>' +
+        '<button class="btn btn-ghost" onclick="cancelEditLabel()" style="height:28px;font-size:11px">취소</button>' +
+      '</div>';
+    }
+    return '<div class="label-row">' +
+      '<span class="label-dot" style="background:' + l.color + '"></span>' +
+      '<span class="label-chip" style="background:' + l.color + ';color:' + tc + '">' + l.name + '</span>' +
+      '<span class="label-name-text">' + l.name + '</span>' +
+      '<span class="label-hex">' + l.color + '</span>' +
+      '<span class="label-count">' + l.count + '개 티켓</span>' +
+      '<div class="row-actions">' +
+        '<button class="btn-icon" title="편집" onclick="startEditLabel(' + i + ')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span></button>' +
+        '<button class="btn-icon danger" title="삭제" onclick="removeLabel(' + i + ')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></span></button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Build edit swatches
+  if (editingLabelIdx >= 0) {
+    const sw = document.getElementById('editSwatches');
+    if (sw) {
+      buildSwatches(sw, editLabelColor || labels[editingLabelIdx].color, function(c) {
+        editLabelColor = c;
+        const preview = document.getElementById('editPreview');
+        preview.style.background = c;
+        preview.style.color = labelTc(c);
+      });
+      const inp = document.getElementById('editLabelName');
+      if (inp) {
+        inp.focus(); inp.select();
+        inp.addEventListener('input', function() {
+          const p = document.getElementById('editPreview');
+          if (p) p.textContent = this.value || '미리보기';
+        });
+      }
+    }
+  }
+}
+
+function startEditLabel(idx) {
+  editingLabelIdx = idx;
+  editLabelColor = labels[idx].color;
+  renderLabels();
+}
+function cancelEditLabel() {
+  editingLabelIdx = -1;
+  editLabelColor = null;
+  renderLabels();
+}
+function saveEditLabel(idx) {
+  const name = document.getElementById('editLabelName').value.trim();
+  if (!name) { showToast('라벨 이름을 입력하세요','fail'); return; }
+  if (labels.some((l,j) => j !== idx && l.name.toLowerCase() === name.toLowerCase())) { showToast('이미 존재하는 라벨입니다','fail'); return; }
+  labels[idx].name = name;
+  if (editLabelColor) labels[idx].color = editLabelColor;
+  editingLabelIdx = -1;
+  editLabelColor = null;
+  renderLabels();
+  showToast('라벨이 수정되었습니다','success');
+}
+
+function addLabel() {
+  const name = document.getElementById('lcName').value.trim();
+  if (!name) { showToast('라벨 이름을 입력하세요','fail'); return; }
+  if (labels.length >= 20) { showToast('최대 20개까지 생성 가능합니다','fail'); return; }
+  if (labels.some(l => l.name.toLowerCase() === name.toLowerCase())) { showToast('이미 존재하는 라벨입니다','fail'); return; }
+  labels.push({ name, color: selectedLabelColor, count: 0 });
+  renderLabels();
+  document.getElementById('lcName').value = '';
+  updateLcPreview();
+  document.getElementById('labelCreator').classList.remove('open');
+  showToast('"' + name + '" 라벨이 추가되었습니다','success');
+}
+
+function removeLabel(idx) {
+  showConfirm(
+    '라벨 삭제',
+    '"' + labels[idx].name + '" 라벨을 삭제하시겠습니까?\n이 라벨이 적용된 ' + labels[idx].count + '개 티켓에서 자동으로 제거됩니다.',
+    '삭제',
+    function() {
+      var nm = labels[idx].name;
+      labels.splice(idx, 1);
+      if (editingLabelIdx === idx) editingLabelIdx = -1;
+      renderLabels();
+      showToast('"' + nm + '" 라벨이 삭제되었습니다','success');
+    }
+  );
+}
+
+/* Creator preview */
+function updateLcPreview() {
+  var name = document.getElementById('lcName').value.trim();
+  var preview = document.getElementById('lcPreview');
+  if (name) {
+    preview.style.display = 'inline-flex';
+    preview.style.background = selectedLabelColor;
+    preview.style.color = labelTc(selectedLabelColor);
+    preview.textContent = name;
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+/* Init label creator swatches */
+buildSwatches(document.getElementById('lcSwatches'), selectedLabelColor, function(c) {
+  selectedLabelColor = c;
+  updateLcPreview();
+});
+renderLabels();
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  멤버 관리
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const members = [
+  { name:'홍길동', email:'hong@example.com', color:'#7EB4A2', role:'admin', joined:'2026-01-15' },
+  { name:'김민수', email:'kim@example.com',  color:'#60A5FA', role:'member', joined:'2026-01-20' },
+  { name:'이서연', email:'lee@example.com',  color:'#A78BFA', role:'member', joined:'2026-02-03' },
+];
+
+function renderMembers() {
+  document.getElementById('memberCounter').textContent = '(' + members.length + '명)';
+  const list = document.getElementById('memberList');
+  list.innerHTML = members.map((m, i) => {
+    const isAdmin = m.role === 'admin';
+    const adminCount = members.filter(x => x.role === 'admin').length;
+    const canRemove = !(isAdmin && adminCount <= 1);
+    return '<div class="member-row">' +
+      '<div class="member-av" style="background:' + m.color + '">' + m.name.charAt(0) + '</div>' +
+      '<div class="member-info">' +
+        '<div class="member-name">' + m.name + '</div>' +
+        '<div class="member-email">' + m.email + '</div>' +
+      '</div>' +
+      '<span class="member-role ' + (isAdmin ? 'role-admin' : 'role-member') + '">' + (isAdmin ? '관리자' : '멤버') + '</span>' +
+      '<span class="member-date">' + m.joined + '</span>' +
+      '<div class="row-actions">' +
+        '<button class="btn-icon" title="역할 변경" onclick="toggleRole(' + i + ')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></button>' +
+        (canRemove ?
+          '<button class="btn-icon danger" title="제거" onclick="removeMember(' + i + ')"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></span></button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleRole(idx) {
+  var m = members[idx];
+  if (m.role === 'admin' && members.filter(x => x.role === 'admin').length <= 1) {
+    showToast('관리자가 최소 1명 이상이어야 합니다','fail');
+    return;
+  }
+  var newRole = m.role === 'admin' ? 'member' : 'admin';
+  showConfirm(
+    '역할 변경',
+    '"' + m.name + '"의 역할을 ' + (newRole === 'admin' ? '관리자' : '멤버') + '(으)로 변경하시겠습니까?',
+    '변경',
+    function() {
+      m.role = newRole;
+      renderMembers();
+      showToast(m.name + '의 역할이 ' + (newRole === 'admin' ? '관리자' : '멤버') + '로 변경되었습니다','success');
+    }
+  );
+}
+
+function removeMember(idx) {
+  var m = members[idx];
+  showConfirm(
+    '멤버 제거',
+    '"' + m.name + '" (' + m.email + ')을(를) 프로젝트에서 제거하시겠습니까?',
+    '제거',
+    function() {
+      members.splice(idx, 1);
+      renderMembers();
+      showToast(m.name + '이(가) 제거되었습니다','success');
+    }
+  );
+}
+
+function inviteMember() {
+  var email = document.getElementById('inviteEmail').value.trim();
+  var role = document.getElementById('inviteRole').value;
+  if (!email || !email.includes('@')) { showToast('유효한 이메일을 입력하세요','fail'); return; }
+  if (members.some(m => m.email === email)) { showToast('이미 등록된 멤버입니다','fail'); return; }
+  var name = email.split('@')[0];
+  name = name.charAt(0).toUpperCase() + name.slice(1);
+  var colors = ['#F87171','#FB923C','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6'];
+  members.push({
+    name: name,
+    email: email,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    role: role,
+    joined: new Date().toISOString().split('T')[0]
+  });
+  renderMembers();
+  document.getElementById('inviteEmail').value = '';
+  document.getElementById('inviteForm').classList.remove('open');
+  showToast(email + '에 초대를 보냈습니다','success');
+}
+
+renderMembers();
+</script>
+</body>
+</html>

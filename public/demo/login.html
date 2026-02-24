@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCR-004 — 로그인 | Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-card:#FFFFFF;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;
+      --shadow-dropdown:0 8px 24px rgba(0,0,0,0.12);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+
+    /* ═══ Page Layout ═══ */
+    .login-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px;position:relative}
+
+    /* ═══ Card ═══ */
+    .login-card{
+      max-width:400px;width:100%;background:var(--bg-card);border-radius:var(--radius-column);
+      box-shadow:var(--shadow-dropdown);padding:48px 40px;text-align:center;
+      animation:cardIn .4s ease;
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Logo */
+    .login-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
+    .login-logo-icon{
+      width:48px;height:48px;border-radius:12px;background:var(--accent-primary);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-family:var(--font-display);font-size:22px;font-weight:var(--fw-bold);
+      box-shadow:0 4px 12px rgba(98,149,132,.35);
+    }
+    .login-logo-text{font-family:var(--font-display);font-size:28px;font-weight:var(--fw-bold);color:var(--text-primary);letter-spacing:-.5px}
+
+    /* Description */
+    .login-desc{font-size:var(--text-body1);color:var(--text-secondary);line-height:1.7;margin-bottom:32px}
+    .login-desc strong{color:var(--accent-primary);font-weight:var(--fw-semibold)}
+
+    /* ═══ Google Button ═══ */
+    .google-btn{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      width:100%;height:48px;border:1px solid var(--border-light);border-radius:var(--radius-card);
+      background:#fff;font-family:var(--font-body);font-size:var(--text-body1);font-weight:var(--fw-medium);
+      color:var(--text-primary);cursor:pointer;transition:all .2s;
+    }
+    .google-btn:hover{background:#F8F9FB;border-color:var(--border-medium);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .google-btn:active{transform:scale(.98)}
+    .google-btn svg{flex-shrink:0}
+
+    /* Divider */
+    .login-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text-muted);font-size:var(--text-body2)}
+    .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border-light)}
+
+    /* ═══ Error Toast ═══ */
+    .login-error{
+      display:none;align-items:center;gap:8px;margin-top:16px;padding:10px 14px;
+      border-radius:var(--radius-button);background:#FEF2F2;border:1px solid #FECACA;
+      font-size:var(--text-body2);color:#DC2626;text-align:left;
+    }
+    .login-error.show{display:flex}
+    .login-error-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
+    /* ═══ Footer ═══ */
+    .login-footer{
+      position:absolute;bottom:24px;left:0;right:0;text-align:center;
+      font-size:var(--text-small);color:var(--text-muted);
+    }
+
+    /* Demo info */
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+
+    /* ═══ Loading State ═══ */
+    .google-btn.loading{pointer-events:none;opacity:.7}
+    .google-btn.loading .g-text{display:none}
+    .google-btn.loading .g-loading{display:inline}
+    .g-loading{display:none}
+    .spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border-light);border-top-color:var(--accent-primary);border-radius:50%;animation:spin .6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Feature hints */
+    .login-features{display:flex;gap:16px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+    .login-feat{display:flex;align-items:center;gap:6px;font-size:var(--text-body2);color:var(--text-muted)}
+    .login-feat-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-primary);flex-shrink:0}
+  </style>
+</head>
+<body>
+<div class="demo-info">SCR-004 · 로그인 페이지 데모 — Google OAuth, 에러 상태, 로딩 상태</div>
+
+<div class="login-page">
+  <div class="login-card">
+    <!-- Logo -->
+    <div class="login-logo">
+      <div class="login-logo-icon">T</div>
+      <div class="login-logo-text">Tika</div>
+    </div>
+
+    <!-- Description -->
+    <p class="login-desc">
+      <strong>칸반 보드</strong>로 할 일을 관리하세요.<br/>
+      Goal부터 Task까지, 체계적으로 계획하고 실행할 수 있습니다.
+    </p>
+
+    <!-- Google Login Button -->
+    <button class="google-btn" id="googleBtn" onclick="handleGoogleLogin()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      <span class="g-text">Google로 로그인</span>
+      <span class="g-loading"><span class="spinner"></span> 연결 중…</span>
+    </button>
+
+    <!-- Error State -->
+    <div class="login-error" id="loginError">
+      <span class="login-error-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+        </svg>
+      </span>
+      <span id="loginErrorMsg">인증에 실패했습니다. 다시 시도해주세요.</span>
+    </div>
+
+    <!-- Feature Hints -->
+    <div class="login-features">
+      <span class="login-feat"><span class="login-feat-dot"></span>칸반 보드</span>
+      <span class="login-feat"><span class="login-feat-dot"></span>이슈 계층</span>
+      <span class="login-feat"><span class="login-feat-dot"></span>마감일 알림</span>
+    </div>
+  </div>
+
+  <div class="login-footer">© 2026 Tika · All rights reserved</div>
+</div>
+
+<script>
+let demoState = 'idle'; // idle → loading → success / error
+
+function handleGoogleLogin() {
+  const btn = document.getElementById('googleBtn');
+  const err = document.getElementById('loginError');
+
+  if (demoState === 'loading') return;
+
+  // Reset
+  err.classList.remove('show');
+  btn.classList.add('loading');
+  demoState = 'loading';
+
+  // Simulate OAuth flow
+  setTimeout(() => {
+    // 50% chance of success for demo
+    const success = Math.random() > 0.4;
+
+    btn.classList.remove('loading');
+
+    if (success) {
+      demoState = 'success';
+      btn.style.background = '#ECFDF5';
+      btn.style.borderColor = '#10B981';
+      btn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span style="color:#059669;font-weight:600">로그인 성공! 리다이렉트 중...</span>
+      `;
+      setTimeout(() => {
+        alert('✅ 메인 보드(/)로 리다이렉트됩니다.');
+        resetBtn();
+      }, 1500);
+    } else {
+      demoState = 'error';
+      err.classList.add('show');
+      const msgs = [
+        '인증에 실패했습니다. 다시 시도해주세요.',
+        '네트워크 오류가 발생했습니다.',
+        'Google 계정 접근이 거부되었습니다.'
+      ];
+      document.getElementById('loginErrorMsg').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    }
+  }, 1800);
+}
+
+function resetBtn() {
+  const btn = document.getElementById('googleBtn');
+  demoState = 'idle';
+  btn.style.background = '';
+  btn.style.borderColor = '';
+  btn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    <span class="g-text">Google로 로그인</span>
+    <span class="g-loading"><span class="spinner"></span> 연결 중…</span>
+  `;
+  document.getElementById('loginError').classList.remove('show');
+}
+</script>
+</body>
+</html>

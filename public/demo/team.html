@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika Team — 팀 보드 데모</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-header:#FFFFFF;--bg-sidebar:#F1F3F6;
+      --bg-board:#E8EDF2;--bg-footer:#F4F5F7;--bg-card:#FFFFFF;--bg-column:#F4F5F7;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --col-todo:#DBEAFE;--col-inprogress:#FEF3C7;--col-done:#D1FAE5;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;--radius-tag:4px;
+      --shadow-card:0 1px 2px rgba(9,30,66,0.12);--shadow-card-hover:0 3px 8px rgba(9,30,66,0.18);
+      --shadow-header:0 1px 3px rgba(0,0,0,0.08);--shadow-dropdown:0 8px 24px rgba(0,0,0,0.12);
+      --sp-xs:4px;--sp-sm:8px;--sp-md:12px;--sp-lg:16px;--sp-xl:24px;
+      --header-height:60px;--footer-height:55px;--sidebar-width:240px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+    .ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;vertical-align:middle}
+    .ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+    .app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+    /* ═══ Header ═══ */
+    .header{height:var(--header-height);background:var(--bg-header);border-bottom:1px solid var(--border-light);box-shadow:var(--shadow-header);display:flex;align-items:center;justify-content:space-between;padding:0 var(--sp-lg);z-index:50;flex-shrink:0}
+    .header-left{display:flex;align-items:center;gap:var(--sp-md)}
+    .logo{display:flex;align-items:center;gap:var(--sp-sm);text-decoration:none;color:var(--text-primary)}
+    .logo-icon{width:32px;height:32px;background:var(--accent-primary);border-radius:var(--radius-button);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:var(--fw-bold);font-size:16px}
+    .logo-text{font-family:var(--font-display);font-weight:var(--fw-bold);font-size:var(--text-h1);letter-spacing:-0.5px}
+    .team-badge{padding:2px 8px;border-radius:999px;background:#EDE9FE;color:#7C3AED;font-size:var(--text-small);font-weight:var(--fw-semibold)}
+    .header-center{flex:1;display:flex;justify-content:center;padding:0 var(--sp-xl)}
+    .search-box{position:relative;width:300px}
+    .search-box input{width:100%;height:36px;padding:0 var(--sp-md) 0 36px;background:var(--bg-sidebar);border:1px solid transparent;border-radius:var(--radius-button);font-family:var(--font-body);font-size:var(--text-body2);color:var(--text-primary);outline:none;transition:all .2s}
+    .search-box input::placeholder{color:var(--text-muted)}
+    .search-box input:focus{background:#fff;border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-light)}
+    .search-box .s-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+    .header-right{display:flex;align-items:center;gap:var(--sp-xs)}
+    .btn-new{display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 12px;background:var(--accent-primary);color:#fff;border:none;border-radius:var(--radius-button);font-family:var(--font-body);font-size:var(--text-body2);font-weight:var(--fw-semibold);cursor:pointer;transition:background .15s}
+    .btn-new:hover{background:var(--accent-primary-hover)}
+    .icon-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:var(--radius-button);color:var(--text-secondary);cursor:pointer;transition:all .15s;position:relative}
+    .icon-btn:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .badge-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:#EF4444;border-radius:50%;border:2px solid var(--bg-header)}
+    .divider-v{width:1px;height:24px;background:var(--border-light);margin:0 var(--sp-sm)}
+    .user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:var(--fw-semibold);font-size:var(--text-body2);cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+    .user-avatar:hover{border-color:var(--accent-primary)}
+
+    /* ═══ Main ═══ */
+    .main-area{display:flex;flex:1;overflow:hidden}
+
+    /* ═══ Sidebar ═══ */
+    .sidebar{width:var(--sidebar-width);background:var(--bg-sidebar);border-right:1px solid var(--border-light);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+    .sb-header{display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);min-height:52px}
+    .ws-sel{display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm);border-radius:var(--radius-button);cursor:pointer;transition:background .1s;flex:1}
+    .ws-sel:hover{background:var(--border-light)}
+    .ws-ic{width:28px;height:28px;border-radius:var(--radius-button);background:var(--accent-primary);color:#fff;font-size:var(--text-body2);font-weight:var(--fw-bold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .ws-info{display:flex;flex-direction:column;min-width:0}
+    .ws-name{font-size:var(--text-body2);font-weight:var(--fw-medium);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ws-type{font-size:var(--text-small);color:var(--text-muted)}
+    .ws-chev{margin-left:auto;color:var(--text-muted)}
+    .sb-nav{flex:1;overflow-y:auto;padding:var(--sp-sm) 0}
+    .nav-sec{padding:var(--sp-sm) var(--sp-lg);font-size:var(--text-small);font-weight:var(--fw-semibold);color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+    .nav-item{display:flex;align-items:center;gap:var(--sp-sm);padding:8px var(--sp-lg);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all .1s;white-space:nowrap}
+    .nav-item:hover{background:#E2E5EA;color:var(--text-primary)}
+    .nav-item.active{background:var(--accent-light);color:var(--accent-primary);font-weight:var(--fw-medium)}
+    .nav-cnt{margin-left:auto;font-size:var(--text-small);color:var(--text-muted);background:var(--bg-header);padding:2px 8px;border-radius:10px;min-width:24px;text-align:center;line-height:1.4}
+    .nav-item.active .nav-cnt{background:var(--accent-primary);color:#fff}
+
+    /* ═══ Content ═══ */
+    .content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+    /* Tab bar */
+    .tab-bar{display:flex;align-items:center;gap:0;padding:0 var(--sp-lg);background:var(--bg-header);border-bottom:1px solid var(--border-light);flex-shrink:0}
+    .tab{padding:12px 16px;font-size:var(--text-body2);font-weight:var(--fw-medium);color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+    .tab:hover{color:var(--text-primary)}
+    .tab.active{color:var(--accent-primary);border-bottom-color:var(--accent-primary);font-weight:var(--fw-semibold)}
+    .tab-right{margin-left:auto;display:flex;align-items:center;gap:var(--sp-sm);padding:8px 0}
+
+    /* ═══ Dashboard Grid ═══ */
+    .dash{flex:1;overflow-y:auto;padding:var(--sp-lg);display:flex;flex-direction:column;gap:var(--sp-lg);background:var(--bg-app)}
+
+    /* Sprint banner */
+    .sprint-banner{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-lg);display:flex;align-items:center;gap:var(--sp-lg);box-shadow:var(--shadow-card)}
+    .sprint-info{flex:1}
+    .sprint-name{font-family:var(--font-display);font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .sprint-meta{display:flex;align-items:center;gap:var(--sp-lg);margin-top:4px;font-size:var(--text-body2);color:var(--text-secondary)}
+    .sprint-meta-item{display:flex;align-items:center;gap:4px}
+    .sprint-progress{width:200px}
+    .progress-bar{height:8px;background:var(--border-light);border-radius:4px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:4px;background:var(--accent-primary);transition:width .3s}
+    .progress-label{font-size:var(--text-small);color:var(--text-secondary);margin-top:4px;text-align:right}
+
+    /* Chart cards row */
+    .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-lg)}
+    .chart-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);display:flex;flex-direction:column;overflow:hidden}
+    .chart-card-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .chart-card-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .chart-card-body{padding:var(--sp-lg);flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:180px}
+
+    /* Burndown mockup */
+    .burndown{width:100%;height:140px;position:relative}
+    .burndown-ideal{position:absolute;top:0;left:0;width:100%;height:100%}
+    .burndown-ideal::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;border-bottom:2px dashed var(--border-medium);border-left:2px solid var(--border-light);transform-origin:top left;transform:rotate(0)}
+    .bd-line{position:absolute;bottom:0;left:0;width:100%;height:100%}
+    .bd-svg{width:100%;height:100%}
+
+    /* Progress donut mockup */
+    .donut-wrap{display:flex;align-items:center;gap:var(--sp-xl);width:100%}
+    .donut{position:relative;width:120px;height:120px;flex-shrink:0}
+    .donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+    .donut-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .donut-pct{font-family:var(--font-display);font-size:24px;font-weight:var(--fw-bold);color:var(--text-primary)}
+    .donut-sub{font-size:var(--text-small);color:var(--text-muted)}
+    .donut-legend{display:flex;flex-direction:column;gap:6px;flex:1}
+    .legend-item{display:flex;align-items:center;gap:var(--sp-sm);font-size:var(--text-body2);color:var(--text-secondary)}
+    .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+    .legend-val{margin-left:auto;font-weight:var(--fw-medium);color:var(--text-primary)}
+
+    /* Goal progress row */
+    .goal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-lg)}
+    .goal-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-lg);box-shadow:var(--shadow-card)}
+    .goal-header{display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-md)}
+    .goal-tag{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:2px 8px;border-radius:var(--radius-tag)}
+    .goal-tag.g{background:#E0E7FF;color:#4338CA}
+    .goal-name{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .goal-progress-bar{height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;margin-bottom:6px}
+    .goal-progress-fill{height:100%;border-radius:3px;transition:width .3s}
+    .goal-stats{display:flex;justify-content:space-between;font-size:var(--text-small);color:var(--text-secondary)}
+
+    /* WBS section */
+    .wbs-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .wbs-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .wbs-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .wbs-body{padding:var(--sp-lg);overflow-x:auto}
+    .wbs-tree{display:flex;flex-direction:column;gap:2px;font-size:var(--text-body2)}
+    .wbs-node{display:flex;align-items:center;gap:var(--sp-sm);padding:6px var(--sp-sm);border-radius:var(--radius-tag);transition:background .1s;cursor:pointer}
+    .wbs-node:hover{background:var(--bg-sidebar)}
+    .wbs-indent{display:flex;align-items:center;gap:0}
+    .wbs-pipe{width:20px;height:100%;display:flex;align-items:center;justify-content:center;color:var(--border-medium);flex-shrink:0;font-size:var(--text-small)}
+    .wbs-type{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:1px 6px;border-radius:3px;flex-shrink:0}
+    .wbs-type.goal{background:#E0E7FF;color:#4338CA}
+    .wbs-type.story{background:#DBEAFE;color:#1D4ED8}
+    .wbs-type.feature{background:#D1FAE5;color:#065F46}
+    .wbs-type.task{background:#F3F4F6;color:#6B7280}
+    .wbs-label{color:var(--text-primary);font-weight:var(--fw-medium);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .wbs-status{font-size:var(--text-small);padding:1px 6px;border-radius:3px}
+    .wbs-status.done{background:var(--col-done);color:#065F46}
+    .wbs-status.inp{background:var(--col-inprogress);color:#92400E}
+    .wbs-status.todo{background:var(--col-todo);color:#1E40AF}
+    .wbs-pct{font-size:var(--text-small);color:var(--text-muted);width:40px;text-align:right;flex-shrink:0}
+
+    /* Members workload */
+    .member-row{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-lg)}
+    .member-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-lg);box-shadow:var(--shadow-card);display:flex;flex-direction:column;align-items:center;text-align:center}
+    .member-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:var(--fw-semibold);font-size:var(--text-body1);margin-bottom:var(--sp-sm)}
+    .member-name{font-size:var(--text-body2);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .member-role{font-size:var(--text-small);color:var(--text-muted);margin-bottom:var(--sp-md)}
+    .member-stats{display:flex;gap:var(--sp-lg);width:100%;justify-content:center}
+    .member-stat{display:flex;flex-direction:column;align-items:center}
+    .member-stat-val{font-family:var(--font-display);font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .member-stat-label{font-size:var(--text-small);color:var(--text-muted)}
+    .member-workbar{width:100%;margin-top:var(--sp-md)}
+
+    /* MCP section */
+    .mcp-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .mcp-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .mcp-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);display:flex;align-items:center;gap:var(--sp-sm)}
+    .mcp-body{padding:var(--sp-lg);display:flex;flex-direction:column;gap:var(--sp-md)}
+    .mcp-server{display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border:1px solid var(--border-light);border-radius:var(--radius-card);transition:box-shadow .15s}
+    .mcp-server:hover{box-shadow:var(--shadow-card-hover)}
+    .mcp-server-icon{width:36px;height:36px;border-radius:var(--radius-button);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .mcp-server-info{flex:1;min-width:0}
+    .mcp-server-name{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .mcp-server-desc{font-size:var(--text-body2);color:var(--text-secondary);margin-top:2px}
+    .mcp-server-status{display:flex;align-items:center;gap:4px;font-size:var(--text-small);font-weight:var(--fw-medium)}
+    .mcp-dot{width:8px;height:8px;border-radius:50%}
+    .mcp-dot.on{background:#22C55E}
+    .mcp-dot.off{background:var(--border-medium)}
+    .toggle{width:36px;height:20px;border-radius:10px;cursor:pointer;position:relative;border:none;transition:background .2s}
+    .toggle.on{background:var(--accent-primary)}
+    .toggle.off{background:var(--border-medium)}
+    .toggle::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s}
+    .toggle.on::after{left:18px}
+    .toggle.off::after{left:2px}
+
+    /* Notification panel */
+    .notif-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .notif-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .notif-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .notif-body{max-height:260px;overflow-y:auto}
+    .notif-item{display:flex;align-items:flex-start;gap:var(--sp-md);padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);transition:background .1s;cursor:pointer}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item:hover{background:var(--bg-sidebar)}
+    .notif-item.unread{background:#FAFBFF}
+    .notif-icon-wrap{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .notif-icon-wrap.slack{background:#E8DEF8;color:#7C3AED}
+    .notif-icon-wrap.mcp{background:#DBEAFE;color:#2563EB}
+    .notif-icon-wrap.system{background:#FEF3C7;color:#D97706}
+    .notif-icon-wrap.push{background:#D1FAE5;color:#059669}
+    .notif-text{flex:1;min-width:0}
+    .notif-msg{font-size:var(--text-body2);color:var(--text-primary);line-height:1.5}
+    .notif-msg strong{font-weight:var(--fw-semibold)}
+    .notif-time{font-size:var(--text-small);color:var(--text-muted);margin-top:2px}
+    .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-primary);flex-shrink:0;margin-top:6px}
+
+    /* Bottom row */
+    .bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-lg)}
+
+    /* ═══ Footer ═══ */
+    .footer{height:var(--footer-height);background:var(--bg-footer);border-top:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;padding:0 var(--sp-lg);flex-shrink:0;font-size:var(--text-small);color:var(--text-muted)}
+    .footer-left{display:flex;align-items:center;gap:var(--sp-sm)}
+    .footer-dot{width:6px;height:6px;border-radius:50%;background:#22C55E}
+
+    /* Demo info */
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+
+    /* Chip for filter */
+    .chip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:20px;border:1px solid var(--border-light);background:var(--bg-header);font-size:var(--text-body2);font-weight:var(--fw-medium);color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font-body)}
+    .chip:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+    .chip.on{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+  </style>
+</head>
+<body>
+<div class="demo-info">Tika Team — 팀 대시보드 데모</div>
+
+<div class="app">
+
+<!-- ═══ Header ═══ -->
+<header class="header">
+  <div class="header-left">
+    <a class="logo" href="#">
+      <div class="logo-icon">T</div>
+      <span class="logo-text">Tika</span>
+    </a>
+    <span class="team-badge">Team</span>
+  </div>
+  <div class="header-center">
+    <div class="search-box">
+      <span class="s-icon ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+      <input type="text" placeholder="티켓, 멤버, 이슈 검색…" />
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-new">
+      <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+      새 티켓
+    </button>
+    <div class="divider-v"></div>
+    <button class="icon-btn" aria-label="알림">
+      <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+      <span class="badge-dot"></span>
+    </button>
+    <button class="icon-btn" aria-label="설정">
+      <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+    </button>
+    <div class="divider-v"></div>
+    <div class="user-avatar" style="background:#7EB4A2" title="김지현">지</div>
+  </div>
+</header>
+
+<div class="main-area">
+
+<!-- ═══ Sidebar ═══ -->
+<aside class="sidebar">
+  <div class="sb-header">
+    <div class="ws-sel">
+      <div class="ws-ic">P</div>
+      <div class="ws-info">
+        <div class="ws-name">프로젝트 Alpha</div>
+        <div class="ws-type">팀 워크스페이스</div>
+      </div>
+      <span class="ws-chev ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-sec">메뉴</div>
+    <div class="nav-item active">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+      대시보드
+      <span class="nav-cnt">3</span>
+    </div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+      칸반 보드
+      <span class="nav-cnt">24</span>
+    </div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+      멤버 관리
+      <span class="nav-cnt">4</span>
+    </div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      스프린트
+    </div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+      WBS
+    </div>
+
+    <div class="nav-sec" style="margin-top:12px">연동</div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+      MCP 설정
+    </div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+      알림 내역
+      <span class="nav-cnt">5</span>
+    </div>
+
+    <div class="nav-sec" style="margin-top:12px">워크스페이스</div>
+    <div class="nav-item">
+      <span class="ic" style="width:16px;height:16px;color:var(--accent-primary)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+      새 워크스페이스
+    </div>
+  </nav>
+</aside>
+
+<!-- ═══ Content Area ═══ -->
+<div class="content">
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active">대시보드</div>
+    <div class="tab">번다운 차트</div>
+    <div class="tab">WBS</div>
+    <div class="tab">멤버 일감</div>
+    <div class="tab-right">
+      <div class="chip on">Sprint 3</div>
+      <div class="chip">Sprint 2</div>
+    </div>
+  </div>
+
+  <!-- Dashboard content -->
+  <div class="dash">
+
+    <!-- Sprint banner -->
+    <div class="sprint-banner">
+      <div class="sprint-info">
+        <div class="sprint-name">Sprint 3 — 인증 및 보드 고도화</div>
+        <div class="sprint-meta">
+          <span class="sprint-meta-item">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            2026.02.17 — 02.28
+          </span>
+          <span class="sprint-meta-item">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            24 티켓
+          </span>
+          <span class="sprint-meta-item">
+            <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+            4명
+          </span>
+          <span class="sprint-meta-item" style="color:var(--accent-primary);font-weight:var(--fw-semibold)">D-3</span>
+        </div>
+      </div>
+      <div class="sprint-progress">
+        <div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div>
+        <div class="progress-label">15 / 24 완료 (62%)</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="chart-row">
+      <!-- Burndown -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">번다운 차트</span>
+          <span style="font-size:var(--text-small);color:var(--text-muted)">잔여 스토리 포인트</span>
+        </div>
+        <div class="chart-card-body">
+          <svg width="100%" height="140" viewBox="0 0 400 140" fill="none" style="overflow:visible">
+            <!-- Grid -->
+            <line x1="40" y1="10" x2="40" y2="120" stroke="#DFE1E6" stroke-width="1"/>
+            <line x1="40" y1="120" x2="380" y2="120" stroke="#DFE1E6" stroke-width="1"/>
+            <line x1="40" y1="45" x2="380" y2="45" stroke="#DFE1E6" stroke-width="0.5" stroke-dasharray="4"/>
+            <line x1="40" y1="82" x2="380" y2="82" stroke="#DFE1E6" stroke-width="0.5" stroke-dasharray="4"/>
+            <!-- Ideal line -->
+            <line x1="40" y1="10" x2="380" y2="120" stroke="#C4C9D1" stroke-width="1.5" stroke-dasharray="6"/>
+            <!-- Actual line -->
+            <polyline points="40,10 80,18 120,30 160,38 200,55 240,62 280,78 310,88" stroke="#629584" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="310" cy="88" r="4" fill="#629584"/>
+            <!-- Labels -->
+            <text x="20" y="14" fill="#8993A4" font-size="10" text-anchor="end">48</text>
+            <text x="20" y="49" fill="#8993A4" font-size="10" text-anchor="end">32</text>
+            <text x="20" y="86" fill="#8993A4" font-size="10" text-anchor="end">16</text>
+            <text x="20" y="124" fill="#8993A4" font-size="10" text-anchor="end">0</text>
+            <text x="40" y="136" fill="#8993A4" font-size="9" text-anchor="middle">Day1</text>
+            <text x="120" y="136" fill="#8993A4" font-size="9" text-anchor="middle">Day3</text>
+            <text x="200" y="136" fill="#8993A4" font-size="9" text-anchor="middle">Day5</text>
+            <text x="280" y="136" fill="#8993A4" font-size="9" text-anchor="middle">Day7</text>
+            <text x="380" y="136" fill="#8993A4" font-size="9" text-anchor="middle">Day10</text>
+            <!-- Legend -->
+            <line x1="260" y1="6" x2="280" y2="6" stroke="#C4C9D1" stroke-width="1.5" stroke-dasharray="4"/>
+            <text x="284" y="9" fill="#8993A4" font-size="9">이상</text>
+            <line x1="310" y1="6" x2="330" y2="6" stroke="#629584" stroke-width="2"/>
+            <text x="334" y="9" fill="#629584" font-size="9">실제</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Progress donut -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">진척률</span>
+          <span style="font-size:var(--text-small);color:var(--text-muted)">상태별 티켓 분포</span>
+        </div>
+        <div class="chart-card-body">
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg viewBox="0 0 120 120">
+                <!-- bg ring -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#DFE1E6" stroke-width="12"/>
+                <!-- Done 62% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#629584" stroke-width="12" stroke-dasharray="186.5 301.6" stroke-linecap="round"/>
+                <!-- InProgress 17% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#F59E0B" stroke-width="12" stroke-dasharray="51.3 301.6" stroke-dashoffset="-186.5" stroke-linecap="round"/>
+                <!-- TODO 13% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#3B82F6" stroke-width="12" stroke-dasharray="39.2 301.6" stroke-dashoffset="-237.8" stroke-linecap="round"/>
+              </svg>
+              <div class="donut-label">
+                <span class="donut-pct">62%</span>
+                <span class="donut-sub">완료</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#629584"></span> Done <span class="legend-val">15</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span> In Progress <span class="legend-val">4</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span> TODO <span class="legend-val">3</span></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#DFE1E6"></span> Backlog <span class="legend-val">2</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal completion -->
+    <div class="goal-row">
+      <div class="goal-card">
+        <div class="goal-header">
+          <span class="goal-tag g">GOAL</span>
+          <span class="goal-name">MVP 출시</span>
+        </div>
+        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:80%;background:var(--accent-primary)"></div></div>
+        <div class="goal-stats">
+          <span>8 / 10 완료</span>
+          <span style="font-weight:var(--fw-semibold);color:var(--accent-primary)">80%</span>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <span class="goal-tag g">GOAL</span>
+          <span class="goal-name">인증 시스템 구축</span>
+        </div>
+        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:50%;background:#3B82F6"></div></div>
+        <div class="goal-stats">
+          <span>3 / 6 완료</span>
+          <span style="font-weight:var(--fw-semibold);color:#3B82F6">50%</span>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <span class="goal-tag g">GOAL</span>
+          <span class="goal-name">팀 협업 기능</span>
+        </div>
+        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:25%;background:#F59E0B"></div></div>
+        <div class="goal-stats">
+          <span>2 / 8 완료</span>
+          <span style="font-weight:var(--fw-semibold);color:#F59E0B">25%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WBS -->
+    <div class="wbs-card">
+      <div class="wbs-header">
+        <span class="wbs-title">WBS — 작업 분해 구조</span>
+        <div style="display:flex;gap:var(--sp-sm)">
+          <span class="chip on" style="height:26px;padding:0 8px;font-size:var(--text-small)">전체 펼치기</span>
+          <span class="chip" style="height:26px;padding:0 8px;font-size:var(--text-small)">접기</span>
+        </div>
+      </div>
+      <div class="wbs-body">
+        <div class="wbs-tree">
+          <!-- Goal -->
+          <div class="wbs-node">
+            <span class="wbs-type goal">G</span>
+            <span class="wbs-label">MVP 출시</span>
+            <span class="wbs-pct">80%</span>
+          </div>
+          <!-- Story -->
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type story">S</span>
+            <span class="wbs-label">칸반 보드 구축</span>
+            <span class="wbs-status done">Done</span>
+            <span class="wbs-pct">100%</span>
+          </div>
+          <!-- Feature -->
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">드래그 앤 드롭</span>
+            <span class="wbs-status done">Done</span>
+            <span class="wbs-pct">100%</span>
+          </div>
+          <!-- Task -->
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">│</span><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type task">T</span>
+            <span class="wbs-label">@dnd-kit 셋업</span>
+            <span class="wbs-status done">Done</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">│</span><span class="wbs-pipe">└─</span></div>
+            <span class="wbs-type task">T</span>
+            <span class="wbs-label">칼럼 간 이동 로직</span>
+            <span class="wbs-status done">Done</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">└─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">티켓 CRUD</span>
+            <span class="wbs-status done">Done</span>
+            <span class="wbs-pct">100%</span>
+          </div>
+          <!-- Story 2 -->
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type story">S</span>
+            <span class="wbs-label">인증 시스템</span>
+            <span class="wbs-status inp">In Progress</span>
+            <span class="wbs-pct">50%</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">Google OAuth</span>
+            <span class="wbs-status done">Done</span>
+            <span class="wbs-pct">100%</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">│</span><span class="wbs-pipe">└─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">세션 관리</span>
+            <span class="wbs-status todo">TODO</span>
+            <span class="wbs-pct">0%</span>
+          </div>
+          <!-- Story 3 -->
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">└─</span></div>
+            <span class="wbs-type story">S</span>
+            <span class="wbs-label">UI 고도화</span>
+            <span class="wbs-status inp">In Progress</span>
+            <span class="wbs-pct">66%</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">&nbsp;</span><span class="wbs-pipe">├─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">모달 애니메이션</span>
+            <span class="wbs-status done">Done</span>
+            <span class="wbs-pct">100%</span>
+          </div>
+          <div class="wbs-node">
+            <div class="wbs-indent"><span class="wbs-pipe">&nbsp;</span><span class="wbs-pipe">└─</span></div>
+            <span class="wbs-type feature">F</span>
+            <span class="wbs-label">반응형 레이아웃</span>
+            <span class="wbs-status inp">In Progress</span>
+            <span class="wbs-pct">30%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row: Members + MCP -->
+    <div class="bottom-row">
+      <!-- Members workload -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">구성원별 일감 & Workday</span>
+        </div>
+        <div style="padding:var(--sp-lg)">
+          <div class="member-row" style="grid-template-columns:repeat(4,1fr)">
+            <div class="member-card">
+              <div class="member-avatar" style="background:#7EB4A2">지</div>
+              <div class="member-name">김지현</div>
+              <div class="member-role">Owner</div>
+              <div class="member-stats">
+                <div class="member-stat">
+                  <span class="member-stat-val">8</span>
+                  <span class="member-stat-label">할당</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">6</span>
+                  <span class="member-stat-label">완료</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">12d</span>
+                  <span class="member-stat-label">Workday</span>
+                </div>
+              </div>
+              <div class="member-workbar" style="margin-top:var(--sp-sm)">
+                <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+              </div>
+            </div>
+            <div class="member-card">
+              <div class="member-avatar" style="background:#6B8CCE">수</div>
+              <div class="member-name">이수호</div>
+              <div class="member-role">Member</div>
+              <div class="member-stats">
+                <div class="member-stat">
+                  <span class="member-stat-val">7</span>
+                  <span class="member-stat-label">할당</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">4</span>
+                  <span class="member-stat-label">완료</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">10d</span>
+                  <span class="member-stat-label">Workday</span>
+                </div>
+              </div>
+              <div class="member-workbar" style="margin-top:var(--sp-sm)">
+                <div class="progress-bar"><div class="progress-fill" style="width:57%"></div></div>
+              </div>
+            </div>
+            <div class="member-card">
+              <div class="member-avatar" style="background:#C27BA0">하</div>
+              <div class="member-name">박하은</div>
+              <div class="member-role">Member</div>
+              <div class="member-stats">
+                <div class="member-stat">
+                  <span class="member-stat-val">5</span>
+                  <span class="member-stat-label">할당</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">3</span>
+                  <span class="member-stat-label">완료</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">8d</span>
+                  <span class="member-stat-label">Workday</span>
+                </div>
+              </div>
+              <div class="member-workbar" style="margin-top:var(--sp-sm)">
+                <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+              </div>
+            </div>
+            <div class="member-card">
+              <div class="member-avatar" style="background:#9B8EC4">민</div>
+              <div class="member-name">최민준</div>
+              <div class="member-role">Viewer</div>
+              <div class="member-stats">
+                <div class="member-stat">
+                  <span class="member-stat-val">4</span>
+                  <span class="member-stat-label">할당</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">2</span>
+                  <span class="member-stat-label">완료</span>
+                </div>
+                <div class="member-stat">
+                  <span class="member-stat-val">6d</span>
+                  <span class="member-stat-label">Workday</span>
+                </div>
+              </div>
+              <div class="member-workbar" style="margin-top:var(--sp-sm)">
+                <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP -->
+      <div class="mcp-card">
+        <div class="mcp-header">
+          <span class="mcp-title">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+            MCP 서버 설정
+          </span>
+          <button class="btn-new" style="height:28px;font-size:var(--text-small);padding:0 10px">
+            <span class="ic" style="width:12px;height:12px"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            서버 추가
+          </button>
+        </div>
+        <div class="mcp-body">
+          <div class="mcp-server">
+            <div class="mcp-server-icon" style="background:#E8F5F0;color:var(--accent-primary)">
+              <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            </div>
+            <div class="mcp-server-info">
+              <div class="mcp-server-name">Tika MCP Server</div>
+              <div class="mcp-server-desc">티켓 CRUD, 상태 변경, 우선순위 조정 자동화</div>
+            </div>
+            <div class="mcp-server-status" style="color:#22C55E"><span class="mcp-dot on"></span> 연결됨</div>
+            <button class="toggle on"></button>
+          </div>
+          <div class="mcp-server">
+            <div class="mcp-server-icon" style="background:#EDE9FE;color:#7C3AED">
+              <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+            </div>
+            <div class="mcp-server-info">
+              <div class="mcp-server-name">Slack 연동</div>
+              <div class="mcp-server-desc">마감일 알림, 상태 변경 알림을 Slack 채널로 발송</div>
+            </div>
+            <div class="mcp-server-status" style="color:#22C55E"><span class="mcp-dot on"></span> 활성</div>
+            <button class="toggle on"></button>
+          </div>
+          <div class="mcp-server">
+            <div class="mcp-server-icon" style="background:#DBEAFE;color:#2563EB">
+              <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+            </div>
+            <div class="mcp-server-info">
+              <div class="mcp-server-name">GitHub 연동</div>
+              <div class="mcp-server-desc">커밋/PR 이벤트에 따라 티켓 상태 자동 전환</div>
+            </div>
+            <div class="mcp-server-status" style="color:var(--text-muted)"><span class="mcp-dot off"></span> 비활성</div>
+            <button class="toggle off"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notif-card">
+      <div class="notif-header">
+        <span class="notif-title">최근 알림</span>
+        <div style="display:flex;gap:var(--sp-sm)">
+          <span class="chip on" style="height:26px;padding:0 8px;font-size:var(--text-small)">전체</span>
+          <span class="chip" style="height:26px;padding:0 8px;font-size:var(--text-small)">MCP</span>
+          <span class="chip" style="height:26px;padding:0 8px;font-size:var(--text-small)">Slack</span>
+          <span class="chip" style="height:26px;padding:0 8px;font-size:var(--text-small)">Push</span>
+        </div>
+      </div>
+      <div class="notif-body">
+        <div class="notif-item unread">
+          <div class="notif-icon-wrap mcp">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+          </div>
+          <div class="notif-text">
+            <div class="notif-msg"><strong>MCP</strong>가 "Google OAuth 연동" 티켓을 <strong>In Progress → Done</strong>으로 이동했습니다</div>
+            <div class="notif-time">2분 전</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="notif-item unread">
+          <div class="notif-icon-wrap mcp">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+          </div>
+          <div class="notif-text">
+            <div class="notif-msg"><strong>MCP</strong>가 새 티켓 "E2E 테스트 작성"을 자동 생성하고 이수호에게 할당했습니다</div>
+            <div class="notif-time">15분 전</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon-wrap slack">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+          </div>
+          <div class="notif-text">
+            <div class="notif-msg"><strong>Slack</strong> 알림 발송 — "반응형 레이아웃" 마감 D-1 (#dev-alerts)</div>
+            <div class="notif-time">1시간 전</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon-wrap push">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
+          </div>
+          <div class="notif-text">
+            <div class="notif-msg">박하은님이 "세션 관리" 티켓에 댓글을 남겼습니다</div>
+            <div class="notif-time">3시간 전</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon-wrap system">
+            <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+          </div>
+          <div class="notif-text">
+            <div class="notif-msg">Sprint 3 종료까지 <strong>D-3</strong> — 미완료 티켓 9개</div>
+            <div class="notif-time">오늘 09:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dash -->
+</div><!-- /content -->
+
+</div><!-- /main-area -->
+
+<!-- ═══ Footer ═══ -->
+<footer class="footer">
+  <div class="footer-left">
+    <span class="footer-dot"></span>
+    <span>MCP 연결됨 — Tika MCP Server</span>
+  </div>
+  <span>Tika Team v0.2.0</span>
+</footer>
+
+</div><!-- /app -->
+</body>
+</html>

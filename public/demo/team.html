@@ -772,7 +772,7 @@
 
     <!-- Goal completion (clickable) -->
     <div class="goal-row">
-      <div class="goal-card" onclick="toggleGoal('goal1',this)">
+      <div class="goal-card" data-goal="goal1">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">MVP 출시</span>
@@ -783,7 +783,7 @@
           <span style="font-weight:var(--fw-semibold);color:var(--accent-primary)">80%</span>
         </div>
       </div>
-      <div class="goal-card" onclick="toggleGoal('goal2',this)">
+      <div class="goal-card" data-goal="goal2">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">인증 시스템 구축</span>
@@ -794,7 +794,7 @@
           <span style="font-weight:var(--fw-semibold);color:#3B82F6">50%</span>
         </div>
       </div>
-      <div class="goal-card" onclick="toggleGoal('goal3',this)">
+      <div class="goal-card" data-goal="goal3">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">팀 협업 기능</span>
@@ -812,7 +812,7 @@
       <div class="goal-detail-header">
         <span class="goal-tag g">GOAL</span>
         <span class="goal-detail-title">MVP 출시 — 하위 항목</span>
-        <button class="goal-detail-close" onclick="closeGoal('goal1')">✕</button>
+        <button class="goal-detail-close" data-close="goal1">✕</button>
       </div>
       <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">칸반 보드 구축</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
       <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">드래그 앤 드롭</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
@@ -829,7 +829,7 @@
       <div class="goal-detail-header">
         <span class="goal-tag g">GOAL</span>
         <span class="goal-detail-title">인증 시스템 구축 — 하위 항목</span>
-        <button class="goal-detail-close" onclick="closeGoal('goal2')">✕</button>
+        <button class="goal-detail-close" data-close="goal2">✕</button>
       </div>
       <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">사용자 테이블 설계</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
       <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">users 스키마 정의</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
@@ -846,7 +846,7 @@
       <div class="goal-detail-header">
         <span class="goal-tag g">GOAL</span>
         <span class="goal-detail-title">팀 협업 기능 — 하위 항목</span>
-        <button class="goal-detail-close" onclick="closeGoal('goal3')">✕</button>
+        <button class="goal-detail-close" data-close="goal3">✕</button>
       </div>
       <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">워크스페이스 기능</span><span class="gd-assignee">김지현</span><span class="gd-status inp">In Progress</span></div>
       <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">워크스페이스 CRUD API</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
@@ -1189,52 +1189,38 @@
 </div><!-- /app -->
 
 <script>
-function toggleGoal(id, cardEl) {
-  var panel = document.getElementById(id);
-  if (!panel) return;
-  var isOpen = panel.classList.contains('open');
-
-  // Close all
-  document.querySelectorAll('.goal-detail.open').forEach(function(p) { p.classList.remove('open'); });
-  document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
-
-  if (!isOpen) {
-    panel.classList.add('open');
-    if (cardEl) cardEl.classList.add('selected');
-    // Force reflow for animation restart
-    void panel.offsetHeight;
-    setTimeout(function() {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 50);
-  }
-}
-function closeGoal(id) {
-  var panel = document.getElementById(id);
-  if (panel) panel.classList.remove('open');
-  document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
-}
-
-// Event delegation fallback (ensures clicks work even if inline handlers fail)
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.goal-card[onclick]').forEach(function(card) {
-    var match = card.getAttribute('onclick').match(/toggleGoal\('([^']+)'/);
-    if (match) {
-      var goalId = match[1];
-      card.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleGoal(goalId, card);
-      });
-    }
+  // Goal card click → toggle detail panel
+  document.querySelectorAll('.goal-card[data-goal]').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var goalId = card.getAttribute('data-goal');
+      var panel = document.getElementById(goalId);
+      if (!panel) return;
+      var isOpen = panel.classList.contains('open');
+
+      // Close all open panels
+      document.querySelectorAll('.goal-detail.open').forEach(function(p) { p.classList.remove('open'); });
+      document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+
+      if (!isOpen) {
+        panel.classList.add('open');
+        card.classList.add('selected');
+        setTimeout(function() {
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    });
   });
-  document.querySelectorAll('.goal-detail-close[onclick]').forEach(function(btn) {
-    var match = btn.getAttribute('onclick').match(/closeGoal\('([^']+)'/);
-    if (match) {
-      var goalId = match[1];
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        closeGoal(goalId);
-      });
-    }
+
+  // Close button click → close detail panel
+  document.querySelectorAll('.goal-detail-close[data-close]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var goalId = btn.getAttribute('data-close');
+      var panel = document.getElementById(goalId);
+      if (panel) panel.classList.remove('open');
+      document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+    });
   });
 });
 </script>

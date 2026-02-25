@@ -109,6 +109,46 @@
     }
     .mock-dnd-arrow{flex-shrink:0;color:var(--accent-primary)}
 
+    /* ═══ Tier Sections ═══ */
+    .tier-section{max-width:920px;margin:0 auto;padding:0 16px 56px}
+    .tier-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .tier-icon{
+      width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+      font-size:18px;flex-shrink:0;
+    }
+    .tier-icon.team{background:#EDE9FE;color:#7C3AED}
+    .tier-icon.enterprise{background:#FEE2E2;color:#DC2626}
+    .tier-header-text{display:flex;flex-direction:column;gap:2px}
+    .tier-title{font-family:var(--font-display);font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .tier-subtitle{font-size:var(--text-body2);color:var(--text-secondary)}
+
+    .tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media(max-width:768px){.tier-grid{grid-template-columns:1fr;max-width:400px}}
+
+    .tier-card{
+      background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);
+      padding:16px;box-shadow:var(--shadow-card);transition:box-shadow .2s,transform .2s;
+    }
+    .tier-card:hover{box-shadow:var(--shadow-dropdown);transform:translateY(-2px)}
+    .tier-card-icon{font-size:20px;margin-bottom:8px;display:block}
+    .tier-card-title{font-size:var(--text-body1);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .tier-card-desc{margin-top:4px;font-size:var(--text-body2);color:var(--text-secondary);line-height:1.6}
+
+    .tier-card.highlight{border-color:var(--accent-primary);background:var(--accent-light)}
+    .tier-card.highlight .tier-card-title{color:#3D6B5E}
+
+    .tier-badge{
+      display:inline-block;padding:2px 8px;border-radius:999px;font-size:var(--text-small);font-weight:var(--fw-semibold);
+      margin-bottom:8px;
+    }
+    .tier-badge.team{background:#EDE9FE;color:#7C3AED}
+    .tier-badge.enterprise{background:#FEE2E2;color:#DC2626}
+    .tier-badge.coming{background:#F3F4F6;color:var(--text-muted)}
+
+    /* ═══ Divider ═══ */
+    .section-divider{max-width:920px;margin:0 auto 56px;padding:0 16px}
+    .section-divider hr{border:none;border-top:1px solid var(--border-light)}
+
     /* ═══ Footer ═══ */
     .landing-footer{text-align:center;padding:0 16px 32px;font-size:var(--text-small);color:var(--text-muted)}
 
@@ -117,7 +157,7 @@
   </style>
 </head>
 <body>
-<div class="demo-info">랜딩 페이지 데모 — Hero + 3 Feature Cards</div>
+<div class="demo-info">랜딩 페이지 데모 — Personal + Team + Enterprise</div>
 
 <!-- ═══ Hero ═══ -->
 <section class="hero">
@@ -211,6 +251,126 @@
     </div>
     <div class="showcase-title">드래그 앤 드롭</div>
     <p class="showcase-desc">카드를 끌어다 놓아 업무 상태를 직관적으로 변경</p>
+  </div>
+</section>
+
+<!-- ═══ Divider ═══ -->
+<div class="section-divider"><hr/></div>
+
+<!-- ═══ Team ═══ -->
+<section class="tier-section">
+  <div class="tier-header">
+    <div class="tier-icon team">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    </div>
+    <div class="tier-header-text">
+      <div class="tier-title">Tika Team</div>
+      <div class="tier-subtitle">워크스페이스 기반 팀 협업 + MCP 자동화</div>
+    </div>
+    <span class="tier-badge coming">Coming Soon</span>
+  </div>
+  <div class="tier-grid">
+    <div class="tier-card highlight">
+      <span class="tier-badge team">Core</span>
+      <div class="tier-card-title">MCP 티켓 자동화</div>
+      <p class="tier-card-desc">AI 에이전트가 MCP를 통해 티켓 생성, 상태 변경, 우선순위 조정을 자동 수행</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8l-2 4h12l-2-4z"/></svg>
+      </span>
+      <div class="tier-card-title">워크스페이스</div>
+      <p class="tier-card-desc">프로젝트별 독립 보드 개설, 멤버 초대 및 역할 관리 (Owner / Member / Viewer)</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </span>
+      <div class="tier-card-title">진척 대시보드</div>
+      <p class="tier-card-desc">팀 전체 업무 현황, 멤버별 진행률, 마감일 알림을 한눈에 확인</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </span>
+      <div class="tier-card-title">댓글 & 라벨</div>
+      <p class="tier-card-desc">티켓 내 댓글로 소통하고, 색상 라벨로 업무를 분류</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </span>
+      <div class="tier-card-title">알림 연동</div>
+      <p class="tier-card-desc">마감 D-1 자동 알림을 Slack, Telegram 채널로 발송</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+      </span>
+      <div class="tier-card-title">파일 첨부</div>
+      <p class="tier-card-desc">티켓에 문서, 이미지를 첨부하고 팀원과 공유</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Divider ═══ -->
+<div class="section-divider"><hr/></div>
+
+<!-- ═══ Enterprise ═══ -->
+<section class="tier-section">
+  <div class="tier-header">
+    <div class="tier-icon enterprise">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+    </div>
+    <div class="tier-header-text">
+      <div class="tier-title">Tika Enterprise</div>
+      <div class="tier-subtitle">설치형 온프레미스 + 완전 커스터마이징</div>
+    </div>
+    <span class="tier-badge coming">Coming Soon</span>
+  </div>
+  <div class="tier-grid">
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      </span>
+      <div class="tier-card-title">셀프 호스팅</div>
+      <p class="tier-card-desc">사내 서버 또는 프라이빗 클라우드에 직접 설치하여 데이터 완전 통제</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </span>
+      <div class="tier-card-title">SSO / SAML</div>
+      <p class="tier-card-desc">사내 IdP(Okta, Azure AD 등)와 싱글 사인온 연동으로 보안 강화</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </span>
+      <div class="tier-card-title">커스텀 워크플로우</div>
+      <p class="tier-card-desc">동적 칼럼 관리로 팀에 맞는 고유 워크플로우를 구성</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </span>
+      <div class="tier-card-title">감사 로그</div>
+      <p class="tier-card-desc">모든 변경 이력을 추적하여 컴플라이언스 요구사항 충족</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </span>
+      <div class="tier-card-title">API & 웹훅</div>
+      <p class="tier-card-desc">REST API와 웹훅으로 CI/CD, 사내 시스템과 자유롭게 연동</p>
+    </div>
+    <div class="tier-card">
+      <span class="tier-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      </span>
+      <div class="tier-card-title">SLA 지원</div>
+      <p class="tier-card-desc">전담 기술 지원, 온보딩, 마이그레이션 지원 제공</p>
+    </div>
   </div>
 </section>
 

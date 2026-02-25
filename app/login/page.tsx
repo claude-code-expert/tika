@@ -150,6 +150,97 @@ export default async function LoginPage() {
         </div>
       </section>
 
+      {/* Divider */}
+      <div className="mx-auto max-w-4xl px-4">
+        <hr className="border-[#DFE1E6]" />
+      </div>
+
+      {/* Team */}
+      <section className="mx-auto max-w-4xl px-4 pt-14 pb-14">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#EDE9FE] text-[#7C3AED]">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[#2C3E50]">Tika Team</h2>
+            <p className="text-xs text-[#5A6B7F]">워크스페이스 기반 팀 협업 + MCP 자동화</p>
+          </div>
+          <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-semibold text-[#8993A4]">Coming Soon</span>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-[#629584] bg-[#E8F5F0] p-4">
+            <span className="mb-2 inline-block rounded-full bg-[#EDE9FE] px-2 py-0.5 text-[11px] font-semibold text-[#7C3AED]">Core</span>
+            <h3 className="text-sm font-bold text-[#3D6B5E]">MCP 티켓 자동화</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">AI 에이전트가 MCP를 통해 티켓 생성, 상태 변경, 우선순위 조정을 자동 수행</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">워크스페이스</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">프로젝트별 독립 보드 개설, 멤버 초대 및 역할 관리 (Owner / Member / Viewer)</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">진척 대시보드</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">팀 전체 업무 현황, 멤버별 진행률, 마감일 알림을 한눈에 확인</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">댓글 & 라벨</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">티켓 내 댓글로 소통하고, 색상 라벨로 업무를 분류</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">알림 연동</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">마감 D-1 자동 알림을 Slack, Telegram 채널로 발송</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">파일 첨부</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">티켓에 문서, 이미지를 첨부하고 팀원과 공유</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="mx-auto max-w-4xl px-4">
+        <hr className="border-[#DFE1E6]" />
+      </div>
+
+      {/* Enterprise */}
+      <section className="mx-auto max-w-4xl px-4 pt-14 pb-14">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#FEE2E2] text-[#DC2626]">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[#2C3E50]">Tika Enterprise</h2>
+            <p className="text-xs text-[#5A6B7F]">설치형 온프레미스 + 완전 커스터마이징</p>
+          </div>
+          <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-semibold text-[#8993A4]">Coming Soon</span>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">셀프 호스팅</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">사내 서버 또는 프라이빗 클라우드에 직접 설치하여 데이터 완전 통제</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">SSO / SAML</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">사내 IdP(Okta, Azure AD 등)와 싱글 사인온 연동으로 보안 강화</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">커스텀 워크플로우</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">동적 칼럼 관리로 팀에 맞는 고유 워크플로우를 구성</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">감사 로그</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">모든 변경 이력을 추적하여 컴플라이언스 요구사항 충족</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">API & 웹훅</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">REST API와 웹훅으로 CI/CD, 사내 시스템과 자유롭게 연동</p>
+          </div>
+          <div className="rounded-lg border border-[#DFE1E6] bg-white p-4">
+            <h3 className="text-sm font-bold text-[#2C3E50]">SLA 지원</h3>
+            <p className="mt-1 text-xs leading-relaxed text-[#5A6B7F]">전담 기술 지원, 온보딩, 마이그레이션 지원 제공</p>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="pb-8 text-center text-xs text-[#8993A4]">
         Tika &mdash; Free &amp; Open Source Kanban Board

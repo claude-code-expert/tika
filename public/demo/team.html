@@ -227,6 +227,34 @@
     .chip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:20px;border:1px solid var(--border-light);background:var(--bg-header);font-size:var(--text-body2);font-weight:var(--fw-medium);color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font-body)}
     .chip:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
     .chip.on{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+
+    /* Goal expandable */
+    .goal-card{cursor:pointer;transition:box-shadow .2s,transform .15s}
+    .goal-card:hover{box-shadow:var(--shadow-card-hover);transform:translateY(-1px)}
+    .goal-card.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-light)}
+    .goal-detail{display:none;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;animation:slideDown .2s ease}
+    .goal-detail.open{display:block}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .goal-detail-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:var(--sp-sm)}
+    .goal-detail-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);flex:1}
+    .goal-detail-close{width:24px;height:24px;border:none;background:transparent;border-radius:var(--radius-tag);cursor:pointer;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .goal-detail-close:hover{background:var(--bg-sidebar);color:var(--text-primary)}
+    .gd-item{display:flex;align-items:center;gap:var(--sp-sm);padding:8px var(--sp-lg);border-bottom:1px solid var(--border-light);font-size:var(--text-body2);transition:background .1s}
+    .gd-item:last-child{border-bottom:none}
+    .gd-item:hover{background:var(--bg-sidebar)}
+    .gd-type{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:1px 6px;border-radius:3px;flex-shrink:0}
+    .gd-type.story{background:#DBEAFE;color:#1D4ED8}
+    .gd-type.feature{background:#D1FAE5;color:#065F46}
+    .gd-type.task{background:#F3F4F6;color:#6B7280}
+    .gd-name{flex:1;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gd-status{font-size:var(--text-small);padding:1px 6px;border-radius:3px;font-weight:var(--fw-medium);flex-shrink:0}
+    .gd-status.done{background:var(--col-done);color:#065F46}
+    .gd-status.inp{background:var(--col-inprogress);color:#92400E}
+    .gd-status.todo{background:var(--col-todo);color:#1E40AF}
+    .gd-status.backlog{background:#F3F4F6;color:#6B7280}
+    .gd-assignee{font-size:var(--text-small);color:var(--text-muted);flex-shrink:0}
+    .nav-item{text-decoration:none}
+    .tab{text-decoration:none}
   </style>
 </head>
 <body>
@@ -283,40 +311,44 @@
   </div>
   <nav class="sb-nav">
     <div class="nav-sec">메뉴</div>
-    <div class="nav-item active">
+    <a class="nav-item active" href="team.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
       대시보드
       <span class="nav-cnt">3</span>
-    </div>
-    <div class="nav-item">
+    </a>
+    <a class="nav-item" href="team.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
       칸반 보드
       <span class="nav-cnt">24</span>
-    </div>
-    <div class="nav-item">
+    </a>
+    <a class="nav-item" href="team-members.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
       멤버 관리
       <span class="nav-cnt">4</span>
-    </div>
-    <div class="nav-item">
+    </a>
+    <a class="nav-item" href="team.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
       스프린트
-    </div>
-    <div class="nav-item">
+    </a>
+    <a class="nav-item" href="team-burndown.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+      번다운 차트
+    </a>
+    <a class="nav-item" href="team-wbs.html">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
       WBS
-    </div>
+    </a>
 
     <div class="nav-sec" style="margin-top:12px">연동</div>
-    <div class="nav-item">
+    <a class="nav-item" href="team.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
       MCP 설정
-    </div>
-    <div class="nav-item">
+    </a>
+    <a class="nav-item" href="team.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
       알림 내역
       <span class="nav-cnt">5</span>
-    </div>
+    </a>
 
     <div class="nav-sec" style="margin-top:12px">워크스페이스</div>
     <div class="nav-item">
@@ -330,10 +362,10 @@
 <div class="content">
   <!-- Tab bar -->
   <div class="tab-bar">
-    <div class="tab active">대시보드</div>
-    <div class="tab">번다운 차트</div>
-    <div class="tab">WBS</div>
-    <div class="tab">멤버 일감</div>
+    <a class="tab active" href="team.html">대시보드</a>
+    <a class="tab" href="team-burndown.html">번다운 차트</a>
+    <a class="tab" href="team-wbs.html">WBS</a>
+    <a class="tab" href="team-members.html">멤버 일감</a>
     <div class="tab-right">
       <div class="chip on">Sprint 3</div>
       <div class="chip">Sprint 2</div>
@@ -443,9 +475,9 @@
       </div>
     </div>
 
-    <!-- Goal completion -->
+    <!-- Goal completion (clickable) -->
     <div class="goal-row">
-      <div class="goal-card">
+      <div class="goal-card" onclick="toggleGoal('goal1',this)">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">MVP 출시</span>
@@ -456,7 +488,7 @@
           <span style="font-weight:var(--fw-semibold);color:var(--accent-primary)">80%</span>
         </div>
       </div>
-      <div class="goal-card">
+      <div class="goal-card" onclick="toggleGoal('goal2',this)">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">인증 시스템 구축</span>
@@ -467,7 +499,7 @@
           <span style="font-weight:var(--fw-semibold);color:#3B82F6">50%</span>
         </div>
       </div>
-      <div class="goal-card">
+      <div class="goal-card" onclick="toggleGoal('goal3',this)">
         <div class="goal-header">
           <span class="goal-tag g">GOAL</span>
           <span class="goal-name">팀 협업 기능</span>
@@ -478,6 +510,57 @@
           <span style="font-weight:var(--fw-semibold);color:#F59E0B">25%</span>
         </div>
       </div>
+    </div>
+
+    <!-- Goal detail panels (expand on click) -->
+    <div class="goal-detail" id="goal1">
+      <div class="goal-detail-header">
+        <span class="goal-tag g">GOAL</span>
+        <span class="goal-detail-title">MVP 출시 — 하위 항목</span>
+        <button class="goal-detail-close" onclick="closeGoal('goal1')">✕</button>
+      </div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">칸반 보드 구축</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">드래그 앤 드롭</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:64px"><span class="gd-type task">Task</span><span class="gd-name">@dnd-kit 셋업 및 Provider 구성</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:64px"><span class="gd-type task">Task</span><span class="gd-name">칼럼 간 이동 로직 구현</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:64px"><span class="gd-type task">Task</span><span class="gd-name">Optimistic UI 롤백 패턴</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">티켓 CRUD</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">UI 고도화</span><span class="gd-assignee">최민준</span><span class="gd-status inp">In Progress</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">모달 애니메이션 + 스크롤 잠금</span><span class="gd-assignee">최민준</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">반응형 레이아웃 (모바일/태블릿)</span><span class="gd-assignee">최민준</span><span class="gd-status inp">In Progress</span></div>
+    </div>
+
+    <div class="goal-detail" id="goal2">
+      <div class="goal-detail-header">
+        <span class="goal-tag g">GOAL</span>
+        <span class="goal-detail-title">인증 시스템 구축 — 하위 항목</span>
+        <button class="goal-detail-close" onclick="closeGoal('goal2')">✕</button>
+      </div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">사용자 테이블 설계</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">users 스키마 정의</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">마이그레이션 생성 및 적용</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">Google OAuth 연동</span><span class="gd-assignee">박하은</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">NextAuth + Google Provider</span><span class="gd-assignee">박하은</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">세션 관리 미들웨어</span><span class="gd-assignee">박하은</span><span class="gd-status todo">TODO</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">인증 미들웨어 작성</span><span class="gd-assignee">박하은</span><span class="gd-status backlog">Backlog</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">RBAC 권한 시스템</span><span class="gd-assignee">이수호</span><span class="gd-status todo">TODO</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">RBAC 스키마 설계</span><span class="gd-assignee">이수호</span><span class="gd-status todo">TODO</span></div>
+    </div>
+
+    <div class="goal-detail" id="goal3">
+      <div class="goal-detail-header">
+        <span class="goal-tag g">GOAL</span>
+        <span class="goal-detail-title">팀 협업 기능 — 하위 항목</span>
+        <button class="goal-detail-close" onclick="closeGoal('goal3')">✕</button>
+      </div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">워크스페이스 기능</span><span class="gd-assignee">김지현</span><span class="gd-status inp">In Progress</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">워크스페이스 CRUD API</span><span class="gd-assignee">김지현</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">멤버 초대 API</span><span class="gd-assignee">김지현</span><span class="gd-status inp">In Progress</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type task">Task</span><span class="gd-name">RBAC 미들웨어</span><span class="gd-assignee">김지현</span><span class="gd-status todo">TODO</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">라벨/태그 관리</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item" style="padding-left:40px"><span class="gd-type feature">Feature</span><span class="gd-name">라벨 CRUD + 뱃지 UI</span><span class="gd-assignee">이수호</span><span class="gd-status done">Done</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">댓글 시스템</span><span class="gd-assignee">—</span><span class="gd-status backlog">Backlog</span></div>
+      <div class="gd-item"><span class="gd-type story">Story</span><span class="gd-name">알림 시스템</span><span class="gd-assignee">—</span><span class="gd-status backlog">Backlog</span></div>
     </div>
 
     <!-- WBS -->
@@ -809,5 +892,26 @@
 </footer>
 
 </div><!-- /app -->
+
+<script>
+function toggleGoal(id, cardEl) {
+  var panel = document.getElementById(id);
+  var isOpen = panel.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.goal-detail').forEach(function(p) { p.classList.remove('open'); });
+  document.querySelectorAll('.goal-card').forEach(function(c) { c.classList.remove('selected'); });
+
+  if (!isOpen) {
+    panel.classList.add('open');
+    cardEl.classList.add('selected');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+function closeGoal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('.goal-card').forEach(function(c) { c.classList.remove('selected'); });
+}
+</script>
 </body>
 </html>

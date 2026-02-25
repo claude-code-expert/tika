@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika Team — 멤버 일감</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="team-common.css" />
+  <style>
+    /* Member detail cards */
+    .member-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-lg)}
+    .m-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .m-card-header{padding:var(--sp-lg);display:flex;align-items:center;gap:var(--sp-md);border-bottom:1px solid var(--border-light)}
+    .m-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:var(--fw-bold);font-size:var(--text-h2);flex-shrink:0}
+    .m-info{flex:1}
+    .m-name{font-size:var(--text-body1);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .m-email{font-size:var(--text-body2);color:var(--text-muted)}
+    .m-role{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:2px 8px;border-radius:999px}
+    .m-role.owner{background:var(--accent-light);color:var(--accent-primary)}
+    .m-role.member{background:#EDE9FE;color:#7C3AED}
+    .m-role.viewer{background:#F3F4F6;color:#6B7280}
+
+    /* Stats row inside card */
+    .m-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border-light)}
+    .m-stat{padding:var(--sp-md);text-align:center;border-right:1px solid var(--border-light)}
+    .m-stat:last-child{border-right:none}
+    .m-stat-val{font-family:var(--font-display);font-size:20px;font-weight:var(--fw-bold);color:var(--text-primary)}
+    .m-stat-val.accent{color:var(--accent-primary)}
+    .m-stat-label{font-size:var(--text-small);color:var(--text-muted);margin-top:2px}
+
+    /* Task list inside card */
+    .m-tasks{max-height:200px;overflow-y:auto}
+    .m-task{display:flex;align-items:center;gap:var(--sp-sm);padding:8px var(--sp-lg);border-bottom:1px solid var(--border-light);transition:background .1s;cursor:pointer;font-size:var(--text-body2)}
+    .m-task:last-child{border-bottom:none}
+    .m-task:hover{background:var(--bg-sidebar)}
+    .m-task-type{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:1px 6px;border-radius:3px;flex-shrink:0}
+    .m-task-type.task{background:#F3F4F6;color:#6B7280}
+    .m-task-type.feature{background:#D1FAE5;color:#065F46}
+    .m-task-title{flex:1;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .m-task-status{font-size:var(--text-small);padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:var(--fw-medium)}
+    .m-task-status.done{background:var(--col-done);color:#065F46}
+    .m-task-status.inp{background:var(--col-inprogress);color:#92400E}
+    .m-task-status.todo{background:var(--col-todo);color:#1E40AF}
+    .m-task-status.backlog{background:#F3F4F6;color:#6B7280}
+    .m-task-due{font-size:var(--text-small);color:var(--text-muted);flex-shrink:0;width:50px;text-align:right}
+    .m-task-due.overdue{color:#DC2626;font-weight:var(--fw-semibold)}
+
+    /* Summary bar at top */
+    .summary-row{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-lg)}
+    .sum-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-lg);box-shadow:var(--shadow-card);text-align:center}
+    .sum-val{font-family:var(--font-display);font-size:24px;font-weight:var(--fw-bold);color:var(--text-primary)}
+    .sum-label{font-size:var(--text-small);color:var(--text-secondary);margin-top:4px}
+
+    /* Workload heatmap row */
+    .heat-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .heat-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .heat-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .heat-body{padding:var(--sp-lg)}
+    .heat-table{width:100%;border-collapse:collapse;font-size:var(--text-body2)}
+    .heat-table th{text-align:left;padding:8px var(--sp-md);font-weight:var(--fw-semibold);color:var(--text-secondary);border-bottom:2px solid var(--border-light);font-size:var(--text-small)}
+    .heat-table td{padding:8px var(--sp-md);border-bottom:1px solid var(--border-light);color:var(--text-primary)}
+    .heat-table tr:hover td{background:var(--bg-sidebar)}
+    .heat-table .num{text-align:center;font-family:var(--font-display);font-weight:var(--fw-medium)}
+    .heat-bar{height:8px;background:var(--border-light);border-radius:4px;overflow:hidden;min-width:120px}
+    .heat-bar-fill{height:100%;border-radius:4px}
+    .heat-name{display:flex;align-items:center;gap:var(--sp-sm)}
+    .heat-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:var(--fw-bold);flex-shrink:0}
+    .capacity-label{font-size:var(--text-small);margin-top:4px}
+    .capacity-label.over{color:#DC2626;font-weight:var(--fw-semibold)}
+    .capacity-label.ok{color:var(--accent-primary)}
+    .capacity-label.light{color:var(--text-muted)}
+  </style>
+</head>
+<body>
+<div class="demo-info">Tika Team — 멤버 일감 & Workday</div>
+
+<div class="app">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <a class="logo" href="team.html"><div class="logo-icon">T</div><span class="logo-text">Tika</span></a>
+    <span class="team-badge">Team</span>
+  </div>
+  <div class="header-center">
+    <div class="search-box">
+      <span class="s-icon ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+      <input type="text" placeholder="티켓, 멤버, 이슈 검색…" />
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-new"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>새 티켓</button>
+    <div class="divider-v"></div>
+    <button class="icon-btn"><span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span><span class="badge-dot"></span></button>
+    <div class="divider-v"></div>
+    <div class="user-avatar" style="background:#7EB4A2">지</div>
+  </div>
+</header>
+
+<div class="main-area">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-header">
+    <div class="ws-sel"><div class="ws-ic">P</div><div class="ws-info"><div class="ws-name">프로젝트 Alpha</div><div class="ws-type">팀 워크스페이스</div></div><span class="ws-chev ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-sec">메뉴</div>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>대시보드</a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>칸반 보드<span class="nav-cnt">24</span></a>
+    <a class="nav-item active" href="team-members.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>멤버 관리<span class="nav-cnt">4</span></a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>스프린트</a>
+    <a class="nav-item" href="team-burndown.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>번다운 차트</a>
+    <a class="nav-item" href="team-wbs.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>WBS</a>
+    <div class="nav-sec" style="margin-top:12px">연동</div>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>MCP 설정</a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>알림 내역<span class="nav-cnt">5</span></a>
+  </nav>
+</aside>
+
+<!-- Content -->
+<div class="content">
+  <div class="tab-bar">
+    <a class="tab" href="team.html">대시보드</a>
+    <a class="tab" href="team-burndown.html">번다운 차트</a>
+    <a class="tab" href="team-wbs.html">WBS</a>
+    <a class="tab active" href="team-members.html">멤버 일감</a>
+    <div class="tab-right">
+      <div class="chip on">Sprint 3</div>
+      <div class="chip">전체</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Summary row -->
+    <div class="summary-row">
+      <div class="sum-card">
+        <div class="sum-val">4</div>
+        <div class="sum-label">팀 멤버</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val">24</div>
+        <div class="sum-label">총 할당 티켓</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val" style="color:var(--accent-primary)">15</div>
+        <div class="sum-label">완료 티켓</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val" style="color:#F59E0B">36d</div>
+        <div class="sum-label">총 Workday</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-val" style="color:var(--accent-primary)">62%</div>
+        <div class="sum-label">팀 완료율</div>
+      </div>
+    </div>
+
+    <!-- Workload heatmap -->
+    <div class="heat-card">
+      <div class="heat-header">
+        <span class="heat-title">워크로드 현황</span>
+        <span style="font-size:var(--text-small);color:var(--text-muted)">Sprint 3 기준</span>
+      </div>
+      <div class="heat-body">
+        <table class="heat-table">
+          <thead>
+            <tr><th>멤버</th><th>역할</th><th class="num">할당</th><th class="num">진행중</th><th class="num">완료</th><th>Workday</th><th>소화율</th><th>부하</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="heat-name"><span class="heat-avatar" style="background:#7EB4A2">지</span>김지현</div></td>
+              <td><span class="m-role owner">Owner</span></td>
+              <td class="num">8</td>
+              <td class="num">1</td>
+              <td class="num">6</td>
+              <td>12d</td>
+              <td><div class="heat-bar"><div class="heat-bar-fill" style="width:75%;background:var(--accent-primary)"></div></div><div class="capacity-label ok">75%</div></td>
+              <td class="num" style="font-weight:var(--fw-semibold);color:var(--accent-primary)">적정</td>
+            </tr>
+            <tr>
+              <td><div class="heat-name"><span class="heat-avatar" style="background:#6B8CCE">수</span>이수호</div></td>
+              <td><span class="m-role member">Member</span></td>
+              <td class="num">7</td>
+              <td class="num">2</td>
+              <td class="num">4</td>
+              <td>10d</td>
+              <td><div class="heat-bar"><div class="heat-bar-fill" style="width:57%;background:#F59E0B"></div></div><div class="capacity-label ok">57%</div></td>
+              <td class="num" style="font-weight:var(--fw-semibold);color:#F59E0B">보통</td>
+            </tr>
+            <tr>
+              <td><div class="heat-name"><span class="heat-avatar" style="background:#C27BA0">하</span>박하은</div></td>
+              <td><span class="m-role member">Member</span></td>
+              <td class="num">5</td>
+              <td class="num">1</td>
+              <td class="num">3</td>
+              <td>8d</td>
+              <td><div class="heat-bar"><div class="heat-bar-fill" style="width:60%;background:var(--accent-primary)"></div></div><div class="capacity-label ok">60%</div></td>
+              <td class="num" style="font-weight:var(--fw-semibold);color:var(--accent-primary)">적정</td>
+            </tr>
+            <tr>
+              <td><div class="heat-name"><span class="heat-avatar" style="background:#9B8EC4">민</span>최민준</div></td>
+              <td><span class="m-role viewer">Viewer</span></td>
+              <td class="num">4</td>
+              <td class="num">0</td>
+              <td class="num">2</td>
+              <td>6d</td>
+              <td><div class="heat-bar"><div class="heat-bar-fill" style="width:50%;background:var(--text-muted)"></div></div><div class="capacity-label light">50%</div></td>
+              <td class="num" style="font-weight:var(--fw-semibold);color:var(--text-muted)">여유</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Member detail cards -->
+    <div class="member-grid">
+
+      <!-- 김지현 -->
+      <div class="m-card">
+        <div class="m-card-header">
+          <div class="m-avatar" style="background:#7EB4A2">지</div>
+          <div class="m-info">
+            <div class="m-name">김지현</div>
+            <div class="m-email">jihyun@team.dev</div>
+          </div>
+          <span class="m-role owner">Owner</span>
+        </div>
+        <div class="m-stats">
+          <div class="m-stat"><div class="m-stat-val">8</div><div class="m-stat-label">할당</div></div>
+          <div class="m-stat"><div class="m-stat-val accent">6</div><div class="m-stat-label">완료</div></div>
+          <div class="m-stat"><div class="m-stat-val">1</div><div class="m-stat-label">진행중</div></div>
+          <div class="m-stat"><div class="m-stat-val">12d</div><div class="m-stat-label">Workday</div></div>
+        </div>
+        <div class="m-tasks">
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">@dnd-kit 셋업</span><span class="m-task-status done">Done</span><span class="m-task-due">2/18</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">칼럼 간 이동 로직</span><span class="m-task-status done">Done</span><span class="m-task-due">2/19</span></div>
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">보드 레이아웃 구현</span><span class="m-task-status done">Done</span><span class="m-task-due">2/20</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">필터 바 컴포넌트</span><span class="m-task-status done">Done</span><span class="m-task-due">2/21</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">티켓 상세 모달</span><span class="m-task-status done">Done</span><span class="m-task-due">2/22</span></div>
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">워크스페이스 CRUD</span><span class="m-task-status done">Done</span><span class="m-task-due">2/23</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">멤버 초대 API</span><span class="m-task-status inp">In Progress</span><span class="m-task-due">2/26</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">RBAC 미들웨어</span><span class="m-task-status todo">TODO</span><span class="m-task-due">2/28</span></div>
+        </div>
+      </div>
+
+      <!-- 이수호 -->
+      <div class="m-card">
+        <div class="m-card-header">
+          <div class="m-avatar" style="background:#6B8CCE">수</div>
+          <div class="m-info">
+            <div class="m-name">이수호</div>
+            <div class="m-email">suho@team.dev</div>
+          </div>
+          <span class="m-role member">Member</span>
+        </div>
+        <div class="m-stats">
+          <div class="m-stat"><div class="m-stat-val">7</div><div class="m-stat-label">할당</div></div>
+          <div class="m-stat"><div class="m-stat-val accent">4</div><div class="m-stat-label">완료</div></div>
+          <div class="m-stat"><div class="m-stat-val">2</div><div class="m-stat-label">진행중</div></div>
+          <div class="m-stat"><div class="m-stat-val">10d</div><div class="m-stat-label">Workday</div></div>
+        </div>
+        <div class="m-tasks">
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">Optimistic UI 롤백 패턴</span><span class="m-task-status done">Done</span><span class="m-task-due">2/18</span></div>
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">티켓 CRUD API</span><span class="m-task-status done">Done</span><span class="m-task-due">2/19</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">Zod 검증 스키마</span><span class="m-task-status done">Done</span><span class="m-task-due">2/20</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">사용자 테이블 설계</span><span class="m-task-status done">Done</span><span class="m-task-due">2/21</span></div>
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">E2E 테스트 작성</span><span class="m-task-status inp">In Progress</span><span class="m-task-due">2/26</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">RBAC 권한 스키마</span><span class="m-task-status inp">In Progress</span><span class="m-task-due">2/27</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">권한 테스트 케이스</span><span class="m-task-status todo">TODO</span><span class="m-task-due">2/28</span></div>
+        </div>
+      </div>
+
+      <!-- 박하은 -->
+      <div class="m-card">
+        <div class="m-card-header">
+          <div class="m-avatar" style="background:#C27BA0">하</div>
+          <div class="m-info">
+            <div class="m-name">박하은</div>
+            <div class="m-email">haeun@team.dev</div>
+          </div>
+          <span class="m-role member">Member</span>
+        </div>
+        <div class="m-stats">
+          <div class="m-stat"><div class="m-stat-val">5</div><div class="m-stat-label">할당</div></div>
+          <div class="m-stat"><div class="m-stat-val accent">3</div><div class="m-stat-label">완료</div></div>
+          <div class="m-stat"><div class="m-stat-val">1</div><div class="m-stat-label">진행중</div></div>
+          <div class="m-stat"><div class="m-stat-val">8d</div><div class="m-stat-label">Workday</div></div>
+        </div>
+        <div class="m-tasks">
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">Google OAuth 연동</span><span class="m-task-status done">Done</span><span class="m-task-due">2/20</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">OAuth 콜백 처리</span><span class="m-task-status done">Done</span><span class="m-task-due">2/21</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">로그인 UI 구현</span><span class="m-task-status done">Done</span><span class="m-task-due">2/22</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">NextAuth Provider 설정</span><span class="m-task-status inp">In Progress</span><span class="m-task-due overdue">2/24</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">인증 미들웨어 작성</span><span class="m-task-status backlog">Backlog</span><span class="m-task-due">2/28</span></div>
+        </div>
+      </div>
+
+      <!-- 최민준 -->
+      <div class="m-card">
+        <div class="m-card-header">
+          <div class="m-avatar" style="background:#9B8EC4">민</div>
+          <div class="m-info">
+            <div class="m-name">최민준</div>
+            <div class="m-email">minjun@team.dev</div>
+          </div>
+          <span class="m-role viewer">Viewer</span>
+        </div>
+        <div class="m-stats">
+          <div class="m-stat"><div class="m-stat-val">4</div><div class="m-stat-label">할당</div></div>
+          <div class="m-stat"><div class="m-stat-val accent">2</div><div class="m-stat-label">완료</div></div>
+          <div class="m-stat"><div class="m-stat-val">0</div><div class="m-stat-label">진행중</div></div>
+          <div class="m-stat"><div class="m-stat-val">6d</div><div class="m-stat-label">Workday</div></div>
+        </div>
+        <div class="m-tasks">
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">모달 애니메이션</span><span class="m-task-status done">Done</span><span class="m-task-due">2/20</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">스크롤 잠금 구현</span><span class="m-task-status done">Done</span><span class="m-task-due">2/21</span></div>
+          <div class="m-task"><span class="m-task-type feature">F</span><span class="m-task-title">반응형 레이아웃</span><span class="m-task-status todo">TODO</span><span class="m-task-due">2/27</span></div>
+          <div class="m-task"><span class="m-task-type task">T</span><span class="m-task-title">태블릿 미디어쿼리</span><span class="m-task-status todo">TODO</span><span class="m-task-due">2/28</span></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /content -->
+
+</div><!-- /main-area -->
+
+<footer class="footer">
+  <div class="footer-left"><span class="footer-dot"></span><span>MCP 연결됨 — Tika MCP Server</span></div>
+  <span>Tika Team v0.2.0</span>
+</footer>
+
+</div><!-- /app -->
+</body>
+</html>

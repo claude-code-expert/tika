@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika Team — WBS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="team-common.css" />
+  <style>
+    .wbs-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .wbs-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .wbs-title{font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--text-primary);font-family:var(--font-display)}
+    .wbs-toolbar{display:flex;align-items:center;gap:var(--sp-sm)}
+    .wbs-body{padding:var(--sp-lg);overflow-x:auto}
+
+    /* WBS tree */
+    .wbs-tree{display:flex;flex-direction:column;gap:0;font-size:var(--text-body2)}
+    .wbs-node{display:flex;align-items:center;gap:var(--sp-sm);padding:7px var(--sp-sm);border-radius:var(--radius-tag);transition:background .1s;cursor:pointer;border-bottom:1px solid transparent}
+    .wbs-node:hover{background:var(--bg-sidebar)}
+    .wbs-node.expanded{background:#FAFBFF}
+    .wbs-indent{display:flex;align-items:center;gap:0}
+    .wbs-pipe{width:20px;display:flex;align-items:center;justify-content:center;color:var(--border-medium);flex-shrink:0;font-size:var(--text-small);font-family:monospace;user-select:none}
+    .wbs-expand{width:18px;height:18px;border-radius:3px;border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg-card);flex-shrink:0;transition:all .15s;color:var(--text-muted);font-size:10px}
+    .wbs-expand:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+    .wbs-type{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:2px 8px;border-radius:3px;flex-shrink:0;min-width:24px;text-align:center}
+    .wbs-type.goal{background:#E0E7FF;color:#4338CA}
+    .wbs-type.story{background:#DBEAFE;color:#1D4ED8}
+    .wbs-type.feature{background:#D1FAE5;color:#065F46}
+    .wbs-type.task{background:#F3F4F6;color:#6B7280}
+    .wbs-label{color:var(--text-primary);font-weight:var(--fw-medium);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .wbs-assignee{display:flex;align-items:center;gap:4px;font-size:var(--text-small);color:var(--text-secondary);flex-shrink:0}
+    .wbs-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:var(--fw-bold);flex-shrink:0}
+    .wbs-status{font-size:var(--text-small);padding:2px 8px;border-radius:3px;flex-shrink:0;font-weight:var(--fw-medium)}
+    .wbs-status.done{background:var(--col-done);color:#065F46}
+    .wbs-status.inp{background:var(--col-inprogress);color:#92400E}
+    .wbs-status.todo{background:var(--col-todo);color:#1E40AF}
+    .wbs-status.backlog{background:#F3F4F6;color:#6B7280}
+    .wbs-pct{font-size:var(--text-small);color:var(--text-muted);width:48px;text-align:right;flex-shrink:0;font-family:var(--font-display)}
+    .wbs-pct-bar{width:60px;height:4px;background:var(--border-light);border-radius:2px;overflow:hidden;flex-shrink:0}
+    .wbs-pct-fill{height:100%;border-radius:2px}
+
+    /* Summary stats */
+    .wbs-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-lg);margin-bottom:var(--sp-lg)}
+    .wbs-stat{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-md) var(--sp-lg);box-shadow:var(--shadow-card);text-align:center}
+    .wbs-stat-val{font-family:var(--font-display);font-size:22px;font-weight:var(--fw-bold);color:var(--text-primary)}
+    .wbs-stat-label{font-size:var(--text-small);color:var(--text-secondary);margin-top:2px}
+  </style>
+</head>
+<body>
+<div class="demo-info">Tika Team — WBS 작업 분해 구조</div>
+
+<div class="app">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <a class="logo" href="team.html"><div class="logo-icon">T</div><span class="logo-text">Tika</span></a>
+    <span class="team-badge">Team</span>
+  </div>
+  <div class="header-center">
+    <div class="search-box">
+      <span class="s-icon ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+      <input type="text" placeholder="티켓, 멤버, 이슈 검색…" />
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-new"><span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>새 티켓</button>
+    <div class="divider-v"></div>
+    <button class="icon-btn"><span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span><span class="badge-dot"></span></button>
+    <div class="divider-v"></div>
+    <div class="user-avatar" style="background:#7EB4A2">지</div>
+  </div>
+</header>
+
+<div class="main-area">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-header">
+    <div class="ws-sel"><div class="ws-ic">P</div><div class="ws-info"><div class="ws-name">프로젝트 Alpha</div><div class="ws-type">팀 워크스페이스</div></div><span class="ws-chev ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-sec">메뉴</div>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>대시보드</a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>칸반 보드<span class="nav-cnt">24</span></a>
+    <a class="nav-item" href="team-members.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>멤버 관리<span class="nav-cnt">4</span></a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>스프린트</a>
+    <a class="nav-item" href="team-burndown.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>번다운 차트</a>
+    <a class="nav-item active" href="team-wbs.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>WBS</a>
+    <div class="nav-sec" style="margin-top:12px">연동</div>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>MCP 설정</a>
+    <a class="nav-item" href="team.html"><span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>알림 내역<span class="nav-cnt">5</span></a>
+  </nav>
+</aside>
+
+<!-- Content -->
+<div class="content">
+  <div class="tab-bar">
+    <a class="tab" href="team.html">대시보드</a>
+    <a class="tab" href="team-burndown.html">번다운 차트</a>
+    <a class="tab active" href="team-wbs.html">WBS</a>
+    <a class="tab" href="team-members.html">멤버 일감</a>
+    <div class="tab-right">
+      <div class="chip on">전체 펼치기</div>
+      <div class="chip">Goal만</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Summary stats -->
+    <div class="wbs-stats">
+      <div class="wbs-stat">
+        <div class="wbs-stat-val" style="color:#4338CA">3</div>
+        <div class="wbs-stat-label">Goal</div>
+      </div>
+      <div class="wbs-stat">
+        <div class="wbs-stat-val" style="color:#1D4ED8">7</div>
+        <div class="wbs-stat-label">Story</div>
+      </div>
+      <div class="wbs-stat">
+        <div class="wbs-stat-val" style="color:#065F46">12</div>
+        <div class="wbs-stat-label">Feature</div>
+      </div>
+      <div class="wbs-stat">
+        <div class="wbs-stat-val" style="color:#6B7280">24</div>
+        <div class="wbs-stat-label">Task</div>
+      </div>
+      <div class="wbs-stat">
+        <div class="wbs-stat-val" style="color:var(--accent-primary)">56%</div>
+        <div class="wbs-stat-label">전체 완료율</div>
+      </div>
+    </div>
+
+    <!-- WBS tree -->
+    <div class="wbs-card">
+      <div class="wbs-header">
+        <span class="wbs-title">WBS — 작업 분해 구조</span>
+        <div class="wbs-toolbar">
+          <span style="font-size:var(--text-small);color:var(--text-muted)">타입</span>
+          <span class="wbs-type goal" style="cursor:pointer">G</span>
+          <span class="wbs-type story" style="cursor:pointer">S</span>
+          <span class="wbs-type feature" style="cursor:pointer">F</span>
+          <span class="wbs-type task" style="cursor:pointer">T</span>
+        </div>
+      </div>
+      <div class="wbs-body">
+        <div class="wbs-tree">
+
+          <!-- ═══ Goal 1: MVP 출시 ═══ -->
+          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light)">
+            <span class="wbs-expand">▼</span>
+            <span class="wbs-type goal">G</span>
+            <span class="wbs-label" style="font-weight:var(--fw-bold)">MVP 출시</span>
+            <span class="wbs-status done">Done</span>
+            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:80%;background:#4338CA"></div></div>
+            <span class="wbs-pct">80%</span>
+          </div>
+
+            <!-- Story 1.1 -->
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▼</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">칸반 보드 구축</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
+              <span class="wbs-status done">Done</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">100%</span>
+            </div>
+              <!-- Feature 1.1.1 -->
+              <div class="wbs-node" style="padding-left:56px">
+                <span class="wbs-expand">▼</span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">드래그 앤 드롭</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
+                <span class="wbs-status done">Done</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
+                <span class="wbs-pct">100%</span>
+              </div>
+                <div class="wbs-node" style="padding-left:84px">
+                  <span style="width:18px;flex-shrink:0"></span>
+                  <span class="wbs-type task">T</span>
+                  <span class="wbs-label">@dnd-kit 셋업 및 Provider 구성</span>
+                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span>김지현</span>
+                  <span class="wbs-status done">Done</span>
+                </div>
+                <div class="wbs-node" style="padding-left:84px">
+                  <span style="width:18px;flex-shrink:0"></span>
+                  <span class="wbs-type task">T</span>
+                  <span class="wbs-label">칼럼 간 이동 로직 구현</span>
+                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span>김지현</span>
+                  <span class="wbs-status done">Done</span>
+                </div>
+                <div class="wbs-node" style="padding-left:84px">
+                  <span style="width:18px;flex-shrink:0"></span>
+                  <span class="wbs-type task">T</span>
+                  <span class="wbs-label">Optimistic UI 롤백 패턴 적용</span>
+                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span>이수호</span>
+                  <span class="wbs-status done">Done</span>
+                </div>
+              <!-- Feature 1.1.2 -->
+              <div class="wbs-node" style="padding-left:56px">
+                <span class="wbs-expand">▶</span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">티켓 CRUD</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
+                <span class="wbs-status done">Done</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
+                <span class="wbs-pct">100%</span>
+              </div>
+
+            <!-- Story 1.2 -->
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▼</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">인증 시스템</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span></span>
+              <span class="wbs-status inp">In Progress</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:50%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">50%</span>
+            </div>
+              <div class="wbs-node" style="padding-left:56px">
+                <span class="wbs-expand">▶</span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">Google OAuth 연동</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
+                <span class="wbs-status done">Done</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
+                <span class="wbs-pct">100%</span>
+              </div>
+              <div class="wbs-node" style="padding-left:56px">
+                <span class="wbs-expand">▼</span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">세션 관리 미들웨어</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
+                <span class="wbs-status todo">TODO</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#065F46"></div></div>
+                <span class="wbs-pct">0%</span>
+              </div>
+                <div class="wbs-node" style="padding-left:84px">
+                  <span style="width:18px;flex-shrink:0"></span>
+                  <span class="wbs-type task">T</span>
+                  <span class="wbs-label">NextAuth 설정 및 Provider 구성</span>
+                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
+                  <span class="wbs-status todo">TODO</span>
+                </div>
+                <div class="wbs-node" style="padding-left:84px">
+                  <span style="width:18px;flex-shrink:0"></span>
+                  <span class="wbs-type task">T</span>
+                  <span class="wbs-label">API Route 인증 미들웨어 작성</span>
+                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
+                  <span class="wbs-status backlog">Backlog</span>
+                </div>
+
+            <!-- Story 1.3 -->
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▼</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">UI 고도화</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span></span>
+              <span class="wbs-status inp">In Progress</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:66%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">66%</span>
+            </div>
+              <div class="wbs-node" style="padding-left:56px">
+                <span style="width:18px;flex-shrink:0"></span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">모달 애니메이션 + 스크롤 잠금</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span>최민준</span>
+                <span class="wbs-status done">Done</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
+                <span class="wbs-pct">100%</span>
+              </div>
+              <div class="wbs-node" style="padding-left:56px">
+                <span style="width:18px;flex-shrink:0"></span>
+                <span class="wbs-type feature">F</span>
+                <span class="wbs-label">반응형 레이아웃 (모바일/태블릿)</span>
+                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span>최민준</span>
+                <span class="wbs-status inp">In Progress</span>
+                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:30%;background:#065F46"></div></div>
+                <span class="wbs-pct">30%</span>
+              </div>
+
+          <!-- ═══ Goal 2: 인증 시스템 구축 ═══ -->
+          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light);margin-top:8px">
+            <span class="wbs-expand">▼</span>
+            <span class="wbs-type goal">G</span>
+            <span class="wbs-label" style="font-weight:var(--fw-bold)">인증 시스템 구축</span>
+            <span class="wbs-status inp">In Progress</span>
+            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:50%;background:#4338CA"></div></div>
+            <span class="wbs-pct">50%</span>
+          </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">사용자 테이블 설계</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
+              <span class="wbs-status done">Done</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">100%</span>
+            </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">RBAC 권한 시스템</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
+              <span class="wbs-status todo">TODO</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">0%</span>
+            </div>
+
+          <!-- ═══ Goal 3: 팀 협업 기능 ═══ -->
+          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light);margin-top:8px">
+            <span class="wbs-expand">▼</span>
+            <span class="wbs-type goal">G</span>
+            <span class="wbs-label" style="font-weight:var(--fw-bold)">팀 협업 기능</span>
+            <span class="wbs-status todo">TODO</span>
+            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:25%;background:#4338CA"></div></div>
+            <span class="wbs-pct">25%</span>
+          </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">워크스페이스 기능</span>
+              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
+              <span class="wbs-status inp">In Progress</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:40%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">40%</span>
+            </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">댓글 시스템</span>
+              <span class="wbs-status backlog">Backlog</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">0%</span>
+            </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">라벨/태그 관리</span>
+              <span class="wbs-status done">Done</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">100%</span>
+            </div>
+            <div class="wbs-node" style="padding-left:28px">
+              <span class="wbs-expand">▶</span>
+              <span class="wbs-type story">S</span>
+              <span class="wbs-label">알림 시스템</span>
+              <span class="wbs-status backlog">Backlog</span>
+              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
+              <span class="wbs-pct">0%</span>
+            </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /content -->
+
+</div><!-- /main-area -->
+
+<footer class="footer">
+  <div class="footer-left"><span class="footer-dot"></span><span>MCP 연결됨 — Tika MCP Server</span></div>
+  <span>Tika Team v0.2.0</span>
+</footer>
+
+</div><!-- /app -->
+</body>
+</html>

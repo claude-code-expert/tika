@@ -125,6 +125,69 @@
     .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
     .legend-val{margin-left:auto;font-weight:var(--fw-medium);color:var(--text-primary)}
 
+    /* ═══ Created vs Resolved Chart ═══ */
+    .trend-chart-wrap{position:relative;width:100%;height:160px}
+
+    /* ═══ Priority × Status Matrix ═══ */
+    .matrix-table{width:100%;border-collapse:collapse;font-size:var(--text-body2)}
+    .matrix-table th{padding:6px 8px;font-weight:var(--fw-semibold);color:var(--text-secondary);text-align:center;border-bottom:1px solid var(--border-light);font-size:var(--text-small)}
+    .matrix-table th:first-child{text-align:left;width:80px}
+    .matrix-table td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--border-light);position:relative}
+    .matrix-table td:first-child{text-align:left;font-weight:var(--fw-medium);color:var(--text-primary)}
+    .matrix-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-weight:var(--fw-bold);font-size:var(--text-body2)}
+    .matrix-cell.zero{color:var(--text-muted);background:transparent}
+    .matrix-cell.low{color:#065F46;background:#D1FAE5}
+    .matrix-cell.med{color:#92400E;background:#FEF3C7}
+    .matrix-cell.high{color:#991B1B;background:#FEE2E2}
+    .priority-label{display:inline-flex;align-items:center;gap:4px}
+    .priority-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+    .matrix-total{font-weight:var(--fw-bold);color:var(--text-primary)}
+    .matrix-bar-wrap{display:flex;align-items:center;gap:6px;margin-top:var(--sp-md)}
+    .matrix-bar{flex:1;display:flex;height:20px;border-radius:4px;overflow:hidden}
+    .matrix-bar-seg{height:100%;transition:width .3s}
+
+    /* ═══ Deadline Overview ═══ */
+    .deadline-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+    .deadline-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .deadline-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);display:flex;align-items:center;gap:var(--sp-sm)}
+    .deadline-stats{display:flex;gap:var(--sp-lg);font-size:var(--text-body2)}
+    .deadline-stat{display:flex;align-items:center;gap:4px;color:var(--text-secondary)}
+    .deadline-stat-val{font-weight:var(--fw-bold)}
+    .deadline-stat-val.danger{color:#DC2626}
+    .deadline-stat-val.warn{color:#D97706}
+    .deadline-stat-val.safe{color:var(--accent-primary)}
+
+    .deadline-body{padding:var(--sp-lg);display:flex;flex-direction:column;gap:var(--sp-md)}
+
+    /* Timeline bar */
+    .deadline-timeline{position:relative;height:56px;background:var(--bg-sidebar);border-radius:6px;padding:0 var(--sp-lg);display:flex;align-items:center;overflow:hidden}
+    .dl-track{position:relative;width:100%;height:4px;background:var(--border-light);border-radius:2px}
+    .dl-today-mark{position:absolute;top:-18px;width:2px;height:40px;background:var(--accent-primary);z-index:2}
+    .dl-today-label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:var(--fw-bold);color:var(--accent-primary);white-space:nowrap}
+    .dl-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;z-index:3;border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+    .dl-dot.overdue{background:#EF4444}
+    .dl-dot.today{background:var(--accent-primary)}
+    .dl-dot.upcoming{background:#3B82F6}
+    .dl-cluster{position:absolute;top:-22px;transform:translateX(-50%);font-size:8px;font-weight:var(--fw-bold);color:var(--text-secondary);white-space:nowrap;text-align:center}
+
+    /* Overdue list */
+    .overdue-list{display:flex;flex-direction:column;gap:6px}
+    .overdue-item{display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-sm) var(--sp-md);border-radius:var(--radius-tag);border:1px solid #FECACA;background:#FEF2F2;font-size:var(--text-body2);transition:background .1s}
+    .overdue-item:hover{background:#FEE2E2}
+    .overdue-icon{color:#EF4444;font-size:var(--text-body1);flex-shrink:0}
+    .overdue-info{flex:1;min-width:0}
+    .overdue-name{font-weight:var(--fw-medium);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .overdue-meta{font-size:var(--text-small);color:#991B1B;margin-top:1px}
+    .overdue-assignee{display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .overdue-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:var(--fw-bold)}
+
+    .upcoming-list{display:flex;flex-direction:column;gap:4px;margin-top:var(--sp-sm)}
+    .upcoming-label{font-size:var(--text-small);font-weight:var(--fw-semibold);color:var(--text-secondary);margin-bottom:2px}
+    .upcoming-item{display:flex;align-items:center;gap:var(--sp-sm);padding:4px var(--sp-md);font-size:var(--text-body2);color:var(--text-secondary);border-radius:var(--radius-tag);transition:background .1s}
+    .upcoming-item:hover{background:var(--bg-sidebar)}
+    .upcoming-date{font-size:var(--text-small);color:var(--text-muted);width:40px;flex-shrink:0}
+    .upcoming-name{color:var(--text-primary);font-weight:var(--fw-medium);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
     /* Goal progress row */
     .goal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-lg)}
     .goal-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-lg);box-shadow:var(--shadow-card)}
@@ -338,6 +401,10 @@
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
       WBS
     </a>
+    <a class="nav-item" href="team-analytics.html">
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></span>
+      분석
+    </a>
 
     <div class="nav-sec" style="margin-top:12px">연동</div>
     <a class="nav-item" href="team.html">
@@ -366,6 +433,7 @@
     <a class="tab" href="team-burndown.html">번다운 차트</a>
     <a class="tab" href="team-wbs.html">WBS</a>
     <a class="tab" href="team-members.html">멤버 일감</a>
+    <a class="tab" href="team-analytics.html">분석</a>
     <div class="tab-right">
       <div class="chip on">Sprint 3</div>
       <div class="chip">Sprint 2</div>
@@ -470,6 +538,231 @@
               <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span> TODO <span class="legend-val">3</span></div>
               <div class="legend-item"><span class="legend-dot" style="background:#DFE1E6"></span> Backlog <span class="legend-val">2</span></div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: Chart Row 2 — Created vs Resolved + Priority Matrix -->
+    <div class="chart-row">
+      <!-- Created vs Resolved Trend -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">생성 vs 완료 추이</span>
+          <span style="font-size:var(--text-small);color:var(--text-muted)">Sprint 3 (일별)</span>
+        </div>
+        <div class="chart-card-body" style="align-items:stretch">
+          <div class="trend-chart-wrap">
+            <svg width="100%" height="100%" viewBox="0 0 400 160" fill="none" style="overflow:visible">
+              <!-- Grid -->
+              <line x1="40" y1="10" x2="40" y2="130" stroke="#DFE1E6" stroke-width="1"/>
+              <line x1="40" y1="130" x2="380" y2="130" stroke="#DFE1E6" stroke-width="1"/>
+              <line x1="40" y1="50" x2="380" y2="50" stroke="#DFE1E6" stroke-width="0.5" stroke-dasharray="4"/>
+              <line x1="40" y1="90" x2="380" y2="90" stroke="#DFE1E6" stroke-width="0.5" stroke-dasharray="4"/>
+              <!-- Y Labels -->
+              <text x="18" y="14" fill="#8993A4" font-size="10" text-anchor="end">8</text>
+              <text x="18" y="54" fill="#8993A4" font-size="10" text-anchor="end">5</text>
+              <text x="18" y="94" fill="#8993A4" font-size="10" text-anchor="end">2</text>
+              <text x="18" y="134" fill="#8993A4" font-size="10" text-anchor="end">0</text>
+              <!-- X Labels -->
+              <text x="57" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/17</text>
+              <text x="108" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/18</text>
+              <text x="159" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/19</text>
+              <text x="210" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/20</text>
+              <text x="261" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/23</text>
+              <text x="312" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/24</text>
+              <text x="363" y="148" fill="#8993A4" font-size="9" text-anchor="middle">2/25</text>
+              <!-- Created line (blue) -->
+              <polyline points="57,50 108,30 159,70 210,90 261,50 312,70 363,90" stroke="#3B82F6" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Created fill -->
+              <polygon points="57,50 108,30 159,70 210,90 261,50 312,70 363,90 363,130 57,130" fill="#3B82F6" fill-opacity="0.06"/>
+              <!-- Resolved line (green) -->
+              <polyline points="57,110 108,90 159,70 210,50 261,70 312,50 363,30" stroke="#629584" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Resolved fill -->
+              <polygon points="57,110 108,90 159,70 210,50 261,70 312,50 363,30 363,130 57,130" fill="#629584" fill-opacity="0.08"/>
+              <!-- Dots -->
+              <circle cx="57" cy="50" r="3" fill="#3B82F6"/>
+              <circle cx="108" cy="30" r="3" fill="#3B82F6"/>
+              <circle cx="159" cy="70" r="3" fill="#3B82F6"/>
+              <circle cx="210" cy="90" r="3" fill="#3B82F6"/>
+              <circle cx="261" cy="50" r="3" fill="#3B82F6"/>
+              <circle cx="312" cy="70" r="3" fill="#3B82F6"/>
+              <circle cx="363" cy="90" r="3" fill="#3B82F6"/>
+              <circle cx="57" cy="110" r="3" fill="#629584"/>
+              <circle cx="108" cy="90" r="3" fill="#629584"/>
+              <circle cx="159" cy="70" r="3" fill="#629584"/>
+              <circle cx="210" cy="50" r="3" fill="#629584"/>
+              <circle cx="261" cy="70" r="3" fill="#629584"/>
+              <circle cx="312" cy="50" r="3" fill="#629584"/>
+              <circle cx="363" cy="30" r="4" fill="#629584" stroke="#fff" stroke-width="2"/>
+              <!-- Today marker -->
+              <line x1="363" y1="10" x2="363" y2="130" stroke="#629584" stroke-width="1" stroke-dasharray="3"/>
+              <!-- Legend -->
+              <line x1="240" y1="6" x2="258" y2="6" stroke="#3B82F6" stroke-width="2"/>
+              <text x="262" y="9" fill="#3B82F6" font-size="9">생성</text>
+              <line x1="290" y1="6" x2="308" y2="6" stroke="#629584" stroke-width="2.5"/>
+              <text x="312" y="9" fill="#629584" font-size="9">완료</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority × Status Matrix -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">우선순위 × 상태 분포</span>
+          <span style="font-size:var(--text-small);color:var(--text-muted)">전체 24개 티켓</span>
+        </div>
+        <div class="chart-card-body" style="flex-direction:column;align-items:stretch;padding:var(--sp-md) var(--sp-lg)">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Backlog</th>
+                <th>TODO</th>
+                <th>In Progress</th>
+                <th>Done</th>
+                <th>합계</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="priority-label"><span class="priority-dot" style="background:#DC2626"></span>CRITICAL</span></td>
+                <td><span class="matrix-cell zero">0</span></td>
+                <td><span class="matrix-cell low">1</span></td>
+                <td><span class="matrix-cell high">2</span></td>
+                <td><span class="matrix-cell low">3</span></td>
+                <td><span class="matrix-total">6</span></td>
+              </tr>
+              <tr>
+                <td><span class="priority-label"><span class="priority-dot" style="background:#D97706"></span>HIGH</span></td>
+                <td><span class="matrix-cell low">1</span></td>
+                <td><span class="matrix-cell med">2</span></td>
+                <td><span class="matrix-cell low">1</span></td>
+                <td><span class="matrix-cell low">5</span></td>
+                <td><span class="matrix-total">9</span></td>
+              </tr>
+              <tr>
+                <td><span class="priority-label"><span class="priority-dot" style="background:#2563EB"></span>MEDIUM</span></td>
+                <td><span class="matrix-cell low">1</span></td>
+                <td><span class="matrix-cell zero">0</span></td>
+                <td><span class="matrix-cell low">1</span></td>
+                <td><span class="matrix-cell low">4</span></td>
+                <td><span class="matrix-total">6</span></td>
+              </tr>
+              <tr>
+                <td><span class="priority-label"><span class="priority-dot" style="background:#9CA3AF"></span>LOW</span></td>
+                <td><span class="matrix-cell zero">0</span></td>
+                <td><span class="matrix-cell zero">0</span></td>
+                <td><span class="matrix-cell zero">0</span></td>
+                <td><span class="matrix-cell low">3</span></td>
+                <td><span class="matrix-total">3</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Stacked bar summary -->
+          <div class="matrix-bar-wrap">
+            <span style="font-size:var(--text-small);color:var(--text-muted);flex-shrink:0;width:42px">상태별</span>
+            <div class="matrix-bar">
+              <div class="matrix-bar-seg" style="width:8.3%;background:#E5E7EB" title="Backlog 2"></div>
+              <div class="matrix-bar-seg" style="width:12.5%;background:#93C5FD" title="TODO 3"></div>
+              <div class="matrix-bar-seg" style="width:16.7%;background:#FCD34D" title="In Progress 4"></div>
+              <div class="matrix-bar-seg" style="width:62.5%;background:#86EFAC" title="Done 15"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: Deadline Overview -->
+    <div class="deadline-card">
+      <div class="deadline-header">
+        <span class="deadline-title">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+          마감일 오버뷰
+        </span>
+        <div class="deadline-stats">
+          <div class="deadline-stat"><span class="deadline-stat-val danger">2</span> 지연</div>
+          <div class="deadline-stat"><span class="deadline-stat-val warn">3</span> 오늘/내일</div>
+          <div class="deadline-stat"><span class="deadline-stat-val safe">4</span> 다음 주</div>
+        </div>
+      </div>
+      <div class="deadline-body">
+        <!-- Timeline -->
+        <div class="deadline-timeline">
+          <div class="dl-track">
+            <!-- Today marker at ~55% position -->
+            <div class="dl-today-mark" style="left:55%">
+              <span class="dl-today-label">오늘</span>
+            </div>
+            <!-- Overdue dots (before today) -->
+            <div class="dl-dot overdue" style="left:20%" title="2/20 — 2건"></div>
+            <div class="dl-cluster" style="left:20%;top:-26px"><span style="color:#EF4444">2건</span><br>2/20</div>
+            <div class="dl-dot overdue" style="left:38%" title="2/23 — 1건"></div>
+            <div class="dl-cluster" style="left:38%;top:-26px"><span style="color:#EF4444">1건</span><br>2/23</div>
+            <!-- Today dots -->
+            <div class="dl-dot today" style="left:55%" title="2/25 — 3건"></div>
+            <div class="dl-cluster" style="left:55%;top:-26px"><span style="color:var(--accent-primary)">3건</span><br>2/25</div>
+            <!-- Upcoming dots -->
+            <div class="dl-dot upcoming" style="left:72%" title="3/2 — 2건"></div>
+            <div class="dl-cluster" style="left:72%;top:-26px"><span style="color:#3B82F6">2건</span><br>3/2</div>
+            <div class="dl-dot upcoming" style="left:88%" title="3/6 — 2건"></div>
+            <div class="dl-cluster" style="left:88%;top:-26px"><span style="color:#3B82F6">2건</span><br>3/6</div>
+          </div>
+        </div>
+
+        <!-- Overdue tickets -->
+        <div class="overdue-list">
+          <div class="overdue-item">
+            <span class="overdue-icon">⚠</span>
+            <div class="overdue-info">
+              <div class="overdue-name">API Route 인증 미들웨어 작성</div>
+              <div class="overdue-meta">마감 2/20 — 5일 초과 · Backlog</div>
+            </div>
+            <div class="overdue-assignee">
+              <div class="overdue-avatar" style="background:#C27BA0">하</div>
+              <span style="font-size:var(--text-small);color:var(--text-secondary)">박하은</span>
+            </div>
+          </div>
+          <div class="overdue-item">
+            <span class="overdue-icon">⚠</span>
+            <div class="overdue-info">
+              <div class="overdue-name">역할별 권한 매트릭스 정의</div>
+              <div class="overdue-meta">마감 2/23 — 2일 초과 · TODO</div>
+            </div>
+            <div class="overdue-assignee">
+              <div class="overdue-avatar" style="background:#6B8CCE">수</div>
+              <span style="font-size:var(--text-small);color:var(--text-secondary)">이수호</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming -->
+        <div class="upcoming-list">
+          <span class="upcoming-label">다가오는 마감</span>
+          <div class="upcoming-item">
+            <span class="upcoming-date">2/25</span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-primary);flex-shrink:0"></span>
+            <span class="upcoming-name">NextAuth Google Provider 연동</span>
+            <span style="font-size:var(--text-small);color:var(--text-muted)">박하은</span>
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-date">2/27</span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span>
+            <span class="upcoming-name">NextAuth 설정 및 Provider 구성</span>
+            <span style="font-size:var(--text-small);color:var(--text-muted)">박하은</span>
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-date">3/2</span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span>
+            <span class="upcoming-name">모달 애니메이션 + 스크롤 잠금</span>
+            <span style="font-size:var(--text-small);color:var(--text-muted)">최민준</span>
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-date">3/6</span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span>
+            <span class="upcoming-name">세션 관리 미들웨어</span>
+            <span style="font-size:var(--text-small);color:var(--text-muted)">박하은</span>
           </div>
         </div>
       </div>

@@ -9,47 +9,93 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="team-common.css" />
   <style>
-    .wbs-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
-    .wbs-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
-    .wbs-title{font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--text-primary);font-family:var(--font-display)}
-    .wbs-toolbar{display:flex;align-items:center;gap:var(--sp-sm)}
-    .wbs-body{padding:var(--sp-lg);overflow-x:auto}
+    /* ═══ Gantt Chart Styles ═══ */
+    .gantt-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;flex:1}
+    .gantt-toolbar{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:var(--sp-lg);flex-wrap:wrap}
+    .gantt-toolbar-left{display:flex;align-items:center;gap:var(--sp-md)}
+    .gantt-toolbar-right{margin-left:auto;display:flex;align-items:center;gap:var(--sp-lg)}
+    .gantt-label{font-size:var(--text-body2);font-weight:var(--fw-semibold);color:var(--text-secondary)}
+    .goal-select{height:34px;padding:0 32px 0 12px;font-family:var(--font-body);font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);background:var(--bg-sidebar);border:1px solid var(--border-light);border-radius:var(--radius-button);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235A6B7F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .15s}
+    .goal-select:hover{border-color:var(--accent-primary)}
+    .goal-select:focus{border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-light)}
 
-    /* WBS tree */
-    .wbs-tree{display:flex;flex-direction:column;gap:0;font-size:var(--text-body2)}
-    .wbs-node{display:flex;align-items:center;gap:var(--sp-sm);padding:7px var(--sp-sm);border-radius:var(--radius-tag);transition:background .1s;cursor:pointer;border-bottom:1px solid transparent}
-    .wbs-node:hover{background:var(--bg-sidebar)}
-    .wbs-node.expanded{background:#FAFBFF}
-    .wbs-indent{display:flex;align-items:center;gap:0}
-    .wbs-pipe{width:20px;display:flex;align-items:center;justify-content:center;color:var(--border-medium);flex-shrink:0;font-size:var(--text-small);font-family:monospace;user-select:none}
-    .wbs-expand{width:18px;height:18px;border-radius:3px;border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg-card);flex-shrink:0;transition:all .15s;color:var(--text-muted);font-size:10px}
-    .wbs-expand:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
-    .wbs-type{font-size:var(--text-small);font-weight:var(--fw-semibold);padding:2px 8px;border-radius:3px;flex-shrink:0;min-width:24px;text-align:center}
-    .wbs-type.goal{background:#E0E7FF;color:#4338CA}
-    .wbs-type.story{background:#DBEAFE;color:#1D4ED8}
-    .wbs-type.feature{background:#D1FAE5;color:#065F46}
-    .wbs-type.task{background:#F3F4F6;color:#6B7280}
-    .wbs-label{color:var(--text-primary);font-weight:var(--fw-medium);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .wbs-assignee{display:flex;align-items:center;gap:4px;font-size:var(--text-small);color:var(--text-secondary);flex-shrink:0}
-    .wbs-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:var(--fw-bold);flex-shrink:0}
-    .wbs-status{font-size:var(--text-small);padding:2px 8px;border-radius:3px;flex-shrink:0;font-weight:var(--fw-medium)}
-    .wbs-status.done{background:var(--col-done);color:#065F46}
-    .wbs-status.inp{background:var(--col-inprogress);color:#92400E}
-    .wbs-status.todo{background:var(--col-todo);color:#1E40AF}
-    .wbs-status.backlog{background:#F3F4F6;color:#6B7280}
-    .wbs-pct{font-size:var(--text-small);color:var(--text-muted);width:48px;text-align:right;flex-shrink:0;font-family:var(--font-display)}
-    .wbs-pct-bar{width:60px;height:4px;background:var(--border-light);border-radius:2px;overflow:hidden;flex-shrink:0}
-    .wbs-pct-fill{height:100%;border-radius:2px}
+    /* Legend */
+    .gantt-legend{display:flex;align-items:center;gap:var(--sp-md);font-size:var(--text-small);color:var(--text-secondary)}
+    .legend-item{display:flex;align-items:center;gap:4px}
+    .legend-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
 
-    /* Summary stats */
-    .wbs-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-lg);margin-bottom:var(--sp-lg)}
-    .wbs-stat{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-md) var(--sp-lg);box-shadow:var(--shadow-card);text-align:center}
-    .wbs-stat-val{font-family:var(--font-display);font-size:22px;font-weight:var(--fw-bold);color:var(--text-primary)}
-    .wbs-stat-label{font-size:var(--text-small);color:var(--text-secondary);margin-top:2px}
+    /* Goal info banner */
+    .goal-info{padding:var(--sp-sm) var(--sp-lg);background:rgba(224,231,255,.2);border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:var(--sp-lg);font-size:var(--text-body2)}
+    .goal-info-item{display:flex;align-items:center;gap:4px;color:var(--text-secondary)}
+    .goal-info-val{font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .goal-info-pct{display:inline-flex;align-items:center;gap:6px}
+    .goal-info-bar{width:80px;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+    .goal-info-fill{height:100%;border-radius:3px;background:var(--accent-primary)}
+
+    /* Gantt scroll container */
+    .gantt-container{flex:1;overflow:auto;position:relative}
+    .gantt-table{display:grid;min-width:max-content}
+
+    /* Left panel: item names */
+    .gantt-left{position:sticky;left:0;z-index:10;background:var(--bg-card);border-right:2px solid var(--border-light)}
+    .gantt-left-header{height:52px;display:flex;align-items:center;padding:0 var(--sp-lg);font-size:var(--text-body2);font-weight:var(--fw-semibold);color:var(--text-secondary);background:var(--bg-sidebar);border-bottom:1px solid var(--border-light);position:sticky;left:0;z-index:11}
+    .gantt-row-label{display:flex;align-items:center;gap:var(--sp-sm);padding:0 var(--sp-lg);height:36px;border-bottom:1px solid var(--border-light);white-space:nowrap;font-size:var(--text-body2);transition:background .1s}
+    .gantt-row-label:hover{background:var(--bg-sidebar)}
+    .gantt-row-label.story-row{background:rgba(219,234,254,.15)}
+    .gantt-row-label.feature-row{padding-left:32px}
+    .gantt-row-label.task-row{padding-left:48px}
+
+    .type-badge{font-size:9px;font-weight:var(--fw-bold);padding:1px 6px;border-radius:3px;flex-shrink:0;letter-spacing:.3px}
+    .type-badge.story{background:#DBEAFE;color:#1D4ED8}
+    .type-badge.feature{background:#D1FAE5;color:#065F46}
+    .type-badge.task{background:#F3F4F6;color:#6B7280}
+
+    .row-name{overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);font-weight:var(--fw-medium)}
+    .row-assignee{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:var(--fw-bold);flex-shrink:0;margin-left:auto}
+
+    /* Right panel: date grid */
+    .gantt-right{display:flex;flex-direction:column}
+    .gantt-date-header{display:flex;height:52px;border-bottom:1px solid var(--border-light);background:var(--bg-sidebar);flex-direction:column}
+    .gantt-month-row{display:flex;height:22px;border-bottom:1px solid var(--border-light)}
+    .gantt-month-cell{display:flex;align-items:center;padding:0 4px;font-size:var(--text-small);font-weight:var(--fw-semibold);color:var(--text-secondary);border-right:1px solid var(--border-light)}
+    .gantt-day-row{display:flex;height:30px}
+    .gantt-day-cell{width:28px;min-width:28px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:var(--fw-medium);color:var(--text-muted);border-right:1px solid rgba(223,225,230,.5);position:relative}
+    .gantt-day-cell.today{background:rgba(98,149,132,.08);color:var(--accent-primary);font-weight:var(--fw-bold)}
+    .gantt-day-cell.today::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent-primary)}
+    .gantt-day-cell.mon{border-left:1px solid var(--border-light)}
+
+    /* Gantt row cells */
+    .gantt-row{display:flex;height:36px;border-bottom:1px solid var(--border-light)}
+    .gantt-cell{width:28px;min-width:28px;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(223,225,230,.3);position:relative}
+    .gantt-cell.mon{border-left:1px solid rgba(223,225,230,.6)}
+    .gantt-cell.today-col{background:rgba(98,149,132,.04)}
+
+    /* Gantt bar inside cells */
+    .gantt-bar{width:22px;height:22px;border-radius:3px;position:relative}
+    .gantt-bar.done{background:#86EFAC;border:1px solid #22C55E}
+    .gantt-bar.inp{background:#FCD34D;border:1px solid #F59E0B}
+    .gantt-bar.todo{background:#93C5FD;border:1px solid #3B82F6}
+    .gantt-bar.backlog{background:#E5E7EB;border:1px solid #D1D5DB}
+    .gantt-bar.overdue{background:#FCA5A5;border:1px solid #EF4444}
+
+    /* Bar with start/end rounded */
+    .gantt-bar.bar-start{border-top-left-radius:10px;border-bottom-left-radius:10px}
+    .gantt-bar.bar-end{border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .gantt-bar.bar-single{border-radius:10px}
+
+    /* Summary stats row */
+    .gantt-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-md);margin-bottom:var(--sp-md)}
+    .gantt-stat{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:var(--sp-md) var(--sp-lg);box-shadow:var(--shadow-card);text-align:center}
+    .gantt-stat-val{font-family:var(--font-display);font-size:20px;font-weight:var(--fw-bold);color:var(--text-primary)}
+    .gantt-stat-label{font-size:var(--text-small);color:var(--text-secondary);margin-top:2px}
+
+    /* Today line */
+    .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--accent-primary);z-index:5;pointer-events:none}
+    .today-line::before{content:'오늘';position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:var(--fw-bold);color:var(--accent-primary);white-space:nowrap}
   </style>
 </head>
 <body>
-<div class="demo-info">Tika Team — WBS 작업 분해 구조</div>
+<div class="demo-info">Tika Team — WBS 간트 차트</div>
 
 <div class="app">
 
@@ -102,261 +148,72 @@
     <a class="tab" href="team-burndown.html">번다운 차트</a>
     <a class="tab active" href="team-wbs.html">WBS</a>
     <a class="tab" href="team-members.html">멤버 일감</a>
-    <div class="tab-right">
-      <div class="chip on">전체 펼치기</div>
-      <div class="chip">Goal만</div>
-    </div>
   </div>
 
-  <div class="page-content">
+  <div class="page-content" style="padding:var(--sp-md);gap:var(--sp-md)">
 
     <!-- Summary stats -->
-    <div class="wbs-stats">
-      <div class="wbs-stat">
-        <div class="wbs-stat-val" style="color:#4338CA">3</div>
-        <div class="wbs-stat-label">Goal</div>
+    <div class="gantt-summary">
+      <div class="gantt-stat">
+        <div class="gantt-stat-val" style="color:#4338CA">3</div>
+        <div class="gantt-stat-label">Goal</div>
       </div>
-      <div class="wbs-stat">
-        <div class="wbs-stat-val" style="color:#1D4ED8">7</div>
-        <div class="wbs-stat-label">Story</div>
+      <div class="gantt-stat">
+        <div class="gantt-stat-val" style="color:#1D4ED8">7</div>
+        <div class="gantt-stat-label">Story</div>
       </div>
-      <div class="wbs-stat">
-        <div class="wbs-stat-val" style="color:#065F46">12</div>
-        <div class="wbs-stat-label">Feature</div>
+      <div class="gantt-stat">
+        <div class="gantt-stat-val" style="color:#065F46">12</div>
+        <div class="gantt-stat-label">Feature</div>
       </div>
-      <div class="wbs-stat">
-        <div class="wbs-stat-val" style="color:#6B7280">24</div>
-        <div class="wbs-stat-label">Task</div>
+      <div class="gantt-stat">
+        <div class="gantt-stat-val" style="color:#6B7280">24</div>
+        <div class="gantt-stat-label">Task</div>
       </div>
-      <div class="wbs-stat">
-        <div class="wbs-stat-val" style="color:var(--accent-primary)">56%</div>
-        <div class="wbs-stat-label">전체 완료율</div>
-      </div>
-    </div>
-
-    <!-- WBS tree -->
-    <div class="wbs-card">
-      <div class="wbs-header">
-        <span class="wbs-title">WBS — 작업 분해 구조</span>
-        <div class="wbs-toolbar">
-          <span style="font-size:var(--text-small);color:var(--text-muted)">타입</span>
-          <span class="wbs-type goal" style="cursor:pointer">G</span>
-          <span class="wbs-type story" style="cursor:pointer">S</span>
-          <span class="wbs-type feature" style="cursor:pointer">F</span>
-          <span class="wbs-type task" style="cursor:pointer">T</span>
-        </div>
-      </div>
-      <div class="wbs-body">
-        <div class="wbs-tree">
-
-          <!-- ═══ Goal 1: MVP 출시 ═══ -->
-          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light)">
-            <span class="wbs-expand">▼</span>
-            <span class="wbs-type goal">G</span>
-            <span class="wbs-label" style="font-weight:var(--fw-bold)">MVP 출시</span>
-            <span class="wbs-status done">Done</span>
-            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:80%;background:#4338CA"></div></div>
-            <span class="wbs-pct">80%</span>
-          </div>
-
-            <!-- Story 1.1 -->
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▼</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">칸반 보드 구축</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
-              <span class="wbs-status done">Done</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">100%</span>
-            </div>
-              <!-- Feature 1.1.1 -->
-              <div class="wbs-node" style="padding-left:56px">
-                <span class="wbs-expand">▼</span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">드래그 앤 드롭</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
-                <span class="wbs-status done">Done</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
-                <span class="wbs-pct">100%</span>
-              </div>
-                <div class="wbs-node" style="padding-left:84px">
-                  <span style="width:18px;flex-shrink:0"></span>
-                  <span class="wbs-type task">T</span>
-                  <span class="wbs-label">@dnd-kit 셋업 및 Provider 구성</span>
-                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span>김지현</span>
-                  <span class="wbs-status done">Done</span>
-                </div>
-                <div class="wbs-node" style="padding-left:84px">
-                  <span style="width:18px;flex-shrink:0"></span>
-                  <span class="wbs-type task">T</span>
-                  <span class="wbs-label">칼럼 간 이동 로직 구현</span>
-                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span>김지현</span>
-                  <span class="wbs-status done">Done</span>
-                </div>
-                <div class="wbs-node" style="padding-left:84px">
-                  <span style="width:18px;flex-shrink:0"></span>
-                  <span class="wbs-type task">T</span>
-                  <span class="wbs-label">Optimistic UI 롤백 패턴 적용</span>
-                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span>이수호</span>
-                  <span class="wbs-status done">Done</span>
-                </div>
-              <!-- Feature 1.1.2 -->
-              <div class="wbs-node" style="padding-left:56px">
-                <span class="wbs-expand">▶</span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">티켓 CRUD</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
-                <span class="wbs-status done">Done</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
-                <span class="wbs-pct">100%</span>
-              </div>
-
-            <!-- Story 1.2 -->
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▼</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">인증 시스템</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span></span>
-              <span class="wbs-status inp">In Progress</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:50%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">50%</span>
-            </div>
-              <div class="wbs-node" style="padding-left:56px">
-                <span class="wbs-expand">▶</span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">Google OAuth 연동</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
-                <span class="wbs-status done">Done</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
-                <span class="wbs-pct">100%</span>
-              </div>
-              <div class="wbs-node" style="padding-left:56px">
-                <span class="wbs-expand">▼</span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">세션 관리 미들웨어</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
-                <span class="wbs-status todo">TODO</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#065F46"></div></div>
-                <span class="wbs-pct">0%</span>
-              </div>
-                <div class="wbs-node" style="padding-left:84px">
-                  <span style="width:18px;flex-shrink:0"></span>
-                  <span class="wbs-type task">T</span>
-                  <span class="wbs-label">NextAuth 설정 및 Provider 구성</span>
-                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
-                  <span class="wbs-status todo">TODO</span>
-                </div>
-                <div class="wbs-node" style="padding-left:84px">
-                  <span style="width:18px;flex-shrink:0"></span>
-                  <span class="wbs-type task">T</span>
-                  <span class="wbs-label">API Route 인증 미들웨어 작성</span>
-                  <span class="wbs-assignee"><span class="wbs-avatar" style="background:#C27BA0">하</span>박하은</span>
-                  <span class="wbs-status backlog">Backlog</span>
-                </div>
-
-            <!-- Story 1.3 -->
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▼</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">UI 고도화</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span></span>
-              <span class="wbs-status inp">In Progress</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:66%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">66%</span>
-            </div>
-              <div class="wbs-node" style="padding-left:56px">
-                <span style="width:18px;flex-shrink:0"></span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">모달 애니메이션 + 스크롤 잠금</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span>최민준</span>
-                <span class="wbs-status done">Done</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#065F46"></div></div>
-                <span class="wbs-pct">100%</span>
-              </div>
-              <div class="wbs-node" style="padding-left:56px">
-                <span style="width:18px;flex-shrink:0"></span>
-                <span class="wbs-type feature">F</span>
-                <span class="wbs-label">반응형 레이아웃 (모바일/태블릿)</span>
-                <span class="wbs-assignee"><span class="wbs-avatar" style="background:#9B8EC4">민</span>최민준</span>
-                <span class="wbs-status inp">In Progress</span>
-                <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:30%;background:#065F46"></div></div>
-                <span class="wbs-pct">30%</span>
-              </div>
-
-          <!-- ═══ Goal 2: 인증 시스템 구축 ═══ -->
-          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light);margin-top:8px">
-            <span class="wbs-expand">▼</span>
-            <span class="wbs-type goal">G</span>
-            <span class="wbs-label" style="font-weight:var(--fw-bold)">인증 시스템 구축</span>
-            <span class="wbs-status inp">In Progress</span>
-            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:50%;background:#4338CA"></div></div>
-            <span class="wbs-pct">50%</span>
-          </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">사용자 테이블 설계</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
-              <span class="wbs-status done">Done</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">100%</span>
-            </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">RBAC 권한 시스템</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#6B8CCE">수</span></span>
-              <span class="wbs-status todo">TODO</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">0%</span>
-            </div>
-
-          <!-- ═══ Goal 3: 팀 협업 기능 ═══ -->
-          <div class="wbs-node expanded" style="background:rgba(224,231,255,.15);border-bottom:1px solid var(--border-light);margin-top:8px">
-            <span class="wbs-expand">▼</span>
-            <span class="wbs-type goal">G</span>
-            <span class="wbs-label" style="font-weight:var(--fw-bold)">팀 협업 기능</span>
-            <span class="wbs-status todo">TODO</span>
-            <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:25%;background:#4338CA"></div></div>
-            <span class="wbs-pct">25%</span>
-          </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">워크스페이스 기능</span>
-              <span class="wbs-assignee"><span class="wbs-avatar" style="background:#7EB4A2">지</span></span>
-              <span class="wbs-status inp">In Progress</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:40%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">40%</span>
-            </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">댓글 시스템</span>
-              <span class="wbs-status backlog">Backlog</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">0%</span>
-            </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">라벨/태그 관리</span>
-              <span class="wbs-status done">Done</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:100%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">100%</span>
-            </div>
-            <div class="wbs-node" style="padding-left:28px">
-              <span class="wbs-expand">▶</span>
-              <span class="wbs-type story">S</span>
-              <span class="wbs-label">알림 시스템</span>
-              <span class="wbs-status backlog">Backlog</span>
-              <div class="wbs-pct-bar"><div class="wbs-pct-fill" style="width:0%;background:#1D4ED8"></div></div>
-              <span class="wbs-pct">0%</span>
-            </div>
-
-        </div>
+      <div class="gantt-stat">
+        <div class="gantt-stat-val" style="color:var(--accent-primary)">56%</div>
+        <div class="gantt-stat-label">전체 완료율</div>
       </div>
     </div>
+
+    <!-- Gantt Chart -->
+    <div class="gantt-card">
+
+      <!-- Toolbar: Goal selector + legend -->
+      <div class="gantt-toolbar">
+        <div class="gantt-toolbar-left">
+          <span class="gantt-label">Goal 선택</span>
+          <select id="goalSelect" class="goal-select" onchange="renderGantt()">
+            <option value="goal1">MVP 출시</option>
+            <option value="goal2">인증 시스템 구축</option>
+            <option value="goal3">팀 협업 기능</option>
+          </select>
+        </div>
+        <div class="gantt-toolbar-right">
+          <div class="gantt-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#86EFAC;border:1px solid #22C55E"></div>완료</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#FCD34D;border:1px solid #F59E0B"></div>진행중</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#93C5FD;border:1px solid #3B82F6"></div>예정</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB;border:1px solid #D1D5DB"></div>미시작</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#FCA5A5;border:1px solid #EF4444"></div>지연</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal info banner -->
+      <div id="goalInfo" class="goal-info"></div>
+
+      <!-- Gantt chart area -->
+      <div class="gantt-container" id="ganttContainer">
+        <div style="display:flex;position:relative">
+          <!-- Left: labels -->
+          <div class="gantt-left" id="ganttLeft"></div>
+          <!-- Right: date grid -->
+          <div class="gantt-right" id="ganttRight"></div>
+        </div>
+      </div>
+
+    </div><!-- /gantt-card -->
 
   </div><!-- /page-content -->
 </div><!-- /content -->
@@ -369,5 +226,439 @@
 </footer>
 
 </div><!-- /app -->
+
+<script>
+// ═══ WBS Gantt Data ═══
+const TODAY = new Date(2026, 1, 25); // 2026-02-25
+
+const GOALS = {
+  goal1: {
+    name: 'MVP 출시',
+    status: 'inp',
+    pct: 80,
+    start: '2026-02-02',
+    end: '2026-03-13',
+    children: [
+      {
+        type: 'story', name: '칸반 보드 구축', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+        status: 'done', start: '2026-02-02', end: '2026-02-20',
+        children: [
+          {
+            type: 'feature', name: '드래그 앤 드롭', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+            status: 'done', start: '2026-02-02', end: '2026-02-13',
+            children: [
+              { type: 'task', name: '@dnd-kit 셋업 및 Provider 구성', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-02-02', end: '2026-02-06' },
+              { type: 'task', name: '칼럼 간 이동 로직 구현', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-02-09', end: '2026-02-11' },
+              { type: 'task', name: 'Optimistic UI 롤백 패턴 적용', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-12', end: '2026-02-13' },
+            ]
+          },
+          {
+            type: 'feature', name: '티켓 CRUD', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+            status: 'done', start: '2026-02-16', end: '2026-02-20',
+            children: [
+              { type: 'task', name: '티켓 생성 폼 구현', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-16', end: '2026-02-17' },
+              { type: 'task', name: '티켓 수정/삭제 API 연동', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-18', end: '2026-02-20' },
+            ]
+          }
+        ]
+      },
+      {
+        type: 'story', name: '인증 시스템', assignee: { name: '박하은', color: '#C27BA0', char: '하' },
+        status: 'inp', start: '2026-02-17', end: '2026-03-06',
+        children: [
+          {
+            type: 'feature', name: 'Google OAuth 연동', assignee: { name: '박하은', color: '#C27BA0', char: '하' },
+            status: 'done', start: '2026-02-17', end: '2026-02-25',
+            children: [
+              { type: 'task', name: 'Google Cloud Console 설정', assignee: { name: '박하은', color: '#C27BA0', char: '하' }, status: 'done', start: '2026-02-17', end: '2026-02-18' },
+              { type: 'task', name: 'NextAuth Google Provider 연동', assignee: { name: '박하은', color: '#C27BA0', char: '하' }, status: 'done', start: '2026-02-19', end: '2026-02-25' },
+            ]
+          },
+          {
+            type: 'feature', name: '세션 관리 미들웨어', assignee: { name: '박하은', color: '#C27BA0', char: '하' },
+            status: 'todo', start: '2026-02-26', end: '2026-03-06',
+            children: [
+              { type: 'task', name: 'NextAuth 설정 및 Provider 구성', assignee: { name: '박하은', color: '#C27BA0', char: '하' }, status: 'todo', start: '2026-02-26', end: '2026-02-27' },
+              { type: 'task', name: 'API Route 인증 미들웨어 작성', assignee: { name: '박하은', color: '#C27BA0', char: '하' }, status: 'backlog', start: '2026-03-02', end: '2026-03-06' },
+            ]
+          }
+        ]
+      },
+      {
+        type: 'story', name: 'UI 고도화', assignee: { name: '최민준', color: '#9B8EC4', char: '민' },
+        status: 'inp', start: '2026-03-02', end: '2026-03-13',
+        children: [
+          {
+            type: 'feature', name: '모달 애니메이션 + 스크롤 잠금', assignee: { name: '최민준', color: '#9B8EC4', char: '민' },
+            status: 'done', start: '2026-03-02', end: '2026-03-06', children: []
+          },
+          {
+            type: 'feature', name: '반응형 레이아웃 (모바일/태블릿)', assignee: { name: '최민준', color: '#9B8EC4', char: '민' },
+            status: 'inp', start: '2026-03-09', end: '2026-03-13',
+            children: [
+              { type: 'task', name: '브레이크포인트 설계', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'done', start: '2026-03-09', end: '2026-03-10' },
+              { type: 'task', name: '모바일 칸반 보드 레이아웃', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'inp', start: '2026-03-11', end: '2026-03-13' },
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  goal2: {
+    name: '인증 시스템 구축',
+    status: 'inp',
+    pct: 50,
+    start: '2026-02-16',
+    end: '2026-03-20',
+    children: [
+      {
+        type: 'story', name: '사용자 테이블 설계', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+        status: 'done', start: '2026-02-16', end: '2026-02-27',
+        children: [
+          { type: 'feature', name: 'users 테이블 스키마 정의', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-16', end: '2026-02-19', children: [] },
+          { type: 'feature', name: 'Drizzle ORM 마이그레이션 생성', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-20', end: '2026-02-23', children: [] },
+          {
+            type: 'feature', name: 'DB 시드 데이터 스크립트', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+            status: 'done', start: '2026-02-24', end: '2026-02-27',
+            children: [
+              { type: 'task', name: 'seed.ts 작성', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-24', end: '2026-02-25' },
+              { type: 'task', name: '시드 실행 및 검증', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'done', start: '2026-02-26', end: '2026-02-27' },
+            ]
+          }
+        ]
+      },
+      {
+        type: 'story', name: 'RBAC 권한 시스템', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+        status: 'todo', start: '2026-03-02', end: '2026-03-20',
+        children: [
+          {
+            type: 'feature', name: '역할 정의 (Owner/Member/Viewer)', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+            status: 'todo', start: '2026-03-02', end: '2026-03-09',
+            children: [
+              { type: 'task', name: 'members 테이블 role 칼럼 추가', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'todo', start: '2026-03-02', end: '2026-03-04' },
+              { type: 'task', name: '역할별 권한 매트릭스 정의', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'backlog', start: '2026-03-05', end: '2026-03-09' },
+            ]
+          },
+          {
+            type: 'feature', name: '권한 미들웨어 구현', assignee: { name: '이수호', color: '#6B8CCE', char: '수' },
+            status: 'backlog', start: '2026-03-10', end: '2026-03-16',
+            children: [
+              { type: 'task', name: 'checkPermission 헬퍼 함수', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'backlog', start: '2026-03-10', end: '2026-03-12' },
+              { type: 'task', name: 'API Route 권한 적용', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'backlog', start: '2026-03-13', end: '2026-03-16' },
+            ]
+          },
+          {
+            type: 'feature', name: '권한 UI 반영', assignee: { name: '최민준', color: '#9B8EC4', char: '민' },
+            status: 'backlog', start: '2026-03-17', end: '2026-03-20',
+            children: [
+              { type: 'task', name: 'Viewer 읽기전용 모드 UI', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'backlog', start: '2026-03-17', end: '2026-03-18' },
+              { type: 'task', name: '역할 뱃지 및 멤버 관리 UI', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'backlog', start: '2026-03-19', end: '2026-03-20' },
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  goal3: {
+    name: '팀 협업 기능',
+    status: 'todo',
+    pct: 25,
+    start: '2026-03-02',
+    end: '2026-04-10',
+    children: [
+      {
+        type: 'story', name: '워크스페이스 기능', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+        status: 'inp', start: '2026-03-02', end: '2026-03-20',
+        children: [
+          {
+            type: 'feature', name: '워크스페이스 CRUD', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+            status: 'done', start: '2026-03-02', end: '2026-03-09',
+            children: [
+              { type: 'task', name: '워크스페이스 생성 API', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-03-02', end: '2026-03-04' },
+              { type: 'task', name: '워크스페이스 설정 페이지', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-03-05', end: '2026-03-09' },
+            ]
+          },
+          {
+            type: 'feature', name: '멤버 초대 시스템', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+            status: 'inp', start: '2026-03-10', end: '2026-03-16',
+            children: [
+              { type: 'task', name: '초대 링크 생성 API', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-03-10', end: '2026-03-11' },
+              { type: 'task', name: '초대 수락/거절 플로우', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'inp', start: '2026-03-12', end: '2026-03-16' },
+            ]
+          },
+          {
+            type: 'feature', name: '워크스페이스 전환 UI', assignee: { name: '최민준', color: '#9B8EC4', char: '민' },
+            status: 'backlog', start: '2026-03-17', end: '2026-03-20',
+            children: []
+          }
+        ]
+      },
+      {
+        type: 'story', name: '댓글 시스템', assignee: null,
+        status: 'backlog', start: '2026-03-16', end: '2026-03-27',
+        children: [
+          { type: 'feature', name: '댓글 CRUD API', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'backlog', start: '2026-03-16', end: '2026-03-20', children: [] },
+          { type: 'feature', name: '댓글 UI 컴포넌트', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'backlog', start: '2026-03-23', end: '2026-03-27', children: [] },
+        ]
+      },
+      {
+        type: 'story', name: '라벨/태그 관리', assignee: { name: '김지현', color: '#7EB4A2', char: '지' },
+        status: 'done', start: '2026-03-23', end: '2026-04-03',
+        children: [
+          { type: 'feature', name: '라벨 CRUD API', assignee: { name: '김지현', color: '#7EB4A2', char: '지' }, status: 'done', start: '2026-03-23', end: '2026-03-27', children: [] },
+          { type: 'feature', name: '라벨 선택/필터 UI', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'done', start: '2026-03-30', end: '2026-04-03', children: [] },
+        ]
+      },
+      {
+        type: 'story', name: '알림 시스템', assignee: null,
+        status: 'backlog', start: '2026-04-01', end: '2026-04-10',
+        children: [
+          { type: 'feature', name: '알림 테이블 및 API', assignee: { name: '이수호', color: '#6B8CCE', char: '수' }, status: 'backlog', start: '2026-04-01', end: '2026-04-06', children: [] },
+          { type: 'feature', name: '알림 벨 UI + 패널', assignee: { name: '최민준', color: '#9B8EC4', char: '민' }, status: 'backlog', start: '2026-04-07', end: '2026-04-10', children: [] },
+        ]
+      }
+    ]
+  }
+};
+
+// ═══ Utility Functions ═══
+
+function parseDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDate(d) {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function isWeekend(d) {
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
+
+function getWeekdays(start, end) {
+  const days = [];
+  const d = new Date(start);
+  while (d <= end) {
+    if (!isWeekend(d)) {
+      days.push(new Date(d));
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function getStatusClass(status) {
+  if (status === 'done') return 'done';
+  if (status === 'inp') return 'inp';
+  if (status === 'todo') return 'todo';
+  return 'backlog';
+}
+
+function getStatusLabel(status) {
+  if (status === 'done') return '완료';
+  if (status === 'inp') return '진행중';
+  if (status === 'todo') return '예정';
+  return '미시작';
+}
+
+// Flatten the hierarchy into rows
+function flattenItems(items, depth) {
+  const rows = [];
+  for (const item of items) {
+    rows.push({ ...item, depth, childCount: (item.children || []).length });
+    if (item.children && item.children.length > 0) {
+      rows.push(...flattenItems(item.children, depth + 1));
+    }
+  }
+  return rows;
+}
+
+// Get row CSS class based on type
+function getRowClass(type) {
+  if (type === 'story') return 'story-row';
+  if (type === 'feature') return 'feature-row';
+  if (type === 'task') return 'task-row';
+  return '';
+}
+
+// Determine if item is overdue
+function isOverdue(item) {
+  if (item.status === 'done') return false;
+  const end = parseDate(item.end);
+  return end < TODAY;
+}
+
+// ═══ Render Functions ═══
+
+function renderGantt() {
+  const goalId = document.getElementById('goalSelect').value;
+  const goal = GOALS[goalId];
+  const goalStart = parseDate(goal.start);
+  const goalEnd = parseDate(goal.end);
+  const weekdays = getWeekdays(goalStart, goalEnd);
+
+  // Goal info banner
+  const totalItems = countItems(goal.children);
+  const doneItems = countDone(goal.children);
+  const goalInfoEl = document.getElementById('goalInfo');
+  goalInfoEl.innerHTML = `
+    <div class="goal-info-item">
+      <span style="font-size:var(--text-small);font-weight:var(--fw-bold);padding:2px 8px;border-radius:3px;background:#E0E7FF;color:#4338CA">G</span>
+      <span class="goal-info-val">${goal.name}</span>
+    </div>
+    <div class="goal-info-item">기간: <span class="goal-info-val">${goal.start} ~ ${goal.end}</span></div>
+    <div class="goal-info-item">항목: <span class="goal-info-val">${totalItems}개</span></div>
+    <div class="goal-info-item">완료: <span class="goal-info-val">${doneItems}개</span></div>
+    <div class="goal-info-item">
+      <span class="goal-info-pct">
+        <span class="goal-info-val">${goal.pct}%</span>
+        <span class="goal-info-bar"><span class="goal-info-fill" style="width:${goal.pct}%"></span></span>
+      </span>
+    </div>
+  `;
+
+  // Flatten rows
+  const rows = flattenItems(goal.children, 0);
+
+  // Build left panel
+  const leftEl = document.getElementById('ganttLeft');
+  let leftHTML = '<div class="gantt-left-header" style="min-width:280px">작업 항목</div>';
+  for (const row of rows) {
+    const typeClass = row.type;
+    const paddingLeft = row.depth === 0 ? 16 : (row.depth === 1 ? 32 : 48);
+    const assigneeHTML = row.assignee
+      ? `<div class="row-assignee" style="background:${row.assignee.color}">${row.assignee.char}</div>`
+      : '';
+    leftHTML += `
+      <div class="gantt-row-label" style="min-width:280px;padding-left:${paddingLeft}px" title="${row.name}">
+        <span class="type-badge ${typeClass}">${row.type === 'story' ? 'S' : row.type === 'feature' ? 'F' : 'T'}</span>
+        <span class="row-name">${row.name}</span>
+        ${assigneeHTML}
+      </div>
+    `;
+  }
+  leftEl.innerHTML = leftHTML;
+
+  // Build right panel (date grid)
+  const rightEl = document.getElementById('ganttRight');
+
+  // Group dates by month for header
+  const monthGroups = [];
+  let currentMonth = null;
+  for (const d of weekdays) {
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (key !== currentMonth) {
+      monthGroups.push({ year: d.getFullYear(), month: d.getMonth(), count: 1 });
+      currentMonth = key;
+    } else {
+      monthGroups[monthGroups.length - 1].count++;
+    }
+  }
+
+  const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  // Month row
+  let monthRowHTML = '';
+  for (const mg of monthGroups) {
+    monthRowHTML += `<div class="gantt-month-cell" style="width:${mg.count * 28}px">${mg.year}년 ${MONTH_NAMES[mg.month]}</div>`;
+  }
+
+  // Day row
+  let dayRowHTML = '';
+  for (const d of weekdays) {
+    const isTodayCell = sameDay(d, TODAY);
+    const isMonday = d.getDay() === 1;
+    const cls = [isTodayCell ? 'today' : '', isMonday ? 'mon' : ''].filter(Boolean).join(' ');
+    dayRowHTML += `<div class="gantt-day-cell ${cls}" data-date="${dateKey(d)}">${d.getDate()}</div>`;
+  }
+
+  let rightHTML = `
+    <div class="gantt-date-header">
+      <div class="gantt-month-row">${monthRowHTML}</div>
+      <div class="gantt-day-row">${dayRowHTML}</div>
+    </div>
+  `;
+
+  // Data rows
+  for (const row of rows) {
+    const rowStart = parseDate(row.start);
+    const rowEnd = parseDate(row.end);
+    const overdue = isOverdue(row);
+
+    let rowHTML = '';
+    for (let i = 0; i < weekdays.length; i++) {
+      const d = weekdays[i];
+      const dk = dateKey(d);
+      const isTodayCol = sameDay(d, TODAY);
+      const isMonday = d.getDay() === 1;
+      const cellCls = [isTodayCol ? 'today-col' : '', isMonday ? 'mon' : ''].filter(Boolean).join(' ');
+
+      // Check if this date is within the item's range
+      const inRange = d >= rowStart && d <= rowEnd && !isWeekend(d);
+      let barHTML = '';
+      if (inRange) {
+        // Determine position in bar span
+        const isFirst = sameDay(d, rowStart) || (i === 0 && d >= rowStart) || (d.getDay() === 1 && weekdays[i-1] && weekdays[i-1] < rowStart);
+        const isLast = sameDay(d, rowEnd) || (i === weekdays.length - 1 && d <= rowEnd) || (d.getDay() === 5 && weekdays[i+1] && weekdays[i+1] > rowEnd);
+        const isSingle = isFirst && isLast;
+
+        let statusCls = overdue ? 'overdue' : getStatusClass(row.status);
+        let shapeCls = isSingle ? 'bar-single' : (isFirst ? 'bar-start' : (isLast ? 'bar-end' : ''));
+        barHTML = `<div class="gantt-bar ${statusCls} ${shapeCls}"></div>`;
+      }
+
+      rowHTML += `<div class="gantt-cell ${cellCls}" data-date="${dk}">${barHTML}</div>`;
+    }
+    rightHTML += `<div class="gantt-row">${rowHTML}</div>`;
+  }
+
+  rightEl.innerHTML = rightHTML;
+
+  // Scroll to today if visible
+  setTimeout(() => {
+    const todayCell = rightEl.querySelector('.gantt-day-cell.today');
+    if (todayCell) {
+      const container = document.getElementById('ganttContainer');
+      const leftWidth = 280;
+      const cellLeft = todayCell.offsetLeft;
+      const containerWidth = container.clientWidth - leftWidth;
+      container.scrollLeft = Math.max(0, cellLeft - containerWidth / 2);
+    }
+  }, 50);
+}
+
+function countItems(items) {
+  let count = 0;
+  for (const item of items) {
+    count++;
+    if (item.children) count += countItems(item.children);
+  }
+  return count;
+}
+
+function countDone(items) {
+  let count = 0;
+  for (const item of items) {
+    if (item.status === 'done') count++;
+    if (item.children) count += countDone(item.children);
+  }
+  return count;
+}
+
+// Initial render
+document.addEventListener('DOMContentLoaded', renderGantt);
+</script>
 </body>
 </html>

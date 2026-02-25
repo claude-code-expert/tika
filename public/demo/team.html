@@ -302,8 +302,8 @@
     .goal-card{cursor:pointer;transition:box-shadow .2s,transform .15s}
     .goal-card:hover{box-shadow:var(--shadow-card-hover);transform:translateY(-1px)}
     .goal-card.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-light)}
-    .goal-detail{display:none;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;animation:slideDown .2s ease}
-    .goal-detail.open{display:block}
+    .goal-detail{display:none;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+    .goal-detail.open{display:block;animation:slideDown .2s ease both}
     @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
     .goal-detail-header{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:var(--sp-sm)}
     .goal-detail-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary);flex:1}
@@ -1191,22 +1191,52 @@
 <script>
 function toggleGoal(id, cardEl) {
   var panel = document.getElementById(id);
+  if (!panel) return;
   var isOpen = panel.classList.contains('open');
 
   // Close all
-  document.querySelectorAll('.goal-detail').forEach(function(p) { p.classList.remove('open'); });
-  document.querySelectorAll('.goal-card').forEach(function(c) { c.classList.remove('selected'); });
+  document.querySelectorAll('.goal-detail.open').forEach(function(p) { p.classList.remove('open'); });
+  document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
 
   if (!isOpen) {
     panel.classList.add('open');
-    cardEl.classList.add('selected');
-    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (cardEl) cardEl.classList.add('selected');
+    // Force reflow for animation restart
+    void panel.offsetHeight;
+    setTimeout(function() {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
   }
 }
 function closeGoal(id) {
-  document.getElementById(id).classList.remove('open');
-  document.querySelectorAll('.goal-card').forEach(function(c) { c.classList.remove('selected'); });
+  var panel = document.getElementById(id);
+  if (panel) panel.classList.remove('open');
+  document.querySelectorAll('.goal-card.selected').forEach(function(c) { c.classList.remove('selected'); });
 }
+
+// Event delegation fallback (ensures clicks work even if inline handlers fail)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.goal-card[onclick]').forEach(function(card) {
+    var match = card.getAttribute('onclick').match(/toggleGoal\('([^']+)'/);
+    if (match) {
+      var goalId = match[1];
+      card.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleGoal(goalId, card);
+      });
+    }
+  });
+  document.querySelectorAll('.goal-detail-close[onclick]').forEach(function(btn) {
+    var match = btn.getAttribute('onclick').match(/closeGoal\('([^']+)'/);
+    if (match) {
+      var goalId = match[1];
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeGoal(goalId);
+      });
+    }
+  });
+});
 </script>
 </body>
 </html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>랜딩 페이지 | Tika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+      --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+      --text-h1:20px;--text-h2:16px;--text-body1:14px;--text-body2:12px;--text-small:11px;
+      --fw-bold:700;--fw-semibold:600;--fw-medium:500;--fw-regular:400;
+      --bg-app:#F8F9FB;--bg-card:#FFFFFF;--bg-board:#E8EDF2;
+      --text-primary:#2C3E50;--text-secondary:#5A6B7F;--text-muted:#8993A4;
+      --accent-primary:#629584;--accent-primary-hover:#527D6F;--accent-light:#E8F5F0;
+      --border-light:#DFE1E6;--border-medium:#C4C9D1;
+      --col-todo:#DBEAFE;--col-inprogress:#FEF3C7;--col-done:#D1FAE5;
+      --radius-card:8px;--radius-column:12px;--radius-button:6px;
+      --shadow-card:0 1px 2px rgba(9,30,66,0.12);
+      --shadow-dropdown:0 8px 24px rgba(0,0,0,0.12);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:var(--font-body);font-size:var(--text-body1);color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+
+    /* ═══ Hero ═══ */
+    .hero{display:flex;flex-direction:column;align-items:center;padding:72px 16px 56px;text-align:center}
+
+    .hero-logo{
+      width:56px;height:56px;border-radius:14px;background:var(--accent-primary);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-family:var(--font-display);font-size:24px;font-weight:var(--fw-bold);
+      box-shadow:0 4px 12px rgba(98,149,132,.35);margin-bottom:20px;
+    }
+    .hero-title{font-family:var(--font-display);font-size:36px;font-weight:var(--fw-bold);color:var(--text-primary);letter-spacing:-.5px}
+    .hero-desc{margin-top:12px;font-size:17px;color:var(--text-secondary);line-height:1.6;max-width:420px}
+
+    /* Feature pills */
+    .hero-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:24px}
+    .hero-pill{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:5px 14px;border-radius:999px;border:1px solid var(--border-light);
+      background:var(--bg-card);font-size:var(--text-body2);font-weight:var(--fw-medium);color:var(--text-secondary);
+    }
+    .hero-pill-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-primary);flex-shrink:0}
+
+    /* Google CTA */
+    .hero-cta{margin-top:32px}
+    .google-btn{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:12px 28px;border:none;border-radius:var(--radius-card);
+      background:var(--accent-primary);color:#fff;
+      font-family:var(--font-body);font-size:var(--text-body1);font-weight:var(--fw-semibold);
+      cursor:pointer;transition:all .2s;
+      box-shadow:0 2px 8px rgba(98,149,132,.3);
+    }
+    .google-btn:hover{background:var(--accent-primary-hover);box-shadow:0 4px 14px rgba(98,149,132,.4)}
+    .google-btn:active{transform:scale(.98)}
+    .google-btn svg{flex-shrink:0}
+
+    /* ═══ Feature Showcase ═══ */
+    .showcase{max-width:920px;margin:0 auto;padding:0 16px 64px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    @media(max-width:768px){.showcase{grid-template-columns:1fr;max-width:400px}}
+
+    .showcase-card{
+      background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-column);
+      padding:20px;box-shadow:var(--shadow-card);transition:box-shadow .2s,transform .2s;
+    }
+    .showcase-card:hover{box-shadow:var(--shadow-dropdown);transform:translateY(-2px)}
+
+    /* Mockup area */
+    .mockup{background:var(--bg-board);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:12px;margin-bottom:16px;overflow:hidden}
+
+    .showcase-title{font-size:var(--text-body1);font-weight:var(--fw-bold);color:var(--text-primary)}
+    .showcase-desc{margin-top:4px;font-size:var(--text-body2);color:var(--text-secondary);line-height:1.6}
+
+    /* ── Mockup: Dashboard ── */
+    .mock-board{display:flex;gap:6px}
+    .mock-col{flex:1;display:flex;flex-direction:column;gap:4px}
+    .mock-col-header{height:10px;border-radius:3px;margin-bottom:2px}
+    .mock-col-header.todo{background:var(--col-todo)}
+    .mock-col-header.inprog{background:var(--col-inprogress)}
+    .mock-col-header.done{background:var(--col-done)}
+    .mock-card{height:28px;background:var(--bg-card);border-radius:4px;box-shadow:var(--shadow-card)}
+
+    /* ── Mockup: Ticket Form ── */
+    .mock-form{display:flex;flex-direction:column;gap:6px;background:var(--bg-app);border:1px solid var(--border-light);border-radius:var(--radius-card);padding:10px}
+    .mock-field-label{height:8px;width:40px;background:var(--border-light);border-radius:2px}
+    .mock-field-input{height:22px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:4px}
+    .mock-field-row{display:flex;gap:6px}
+    .mock-tag{height:16px;border-radius:3px;flex:0 0 auto}
+    .mock-tag.type{width:48px;background:var(--accent-light)}
+    .mock-tag.priority{width:40px;background:#FEF3C7}
+    .mock-field-textarea{height:32px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:4px}
+    .mock-submit{height:22px;width:52px;background:var(--accent-primary);border-radius:4px;margin-left:auto}
+
+    /* ── Mockup: Drag & Drop ── */
+    .mock-dnd{display:flex;align-items:center;gap:6px}
+    .mock-dnd-col{flex:1;display:flex;flex-direction:column;gap:4px}
+    .mock-dnd-ghost{
+      height:28px;border:2px dashed var(--accent-primary);border-radius:4px;
+      background:var(--accent-light);opacity:.5;
+    }
+    .mock-dnd-active{
+      height:28px;background:var(--bg-card);border:2px solid var(--accent-primary);border-radius:4px;
+      box-shadow:0 3px 8px rgba(0,0,0,.15);
+    }
+    .mock-dnd-arrow{flex-shrink:0;color:var(--accent-primary)}
+
+    /* ═══ Footer ═══ */
+    .landing-footer{text-align:center;padding:0 16px 32px;font-size:var(--text-small);color:var(--text-muted)}
+
+    /* Demo info bar */
+    .demo-info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:#fff;font-size:var(--text-small);padding:6px 16px;border-radius:20px;z-index:999;opacity:.8}
+  </style>
+</head>
+<body>
+<div class="demo-info">랜딩 페이지 데모 — Hero + 3 Feature Cards</div>
+
+<!-- ═══ Hero ═══ -->
+<section class="hero">
+  <div class="hero-logo">T</div>
+  <h1 class="hero-title">Tika</h1>
+  <p class="hero-desc">직관적인 칸반 보드로 할 일을 관리하세요</p>
+
+  <div class="hero-pills">
+    <span class="hero-pill"><span class="hero-pill-dot"></span>100% 무료</span>
+    <span class="hero-pill"><span class="hero-pill-dot"></span>오픈소스</span>
+    <span class="hero-pill"><span class="hero-pill-dot"></span>구글 로그인</span>
+    <span class="hero-pill"><span class="hero-pill-dot"></span>직관적 인터페이스</span>
+  </div>
+
+  <div class="hero-cta">
+    <button class="google-btn" onclick="alert('Google OAuth 로그인 → 메인 보드로 이동')">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#fff" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#fff" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="#fff" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#fff" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      </svg>
+      Google로 시작하기
+    </button>
+  </div>
+</section>
+
+<!-- ═══ Feature Showcase ═══ -->
+<section class="showcase">
+  <!-- 1. Dashboard -->
+  <div class="showcase-card">
+    <div class="mockup">
+      <div class="mock-board">
+        <div class="mock-col">
+          <div class="mock-col-header todo"></div>
+          <div class="mock-card"></div>
+          <div class="mock-card"></div>
+        </div>
+        <div class="mock-col">
+          <div class="mock-col-header inprog"></div>
+          <div class="mock-card"></div>
+        </div>
+        <div class="mock-col">
+          <div class="mock-col-header done"></div>
+          <div class="mock-card"></div>
+          <div class="mock-card"></div>
+          <div class="mock-card"></div>
+        </div>
+      </div>
+    </div>
+    <div class="showcase-title">칸반 대시보드</div>
+    <p class="showcase-desc">TODO, In Progress, Done 칼럼에서 업무 현황을 한눈에 파악</p>
+  </div>
+
+  <!-- 2. Ticket Creation -->
+  <div class="showcase-card">
+    <div class="mockup">
+      <div class="mock-form">
+        <div class="mock-field-label"></div>
+        <div class="mock-field-input"></div>
+        <div class="mock-field-row">
+          <div class="mock-tag type"></div>
+          <div class="mock-tag priority"></div>
+        </div>
+        <div class="mock-field-label" style="width:52px"></div>
+        <div class="mock-field-textarea"></div>
+        <div class="mock-submit"></div>
+      </div>
+    </div>
+    <div class="showcase-title">간편한 티켓 생성</div>
+    <p class="showcase-desc">제목, 우선순위, 마감일만으로 빠르게 업무를 등록</p>
+  </div>
+
+  <!-- 3. Drag & Drop -->
+  <div class="showcase-card">
+    <div class="mockup">
+      <div class="mock-dnd">
+        <div class="mock-dnd-col">
+          <div class="mock-col-header todo" style="height:10px;border-radius:3px;margin-bottom:2px"></div>
+          <div class="mock-dnd-ghost"></div>
+        </div>
+        <svg class="mock-dnd-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+        <div class="mock-dnd-col">
+          <div class="mock-col-header inprog" style="height:10px;border-radius:3px;margin-bottom:2px"></div>
+          <div class="mock-card"></div>
+          <div class="mock-dnd-active"></div>
+        </div>
+      </div>
+    </div>
+    <div class="showcase-title">드래그 앤 드롭</div>
+    <p class="showcase-desc">카드를 끌어다 놓아 업무 상태를 직관적으로 변경</p>
+  </div>
+</section>
+
+<!-- ═══ Footer ═══ -->
+<footer class="landing-footer">Tika &mdash; Free &amp; Open Source Kanban Board</footer>
+
+</body>
+</html>

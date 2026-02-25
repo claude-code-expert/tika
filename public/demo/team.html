@@ -125,8 +125,15 @@
     .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
     .legend-val{margin-left:auto;font-weight:var(--fw-medium);color:var(--text-primary)}
 
+    /* ═══ Dashboard Extra Cards (isolated) ═══ */
+    .dash-extra-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-lg)}
+    .dash-card{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-card);box-shadow:var(--shadow-card);display:flex;flex-direction:column;overflow:hidden}
+    .dash-card-hd{padding:var(--sp-md) var(--sp-lg);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .dash-card-title{font-size:var(--text-body1);font-weight:var(--fw-semibold);color:var(--text-primary)}
+    .dash-card-bd{padding:var(--sp-lg);flex:1;display:flex;flex-direction:column}
+
     /* ═══ Created vs Resolved Chart ═══ */
-    .trend-chart-wrap{position:relative;width:100%;height:160px}
+    .trend-chart-wrap{position:relative;width:100%;height:160px;flex:1}
 
     /* ═══ Priority × Status Matrix ═══ */
     .matrix-table{width:100%;border-collapse:collapse;font-size:var(--text-body2)}
@@ -393,17 +400,13 @@
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
       스프린트
     </a>
-    <a class="nav-item" href="team-burndown.html">
-      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-      번다운 차트
-    </a>
     <a class="nav-item" href="team-wbs.html">
       <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
       WBS
     </a>
     <a class="nav-item" href="team-analytics.html">
-      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></span>
-      분석
+      <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+      분석 차트
     </a>
 
     <div class="nav-sec" style="margin-top:12px">연동</div>
@@ -430,10 +433,9 @@
   <!-- Tab bar -->
   <div class="tab-bar">
     <a class="tab active" href="team.html">대시보드</a>
-    <a class="tab" href="team-burndown.html">번다운 차트</a>
     <a class="tab" href="team-wbs.html">WBS</a>
     <a class="tab" href="team-members.html">멤버 일감</a>
-    <a class="tab" href="team-analytics.html">분석</a>
+    <a class="tab" href="team-analytics.html">분석 차트</a>
     <div class="tab-right">
       <div class="chip on">Sprint 3</div>
       <div class="chip">Sprint 2</div>
@@ -543,15 +545,15 @@
       </div>
     </div>
 
-    <!-- NEW: Chart Row 2 — Created vs Resolved + Priority Matrix -->
-    <div class="chart-row">
+    <!-- Chart Row 2 — Created vs Resolved + Priority Matrix (isolated CSS) -->
+    <div class="dash-extra-row">
       <!-- Created vs Resolved Trend -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-card-title">생성 vs 완료 추이</span>
+      <div class="dash-card">
+        <div class="dash-card-hd">
+          <span class="dash-card-title">생성 vs 완료 추이</span>
           <span style="font-size:var(--text-small);color:var(--text-muted)">Sprint 3 (일별)</span>
         </div>
-        <div class="chart-card-body" style="align-items:stretch">
+        <div class="dash-card-bd">
           <div class="trend-chart-wrap">
             <svg width="100%" height="100%" viewBox="0 0 400 160" fill="none" style="overflow:visible">
               <!-- Grid -->
@@ -608,12 +610,12 @@
       </div>
 
       <!-- Priority × Status Matrix -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-card-title">우선순위 × 상태 분포</span>
+      <div class="dash-card">
+        <div class="dash-card-hd">
+          <span class="dash-card-title">우선순위 × 상태 분포</span>
           <span style="font-size:var(--text-small);color:var(--text-muted)">전체 24개 티켓</span>
         </div>
-        <div class="chart-card-body" style="flex-direction:column;align-items:stretch;padding:var(--sp-md) var(--sp-lg)">
+        <div class="dash-card-bd">
           <table class="matrix-table">
             <thead>
               <tr>

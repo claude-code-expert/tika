@@ -145,7 +145,6 @@ export function AppShell() {
       const created = (await createTicket({
         title: `${ticket.title} (복사)`,
         type: ticket.type,
-        status: 'BACKLOG',
         priority: ticket.priority,
         dueDate: ticket.dueDate ?? undefined,
         labelIds: ticket.labels.map((l) => l.id),

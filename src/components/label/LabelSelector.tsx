@@ -38,22 +38,32 @@ export function LabelSelector({ labels, selectedIds, onToggle, onCreateLabel }: 
   };
 
   return (
-    <div className="space-y-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {isAtLimit && (
-        <p className="text-xs text-orange-500">최대 {LABEL_MAX_PER_TICKET}개까지 선택 가능합니다</p>
+        <p style={{ fontSize: 11, color: '#C2410C' }}>
+          최대 {LABEL_MAX_PER_TICKET}개까지 선택 가능합니다
+        </p>
       )}
 
-      <div className="max-h-40 space-y-1 overflow-y-auto">
+      <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {labels.map((label) => {
           const isSelected = selectedIds.includes(label.id);
           return (
-            <label key={label.id} className="flex cursor-pointer items-center gap-2">
+            <label
+              key={label.id}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            >
               <input
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => onToggle(label.id)}
                 disabled={!isSelected && isAtLimit}
-                className="h-3.5 w-3.5 rounded border-gray-300"
+                style={{
+                  width: 14,
+                  height: 14,
+                  accentColor: 'var(--color-accent)',
+                  cursor: 'pointer',
+                }}
               />
               <LabelBadge label={label} size="sm" />
             </label>
@@ -66,43 +76,107 @@ export function LabelSelector({ labels, selectedIds, onToggle, onCreateLabel }: 
           {!showCreate ? (
             <button
               onClick={() => setShowCreate(true)}
-              className="text-xs text-blue-500 hover:text-blue-700"
+              style={{
+                height: 20,
+                padding: '0 10px',
+                border: '1px dashed var(--color-border-hover)',
+                borderRadius: 20,
+                background: 'transparent',
+                fontSize: 11,
+                color: 'var(--color-text-muted)',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-accent)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--color-accent)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border-hover)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
+              }}
             >
               + 새 라벨 만들기
             </button>
           ) : (
-            <div className="space-y-2 rounded-lg border border-gray-200 p-2">
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                padding: 8,
+              }}
+            >
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="라벨명"
                 maxLength={20}
-                className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none"
+                style={{
+                  width: '100%',
+                  padding: '4px 8px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontFamily: 'inherit',
+                  color: 'var(--color-text-primary)',
+                  outline: 'none',
+                }}
+                onFocus={(e) => { (e.target as HTMLElement).style.borderColor = 'var(--color-accent)'; }}
+                onBlur={(e) => { (e.target as HTMLElement).style.borderColor = 'var(--color-border)'; }}
                 aria-label="새 라벨명"
               />
-              <div className="flex flex-wrap gap-1">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
                     onClick={() => setNewColor(color)}
-                    className={`h-5 w-5 rounded-full transition ${newColor === color ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`}
-                    style={{ backgroundColor: color }}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: newColor === color ? '2px solid var(--color-text-primary)' : '2px solid transparent',
+                      outline: newColor === color ? '2px solid white' : 'none',
+                      outlineOffset: -3,
+                      cursor: 'pointer',
+                    }}
                     aria-label={`색상 선택: ${color}`}
                   />
                 ))}
               </div>
-              <div className="flex gap-1">
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="text-xs text-gray-400 hover:text-gray-600"
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-text-muted)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
                 >
                   취소
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={!newName.trim() || isCreating}
-                  className="rounded bg-blue-500 px-2 py-0.5 text-xs text-white hover:bg-blue-600 disabled:opacity-40"
+                  style={{
+                    borderRadius: 4,
+                    background: 'var(--color-accent)',
+                    padding: '2px 10px',
+                    fontSize: 11,
+                    color: '#fff',
+                    border: 'none',
+                    cursor: !newName.trim() || isCreating ? 'not-allowed' : 'pointer',
+                    opacity: !newName.trim() || isCreating ? 0.4 : 1,
+                    fontFamily: 'inherit',
+                  }}
                 >
                   생성
                 </button>

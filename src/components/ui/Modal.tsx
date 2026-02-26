@@ -7,10 +7,10 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  className?: string;
+  maxWidth?: number;
 }
 
-export function Modal({ isOpen, onClose, children, title, className = '' }: ModalProps) {
+export function Modal({ isOpen, onClose, children, title, maxWidth = 560 }: ModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -33,38 +33,94 @@ export function Modal({ isOpen, onClose, children, title, className = '' }: Moda
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 300,
+        background: 'rgba(9,30,66,0.54)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
+      onClick={onClose}
     >
-      {/* Backdrop */}
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.95) translateY(8px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-close-btn:hover {
+          background: var(--color-board-bg) !important;
+          color: var(--color-text-primary) !important;
+        }
+      `}</style>
+
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      {/* Panel */}
-      <div
-        className={`relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-xl ${className}`}
+        style={{
+          background: '#ffffff',
+          borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          width: '100%',
+          maxWidth: maxWidth,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'modalIn 0.2s ease-out',
+          overflow: 'hidden',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header (optional) */}
         {title && (
-          <div className="border-b border-gray-100 px-6 py-4">
-            <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
+          <div
+            style={{
+              padding: '20px 24px 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}
+          >
+            <h2
+              id="modal-title"
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: 17,
+                fontWeight: 700,
+                color: 'var(--color-text-primary)',
+              }}
+            >
               {title}
             </h2>
             <button
+              className="modal-close-btn"
               onClick={onClose}
-              className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              style={{
+                width: 28,
+                height: 28,
+                border: 'none',
+                background: 'transparent',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 18,
+                color: 'var(--color-text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.1s, color 0.1s',
+                fontFamily: 'inherit',
+              }}
               aria-label="닫기"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              ✕
             </button>
           </div>
         )}
+
         {children}
       </div>
     </div>

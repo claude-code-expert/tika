@@ -1,15 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
-import { LabelSelector } from '@/components/label/LabelSelector';
-import { IssueBreadcrumb } from '@/components/issue/IssueBreadcrumb';
-import { Avatar } from '@/components/ui/Avatar';
 import type { TicketWithMeta, ChecklistItem, Label } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
-import { Button } from '@/components/ui/Button';
 import type { UpdateTicketInput } from '@/lib/validations';
 
 interface TicketModalProps {
@@ -20,6 +16,27 @@ interface TicketModalProps {
   onDelete: (id: number) => Promise<void>;
 }
 
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  BACKLOG: { bg: '#F3F4F6', color: '#6B7280' },
+  TODO: { bg: '#DBEAFE', color: '#1D4ED8' },
+  IN_PROGRESS: { bg: '#FEF3C7', color: '#B45309' },
+  DONE: { bg: '#D1FAE5', color: '#065F46' },
+};
+
+const PRIORITY_STYLES: Record<string, { bg: string; color: string }> = {
+  LOW: { bg: '#F3F4F6', color: '#6B7280' },
+  MEDIUM: { bg: '#FEF9C3', color: '#A16207' },
+  HIGH: { bg: '#FFEDD5', color: '#C2410C' },
+  CRITICAL: { bg: '#FEE2E2', color: '#DC2626' },
+};
+
+const TYPE_BADGE: Record<string, { bg: string; abbr: string }> = {
+  GOAL: { bg: '#8B5CF6', abbr: 'G' },
+  STORY: { bg: '#3B82F6', abbr: 'S' },
+  FEATURE: { bg: '#10B981', abbr: 'F' },
+  TASK: { bg: '#F59E0B', abbr: 'T' },
+};
+
 export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: TicketModalProps) {
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description ?? '');
@@ -29,10 +46,26 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
   const [type, setType] = useState(ticket.type);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(ticket.checklistItems);
   const [allLabels, setAllLabels] = useState<Label[]>([]);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>(ticket.labels.map((l) => l.id));
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>(
+    ticket.labels.map((l) => l.id),
+  );
   const [labelsLoaded, setLabelsLoaded] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const labelAreaRef = useRef<HTMLDivElement>(null);
+
+  // Close label picker on outside click
+  useEffect(() => {
+    if (!showLabelPicker) return;
+    const handleClick = (e: MouseEvent) => {
+      if (labelAreaRef.current && !labelAreaRef.current.contains(e.target as Node)) {
+        setShowLabelPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showLabelPicker]);
 
   const isDirty =
     title !== ticket.title ||
@@ -66,49 +99,568 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
     onClose();
   };
 
+  const handleLabelToggle = async (labelId: number) => {
+    const newIds = selectedLabelIds.includes(labelId)
+      ? selectedLabelIds.filter((id) => id !== labelId)
+      : [...selectedLabelIds, labelId];
+    setSelectedLabelIds(newIds);
+    await fetch(`/api/tickets/${ticket.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ labelIds: newIds }),
+    });
+  };
+
+  const handleLabelAddClick = async () => {
+    if (!labelsLoaded) {
+      const res = await fetch('/api/labels');
+      if (res.ok) {
+        const data = await res.json();
+        setAllLabels(data.labels);
+        setLabelsLoaded(true);
+      }
+    }
+    setShowLabelPicker((prev) => !prev);
+  };
+
+  // Labels to display: before loading use ticket.labels, after loading use allLabels
+  const displayLabels: Label[] = labelsLoaded
+    ? allLabels.filter((l) => selectedLabelIds.includes(l.id))
+    : ticket.labels.filter((l) => selectedLabelIds.includes(l.id));
+
+  const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.TODO;
+  const priorityStyle = PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.MEDIUM;
+  const typeBadge = TYPE_BADGE[type] ?? TYPE_BADGE.TASK;
+
+  // Action button base style
+  const actionBtnStyle: React.CSSProperties = {
+    padding: '7px 14px',
+    border: '1px solid var(--color-border)',
+    borderRadius: 6,
+    background: 'transparent',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    fontFamily: 'inherit',
+    transition: 'all 0.15s',
+  };
+
+  const handleActionHover = (e: React.MouseEvent<HTMLButtonElement>, enter: boolean) => {
+    const el = e.currentTarget;
+    if (enter) {
+      el.style.borderColor = 'var(--color-border-hover)';
+      el.style.color = 'var(--color-text-primary)';
+      el.style.background = 'var(--color-board-bg)';
+    } else {
+      el.style.borderColor = 'var(--color-border)';
+      el.style.color = 'var(--color-text-secondary)';
+      el.style.background = 'transparent';
+    }
+  };
+
+  const handleDangerHover = (e: React.MouseEvent<HTMLButtonElement>, enter: boolean) => {
+    const el = e.currentTarget;
+    if (enter) {
+      el.style.borderColor = '#DC2626';
+      el.style.background = '#FEF2F2';
+    } else {
+      el.style.borderColor = 'var(--color-border)';
+      el.style.background = 'transparent';
+    }
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
-        <div className="flex flex-col">
-          {/* Header */}
-          <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-4">
-            <div className="flex-1">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full border-none text-lg font-semibold text-gray-900 outline-none focus:ring-0"
-                aria-label="티켓 제목"
-              />
-            </div>
-            <button
-              onClick={onClose}
-              className="mt-0.5 rounded-lg p-1 text-gray-400 hover:bg-gray-100"
-              aria-label="닫기"
+      <Modal isOpen={isOpen} onClose={onClose} maxWidth={720}>
+        {/* Outer flex column — fills Modal panel */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* ===== detail-top ===== */}
+          <div
+            style={{
+              padding: '20px 24px 16px',
+              borderBottom: '1px solid var(--color-border)',
+              flexShrink: 0,
+            }}
+          >
+            {/* Top bar: labels + close */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 14,
+              }}
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+              {/* Label edit area */}
+              <div
+                ref={labelAreaRef}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  flex: 1,
+                  position: 'relative',
+                }}
+              >
+                {displayLabels.map((label) => (
+                  <div
+                    key={label.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '3px 8px 3px 10px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      background: label.color,
+                      color: '#fff',
+                    }}
+                  >
+                    {label.name}
+                    <button
+                      onClick={() => handleLabelToggle(label.id)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        padding: 0,
+                        lineHeight: 1,
+                        opacity: 0.7,
+                        color: '#fff',
+                      }}
+                      aria-label={`${label.name} 라벨 제거`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={handleLabelAddClick}
+                  style={{
+                    padding: '3px 10px',
+                    border: '1px dashed var(--color-border-hover)',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-accent)';
+                    e.currentTarget.style.color = 'var(--color-accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-border-hover)';
+                    e.currentTarget.style.color = 'var(--color-text-muted)';
+                  }}
+                >
+                  + 라벨 추가
+                </button>
 
-          {/* Body */}
-          <div className="flex gap-6 px-6 py-4">
-            {/* Left: description + checklist placeholder */}
-            <div className="flex-1">
-              {ticket.isOverdue && (
-                <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-                  ⚠ 마감 초과
+                {/* Label picker dropdown */}
+                {showLabelPicker && labelsLoaded && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 32,
+                      left: 0,
+                      background: '#fff',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 8,
+                      boxShadow: 'var(--shadow-dropdown)',
+                      padding: 8,
+                      zIndex: 200,
+                      minWidth: 200,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 8,
+                        padding: '0 4px',
+                      }}
+                    >
+                      라벨 선택
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {allLabels.map((label) => (
+                        <button
+                          key={label.id}
+                          onClick={() => {
+                            handleLabelToggle(label.id);
+                            setShowLabelPicker(false);
+                          }}
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 20,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            border: selectedLabelIds.includes(label.id)
+                              ? '2px solid rgba(0,0,0,0.3)'
+                              : '2px solid transparent',
+                            background: label.color,
+                            color: '#fff',
+                            fontFamily: 'inherit',
+                            transition: 'transform 0.1s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          {label.name}
+                        </button>
+                      ))}
+                    </div>
+                    {allLabels.length === 0 && (
+                      <p
+                        style={{ fontSize: 11, color: 'var(--color-text-muted)', padding: '4px' }}
+                      >
+                        라벨이 없습니다
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                style={{
+                  width: 28,
+                  height: 28,
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  fontFamily: 'inherit',
+                  transition: 'background 0.1s, color 0.1s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--color-board-bg)';
+                  e.currentTarget.style.color = 'var(--color-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--color-text-muted)';
+                }}
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Title */}
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: 20,
+                fontWeight: 700,
+                color: 'var(--color-text-primary)',
+                lineHeight: 1.4,
+                marginBottom: 10,
+                background: 'transparent',
+              }}
+              aria-label="티켓 제목"
+            />
+
+            {/* Breadcrumb (if issue linked) */}
+            {ticket.issue && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexWrap: 'wrap',
+                  marginBottom: 14,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 18,
+                      height: 18,
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#fff',
+                      background: typeBadge.bg,
+                    }}
+                  >
+                    {typeBadge.abbr}
+                  </span>
+                  {ticket.issue.name}
+                </div>
+              </div>
+            )}
+
+            {/* Overdue warning */}
+            {ticket.isOverdue && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  marginBottom: 10,
+                  padding: '4px 10px',
+                  background: '#FEF2F2',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: '#DC2626',
+                }}
+              >
+                ⚠ 마감 초과
+              </div>
+            )}
+
+            {/* Meta row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {/* Status */}
+              <select
+                value={status}
+                onChange={(e) =>
+                  setStatus(e.target.value as (typeof TICKET_STATUS)[keyof typeof TICKET_STATUS])
+                }
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: statusStyle.bg,
+                  color: statusStyle.color,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+                aria-label="상태"
+              >
+                {Object.values(TICKET_STATUS).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+
+              {/* Priority */}
+              <select
+                value={priority}
+                onChange={(e) =>
+                  setPriority(
+                    e.target.value as (typeof TICKET_PRIORITY)[keyof typeof TICKET_PRIORITY],
+                  )
+                }
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: priorityStyle.bg,
+                  color: priorityStyle.color,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+                aria-label="우선순위"
+              >
+                {Object.values(TICKET_PRIORITY).map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+
+              {/* Type */}
+              <select
+                value={type}
+                onChange={(e) =>
+                  setType(e.target.value as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE])
+                }
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: 'var(--color-board-bg)',
+                  color: 'var(--color-text-secondary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+                aria-label="유형"
+              >
+                {Object.values(TICKET_TYPE).map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+
+              {/* Due date */}
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: dueDate ? '#FEF9C3' : 'var(--color-board-bg)',
+                  color: dueDate ? '#A16207' : 'var(--color-text-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+                aria-label="마감일"
+              />
+
+              {/* Assignee */}
+              {ticket.assignee && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12,
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: ticket.assignee.color ?? 'var(--color-accent)',
+                      color: '#fff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    }}
+                  >
+                    {ticket.assignee.displayName.charAt(0)}
+                  </div>
+                  {ticket.assignee.displayName}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* ===== detail-body ===== */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              padding: '0 24px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* 설명 section */}
+            <div
+              style={{
+                padding: '16px 0',
+                borderBottom: '1px solid var(--color-border)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--color-text-secondary)',
+                  marginBottom: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                📝 설명
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={1000}
-                rows={5}
+                rows={4}
                 placeholder="설명을 입력하세요..."
-                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  minHeight: 80,
+                  padding: '8px 12px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  color: 'var(--color-text-primary)',
+                  background: '#fff',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  transition: 'border-color 0.15s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'var(--color-accent)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'var(--color-border)';
+                }}
                 aria-label="설명"
               />
+            </div>
+
+            {/* 체크리스트 section */}
+            <div style={{ padding: '16px 0' }}>
               <ChecklistSection
                 items={checklistItems}
                 onAdd={async (text) => {
@@ -142,154 +694,72 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
                 }}
               />
             </div>
-
-            {/* Right: metadata */}
-            <div className="w-44 shrink-0 space-y-3 text-sm">
-              {/* Type */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">유형</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as typeof TICKET_TYPE[keyof typeof TICKET_TYPE])}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none"
-                  aria-label="유형"
-                >
-                  {Object.values(TICKET_TYPE).map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-              {/* Status */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">상태</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as typeof TICKET_STATUS[keyof typeof TICKET_STATUS])}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none"
-                  aria-label="상태"
-                >
-                  {Object.values(TICKET_STATUS).map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              {/* Priority */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">우선순위</label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as typeof TICKET_PRIORITY[keyof typeof TICKET_PRIORITY])}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none"
-                  aria-label="우선순위"
-                >
-                  {Object.values(TICKET_PRIORITY).map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-              {/* Due date */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">마감일</label>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none"
-                  aria-label="마감일"
-                />
-              </div>
-              {/* Labels */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">라벨</label>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!labelsLoaded) {
-                      const res = await fetch('/api/labels');
-                      if (res.ok) {
-                        const data = await res.json();
-                        setAllLabels(data.labels);
-                        setLabelsLoaded(true);
-                      }
-                    }
-                  }}
-                  className="mb-1 text-xs text-blue-500 hover:text-blue-700"
-                >
-                  {labelsLoaded ? '라벨 선택' : '라벨 불러오기'}
-                </button>
-                {labelsLoaded && (
-                  <LabelSelector
-                    labels={allLabels}
-                    selectedIds={selectedLabelIds}
-                    onToggle={async (labelId) => {
-                      const newIds = selectedLabelIds.includes(labelId)
-                        ? selectedLabelIds.filter((id) => id !== labelId)
-                        : [...selectedLabelIds, labelId];
-                      setSelectedLabelIds(newIds);
-                      await fetch(`/api/tickets/${ticket.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ labelIds: newIds }),
-                      });
-                    }}
-                    onCreateLabel={async (name, color) => {
-                      const res = await fetch('/api/labels', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, color }),
-                      });
-                      if (res.ok) {
-                        const { label } = await res.json();
-                        setAllLabels((prev) => [...prev, label]);
-                      }
-                    }}
-                  />
-                )}
-              </div>
-              {/* Assignee */}
-              {ticket.assignee && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500">담당자</label>
-                  <Avatar
-                    displayName={ticket.assignee.displayName}
-                    color={ticket.assignee.color}
-                    size="sm"
-                  />
-                </div>
-              )}
-
-              {/* Issue breadcrumb */}
-              {ticket.issue && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500">이슈</label>
-                  <IssueBreadcrumb issue={ticket.issue} />
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3">
+          {/* ===== detail-footer ===== */}
+          <div
+            style={{
+              padding: '12px 24px',
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleSave}
+                disabled={!isDirty || !title.trim() || isSaving}
+                aria-label="저장"
+                style={{
+                  ...actionBtnStyle,
+                  background: isDirty && title.trim() ? 'var(--color-accent)' : 'transparent',
+                  color: isDirty && title.trim() ? '#fff' : 'var(--color-text-secondary)',
+                  border: isDirty && title.trim() ? 'none' : '1px solid var(--color-border)',
+                  opacity: isSaving ? 0.7 : 1,
+                  cursor: isDirty && title.trim() && !isSaving ? 'pointer' : 'default',
+                }}
+                onMouseEnter={(e) => {
+                  if (isDirty && title.trim() && !isSaving) {
+                    e.currentTarget.style.background = 'var(--color-accent-hover)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isDirty && title.trim() && !isSaving) {
+                    e.currentTarget.style.background = 'var(--color-accent)';
+                  }
+                }}
+              >
+                {isSaving ? '저장 중...' : '✏ 저장'}
+              </button>
+              <button
+                style={actionBtnStyle}
+                onMouseEnter={(e) => handleActionHover(e, true)}
+                onMouseLeave={(e) => handleActionHover(e, false)}
+                title="복제 기능은 준비 중입니다"
+              >
+                📋 복제
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="취소"
+                style={actionBtnStyle}
+                onMouseEnter={(e) => handleActionHover(e, true)}
+                onMouseLeave={(e) => handleActionHover(e, false)}
+              >
+                ✕ 닫기
+              </button>
+            </div>
             <button
               onClick={() => setShowDelete(true)}
-              className="text-xs text-red-500 hover:text-red-700"
+              aria-label="삭제"
+              style={{ ...actionBtnStyle, color: '#DC2626' }}
+              onMouseEnter={(e) => handleDangerHover(e, true)}
+              onMouseLeave={(e) => handleDangerHover(e, false)}
             >
-              삭제
+              🗑 삭제
             </button>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={onClose}>
-                취소
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={!isDirty || !title.trim()}
-                isLoading={isSaving}
-              >
-                저장
-              </Button>
-            </div>
           </div>
         </div>
       </Modal>

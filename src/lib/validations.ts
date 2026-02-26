@@ -25,6 +25,11 @@ export const createTicketSchema = z.object({
     .optional(),
   type: z.enum(ticketTypeValues as [string, ...string[]]).optional().default('TASK'),
   priority: z.enum(ticketPriorityValues as [string, ...string[]]).optional().default('MEDIUM'),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
@@ -32,6 +37,7 @@ export const createTicketSchema = z.object({
     .optional(),
   issueId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
+  labelIds: z.array(z.number().int().positive()).optional(),
 });
 
 export const updateTicketSchema = z.object({
@@ -45,6 +51,11 @@ export const updateTicketSchema = z.object({
   type: z.enum(ticketTypeValues as [string, ...string[]]).optional(),
   status: z.enum(ticketStatusValues as [string, ...string[]]).optional(),
   priority: z.enum(ticketPriorityValues as [string, ...string[]]).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+    .nullable()
+    .optional(),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
@@ -103,6 +114,45 @@ export const createChecklistItemSchema = z.object({
 export const updateChecklistItemSchema = z.object({
   text: z.string().min(1).max(200).optional(),
   isCompleted: z.boolean().optional(),
+});
+
+export const updateWorkspaceSchema = z
+  .object({
+    name: z.string().min(1, '이름은 1자 이상 입력해야 합니다').max(50, '이름은 50자 이하여야 합니다').optional(),
+    description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
+  })
+  .refine((data) => data.name !== undefined || data.description !== undefined, {
+    message: '수정할 항목이 없습니다',
+  });
+
+export const upsertNotificationChannelSchema = z
+  .object({
+    type: z.enum(['slack', 'telegram']),
+    config: z.union([
+      z.object({ webhookUrl: z.string() }),
+      z.object({ botToken: z.string(), chatId: z.string() }),
+      z.object({}),
+    ]),
+    enabled: z.boolean(),
+  })
+  .refine(
+    (data) => {
+      if (!data.enabled) return true;
+      if (data.type === 'slack') {
+        const cfg = data.config as { webhookUrl?: string };
+        return !!cfg.webhookUrl?.trim();
+      }
+      if (data.type === 'telegram') {
+        const cfg = data.config as { botToken?: string; chatId?: string };
+        return !!cfg.botToken?.trim() && !!cfg.chatId?.trim();
+      }
+      return true;
+    },
+    { message: '활성화된 채널에는 설정 값이 필요합니다', path: ['config'] },
+  );
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(['admin', 'member']),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;

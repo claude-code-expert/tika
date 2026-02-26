@@ -82,7 +82,7 @@ export function AppShell() {
         flexDirection: 'column',
         height: '100vh',
         overflow: 'hidden',
-        background: 'var(--color-board-bg)',
+        background: 'var(--color-app-bg)',
       }}
     >
       <Header onNewTask={() => setIsCreating(true)} />
@@ -91,13 +91,39 @@ export function AppShell() {
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <Sidebar
             backlogTickets={board.board.BACKLOG}
-            totalCount={board.total}
             isLoading={isLoading}
             onTicketClick={setSelectedTicket}
             onAddTicket={() => setIsCreating(true)}
           />
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Filter bar */}
+            <div className="filter-bar">
+              <button className="chip" data-active="true">
+                전체
+                <span className="chip-count">{board.total}</span>
+              </button>
+              <button className="chip">
+                이번 주 업무
+                <span className="chip-count">
+                  {Object.values(board.board).flat().filter((t) => {
+                    if (!t.dueDate) return false;
+                    const due = new Date(t.dueDate);
+                    const now = new Date();
+                    const weekEnd = new Date(now);
+                    weekEnd.setDate(now.getDate() + (6 - now.getDay()));
+                    return due >= now && due <= weekEnd;
+                  }).length}
+                </span>
+              </button>
+              <button className="chip">
+                일정 초과
+                <span className="chip-count">
+                  {Object.values(board.board).flat().filter((t) => t.isOverdue).length}
+                </span>
+              </button>
+            </div>
+
             <BoardContainer
               board={board}
               isLoading={isLoading}

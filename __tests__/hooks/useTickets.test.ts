@@ -148,7 +148,7 @@ describe('createTicket', () => {
       json: () => Promise.resolve({ error: { message: '제목을 입력해주세요' } }),
     });
 
-    const { result } = renderHook(() => useTickets());
+    const { result } = renderHook(() => useTickets(emptyBoard));
 
     await expect(
       act(async () => { await result.current.createTicket({ title: '' }); }),
@@ -226,7 +226,9 @@ describe('fetchBoard', () => {
   });
 
   it('API 실패 시 error 상태를 설정한다', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false });
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(emptyBoard) }) // useEffect
+      .mockResolvedValueOnce({ ok: false }); // explicit fetchBoard call
 
     const { result } = renderHook(() => useTickets());
 

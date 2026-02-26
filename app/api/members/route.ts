@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getMembersByWorkspace } from '@/db/queries/members';
+import { getMembersWithEmailByWorkspace } from '@/db/queries/members';
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
     }
 
     const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
-    const membersList = await getMembersByWorkspace(workspaceId);
+    const membersList = await getMembersWithEmailByWorkspace(workspaceId);
 
     return NextResponse.json({ members: membersList });
   } catch (error) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { createLabelSchema } from '@/lib/validations';
-import { getLabelsByWorkspace, createLabel } from '@/db/queries/labels';
+import { getLabelsByWorkspaceWithCount, createLabel } from '@/db/queries/labels';
 
 function getWorkspaceId(session: Session | null): number | null {
   return ((session?.user as Record<string, unknown> | undefined)?.workspaceId as number) ?? null;
@@ -24,7 +24,7 @@ export async function GET() {
         { status: 401 },
       );
     }
-    const labelList = await getLabelsByWorkspace(workspaceId);
+    const labelList = await getLabelsByWorkspaceWithCount(workspaceId);
     return NextResponse.json({ labels: labelList });
   } catch (error) {
     console.error('GET /api/labels error:', error);

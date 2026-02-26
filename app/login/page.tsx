@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/lib/auth';
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   let session = null;
   try {
     session = await auth();
@@ -9,6 +13,8 @@ export default async function LoginPage() {
     console.error('[login] auth() 에러:', err);
   }
   if (session?.user) redirect('/');
+
+  const { error } = await searchParams;
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]" style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif" }}>
@@ -59,6 +65,20 @@ export default async function LoginPage() {
             Google로 시작하기
           </button>
         </form>
+
+        {/* Error state */}
+        {error && (
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-sm text-[#DC2626]">
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx={12} cy={12} r={10} />
+              <line x1={12} x2={12} y1={8} y2={12} />
+              <line x1={12} x2={12.01} y1={16} y2={16} />
+            </svg>
+            {error === 'AccessDenied'
+              ? '접근이 거부되었습니다. 다시 시도해주세요.'
+              : '인증에 실패했습니다. 다시 시도해주세요.'}
+          </div>
+        )}
       </section>
 
       {/* Feature Showcase */}

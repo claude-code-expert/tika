@@ -6,7 +6,7 @@ import {
   markAllNotificationsAsRead,
 } from '@/db/queries/notificationLogs';
 
-export async function GET() {
+export async function GET(request?: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -17,8 +17,11 @@ export async function GET() {
     }
 
     const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const limitParam = request ? new URL(request.url).searchParams.get('limit') : null;
+    const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 200) : 20;
+
     const [logs, unreadCount] = await Promise.all([
-      getNotificationLogs(workspaceId, 20),
+      getNotificationLogs(workspaceId, limit),
       getUnreadNotificationCount(workspaceId),
     ]);
 

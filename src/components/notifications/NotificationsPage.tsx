@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import type { NotificationLog } from '@/types/index';
 
@@ -27,11 +26,6 @@ function formatDate(iso: string): string {
 }
 
 export function NotificationsPage() {
-  const { data: session } = useSession();
-  const user = session?.user;
-  const displayName = user?.name ?? '사용자';
-  const initial = displayName.slice(0, 2).toUpperCase();
-
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
@@ -113,74 +107,7 @@ export function NotificationsPage() {
         fontFamily: "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif",
       }}
     >
-      {/* ─── Header ─── */}
-      <header
-        style={{
-          height: 60,
-          background: '#fff',
-          borderBottom: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-header)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 20px',
-          gap: 16,
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          flexShrink: 0,
-        }}
-      >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: 'var(--color-accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 16,
-              fontWeight: 700,
-            }}
-          >
-            T
-          </div>
-          <span
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 20,
-              fontWeight: 700,
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            Tika
-          </span>
-        </Link>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-          알림 내역
-        </span>
-        <div style={{ width: 16 }} />
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: '#7EB4A2',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
-          {initial}
-        </div>
-      </header>
+      <Header />
 
       {/* ─── Main content ─── */}
       <main

@@ -7,7 +7,7 @@ import { ProfileModal } from './ProfileModal';
 import type { Member, NotificationLog } from '@/types/index';
 
 interface HeaderProps {
-  onNewTask: () => void;
+  onNewTask?: () => void;
   searchQuery?: string;
   onSearch?: (q: string) => void;
   onToggleSidebar?: () => void;
@@ -159,7 +159,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
         {/* Left: Hamburger (mobile) + Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           {/* Mobile hamburger */}
-          {isMobile && (
+          {isMobile && onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
               aria-label="사이드바 열기"
@@ -221,8 +221,8 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           </Link>
         </div>
 
-        {/* Center: Search */}
-        <div style={{ flex: 1, maxWidth: 400, margin: '0 auto' }}>
+        {/* Center: Search (only when search handler provided) */}
+        {onSearch !== undefined && <div style={{ flex: 1, maxWidth: 400, margin: '0 auto' }}>
           <div style={{ position: 'relative' }}>
             <svg
               style={{
@@ -285,41 +285,43 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               </button>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Right: Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
-            onClick={onNewTask}
-            aria-label="새 업무 생성"
-            style={{
-              height: isMobile ? 44 : 32,
-              width: isMobile ? 44 : undefined,
-              padding: isMobile ? '0' : '0 14px',
-              background: 'var(--color-accent)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: isMobile ? '50%' : 'var(--radius-button)',
-              fontSize: isMobile ? 20 : 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'background 0.15s',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent-hover)')
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent)')
-            }
-          >
-            {isMobile ? '+' : '+ 새 업무'}
-          </button>
+          {onNewTask && (
+            <button
+              onClick={onNewTask}
+              aria-label="새 업무 생성"
+              style={{
+                height: isMobile ? 44 : 32,
+                width: isMobile ? 44 : undefined,
+                padding: isMobile ? '0' : '0 14px',
+                background: 'var(--color-accent)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: isMobile ? '50%' : 'var(--radius-button)',
+                fontSize: isMobile ? 20 : 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'background 0.15s',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) =>
+                ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent-hover)')
+              }
+              onMouseLeave={(e) =>
+                ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent)')
+              }
+            >
+              {isMobile ? '+' : '+ 새 업무'}
+            </button>
+          )}
 
           {/* Notification button + dropdown */}
           <div ref={notifRef} style={{ position: 'relative' }}>

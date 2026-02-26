@@ -14,11 +14,9 @@ import {
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
-import { FilterBar } from '@/components/ui/FilterBar';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { TicketCard } from '@/components/board/TicketCard';
 import { useTickets } from '@/hooks/useTickets';
-import { useLabels } from '@/hooks/useLabels';
 import type { TicketWithMeta, TicketStatus, BoardData, TicketPriority } from '@/types/index';
 
 type ActiveFilter = 'all' | 'this_week' | 'overdue';
@@ -55,11 +53,7 @@ export function AppShell() {
     updateTicket,
     deleteTicket,
     reorder,
-    activeLabels,
-    toggleLabel,
-    clearLabels,
   } = useTickets();
-  const { labels, fetchLabels } = useLabels();
 
   // Get current member ID from session (for comment ownership)
   const [currentMemberId, setCurrentMemberId] = useState<number | null>(null);
@@ -82,10 +76,6 @@ export function AppShell() {
   const [activePriorities, setActivePriorities] = useState<TicketPriority[]>([]);
   const [dueDateFrom, setDueDateFrom] = useState('');
   const [dueDateTo, setDueDateTo] = useState('');
-
-  useEffect(() => {
-    fetchLabels();
-  }, [fetchLabels]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -297,13 +287,6 @@ export function AppShell() {
                 일정 초과
                 <span className="chip-count">{overdueCount}</span>
               </button>
-              <FilterBar
-                labels={labels}
-                activeLabels={activeLabels}
-                onLabelToggle={toggleLabel}
-                onClearLabels={clearLabels}
-              />
-
               {/* Advanced filter toggle */}
               <button
                 className="chip"
@@ -320,12 +303,11 @@ export function AppShell() {
               </button>
 
               {/* Clear all filters shortcut */}
-              {(activeFilter !== 'all' || activeLabels.length > 0 || activePriorities.length > 0 || dueDateFrom || dueDateTo || searchQuery) && (
+              {(activeFilter !== 'all' || activePriorities.length > 0 || dueDateFrom || dueDateTo || searchQuery) && (
                 <button
                   className="chip"
                   onClick={() => {
                     setActiveFilter('all');
-                    clearLabels();
                     setActivePriorities([]);
                     setDueDateFrom('');
                     setDueDateTo('');

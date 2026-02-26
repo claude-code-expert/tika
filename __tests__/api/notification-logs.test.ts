@@ -45,10 +45,13 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+const makeGetRequest = (params?: string) =>
+  new NextRequest(`http://localhost/api/notifications/logs${params ? `?${params}` : ''}`);
+
 describe('GET /api/notifications/logs', () => {
   it('미인증 요청은 401을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(null);
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(401);
   });
 
@@ -57,7 +60,7 @@ describe('GET /api/notifications/logs', () => {
     mockedGetLogs.mockResolvedValueOnce([mockLog]);
     mockedGetCount.mockResolvedValueOnce(1);
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const body = await res.json() as { logs: NotificationLog[]; unreadCount: number };
     expect(body.logs).toHaveLength(1);

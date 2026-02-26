@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import type { ReactNode } from 'react';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { GeneralSection } from './GeneralSection';
 import { NotificationSection } from './NotificationSection';
 import { LabelSection } from './LabelSection';
@@ -65,11 +65,6 @@ export interface SectionProps {
 }
 
 export function SettingsShell() {
-  const { data: session } = useSession();
-  const user = session?.user;
-  const displayName = user?.name ?? '사용자';
-  const initial = displayName.slice(0, 2).toUpperCase();
-
   const [activeSection, setActiveSection] = useState<SectionKey>('general');
   const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -87,19 +82,7 @@ export function SettingsShell() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F8F9FB', fontFamily: "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" }}>
-      {/* Header */}
-      <header style={{ height: 60, background: '#fff', borderBottom: '1px solid #DFE1E6', boxShadow: '0 1px 3px rgba(0,0,0,.06)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 16, position: 'sticky', top: 0, zIndex: 100 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#629584', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>T</div>
-          <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 700, color: '#2C3E50' }}>Tika</span>
-        </Link>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#5A6B7F' }}>설정</span>
-        <div style={{ width: 16 }} />
-        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#7EB4A2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-          {initial}
-        </div>
-      </header>
+      <Header />
 
       {/* Body */}
       <div style={{ display: 'flex', flex: 1 }}>
@@ -144,10 +127,7 @@ export function SettingsShell() {
         </main>
       </div>
 
-      {/* Footer */}
-      <footer style={{ height: 55, borderTop: '1px solid #DFE1E6', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', fontSize: 11, color: '#8993A4', flexShrink: 0 }}>
-        © 2026 Tika · v0.1.0
-      </footer>
+      <Footer />
 
       {/* Toast */}
       {toast && (

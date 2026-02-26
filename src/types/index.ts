@@ -143,3 +143,32 @@ export interface BoardData {
   board: Record<TicketStatus, TicketWithMeta[]>;
   total: number;
 }
+
+export interface Comment {
+  id: number;
+  ticketId: number;
+  memberId: number | null;
+  memberName: string | null;
+  memberColor: string | null;
+  text: string;
+  createdAt: string; // ISO 8601
+  updatedAt: string;
+}
+
+export const NOTIFICATION_STATUS = {
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+} as const;
+export type NotificationStatus = (typeof NOTIFICATION_STATUS)[keyof typeof NOTIFICATION_STATUS];
+
+export interface NotificationLog {
+  id: number;
+  workspaceId: number;
+  ticketId: number | null;
+  channel: NotificationChannelType;
+  message: string;
+  status: NotificationStatus;
+  sentAt: string; // ISO 8601
+  errorMessage: string | null;
+  isRead: boolean;
+}

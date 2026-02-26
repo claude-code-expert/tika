@@ -1,0 +1,15 @@
+name: Daily D-1 Notification
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every day at UTC 00:00 (KST 09:00)
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger D-1 notification
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/notify-due" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

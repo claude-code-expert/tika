@@ -32,12 +32,12 @@ Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개
 
 ### 백엔드 / DB
 
-| 기술                   | 버전 | 용도                    |
-| ---------------------- | ---- | ----------------------- |
-| Next.js Route Handlers | -    | REST API                |
-| Drizzle ORM            | 0.38 | ORM 및 쿼리 빌더        |
-| Vercel Postgres (Neon) | -    | PostgreSQL 데이터베이스 |
-| drizzle-kit            | 0.30 | 마이그레이션 도구       |
+| 기술                   | 버전 | 용도                         |
+| ---------------------- | ---- | ---------------------------- |
+| Next.js Route Handlers | -    | REST API                     |
+| Drizzle ORM            | 0.38 | ORM 및 쿼리 빌더             |
+| Vercel Postgres (Neon) | -    | PostgreSQL 데이터베이스      |
+| drizzle-kit            | 0.30 | 마이그레이션 도구            |
 | NextAuth.js            | 5.x  | Google OAuth 인증, 세션 관리 |
 
 ### 개발 도구
@@ -350,6 +350,13 @@ git reset --hard          # ❌ 절대 금지
 git commit --no-verify    # ❌ 절대 금지
 ```
 
+### 🔴 Git 커밋/푸시 - 사용자 명시적 요청 없이 절대 금지
+
+- **`git commit`은 사용자가 명시적으로 요청한 경우에만 실행한다**
+- **`git push`는 사용자가 명시적으로 요청한 경우에만 실행한다**
+- 작업 완료 후 커밋이 필요하다고 판단되면, 실행하지 말고 사용자에게 먼저 물어볼 것
+- "커밋해줘", "commit해줘" 등 명시적 지시가 없으면 커밋하지 않는다
+
 ### 🔴 npm 위험 명령어
 
 ```bash
@@ -379,35 +386,35 @@ npm audit fix --force     # ❌ 절대 금지
 
 Phase 1 테이블 구성 (8개):
 
-| 테이블 | 설명 | 관계 |
-|--------|------|------|
-| users | Google OAuth 사용자 | 인증 엔티티 |
-| workspaces | 워크스페이스 | users 1:N (owner_id FK) |
-| tickets | 티켓 (칸반 카드) | workspaces 1:N (workspace_id FK) |
-| checklist_items | 체크리스트 항목 | tickets 1:N (ON DELETE CASCADE) |
-| labels | 라벨 정의 | workspaces 1:N (workspace_id FK), UNIQUE(workspace_id, name) |
-| ticket_labels | 티켓-라벨 매핑 | M:N (tickets, labels, ON DELETE CASCADE) |
-| issues | 이슈 계층 (Goal/Story/Feature/Task) | workspaces 1:N, self-referencing (ON DELETE SET NULL) |
-| members | 멤버 (담당자) | users 1:N, workspaces 1:N, UNIQUE(user_id, workspace_id) |
+| 테이블          | 설명                                | 관계                                                         |
+| --------------- | ----------------------------------- | ------------------------------------------------------------ |
+| users           | Google OAuth 사용자                 | 인증 엔티티                                                  |
+| workspaces      | 워크스페이스                        | users 1:N (owner_id FK)                                      |
+| tickets         | 티켓 (칸반 카드)                    | workspaces 1:N (workspace_id FK)                             |
+| checklist_items | 체크리스트 항목                     | tickets 1:N (ON DELETE CASCADE)                              |
+| labels          | 라벨 정의                           | workspaces 1:N (workspace_id FK), UNIQUE(workspace_id, name) |
+| ticket_labels   | 티켓-라벨 매핑                      | M:N (tickets, labels, ON DELETE CASCADE)                     |
+| issues          | 이슈 계층 (Goal/Story/Feature/Task) | workspaces 1:N, self-referencing (ON DELETE SET NULL)        |
+| members         | 멤버 (담당자)                       | users 1:N, workspaces 1:N, UNIQUE(user_id, workspace_id)     |
 
 ### tickets 테이블
 
-| 칼럼 | 타입 | 제약 | 기본값 | 설명 |
-|------|------|------|--------|------|
-| id | SERIAL | PK | - | 고유 ID |
-| workspace_id | INT | NOT NULL, FK → workspaces(id) | - | 소속 워크스페이스 |
-| title | VARCHAR(200) | NOT NULL | - | 제목 (1~200자) |
-| description | TEXT | NULLABLE | NULL | 설명 (최대 1000자) |
-| type | VARCHAR(10) | NOT NULL | - | 타입: GOAL, STORY, FEATURE, TASK |
-| status | VARCHAR(20) | NOT NULL | 'BACKLOG' | 상태: BACKLOG, TODO, IN_PROGRESS, DONE |
-| priority | VARCHAR(10) | NOT NULL | 'MEDIUM' | 우선순위: LOW, MEDIUM, HIGH, CRITICAL |
-| position | INTEGER | NOT NULL | 0 | 칼럼 내 정렬 순서 |
-| due_date | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
-| issue_id | INT | NULLABLE, FK → issues(id) ON DELETE SET NULL | NULL | 상위 이슈 |
-| assignee_id | INT | NULLABLE, FK → members(id) ON DELETE SET NULL | NULL | 담당자 |
-| completed_at | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 |
-| created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
-| updated_at | TIMESTAMPTZ | NOT NULL | now() | 수정 시각 |
+| 칼럼         | 타입         | 제약                                          | 기본값    | 설명                                   |
+| ------------ | ------------ | --------------------------------------------- | --------- | -------------------------------------- |
+| id           | SERIAL       | PK                                            | -         | 고유 ID                                |
+| workspace_id | INT          | NOT NULL, FK → workspaces(id)                 | -         | 소속 워크스페이스                      |
+| title        | VARCHAR(200) | NOT NULL                                      | -         | 제목 (1~200자)                         |
+| description  | TEXT         | NULLABLE                                      | NULL      | 설명 (최대 1000자)                     |
+| type         | VARCHAR(10)  | NOT NULL                                      | -         | 타입: GOAL, STORY, FEATURE, TASK       |
+| status       | VARCHAR(20)  | NOT NULL                                      | 'BACKLOG' | 상태: BACKLOG, TODO, IN_PROGRESS, DONE |
+| priority     | VARCHAR(10)  | NOT NULL                                      | 'MEDIUM'  | 우선순위: LOW, MEDIUM, HIGH, CRITICAL  |
+| position     | INTEGER      | NOT NULL                                      | 0         | 칼럼 내 정렬 순서                      |
+| due_date     | DATE         | NULLABLE                                      | NULL      | 마감일 (YYYY-MM-DD)                    |
+| issue_id     | INT          | NULLABLE, FK → issues(id) ON DELETE SET NULL  | NULL      | 상위 이슈                              |
+| assignee_id  | INT          | NULLABLE, FK → members(id) ON DELETE SET NULL | NULL      | 담당자                                 |
+| completed_at | TIMESTAMPTZ  | NULLABLE                                      | NULL      | 완료 시각                              |
+| created_at   | TIMESTAMPTZ  | NOT NULL                                      | now()     | 생성 시각                              |
+| updated_at   | TIMESTAMPTZ  | NOT NULL                                      | now()     | 수정 시각                              |
 
 **인덱스:** `idx_tickets_status_position` → (status, position), `idx_tickets_due_date` → (due_date)
 
@@ -419,28 +426,28 @@ Phase 1 테이블 구성 (8개):
 
 모든 API 요청은 세션 검증 필수 (미인증 시 401 UNAUTHORIZED).
 
-| 메서드 | 경로 | 상태코드 | 설명 | 관련 FR |
-|--------|------|----------|------|---------|
-| POST | /api/tickets | 201 | 티켓 생성 | FR-001 |
-| GET | /api/tickets | 200 | 전체 티켓 조회 (보드 데이터) | FR-002 |
-| GET | /api/tickets/:id | 200 | 단일 티켓 조회 | FR-003 |
-| PATCH | /api/tickets/:id | 200 | 티켓 수정 | FR-004 |
-| DELETE | /api/tickets/:id | 204 | 티켓 삭제 | FR-005 |
-| PATCH | /api/tickets/reorder | 200 | 드래그앤드롭 순서 변경 | FR-006 |
-| POST | /api/tickets/:id/checklist | 201 | 체크리스트 항목 추가 | FR-008 |
-| PATCH | /api/tickets/:id/checklist/:itemId | 200 | 체크리스트 항목 수정/토글 | FR-008 |
-| DELETE | /api/tickets/:id/checklist/:itemId | 204 | 체크리스트 항목 삭제 | FR-008 |
-| GET | /api/labels | 200 | 전체 라벨 목록 | FR-009 |
-| POST | /api/labels | 201 | 라벨 생성 | FR-009 |
-| PATCH | /api/labels/:id | 200 | 라벨 수정 | FR-009 |
-| DELETE | /api/labels/:id | 204 | 라벨 삭제 | FR-009 |
-| GET | /api/issues | 200 | 전체 이슈 계층 목록 | FR-010 |
-| POST | /api/issues | 201 | 이슈 생성 | FR-010 |
-| PATCH | /api/issues/:id | 200 | 이슈 수정 | FR-010 |
-| DELETE | /api/issues/:id | 204 | 이슈 삭제 | FR-010 |
-| GET | /api/members | 200 | 멤버 목록 (Phase 1: 본인만) | FR-011 |
-| GET | /api/workspaces | 200 | 현재 사용자 워크스페이스 목록 | FR-012 |
-| — | /api/auth/* | — | NextAuth 자동 라우트 (signin, callback, signout, session) | FR-013 |
+| 메서드 | 경로                               | 상태코드 | 설명                                                      | 관련 FR |
+| ------ | ---------------------------------- | -------- | --------------------------------------------------------- | ------- |
+| POST   | /api/tickets                       | 201      | 티켓 생성                                                 | FR-001  |
+| GET    | /api/tickets                       | 200      | 전체 티켓 조회 (보드 데이터)                              | FR-002  |
+| GET    | /api/tickets/:id                   | 200      | 단일 티켓 조회                                            | FR-003  |
+| PATCH  | /api/tickets/:id                   | 200      | 티켓 수정                                                 | FR-004  |
+| DELETE | /api/tickets/:id                   | 204      | 티켓 삭제                                                 | FR-005  |
+| PATCH  | /api/tickets/reorder               | 200      | 드래그앤드롭 순서 변경                                    | FR-006  |
+| POST   | /api/tickets/:id/checklist         | 201      | 체크리스트 항목 추가                                      | FR-008  |
+| PATCH  | /api/tickets/:id/checklist/:itemId | 200      | 체크리스트 항목 수정/토글                                 | FR-008  |
+| DELETE | /api/tickets/:id/checklist/:itemId | 204      | 체크리스트 항목 삭제                                      | FR-008  |
+| GET    | /api/labels                        | 200      | 전체 라벨 목록                                            | FR-009  |
+| POST   | /api/labels                        | 201      | 라벨 생성                                                 | FR-009  |
+| PATCH  | /api/labels/:id                    | 200      | 라벨 수정                                                 | FR-009  |
+| DELETE | /api/labels/:id                    | 204      | 라벨 삭제                                                 | FR-009  |
+| GET    | /api/issues                        | 200      | 전체 이슈 계층 목록                                       | FR-010  |
+| POST   | /api/issues                        | 201      | 이슈 생성                                                 | FR-010  |
+| PATCH  | /api/issues/:id                    | 200      | 이슈 수정                                                 | FR-010  |
+| DELETE | /api/issues/:id                    | 204      | 이슈 삭제                                                 | FR-010  |
+| GET    | /api/members                       | 200      | 멤버 목록 (Phase 1: 본인만)                               | FR-011  |
+| GET    | /api/workspaces                    | 200      | 현재 사용자 워크스페이스 목록                             | FR-012  |
+| —      | /api/auth/\*                       | —        | NextAuth 자동 라우트 (signin, callback, signout, session) | FR-013  |
 
 > 상세 요청/응답 사양: API_SPEC.md 참조
 
@@ -456,3 +463,20 @@ Phase 1 테이블 구성 (8개):
 ```
 
 **에러 코드:** `UNAUTHORIZED` (401), `VALIDATION_ERROR` (400), `TICKET_NOT_FOUND` (404), `INTERNAL_ERROR` (500)
+
+## Language Policy
+
+- Internal reasoning and planning: English
+- Code and technical artifacts: English (variable names, comments, logs, error messages)
+- Git commits: English, follow Conventional Commits (e.g., feat:, fix:, refactor:)
+- User-facing responses: Korean (한국어)
+  - Task summaries, explanations, and clarifying questions in Korean
+  - When reporting errors or issues, describe the problem in Korean but keep the original error message in English
+
+## Response Format
+
+When completing a task, always end with a Korean summary:
+
+- 무엇을 변경했는지
+- 왜 그렇게 했는지
+- 주의할 점이 있는지

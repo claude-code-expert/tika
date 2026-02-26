@@ -158,6 +158,47 @@ export const notificationChannels = pgTable(
   ],
 );
 
+// 10. comments
+export const comments = pgTable(
+  'comments',
+  {
+    id: serial('id').primaryKey(),
+    ticketId: integer('ticket_id')
+      .notNull()
+      .references(() => tickets.id, { onDelete: 'cascade' }),
+    memberId: integer('member_id').references(() => members.id, { onDelete: 'set null' }),
+    text: varchar('text', { length: 500 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index('idx_comments_ticket_id').on(table.ticketId)],
+);
+
+// 11. notification_logs
+export const notificationLogs = pgTable(
+  'notification_logs',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    ticketId: integer('ticket_id').references(() => tickets.id, { onDelete: 'set null' }),
+    channel: varchar('channel', { length: 20 }).notNull(), // 'slack' | 'telegram'
+    message: text('message').notNull(),
+    status: varchar('status', { length: 10 }).notNull(), // 'SENT' | 'FAILED'
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+    errorMessage: text('error_message'),
+    isRead: boolean('is_read').notNull().default(false),
+  },
+  (table) => [
+    index('idx_notification_logs_workspace_id').on(table.workspaceId),
+    index('idx_notification_logs_sent_at').on(table.sentAt),
+  ],
+);
+
 // 8. ticket_labels (M:N)
 export const ticketLabels = pgTable(
   'ticket_labels',

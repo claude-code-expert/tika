@@ -82,13 +82,23 @@ export function NotificationSection({ showToast }: SectionProps) {
     if (type === 'slack') setSlackTest('loading');
     else setTeleTest('loading');
 
+    const testBody =
+      type === 'slack'
+        ? { webhookUrl: slackWebhookUrl }
+        : { botToken: teleBotToken, chatId: teleChatId };
+
     try {
-      const res = await fetch(`/api/notifications/${type}/test`, { method: 'POST' });
+      const res = await fetch(`/api/notifications/${type}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testBody),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
       const ok = res.ok;
       if (type === 'slack') setSlackTest(ok ? 'success' : 'fail');
       else setTeleTest(ok ? 'success' : 'fail');
       showToast(
-        ok ? '테스트 메시지가 성공적으로 발송되었습니다.' : '발송 실패 — 설정값을 확인해주세요.',
+        ok ? '테스트 메시지가 성공적으로 발송되었습니다.' : (data.error?.message ?? '발송 실패 — 설정값을 확인해주세요.'),
         ok ? 'success' : 'fail',
       );
       setTimeout(() => {

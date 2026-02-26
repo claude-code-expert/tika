@@ -18,6 +18,11 @@ export async function getWorkspaceById(id: number): Promise<Workspace | null> {
   return row ? toWorkspace(row) : null;
 }
 
+export async function getAllWorkspaces(): Promise<Workspace[]> {
+  const rows = await db.select().from(workspaces);
+  return rows.map(toWorkspace);
+}
+
 export async function updateWorkspace(
   id: number,
   data: { name?: string; description?: string | null },

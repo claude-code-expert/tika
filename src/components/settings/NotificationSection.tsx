@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { SectionProps } from './SettingsShell';
+import type { SectionProps } from './types';
 import type { NotificationChannel, SlackConfig, TelegramConfig } from '@/types/index';
 
 type TestStatus = 'idle' | 'loading' | 'success' | 'fail';

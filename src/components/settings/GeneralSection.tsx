@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { SectionProps } from './SettingsShell';
+import type { SectionProps } from './types';
 import type { Workspace } from '@/types/index';
 
 const fieldInputStyle: React.CSSProperties = {

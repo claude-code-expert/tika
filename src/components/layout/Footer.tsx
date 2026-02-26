@@ -12,8 +12,10 @@ export function Footer() {
         flexShrink: 0,
       }}
     >
-      <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-        © 2026 Tika. All rights reserved.
+      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+        Made with{' '}
+        <span style={{ color: '#e25555', margin: '0 2px' }}>♥</span>
+        {' '}for productivity · © 2026 Tika
       </span>
     </footer>
   );

@@ -25,6 +25,7 @@ export const users = pgTable('users', {
 export const workspaces = pgTable('workspaces', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull().default('내 워크스페이스'),
+  description: text('description'),
   ownerId: text('owner_id')
     .notNull()
     .references(() => users.id),
@@ -63,6 +64,7 @@ export const members = pgTable(
       .references(() => workspaces.id),
     displayName: varchar('display_name', { length: 50 }).notNull(),
     color: varchar('color', { length: 7 }).notNull().default('#7EB4A2'),
+    role: varchar('role', { length: 10 }).notNull().default('member'), // 'admin' | 'member'
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('members_user_workspace_unique').on(table.userId, table.workspaceId)],
@@ -82,6 +84,7 @@ export const tickets = pgTable(
     status: varchar('status', { length: 20 }).notNull().default('BACKLOG'),
     priority: varchar('priority', { length: 10 }).notNull().default('MEDIUM'),
     position: integer('position').notNull().default(0),
+    startDate: date('start_date', { mode: 'string' }),
     dueDate: date('due_date', { mode: 'string' }),
     issueId: integer('issue_id').references(() => issues.id, { onDelete: 'set null' }),
     assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
@@ -131,6 +134,28 @@ export const labels = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('labels_workspace_name_unique').on(table.workspaceId, table.name)],
+);
+
+// 9. notification_channels
+export const notificationChannels = pgTable(
+  'notification_channels',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id),
+    type: varchar('type', { length: 20 }).notNull(), // 'slack' | 'telegram'
+    config: text('config').notNull().default('{}'), // JSON string
+    enabled: boolean('enabled').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    unique('notification_channels_workspace_type_unique').on(table.workspaceId, table.type),
+  ],
 );
 
 // 8. ticket_labels (M:N)

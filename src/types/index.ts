@@ -38,6 +38,7 @@ export interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   position: number;
+  startDate: string | null; // YYYY-MM-DD
   dueDate: string | null; // YYYY-MM-DD
   issueId: number | null;
   assigneeId: number | null;
@@ -80,20 +81,62 @@ export interface Issue {
   createdAt: string;
 }
 
+export const MEMBER_ROLE = {
+  ADMIN: 'admin',
+  MEMBER: 'member',
+} as const;
+export type MemberRole = (typeof MEMBER_ROLE)[keyof typeof MEMBER_ROLE];
+
 export interface Member {
   id: number;
   userId: string;
   workspaceId: number;
   displayName: string;
   color: string;
+  role: MemberRole;
   createdAt: string;
+}
+
+export interface MemberWithEmail extends Member {
+  email: string;
 }
 
 export interface Workspace {
   id: number;
   name: string;
+  description: string | null;
   ownerId: string;
   createdAt: string;
+}
+
+export interface LabelWithCount extends Label {
+  ticketCount: number;
+}
+
+export const NOTIFICATION_CHANNEL_TYPE = {
+  SLACK: 'slack',
+  TELEGRAM: 'telegram',
+} as const;
+export type NotificationChannelType =
+  (typeof NOTIFICATION_CHANNEL_TYPE)[keyof typeof NOTIFICATION_CHANNEL_TYPE];
+
+export interface SlackConfig {
+  webhookUrl: string;
+}
+
+export interface TelegramConfig {
+  botToken: string;
+  chatId: string;
+}
+
+export interface NotificationChannel {
+  id: number;
+  workspaceId: number;
+  type: NotificationChannelType;
+  config: SlackConfig | TelegramConfig | Record<string, never>;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BoardData {

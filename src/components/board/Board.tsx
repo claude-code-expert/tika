@@ -27,8 +27,8 @@ export function Board({ board, onTicketClick }: BoardProps) {
       style={{
         flex: 1,
         display: 'flex',
-        gap: 'var(--spacing-column-gap)',
-        padding: 16,
+        gap: 16,
+        padding: 20,
         overflowX: 'auto',
         overflowY: 'hidden',
         background: 'var(--color-board-bg)',

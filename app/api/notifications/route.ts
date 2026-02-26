@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { getNotificationChannels } from '@/db/queries/notificationChannels';
 
 export async function GET() {
   try {
@@ -13,11 +13,11 @@ export async function GET() {
     }
 
     const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
-    const membersList = await getMembersWithEmailByWorkspace(workspaceId);
+    const channels = await getNotificationChannels(workspaceId);
 
-    return NextResponse.json({ members: membersList });
+    return NextResponse.json({ channels });
   } catch (error) {
-    console.error('GET /api/members error:', error);
+    console.error('GET /api/notifications error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: '서버 오류가 발생했습니다' } },
       { status: 500 },

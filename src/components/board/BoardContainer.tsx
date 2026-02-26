@@ -30,8 +30,23 @@ export function BoardContainer({
   selectedTicket,
   onSelectTicket,
 }: BoardContainerProps) {
-  const handleCreate = async (data: CreateTicketInput | UpdateTicketInput) => {
-    await createTicket(data as CreateTicketInput);
+  const handleCreate = async (
+    data: CreateTicketInput | UpdateTicketInput,
+    extra?: { checklistTexts?: string[] },
+  ) => {
+    const ticket = (await createTicket(data as CreateTicketInput)) as { id: number };
+
+    // Add checklist items after ticket creation
+    if (extra?.checklistTexts && extra.checklistTexts.length > 0 && ticket?.id) {
+      for (const text of extra.checklistTexts) {
+        await fetch(`/api/tickets/${ticket.id}/checklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        }).catch(() => {});
+      }
+    }
+
     onCreateClose();
   };
 

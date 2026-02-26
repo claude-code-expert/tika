@@ -413,15 +413,18 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                     justifyContent: 'space-between',
                   }}
                 >
-                  <span
+                  <Link
+                    href="/notifications"
                     style={{
                       fontSize: 13,
                       fontWeight: 600,
                       color: 'var(--color-text-primary)',
+                      textDecoration: 'none',
                     }}
+                    onClick={() => setIsNotifOpen(false)}
                   >
                     알림 내역
-                  </span>
+                  </Link>
                   {unreadCount > 0 && (
                     <button
                       onClick={() => {
@@ -452,7 +455,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                 </div>
 
                 {/* Log list */}
-                <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                   {notifLogs.length === 0 ? (
                     <div
                       style={{
@@ -547,6 +550,22 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                     ))
                   )}
                 </div>
+                {/* Footer: link to full notifications page */}
+                <Link
+                  href="/notifications"
+                  onClick={() => setIsNotifOpen(false)}
+                  style={{
+                    display: 'block',
+                    padding: '10px 16px',
+                    textAlign: 'center',
+                    fontSize: 12,
+                    color: 'var(--color-accent)',
+                    textDecoration: 'none',
+                    borderTop: '1px solid var(--color-border)',
+                  }}
+                >
+                  전체 보기 →
+                </Link>
               </div>
             )}
           </div>

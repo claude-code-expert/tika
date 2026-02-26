@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +11,15 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, children, title, maxWidth = 560 }: ModalProps) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -39,9 +48,9 @@ export function Modal({ isOpen, onClose, children, title, maxWidth = 560 }: Moda
         zIndex: 300,
         background: 'rgba(9,30,66,0.54)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: isMobile ? 0 : 20,
       }}
       role="dialog"
       aria-modal="true"
@@ -62,11 +71,11 @@ export function Modal({ isOpen, onClose, children, title, maxWidth = 560 }: Moda
       <div
         style={{
           background: '#ffffff',
-          borderRadius: 8,
+          borderRadius: isMobile ? '16px 16px 0 0' : 8,
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           width: '100%',
-          maxWidth: maxWidth,
-          maxHeight: '90vh',
+          maxWidth: isMobile ? '100%' : maxWidth,
+          maxHeight: isMobile ? '92vh' : '90vh',
           display: 'flex',
           flexDirection: 'column',
           animation: 'modalIn 0.2s ease-out',

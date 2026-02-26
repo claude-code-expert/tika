@@ -75,6 +75,7 @@ export function AppShell() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<TicketWithMeta | null>(null);
   const [draggingTicket, setDraggingTicket] = useState<TicketWithMeta | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
@@ -249,6 +250,7 @@ export function AppShell() {
         onNewTask={() => setIsCreating(true)}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
+        onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -256,8 +258,16 @@ export function AppShell() {
           <Sidebar
             backlogTickets={displayBoard.board.BACKLOG}
             isLoading={isLoading}
-            onTicketClick={setSelectedTicket}
-            onAddTicket={() => setIsCreating(true)}
+            onTicketClick={(ticket) => {
+              setSelectedTicket(ticket);
+              setIsMobileSidebarOpen(false);
+            }}
+            onAddTicket={() => {
+              setIsCreating(true);
+              setIsMobileSidebarOpen(false);
+            }}
+            isMobileOpen={isMobileSidebarOpen}
+            onMobileClose={() => setIsMobileSidebarOpen(false)}
           />
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -207,6 +207,8 @@ interface SidebarProps {
   isLoading: boolean;
   onTicketClick?: (ticket: TicketWithMeta) => void;
   onAddTicket?: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function Sidebar({
@@ -214,10 +216,21 @@ export function Sidebar({
   isLoading,
   onTicketClick,
   onAddTicket,
+  isMobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const isResizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(SIDEBAR_DEFAULT);
@@ -250,60 +263,97 @@ export function Sidebar({
   }, [width]);
 
   return (
+    <>
+      {/* Mobile backdrop */}
+      {isMobile && isMobileOpen && (
+        <div
+          onClick={onMobileClose}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 199,
+          }}
+        />
+      )}
+
     <div
       style={{
         position: 'relative',
         flexShrink: 0,
         display: 'flex',
+        // On mobile, take no flex space — aside is rendered as fixed overlay
+        ...(isMobile ? { width: 0, overflow: 'visible', minWidth: 0 } : {}),
       }}
     >
-      {/* Floating toggle button — outside aside to avoid overflow clip */}
-      <button
-        onClick={() => setCollapsed((prev) => !prev)}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: -14,
-          transform: 'translateY(-50%)',
-          width: 28,
-          height: 28,
-          borderRadius: '50%',
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-card-bg)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 10,
-          color: 'var(--color-text-muted)',
-          zIndex: 50,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-hover)';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.background = 'var(--color-card-bg)';
-        }}
-        aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-        title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
-      >
-        {collapsed ? '▶' : '◀'}
-      </button>
+      {/* Floating toggle button — desktop only */}
+      {!isMobile && (
+        <button
+          onClick={() => setCollapsed((prev) => !prev)}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: -14,
+            transform: 'translateY(-50%)',
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-card-bg)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 10,
+            color: 'var(--color-text-muted)',
+            zIndex: 50,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-hover)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--color-card-bg)';
+          }}
+          aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+        >
+          {collapsed ? '▶' : '◀'}
+        </button>
+      )}
 
       <aside
         style={{
-          width: collapsed ? 0 : width,
-          minWidth: collapsed ? 0 : SIDEBAR_MIN,
-          maxWidth: collapsed ? 0 : SIDEBAR_MAX,
+          // Mobile: fixed overlay drawer
+          ...(isMobile
+            ? {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                height: '100vh',
+                width: SIDEBAR_DEFAULT,
+                minWidth: SIDEBAR_DEFAULT,
+                maxWidth: SIDEBAR_DEFAULT,
+                zIndex: 200,
+                transform: isMobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+                transition: 'transform 0.25s ease',
+                boxShadow: isMobileOpen ? '4px 0 20px rgba(0,0,0,0.2)' : 'none',
+              }
+            : {
+                // Desktop: inline sidebar
+                position: 'relative',
+                width: collapsed ? 0 : width,
+                minWidth: collapsed ? 0 : SIDEBAR_MIN,
+                maxWidth: collapsed ? 0 : SIDEBAR_MAX,
+                transition: 'width 0.2s ease, min-width 0.2s ease',
+              }),
           background: 'var(--color-sidebar-bg)',
-          borderRight: collapsed ? 'none' : '1px solid var(--color-border)',
+          borderRight: !isMobile && collapsed ? 'none' : '1px solid var(--color-border)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
-          transition: 'width 0.2s ease, min-width 0.2s ease',
         }}
       >
       {/* Workspace header */}
@@ -345,7 +395,30 @@ export function Sidebar({
           >
             내 워크스페이스
           </span>
-          <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>▾</span>
+          {/* Mobile close button */}
+          {isMobile ? (
+            <button
+              onClick={onMobileClose}
+              aria-label="사이드바 닫기"
+              style={{
+                width: 44,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+            >
+              ✕
+            </button>
+          ) : (
+            <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>▾</span>
+          )}
         </div>
       </div>
 
@@ -461,8 +534,8 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Resize handle */}
-      {!collapsed && (
+      {/* Resize handle — desktop only */}
+      {!isMobile && !collapsed && (
         <div
           onMouseDown={handleResizeStart}
           style={{
@@ -490,5 +563,6 @@ export function Sidebar({
       )}
       </aside>
     </div>
+    </>
   );
 }

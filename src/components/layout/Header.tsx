@@ -8,9 +8,11 @@ import type { Member } from '@/types/index';
 
 interface HeaderProps {
   onNewTask: () => void;
+  searchQuery?: string;
+  onSearch?: (q: string) => void;
 }
 
-export function Header({ onNewTask }: HeaderProps) {
+export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
   const { data: session } = useSession();
   const user = session?.user;
   const memberId = (user as Record<string, unknown> | undefined)?.memberId as number | undefined;
@@ -138,6 +140,7 @@ export function Header({ onNewTask }: HeaderProps) {
                 color: 'var(--color-text-muted)',
                 width: 14,
                 height: 14,
+                pointerEvents: 'none',
               }}
               viewBox="0 0 24 24"
               fill="none"
@@ -152,11 +155,12 @@ export function Header({ onNewTask }: HeaderProps) {
             <input
               type="search"
               placeholder="업무 검색..."
-              disabled
+              value={searchQuery}
+              onChange={(e) => onSearch?.(e.target.value)}
               style={{
                 width: '100%',
                 height: 34,
-                padding: '0 14px 0 34px',
+                padding: searchQuery ? '0 30px 0 34px' : '0 14px 0 34px',
                 background: 'var(--color-board-bg)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-button)',
@@ -164,9 +168,29 @@ export function Header({ onNewTask }: HeaderProps) {
                 fontFamily: 'inherit',
                 color: 'var(--color-text-primary)',
                 outline: 'none',
-                cursor: 'not-allowed',
               }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => onSearch?.('')}
+                aria-label="검색 초기화"
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-muted)',
+                  fontSize: 14,
+                  lineHeight: 1,
+                  padding: 2,
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
@@ -200,7 +224,7 @@ export function Header({ onNewTask }: HeaderProps) {
 
           {/* Notification button */}
           <button
-            title="알림"
+            title="알림 기능은 준비 중입니다"
             style={{
               width: 32,
               height: 32,

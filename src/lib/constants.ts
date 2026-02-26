@@ -3,7 +3,7 @@ export const REBALANCE_THRESHOLD = 2;
 export const TITLE_MAX_LENGTH = 200;
 export const DESCRIPTION_MAX_LENGTH = 1000;
 export const CHECKLIST_MAX_ITEMS = 20;
-export const LABEL_MAX_PER_TICKET = 5;
+export const LABEL_MAX_PER_TICKET = 3;
 export const LABEL_MAX_PER_WORKSPACE = 20;
 export const TICKET_MAX_PER_WORKSPACE = 300;
 

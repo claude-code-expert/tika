@@ -78,7 +78,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ticket = await createTicket(workspaceId, result.data);
+    const { labelIds, ...ticketData } = result.data;
+    const ticket = await createTicket(workspaceId, { ...ticketData, labelIds });
     return NextResponse.json({ ticket }, { status: 201 });
   } catch (error) {
     console.error('POST /api/tickets error:', error);

@@ -1,13 +1,209 @@
 'use client';
 
+import { useState, useRef, useCallback } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
 import type { TicketWithMeta } from '@/types/index';
-import { TicketCard } from '@/components/board/TicketCard';
+
+const TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
+  GOAL: { bg: '#8B5CF6', abbr: 'G' },
+  STORY: { bg: '#3B82F6', abbr: 'S' },
+  FEATURE: { bg: '#10B981', abbr: 'F' },
+  TASK: { bg: '#F59E0B', abbr: 'T' },
+};
+
+const PRIORITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Crit' },
+  HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
+  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Med' },
+  LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
+};
+
+const SIDEBAR_MIN = 200;
+const SIDEBAR_MAX = 400;
+const SIDEBAR_DEFAULT = 260;
+
+function formatDeadline(dueDate: string | null, isOverdue: boolean): string | null {
+  if (!dueDate) return null;
+  if (isOverdue) return '마감 초과';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return '오늘까지';
+  if (diffDays === 1) return '내일까지';
+  if (diffDays <= 7) return `${diffDays}일 남음`;
+  return dueDate;
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
+function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: ticket.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const type = TYPE_INDICATOR[ticket.type] ?? TYPE_INDICATOR.TASK;
+  const priority = PRIORITY_STYLES[ticket.priority] ?? PRIORITY_STYLES.MEDIUM;
+  const deadline = formatDeadline(ticket.dueDate, ticket.isOverdue);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        padding: '8px 10px',
+        borderRadius: 6,
+        cursor: 'pointer',
+        background: 'var(--color-card-bg)',
+        border: ticket.isOverdue ? '1.5px solid #DC2626' : '1px solid var(--color-border)',
+        transition: isDragging ? undefined : 'background 0.12s',
+      }}
+      {...attributes}
+      {...listeners}
+      onClick={() => {
+        if (!isDragging) onClick?.();
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !isDragging) onClick?.();
+      }}
+      onMouseEnter={(e) => {
+        if (!isDragging) {
+          (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-hover)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = 'var(--color-card-bg)';
+      }}
+      aria-label={`티켓: ${ticket.title}`}
+    >
+      {/* Row 1: Type badge + Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 16,
+            height: 16,
+            borderRadius: 3,
+            fontSize: 9,
+            fontWeight: 700,
+            color: '#fff',
+            background: type.bg,
+            flexShrink: 0,
+          }}
+        >
+          {type.abbr}
+        </span>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--color-text-primary)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {truncate(ticket.title, 20)}
+        </span>
+      </div>
+      {/* Row 2: Priority (left) | Labels (center) | Deadline (right) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          paddingLeft: 22,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 9,
+            fontWeight: 600,
+            padding: '1px 5px',
+            borderRadius: 3,
+            background: priority.bg,
+            color: priority.color,
+            flexShrink: 0,
+          }}
+        >
+          {priority.label}
+        </span>
+        {/* Labels */}
+        {ticket.labels.length > 0 && (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
+            {ticket.labels.slice(0, 2).map((label) => (
+              <span
+                key={label.id}
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  padding: '1px 5px',
+                  borderRadius: 3,
+                  background: label.color,
+                  color: '#fff',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: 60,
+                }}
+              >
+                {label.name}
+              </span>
+            ))}
+            {ticket.labels.length > 2 && (
+              <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
+                +{ticket.labels.length - 2}
+              </span>
+            )}
+          </div>
+        )}
+        {/* Spacer when no labels */}
+        {ticket.labels.length === 0 && <div style={{ flex: 1 }} />}
+        {/* Deadline */}
+        {deadline && (
+          <span
+            style={{
+              fontSize: 10,
+              color: ticket.isOverdue ? '#DC2626' : 'var(--color-text-muted)',
+              fontWeight: ticket.isOverdue ? 600 : 400,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {deadline}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface SidebarProps {
   backlogTickets: TicketWithMeta[];
-  totalCount: number;
   isLoading: boolean;
   onTicketClick?: (ticket: TicketWithMeta) => void;
   onAddTicket?: () => void;
@@ -15,118 +211,143 @@ interface SidebarProps {
 
 export function Sidebar({
   backlogTickets,
-  totalCount,
   isLoading,
   onTicketClick,
   onAddTicket,
 }: SidebarProps) {
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
+  const [collapsed, setCollapsed] = useState(false);
+  const [width, setWidth] = useState(SIDEBAR_DEFAULT);
+  const isResizing = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(SIDEBAR_DEFAULT);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    startX.current = e.clientX;
+    startWidth.current = width;
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = ev.clientX - startX.current;
+      const next = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startWidth.current + delta));
+      setWidth(next);
+    };
+
+    const onUp = () => {
+      isResizing.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [width]);
 
   return (
-    <aside
+    <div
       style={{
-        width: 'var(--sidebar-width)',
-        minWidth: 0,
-        background: 'var(--color-sidebar-bg)',
-        borderRight: '1px solid var(--color-border)',
-        display: 'flex',
-        flexDirection: 'column',
+        position: 'relative',
         flexShrink: 0,
-        overflow: 'hidden',
+        display: 'flex',
       }}
     >
-      {/* Workspace header */}
-      <div
+      {/* Floating toggle button — outside aside to avoid overflow clip */}
+      <button
+        onClick={() => setCollapsed((prev) => !prev)}
         style={{
+          position: 'absolute',
+          top: '50%',
+          right: -14,
+          transform: 'translateY(-50%)',
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-card-bg)',
+          cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--color-border)',
-          minHeight: 52,
+          justifyContent: 'center',
+          fontSize: 10,
+          color: 'var(--color-text-muted)',
+          zIndex: 50,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-hover)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'var(--color-card-bg)';
+        }}
+        aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+        title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
+      >
+        {collapsed ? '▶' : '◀'}
+      </button>
+
+      <aside
+        style={{
+          width: collapsed ? 0 : width,
+          minWidth: collapsed ? 0 : SIDEBAR_MIN,
+          maxWidth: collapsed ? 0 : SIDEBAR_MAX,
+          background: 'var(--color-sidebar-bg)',
+          borderRight: collapsed ? 'none' : '1px solid var(--color-border)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+          transition: 'width 0.2s ease, min-width 0.2s ease',
         }}
       >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 'var(--radius-button)',
-            background: 'var(--color-accent)',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          T
-        </div>
-        <div style={{ overflow: 'hidden' }}>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: 'var(--color-text-primary)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            내 워크스페이스
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>개인</div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav
-        style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}
-      >
+      {/* Workspace header */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '8px 16px',
-            fontSize: 13,
-            fontWeight: 500,
-            color: 'var(--color-accent)',
-            background: 'var(--color-accent-light)',
-            cursor: 'pointer',
           }}
         >
-          <svg
-            width={14}
-            height={14}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width={7} height={7} x={3} y={3} rx={1} />
-            <rect width={7} height={7} x={14} y={3} rx={1} />
-            <rect width={7} height={7} x={14} y={14} rx={1} />
-            <rect width={7} height={7} x={3} y={14} rx={1} />
-          </svg>
-          칸반 보드
-          <span
+          <div
             style={{
-              marginLeft: 'auto',
-              fontSize: 11,
+              width: 24,
+              height: 24,
+              borderRadius: 'var(--radius-button)',
               background: 'var(--color-accent)',
               color: '#fff',
-              padding: '2px 8px',
-              borderRadius: 10,
-              minWidth: 24,
-              textAlign: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
-            {totalCount}
+            T
+          </div>
+          <span
+            style={{
+              flex: 1,
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--color-text-primary)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            내 워크스페이스
           </span>
+          <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>▾</span>
         </div>
-      </nav>
+      </div>
 
       {/* Backlog list */}
       <div
@@ -137,7 +358,7 @@ export function Sidebar({
           padding: 8,
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 6,
           background: isOver ? 'rgba(98, 149, 132, 0.06)' : undefined,
           transition: 'background 0.15s',
         }}
@@ -150,8 +371,16 @@ export function Sidebar({
             padding: '8px 8px 4px',
           }}
         >
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-            백로그
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+            }}
+          >
+            내 업무
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
@@ -222,7 +451,7 @@ export function Sidebar({
             strategy={verticalListSortingStrategy}
           >
             {backlogTickets.map((ticket) => (
-              <TicketCard
+              <SidebarTask
                 key={ticket.id}
                 ticket={ticket}
                 onClick={() => onTicketClick?.(ticket)}
@@ -231,6 +460,35 @@ export function Sidebar({
           </SortableContext>
         )}
       </div>
-    </aside>
+
+      {/* Resize handle */}
+      {!collapsed && (
+        <div
+          onMouseDown={handleResizeStart}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: -3,
+            width: 6,
+            height: '100%',
+            cursor: 'col-resize',
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--color-accent)';
+            (e.currentTarget as HTMLElement).style.opacity = '0.3';
+          }}
+          onMouseLeave={(e) => {
+            if (!isResizing.current) {
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+              (e.currentTarget as HTMLElement).style.opacity = '1';
+            }
+          }}
+          aria-label="사이드바 크기 조절"
+          role="separator"
+        />
+      )}
+      </aside>
+    </div>
   );
 }

@@ -26,13 +26,12 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
       style={{
         minWidth: 'var(--column-width)',
         width: 'var(--column-width)',
-        background: isOver ? 'rgba(98, 149, 132, 0.06)' : 'var(--color-col-bg)',
-        borderRadius: 'var(--radius-column)',
         display: 'flex',
         flexDirection: 'column',
         maxHeight: '100%',
         flexShrink: 0,
-        transition: 'background 0.15s',
+        background: 'var(--color-col-bg)',
+        borderRadius: 'var(--radius-column)',
       }}
     >
       {/* Column header */}
@@ -81,7 +80,10 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
-          minHeight: 60,
+          minHeight: 100,
+          background: isOver ? 'rgba(98, 149, 132, 0.08)' : 'rgba(0, 0, 0, 0.02)',
+          borderRadius: '0 0 var(--radius-column) var(--radius-column)',
+          transition: 'background 0.15s',
         }}
       >
         <SortableContext items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>

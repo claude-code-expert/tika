@@ -15,6 +15,7 @@ function toTicket(row: typeof tickets.$inferSelect): Ticket {
     status: row.status as TicketStatus,
     priority: row.priority as Ticket['priority'],
     position: row.position,
+    startDate: row.startDate ?? null,
     dueDate: row.dueDate ?? null,
     issueId: row.issueId ?? null,
     assigneeId: row.assigneeId ?? null,
@@ -114,6 +115,7 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
             workspaceId: memberRow.workspaceId,
             displayName: memberRow.displayName,
             color: memberRow.color,
+            role: memberRow.role as import('@/types/index').Member['role'],
             createdAt: memberRow.createdAt.toISOString(),
           }
         : null,
@@ -198,6 +200,7 @@ export async function getTicketById(
           workspaceId: mr.workspaceId,
           displayName: mr.displayName,
           color: mr.color,
+          role: mr.role as import('@/types/index').Member['role'],
           createdAt: mr.createdAt.toISOString(),
         }
       : null,
@@ -221,9 +224,11 @@ export async function createTicket(
     description?: string | null;
     type?: string;
     priority?: string;
+    startDate?: string | null;
     dueDate?: string | null;
     issueId?: number | null;
     assigneeId?: number | null;
+    labelIds?: number[];
   },
 ): Promise<Ticket> {
   // Position = min position in BACKLOG - 1024 (or 0 if empty)
@@ -245,11 +250,18 @@ export async function createTicket(
       status: 'BACKLOG',
       priority: data.priority ?? 'MEDIUM',
       position,
+      startDate: data.startDate ?? null,
       dueDate: data.dueDate ?? null,
       issueId: data.issueId ?? null,
       assigneeId: data.assigneeId ?? null,
     })
     .returning();
+
+  if (data.labelIds && data.labelIds.length > 0) {
+    await db.insert(ticketLabels).values(
+      data.labelIds.map((labelId) => ({ ticketId: inserted.id, labelId })),
+    );
+  }
 
   return toTicket(inserted);
 }
@@ -263,6 +275,7 @@ export async function updateTicket(
     type: string;
     status: string;
     priority: string;
+    startDate: string | null;
     dueDate: string | null;
     issueId: number | null;
     assigneeId: number | null;
@@ -277,6 +290,7 @@ export async function updateTicket(
   if (data.type !== undefined) updateData.type = data.type;
   if (data.status !== undefined) updateData.status = data.status;
   if (data.priority !== undefined) updateData.priority = data.priority;
+  if (data.startDate !== undefined) updateData.startDate = data.startDate;
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
   if (data.issueId !== undefined) updateData.issueId = data.issueId;
   if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;

@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
-import type { TicketWithMeta, ChecklistItem, Label } from '@/types/index';
+import { CommentSection } from './CommentSection';
+import type { TicketWithMeta, ChecklistItem, Label, Issue, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 
@@ -14,6 +15,8 @@ interface TicketModalProps {
   onClose: () => void;
   onUpdate: (id: number, data: UpdateTicketInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onDuplicate?: () => Promise<void>;
+  currentMemberId?: number | null;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
@@ -30,14 +33,16 @@ const PRIORITY_STYLES: Record<string, { bg: string; color: string }> = {
   CRITICAL: { bg: '#FEE2E2', color: '#DC2626' },
 };
 
-const TYPE_BADGE: Record<string, { bg: string; abbr: string }> = {
-  GOAL: { bg: '#8B5CF6', abbr: 'G' },
-  STORY: { bg: '#3B82F6', abbr: 'S' },
-  FEATURE: { bg: '#10B981', abbr: 'F' },
-  TASK: { bg: '#F59E0B', abbr: 'T' },
-};
 
-export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: TicketModalProps) {
+export function TicketModal({
+  ticket,
+  isOpen,
+  onClose,
+  onUpdate,
+  onDelete,
+  onDuplicate,
+  currentMemberId = null,
+}: TicketModalProps) {
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description ?? '');
   const [status, setStatus] = useState(ticket.status);
@@ -51,9 +56,29 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
   );
   const [labelsLoaded, setLabelsLoaded] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState<number | null>(ticket.issueId ?? null);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<number | null>(
+    ticket.assigneeId ?? null,
+  );
+  const [allIssues, setAllIssues] = useState<Issue[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [commentList, setCommentList] = useState<Comment[]>([]);
   const labelAreaRef = useRef<HTMLDivElement>(null);
+
+  // Fetch issues, members, and comments on mount
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/issues').then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/members').then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/tickets/${ticket.id}/comments`).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([issuesData, membersData, commentsData]) => {
+      if (issuesData?.issues) setAllIssues(issuesData.issues);
+      if (membersData?.members) setAllMembers(membersData.members);
+      if (commentsData?.comments) setCommentList(commentsData.comments);
+    });
+  }, [ticket.id]);
 
   // Close label picker on outside click
   useEffect(() => {
@@ -73,7 +98,9 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
     status !== ticket.status ||
     priority !== ticket.priority ||
     dueDate !== (ticket.dueDate ?? '') ||
-    type !== ticket.type;
+    type !== ticket.type ||
+    selectedIssueId !== (ticket.issueId ?? null) ||
+    selectedAssigneeId !== (ticket.assigneeId ?? null);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -86,6 +113,9 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
       if (priority !== ticket.priority) patch.priority = priority;
       if (dueDate !== (ticket.dueDate ?? '')) patch.dueDate = dueDate || null;
       if (type !== ticket.type) patch.type = type;
+      if (selectedIssueId !== (ticket.issueId ?? null)) patch.issueId = selectedIssueId;
+      if (selectedAssigneeId !== (ticket.assigneeId ?? null))
+        patch.assigneeId = selectedAssigneeId;
       await onUpdate(ticket.id, patch);
       onClose();
     } finally {
@@ -130,7 +160,6 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
 
   const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.TODO;
   const priorityStyle = PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.MEDIUM;
-  const typeBadge = TYPE_BADGE[type] ?? TYPE_BADGE.TASK;
 
   // Action button base style
   const actionBtnStyle: React.CSSProperties = {
@@ -398,46 +427,38 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
               aria-label="티켓 제목"
             />
 
-            {/* Breadcrumb (if issue linked) */}
-            {ticket.issue && (
-              <div
+            {/* Issue selector */}
+            <div style={{ marginBottom: 14 }}>
+              <select
+                value={selectedIssueId ?? ''}
+                onChange={(e) =>
+                  setSelectedIssueId(e.target.value ? Number(e.target.value) : null)
+                }
+                aria-label="상위 이슈"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  flexWrap: 'wrap',
-                  marginBottom: 14,
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: 'var(--color-board-bg)',
+                  color: selectedIssueId
+                    ? 'var(--color-text-primary)'
+                    : 'var(--color-text-muted)',
+                  border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  maxWidth: 280,
                 }}
               >
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    fontSize: 12,
-                    color: 'var(--color-text-secondary)',
-                  }}
-                >
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 18,
-                      height: 18,
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: '#fff',
-                      background: typeBadge.bg,
-                    }}
-                  >
-                    {typeBadge.abbr}
-                  </span>
-                  {ticket.issue.name}
-                </div>
-              </div>
-            )}
+                <option value="">이슈 없음</option>
+                {allIssues.map((issue) => (
+                  <option key={issue.id} value={issue.id}>
+                    [{issue.type.charAt(0)}] {issue.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Overdue warning */}
             {ticket.isOverdue && (
@@ -563,37 +584,35 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
                 aria-label="마감일"
               />
 
-              {/* Assignee */}
-              {ticket.assignee && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 12,
-                    color: 'var(--color-text-secondary)',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      background: ticket.assignee.color ?? 'var(--color-accent)',
-                      color: '#fff',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
-                  >
-                    {ticket.assignee.displayName.charAt(0)}
-                  </div>
-                  {ticket.assignee.displayName}
-                </div>
-              )}
+              {/* Assignee selector */}
+              <select
+                value={selectedAssigneeId ?? ''}
+                onChange={(e) =>
+                  setSelectedAssigneeId(e.target.value ? Number(e.target.value) : null)
+                }
+                aria-label="담당자"
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: 'var(--color-board-bg)',
+                  color: selectedAssigneeId
+                    ? 'var(--color-text-primary)'
+                    : 'var(--color-text-muted)',
+                  border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+              >
+                <option value="">담당자 없음</option>
+                {allMembers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -660,7 +679,7 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
             </div>
 
             {/* 체크리스트 section */}
-            <div style={{ padding: '16px 0' }}>
+            <div style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)' }}>
               <ChecklistSection
                 items={checklistItems}
                 onAdd={async (text) => {
@@ -694,6 +713,14 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
                 }}
               />
             </div>
+
+            {/* 댓글 section */}
+            <CommentSection
+              ticketId={ticket.id}
+              comments={commentList}
+              currentMemberId={currentMemberId}
+              onCommentsChange={setCommentList}
+            />
           </div>
 
           {/* ===== detail-footer ===== */}
@@ -737,7 +764,8 @@ export function TicketModal({ ticket, isOpen, onClose, onUpdate, onDelete }: Tic
                 style={actionBtnStyle}
                 onMouseEnter={(e) => handleActionHover(e, true)}
                 onMouseLeave={(e) => handleActionHover(e, false)}
-                title="복제 기능은 준비 중입니다"
+                onClick={onDuplicate ? async () => { setIsSaving(true); try { await onDuplicate(); onClose(); } finally { setIsSaving(false); } } : undefined}
+                title={onDuplicate ? '티켓 복제' : '복제 기능은 준비 중입니다'}
               >
                 📋 복제
               </button>

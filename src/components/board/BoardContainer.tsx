@@ -13,10 +13,12 @@ interface BoardContainerProps {
   createTicket: (data: CreateTicketInput) => Promise<unknown>;
   updateTicket: (id: number, data: UpdateTicketInput) => Promise<unknown>;
   deleteTicket: (id: number) => Promise<void>;
+  onDuplicate?: (ticket: TicketWithMeta) => Promise<void>;
   isCreating: boolean;
   onCreateClose: () => void;
   selectedTicket: TicketWithMeta | null;
   onSelectTicket: (ticket: TicketWithMeta | null) => void;
+  currentMemberId?: number | null;
 }
 
 export function BoardContainer({
@@ -25,10 +27,12 @@ export function BoardContainer({
   createTicket,
   updateTicket,
   deleteTicket,
+  onDuplicate,
   isCreating,
   onCreateClose,
   selectedTicket,
   onSelectTicket,
+  currentMemberId = null,
 }: BoardContainerProps) {
   const handleCreate = async (
     data: CreateTicketInput | UpdateTicketInput,
@@ -93,6 +97,10 @@ export function BoardContainer({
             await deleteTicket(id);
             onSelectTicket(null);
           }}
+          onDuplicate={
+            onDuplicate ? async () => onDuplicate(selectedTicket) : undefined
+          }
+          currentMemberId={currentMemberId}
         />
       )}
     </>

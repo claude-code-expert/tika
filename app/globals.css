@@ -733,7 +733,7 @@ body.modal-open {
   }
 
   .filter-bar {
-    padding: 8px 12px;
+    padding: 0 12px;
     overflow-x: auto;
   }
 
@@ -741,5 +741,18 @@ body.modal-open {
     max-width: 100%;
     margin: 0 8px;
     max-height: 90vh;
+  }
+
+  /* Filter bar chips — ensure 44px touch target height */
+  .chip {
+    height: 36px;
+    min-width: 44px;
+    padding: 0 10px;
+  }
+
+  /* Notification dropdown — full width on mobile */
+  .notif-dropdown {
+    width: calc(100vw - 16px) !important;
+    right: -8px !important;
   }
 }

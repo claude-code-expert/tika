@@ -22,6 +22,20 @@
       "when": 1772029710508,
       "tag": "0002_dry_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772116801923,
+      "tag": "0003_lying_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772117408803,
+      "tag": "0004_wooden_banshee",
+      "breakpoints": true
     }
   ]
 }

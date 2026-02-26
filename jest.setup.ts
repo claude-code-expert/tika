@@ -52,6 +52,25 @@ jest.mock('next/link', () => ({
 }));
 
 // ============================================
+// window.matchMedia mock (jsdom에서 미구현)
+// ============================================
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }),
+  });
+}
+
+// ============================================
 // fetch: 기본 mock (개별 테스트에서 재정의 가능)
 // ============================================
 global.fetch = jest.fn();

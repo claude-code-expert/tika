@@ -158,7 +158,26 @@ export const notificationChannels = pgTable(
   ],
 );
 
-// 10. notification_logs
+// 10. comments
+export const comments = pgTable(
+  'comments',
+  {
+    id: serial('id').primaryKey(),
+    ticketId: integer('ticket_id')
+      .notNull()
+      .references(() => tickets.id, { onDelete: 'cascade' }),
+    memberId: integer('member_id').references(() => members.id, { onDelete: 'set null' }),
+    text: varchar('text', { length: 500 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index('idx_comments_ticket_id').on(table.ticketId)],
+);
+
+// 11. notification_logs
 export const notificationLogs = pgTable(
   'notification_logs',
   {

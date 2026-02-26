@@ -18,6 +18,7 @@ interface BoardContainerProps {
   onCreateClose: () => void;
   selectedTicket: TicketWithMeta | null;
   onSelectTicket: (ticket: TicketWithMeta | null) => void;
+  currentMemberId?: number | null;
 }
 
 export function BoardContainer({
@@ -31,6 +32,7 @@ export function BoardContainer({
   onCreateClose,
   selectedTicket,
   onSelectTicket,
+  currentMemberId = null,
 }: BoardContainerProps) {
   const handleCreate = async (
     data: CreateTicketInput | UpdateTicketInput,
@@ -98,6 +100,7 @@ export function BoardContainer({
           onDuplicate={
             onDuplicate ? async () => onDuplicate(selectedTicket) : undefined
           }
+          currentMemberId={currentMemberId}
         />
       )}
     </>

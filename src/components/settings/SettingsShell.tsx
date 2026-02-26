@@ -4,6 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import type { ReactNode } from 'react';
+import { GeneralSection } from './GeneralSection';
+import { NotificationSection } from './NotificationSection';
+import { LabelSection } from './LabelSection';
+import { MemberSection } from './MemberSection';
 
 export type SectionKey = 'general' | 'notifications' | 'labels' | 'members';
 export type ToastType = 'success' | 'fail' | 'info';
@@ -62,19 +66,7 @@ export interface SectionProps {
   showToast: (message: string, type?: ToastType) => void;
 }
 
-interface SettingsShellProps {
-  generalSection: (props: SectionProps) => ReactNode;
-  notificationSection: (props: SectionProps) => ReactNode;
-  labelSection: (props: SectionProps) => ReactNode;
-  memberSection: (props: SectionProps) => ReactNode;
-}
-
-export function SettingsShell({
-  generalSection,
-  notificationSection,
-  labelSection,
-  memberSection,
-}: SettingsShellProps) {
+export function SettingsShell() {
   const { data: session } = useSession();
   const user = session?.user;
   const displayName = user?.name ?? '사용자';
@@ -88,11 +80,11 @@ export function SettingsShell({
     setTimeout(() => setToast(null), 3000);
   }
 
-  const sectionRenderers: Record<SectionKey, (props: SectionProps) => ReactNode> = {
-    general: generalSection,
-    notifications: notificationSection,
-    labels: labelSection,
-    members: memberSection,
+  const sectionRenderers: Record<SectionKey, ReactNode> = {
+    general: <GeneralSection showToast={showToast} />,
+    notifications: <NotificationSection showToast={showToast} />,
+    labels: <LabelSection showToast={showToast} />,
+    members: <MemberSection showToast={showToast} />,
   };
 
   return (
@@ -150,7 +142,7 @@ export function SettingsShell({
 
         {/* Content */}
         <main style={{ flex: 1, padding: '32px 40px', maxWidth: 840, overflowY: 'auto' }}>
-          {sectionRenderers[activeSection]({ showToast })}
+          {sectionRenderers[activeSection]}
         </main>
       </div>
 

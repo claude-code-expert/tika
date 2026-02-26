@@ -1,7 +1,7 @@
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, sql } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { labels, ticketLabels } from '@/db/schema';
-import type { Label } from '@/types/index';
+import type { Label, LabelWithCount } from '@/types/index';
 import { LABEL_MAX_PER_WORKSPACE, LABEL_MAX_PER_TICKET } from '@/lib/constants';
 
 function toLabel(row: typeof labels.$inferSelect): Label {
@@ -17,6 +17,29 @@ function toLabel(row: typeof labels.$inferSelect): Label {
 export async function getLabelsByWorkspace(workspaceId: number): Promise<Label[]> {
   const rows = await db.select().from(labels).where(eq(labels.workspaceId, workspaceId));
   return rows.map(toLabel);
+}
+
+export async function getLabelsByWorkspaceWithCount(
+  workspaceId: number,
+): Promise<LabelWithCount[]> {
+  const rows = await db
+    .select({
+      id: labels.id,
+      workspaceId: labels.workspaceId,
+      name: labels.name,
+      color: labels.color,
+      createdAt: labels.createdAt,
+      ticketCount: sql<number>`cast(count(${ticketLabels.ticketId}) as integer)`,
+    })
+    .from(labels)
+    .leftJoin(ticketLabels, eq(ticketLabels.labelId, labels.id))
+    .where(eq(labels.workspaceId, workspaceId))
+    .groupBy(labels.id);
+
+  return rows.map((row) => ({
+    ...toLabel(row),
+    ticketCount: row.ticketCount,
+  }));
 }
 
 export async function createLabel(

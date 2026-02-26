@@ -9,9 +9,9 @@ const TYPE_PREFIX: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  GOAL: 'text-purple-600',
-  STORY: 'text-blue-600',
-  FEATURE: 'text-teal-600',
+  GOAL: '#8B5CF6',
+  STORY: '#3B82F6',
+  FEATURE: '#10B981',
 };
 
 interface IssueBreadcrumbProps {
@@ -37,14 +37,29 @@ export function IssueBreadcrumb({ issue, allIssues = [] }: IssueBreadcrumbProps)
   const chain = buildChain(issue, allIssues);
 
   return (
-    <div className="flex flex-wrap items-center gap-1 text-xs">
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: 11,
+      }}
+    >
       {chain.map((item, idx) => (
-        <span key={item.id} className="flex items-center gap-1">
-          {idx > 0 && <span className="text-gray-300">›</span>}
-          <span className={`font-medium ${TYPE_COLORS[item.type] ?? 'text-gray-600'}`}>
+        <span key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {idx > 0 && (
+            <span style={{ color: 'var(--color-border-hover)', fontWeight: 500 }}>›</span>
+          )}
+          <span
+            style={{
+              fontWeight: 600,
+              color: TYPE_COLORS[item.type] ?? 'var(--color-text-muted)',
+            }}
+          >
             [{TYPE_PREFIX[item.type] ?? '?'}]
           </span>
-          <span className="text-gray-600">{item.name}</span>
+          <span style={{ color: 'var(--color-text-secondary)' }}>{item.name}</span>
         </span>
       ))}
     </div>

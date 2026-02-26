@@ -1,11 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BoardContainer } from '@/components/board/BoardContainer';
-import { useTickets } from '@/hooks/useTickets';
 import type { BoardData, TicketWithMeta } from '@/types/index';
-
-jest.mock('@/hooks/useTickets');
-const mockedUseTickets = useTickets as jest.MockedFunction<typeof useTickets>;
+import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 
 jest.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -61,74 +58,65 @@ const mockBoard: BoardData = {
   total: 1,
 };
 
-const mockHookReturn = {
+const defaultProps = {
   board: mockBoard,
-  filteredBoard: mockBoard,
   isLoading: false,
-  error: null,
-  activeLabels: [],
-  toggleLabel: jest.fn(),
-  clearLabels: jest.fn(),
-  fetchBoard: jest.fn(),
-  createTicket: jest.fn().mockResolvedValue({}),
-  updateTicket: jest.fn().mockResolvedValue({}),
-  deleteTicket: jest.fn().mockResolvedValue(undefined),
-  reorder: jest.fn().mockResolvedValue(undefined),
+  createTicket: jest.fn().mockResolvedValue({}) as (data: CreateTicketInput) => Promise<unknown>,
+  updateTicket: jest.fn().mockResolvedValue({}) as (id: number, data: UpdateTicketInput) => Promise<unknown>,
+  deleteTicket: jest.fn().mockResolvedValue(undefined) as (id: number) => Promise<void>,
+  isCreating: false,
+  onCreateClose: jest.fn(),
+  selectedTicket: null as TicketWithMeta | null,
+  onSelectTicket: jest.fn() as (ticket: TicketWithMeta | null) => void,
 };
 
 beforeEach(() => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ labels: [], issues: [], members: [] }),
+  });
   jest.clearAllMocks();
-  mockedUseTickets.mockReturnValue(mockHookReturn);
 });
 
 describe('BoardContainer', () => {
-  it('"내 워크스페이스" 헤딩이 렌더링된다', () => {
-    render(<BoardContainer />);
-    expect(screen.getByRole('heading', { name: '내 워크스페이스' })).toBeInTheDocument();
-  });
-
-  it('"+ 새 업무" 버튼이 렌더링된다', () => {
-    render(<BoardContainer />);
-    expect(screen.getByRole('button', { name: '+ 새 업무' })).toBeInTheDocument();
-  });
-
-  it('"+ 새 업무" 클릭 시 생성 모달이 열린다', async () => {
-    const user = userEvent.setup();
-    render(<BoardContainer />);
-
-    await user.click(screen.getByRole('button', { name: '+ 새 업무' }));
-
+  it('"새 업무 생성" 모달이 표시된다 (isCreating=true)', () => {
+    render(<BoardContainer {...defaultProps} isCreating={true} />);
     expect(screen.getByText('새 업무 생성')).toBeInTheDocument();
   });
 
-  it('4개 칼럼 헤더(Backlog/TODO/In Progress/Done)가 표시된다', () => {
-    render(<BoardContainer />);
+  it('isCreating=false이면 생성 모달이 표시되지 않는다', () => {
+    render(<BoardContainer {...defaultProps} />);
+    expect(screen.queryByText('새 업무 생성')).not.toBeInTheDocument();
+  });
 
-    // Board.tsx COLUMN_LABELS에 정의된 실제 레이블
-    expect(screen.getByText('Backlog')).toBeInTheDocument();
+  it('3개 칼럼 헤더(TODO/In Progress/Done)가 표시된다', () => {
+    render(<BoardContainer {...defaultProps} />);
     expect(screen.getByText('TODO')).toBeInTheDocument();
     expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   it('보드에 티켓 카드가 렌더링된다', () => {
-    render(<BoardContainer />);
+    render(<BoardContainer {...defaultProps} />);
     expect(screen.getByText('테스트 티켓')).toBeInTheDocument();
   });
 
-  it('티켓 카드 클릭 시 상세 모달이 열린다', async () => {
-    const user = userEvent.setup();
-    render(<BoardContainer />);
-
-    await user.click(screen.getByRole('button', { name: /테스트 티켓/ }));
-
+  it('selectedTicket이 있으면 상세 모달이 열린다', () => {
+    render(<BoardContainer {...defaultProps} selectedTicket={mockTicket} />);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('isLoading=true이면 로딩 메시지가 표시된다', () => {
-    mockedUseTickets.mockReturnValue({ ...mockHookReturn, isLoading: true });
-    render(<BoardContainer />);
+  it('티켓 카드 클릭 시 onSelectTicket이 호출된다', async () => {
+    const user = userEvent.setup();
+    const onSelectTicket = jest.fn();
+    render(<BoardContainer {...defaultProps} onSelectTicket={onSelectTicket} />);
 
+    await user.click(screen.getByRole('button', { name: /테스트 티켓/ }));
+    expect(onSelectTicket).toHaveBeenCalledWith(mockTicket);
+  });
+
+  it('isLoading=true이면 로딩 메시지가 표시된다', () => {
+    render(<BoardContainer {...defaultProps} isLoading={true} />);
     expect(screen.getByText('보드를 불러오는 중...')).toBeInTheDocument();
   });
 });

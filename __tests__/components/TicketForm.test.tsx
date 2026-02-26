@@ -7,6 +7,10 @@ const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
 const mockOnCancel = jest.fn();
 
 beforeEach(() => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ labels: [], issues: [], members: [] }),
+  });
   jest.clearAllMocks();
 });
 
@@ -25,8 +29,8 @@ describe('TicketForm', () => {
     expect(screen.getByLabelText(/제목/)).toHaveValue('');
     expect(screen.getByLabelText('유형')).toHaveValue('TASK');
     expect(screen.getByLabelText('우선순위')).toHaveValue('MEDIUM');
-    expect(screen.getByLabelText('마감일')).toHaveValue('');
-    expect(screen.getByLabelText('설명')).toHaveValue('');
+    expect(screen.getByLabelText('종료 예정일')).toHaveValue('');
+    expect(screen.getByLabelText('내용')).toHaveValue('');
   });
 
   it('생성 모드에서 "생성" 버튼이 표시된다', () => {
@@ -40,10 +44,10 @@ describe('TicketForm', () => {
     );
 
     expect(screen.getByLabelText(/제목/)).toHaveValue('기존 티켓 제목');
-    expect(screen.getByLabelText('설명')).toHaveValue('기존 설명 텍스트');
+    expect(screen.getByLabelText('내용')).toHaveValue('기존 설명 텍스트');
     expect(screen.getByLabelText('유형')).toHaveValue('FEATURE');
     expect(screen.getByLabelText('우선순위')).toHaveValue('HIGH');
-    expect(screen.getByLabelText('마감일')).toHaveValue('2026-06-15');
+    expect(screen.getByLabelText('종료 예정일')).toHaveValue('2026-06-15');
   });
 
   it('수정 모드에서 "저장" 버튼이 표시된다', () => {
@@ -70,7 +74,7 @@ describe('TicketForm', () => {
     await user.type(screen.getByLabelText(/제목/), '새 티켓 제목');
     await user.selectOptions(screen.getByLabelText('유형'), 'GOAL');
     await user.selectOptions(screen.getByLabelText('우선순위'), 'HIGH');
-    await user.type(screen.getByLabelText('설명'), '상세 설명입니다');
+    await user.type(screen.getByLabelText('내용'), '상세 설명입니다');
 
     await user.click(screen.getByRole('button', { name: '생성' }));
 
@@ -82,6 +86,7 @@ describe('TicketForm', () => {
           priority: 'HIGH',
           description: '상세 설명입니다',
         }),
+        expect.anything(),
       );
     });
   });

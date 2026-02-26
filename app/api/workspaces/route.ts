@@ -25,6 +25,7 @@ export async function GET() {
       workspaces: rows.map((w) => ({
         id: w.id,
         name: w.name,
+        description: w.description,
         ownerId: w.ownerId,
         createdAt: w.createdAt.toISOString(),
       })),

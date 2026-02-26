@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { BoardData, TicketWithMeta, TicketStatus } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 import { applyOptimisticMove } from '@/lib/utils';
@@ -30,6 +30,13 @@ export function useTickets(initialData?: BoardData) {
       setIsLoading(false);
     }
   }, []);
+
+  // Fetch board data on mount if no initialData was provided
+  useEffect(() => {
+    if (!initialData) {
+      fetchBoard();
+    }
+  }, [initialData, fetchBoard]);
 
   const createTicket = useCallback(
     async (data: CreateTicketInput) => {

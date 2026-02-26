@@ -1,0 +1,256 @@
+@startuml Tika_Database_ERD
+' ─────────────────────────────────────────────────────────
+' Tika — Database ER Diagram (PlantUML)
+' 소스: docs/TABLE_DEFINITION.md / src/db/schema.ts
+' 최종수정: 2026-02-26
+' ─────────────────────────────────────────────────────────
+
+' ── Skin / Theme ─────────────────────────────────────────
+skinparam backgroundColor #F8F9FB
+skinparam defaultFontName  "Noto Sans KR"
+skinparam defaultFontSize  12
+
+skinparam entity {
+  BackgroundColor       White
+  BorderColor           #2C3E50
+  HeaderBackgroundColor #629584
+  HeaderFontColor       #FFFFFF
+  HeaderFontStyle       bold
+  AttributeFontColor    #2C3E50
+  AttributeFontSize     11
+}
+
+skinparam arrow {
+  Color     #629584
+  FontColor #5A6B7F
+  FontSize  10
+}
+
+skinparam note {
+  BackgroundColor #FEF3C7
+  BorderColor     #D97706
+  FontSize        10
+}
+
+' ── Layout ───────────────────────────────────────────────
+left to right direction
+
+' ═══════════════════════════════════════════════════════════
+' TABLES
+' ═══════════════════════════════════════════════════════════
+
+' ── 1. users ─────────────────────────────────────────────
+entity "**users**" as users {
+  * id             : TEXT         <<PK>>
+  --
+  * email          : VARCHAR(255) <<UK>>
+  * name           : VARCHAR(100)
+    avatar_url     : TEXT
+  * created_at     : TIMESTAMPTZ
+}
+
+' ── 2. workspaces ────────────────────────────────────────
+entity "**workspaces**" as workspaces {
+  * id             : SERIAL       <<PK>>
+  --
+  * name           : VARCHAR(100) DEFAULT '내 워크스페이스'
+    description    : TEXT
+  * owner_id       : TEXT         <<FK → users.id>>
+  * created_at     : TIMESTAMPTZ
+}
+
+' ── 3. issues ────────────────────────────────────────────
+entity "**issues**" as issues {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id>>
+  * name           : VARCHAR(100)
+  * type           : VARCHAR(10)
+  .. GOAL | STORY | FEATURE ..
+    parent_id      : INT          <<FK → issues.id (self-ref)>>
+  * created_at     : TIMESTAMPTZ
+  --
+  IDX: (workspace_id, type)
+  IDX: (parent_id)
+}
+
+' ── 4. members ───────────────────────────────────────────
+entity "**members**" as members {
+  * id             : SERIAL       <<PK>>
+  --
+  * user_id        : TEXT         <<FK → users.id>>
+  * workspace_id   : INT          <<FK → workspaces.id>>
+  * display_name   : VARCHAR(50)
+  * color          : VARCHAR(7)   DEFAULT '#7EB4A2'
+  * role           : VARCHAR(10)  DEFAULT 'member'
+  .. admin | member ..
+  * created_at     : TIMESTAMPTZ
+  --
+  UK: (user_id, workspace_id)
+}
+
+' ── 5. tickets ───────────────────────────────────────────
+entity "**tickets**" as tickets {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id>>
+  * title          : VARCHAR(200)
+    description    : TEXT
+  * type           : VARCHAR(10)  DEFAULT 'TASK'
+  .. GOAL | STORY | FEATURE | TASK ..
+  * status         : VARCHAR(20)  DEFAULT 'BACKLOG'
+  .. BACKLOG | TODO | IN_PROGRESS | DONE ..
+  * priority       : VARCHAR(10)  DEFAULT 'MEDIUM'
+  .. LOW | MEDIUM | HIGH | CRITICAL ..
+  * position       : INT          DEFAULT 0
+    start_date     : DATE
+    due_date       : DATE
+    issue_id       : INT          <<FK → issues.id, ON DELETE SET NULL>>
+    assignee_id    : INT          <<FK → members.id, ON DELETE SET NULL>>
+    completed_at   : TIMESTAMPTZ
+  * created_at     : TIMESTAMPTZ
+  * updated_at     : TIMESTAMPTZ
+  --
+  IDX: (workspace_id, status, position)
+  IDX: (due_date)
+}
+
+' ── 6. checklist_items ───────────────────────────────────
+entity "**checklist_items**" as checklist_items {
+  * id             : SERIAL       <<PK>>
+  --
+  * ticket_id      : INT          <<FK → tickets.id, ON DELETE CASCADE>>
+  * text           : VARCHAR(200)
+  * is_completed   : BOOLEAN      DEFAULT false
+  * position       : INT          DEFAULT 0
+  * created_at     : TIMESTAMPTZ
+  --
+  IDX: (ticket_id)
+  LIMIT: max 20 per ticket
+}
+
+' ── 7. labels ────────────────────────────────────────────
+entity "**labels**" as labels {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id>>
+  * name           : VARCHAR(20)
+  * color          : VARCHAR(7)   DEFAULT '#3B82F6'
+  * created_at     : TIMESTAMPTZ
+  --
+  UK: (workspace_id, name)
+  LIMIT: max 20 per workspace
+}
+
+' ── 8. ticket_labels (M:N junction) ──────────────────────
+entity "**ticket_labels**" as ticket_labels #FAFBFF {
+  * ticket_id      : INT          <<PK, FK → tickets.id, ON DELETE CASCADE>>
+  * label_id       : INT          <<PK, FK → labels.id, ON DELETE CASCADE>>
+  --
+  PK: (ticket_id, label_id)
+  LIMIT: max 5 labels per ticket
+}
+
+' ── 9. notification_channels ─────────────────────────────
+entity "**notification_channels**" as notification_channels {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id>>
+  * type           : VARCHAR(20)
+  .. slack | telegram ..
+  * config         : JSONB
+  ..{webhookUrl} | {botToken, chatId}..
+  * enabled        : BOOLEAN      DEFAULT false
+  * created_at     : TIMESTAMPTZ
+  * updated_at     : TIMESTAMPTZ
+  --
+  UK: (workspace_id, type)
+}
+
+' ═══════════════════════════════════════════════════════════
+' RELATIONSHIPS (Crow's Foot Notation)
+' ─────────────────────────────────────────────────────────
+' ||  = exactly one (mandatory)
+' o|  = zero or one (optional)
+' }|  = one or more (mandatory many)
+' }o  = zero or more (optional many)
+' ═══════════════════════════════════════════════════════════
+
+' users → workspaces  (1:N via owner_id)
+users                ||--o{ workspaces           : "owns\n(owner_id)"
+
+' users → members  (1:N via user_id)
+users                ||--o{ members              : "joins as\n(user_id)"
+
+' workspaces → issues  (1:N)
+workspaces           ||--|{ issues               : "contains\n(workspace_id)"
+
+' workspaces → members  (1:N)
+workspaces           ||--|{ members              : "has member\n(workspace_id)"
+
+' workspaces → tickets  (1:N)
+workspaces           ||--|{ tickets              : "contains\n(workspace_id)"
+
+' workspaces → labels  (1:N)
+workspaces           ||--o{ labels               : "defines\n(workspace_id)"
+
+' workspaces → notification_channels  (1:N)
+workspaces           ||--o{ notification_channels : "notifies via\n(workspace_id)"
+
+' issues → issues  (self-referencing 1:N for hierarchy)
+issues               |o--o{ issues               : "parent\n(parent_id)"
+
+' issues → tickets  (1:N via issue_id, optional)
+issues               ||--o{ tickets              : "groups\n(issue_id)"
+
+' members → tickets  (1:N via assignee_id, optional)
+members              ||--o{ tickets              : "assigned to\n(assignee_id)"
+
+' tickets → checklist_items  (1:N, CASCADE)
+tickets              ||--o{ checklist_items       : "has checklist\n(ticket_id)"
+
+' tickets ↔ labels  (M:N via ticket_labels)
+tickets              ||--o{ ticket_labels         : "tagged\n(ticket_id)"
+labels               ||--o{ ticket_labels         : "applied to\n(label_id)"
+
+' ─────────────────────────────────────────────────────────
+' NOTES
+' ─────────────────────────────────────────────────────────
+
+note right of tickets
+  **칸반 워크플로우**
+  BACKLOG → TODO
+  → IN_PROGRESS → DONE
+
+  DONE 전환 시 completed_at 자동 설정
+  position: gap-based 순서 (예: 65536 단위)
+end note
+
+note right of issues
+  **이슈 계층 구조**
+  GOAL
+   └─ STORY
+        └─ FEATURE
+
+  tickets.type 에도 TASK 포함하여
+  Goal > Story > Feature > Task
+  4계층 표현
+end note
+
+note bottom of members
+  **역할 (RBAC)**
+  admin  → 전체 관리 권한
+  member → 티켓 CRUD 가능
+
+  향후: OWNER / MEMBER / VIEWER
+  3단계로 확장 예정
+end note
+
+note bottom of notification_channels
+  **config JSONB 예시**
+  Slack: {"webhookUrl": "https://..."}
+  Telegram: {"botToken": "...",
+             "chatId": "..."}
+end note
+
+@enduml

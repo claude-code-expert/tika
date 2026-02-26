@@ -19,7 +19,7 @@ import { BoardContainer } from '@/components/board/BoardContainer';
 import { TicketCard } from '@/components/board/TicketCard';
 import { useTickets } from '@/hooks/useTickets';
 import { useLabels } from '@/hooks/useLabels';
-import type { TicketWithMeta, TicketStatus, BoardData } from '@/types/index';
+import type { TicketWithMeta, TicketStatus, BoardData, TicketPriority } from '@/types/index';
 
 type ActiveFilter = 'all' | 'this_week' | 'overdue';
 
@@ -61,11 +61,26 @@ export function AppShell() {
   } = useTickets();
   const { labels, fetchLabels } = useLabels();
 
+  // Get current member ID from session (for comment ownership)
+  const [currentMemberId, setCurrentMemberId] = useState<number | null>(null);
+  useEffect(() => {
+    fetch('/api/members')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { members?: Array<{ id: number }> } | null) => {
+        if (data?.members?.length) setCurrentMemberId(data.members[0].id);
+      })
+      .catch(() => {});
+  }, []);
+
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<TicketWithMeta | null>(null);
   const [draggingTicket, setDraggingTicket] = useState<TicketWithMeta | null>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [activePriorities, setActivePriorities] = useState<TicketPriority[]>([]);
+  const [dueDateFrom, setDueDateFrom] = useState('');
+  const [dueDateTo, setDueDateTo] = useState('');
 
   useEffect(() => {
     fetchLabels();
@@ -118,9 +133,42 @@ export function AppShell() {
       };
     }
 
+    // Priority filter
+    if (activePriorities.length > 0) {
+      const pf = (t: TicketWithMeta) => activePriorities.includes(t.priority);
+      base = {
+        ...base,
+        board: {
+          BACKLOG: base.board.BACKLOG.filter(pf),
+          TODO: base.board.TODO.filter(pf),
+          IN_PROGRESS: base.board.IN_PROGRESS.filter(pf),
+          DONE: base.board.DONE.filter(pf),
+        },
+      };
+    }
+
+    // Date range filter
+    if (dueDateFrom || dueDateTo) {
+      const rf = (t: TicketWithMeta) => {
+        if (!t.dueDate) return false;
+        if (dueDateFrom && t.dueDate < dueDateFrom) return false;
+        if (dueDateTo && t.dueDate > dueDateTo) return false;
+        return true;
+      };
+      base = {
+        ...base,
+        board: {
+          BACKLOG: base.board.BACKLOG.filter(rf),
+          TODO: base.board.TODO.filter(rf),
+          IN_PROGRESS: base.board.IN_PROGRESS.filter(rf),
+          DONE: base.board.DONE.filter(rf),
+        },
+      };
+    }
+
     const total = Object.values(base.board).reduce((s, arr) => s + arr.length, 0);
     return { ...base, total };
-  }, [filteredBoard, activeFilter, searchQuery]);
+  }, [filteredBoard, activeFilter, searchQuery, activePriorities, dueDateFrom, dueDateTo]);
 
   const thisWeekCount = useMemo(() => {
     const now = new Date();
@@ -245,7 +293,152 @@ export function AppShell() {
                 onLabelToggle={toggleLabel}
                 onClearLabels={clearLabels}
               />
+
+              {/* Advanced filter toggle */}
+              <button
+                className="chip"
+                data-active={showAdvancedFilter ? 'true' : undefined}
+                onClick={() => setShowAdvancedFilter((p) => !p)}
+                title="고급 필터"
+              >
+                ⚙ 필터
+                {(activePriorities.length > 0 || dueDateFrom || dueDateTo) && (
+                  <span className="chip-count" style={{ background: 'var(--color-accent)', color: '#fff' }}>
+                    {activePriorities.length + (dueDateFrom || dueDateTo ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+
+              {/* Clear all filters shortcut */}
+              {(activeFilter !== 'all' || activeLabels.length > 0 || activePriorities.length > 0 || dueDateFrom || dueDateTo || searchQuery) && (
+                <button
+                  className="chip"
+                  onClick={() => {
+                    setActiveFilter('all');
+                    clearLabels();
+                    setActivePriorities([]);
+                    setDueDateFrom('');
+                    setDueDateTo('');
+                    setShowAdvancedFilter(false);
+                  }}
+                  style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
+                >
+                  ✕ 초기화
+                </button>
+              )}
             </div>
+
+            {/* Advanced filter panel */}
+            {showAdvancedFilter && (
+              <div
+                style={{
+                  padding: '10px 16px',
+                  background: 'var(--color-sidebar-bg)',
+                  borderBottom: '1px solid var(--color-border)',
+                  display: 'flex',
+                  gap: 20,
+                  alignItems: 'flex-end',
+                  flexWrap: 'wrap',
+                  flexShrink: 0,
+                }}
+              >
+                {/* Priority filter */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                    우선순위
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as TicketPriority[]).map((p) => {
+                      const isActive = activePriorities.includes(p);
+                      const colors: Record<TicketPriority, { bg: string; color: string }> = {
+                        LOW: { bg: '#F3F4F6', color: '#6B7280' },
+                        MEDIUM: { bg: '#FEF9C3', color: '#A16207' },
+                        HIGH: { bg: '#FFEDD5', color: '#C2410C' },
+                        CRITICAL: { bg: '#FEE2E2', color: '#DC2626' },
+                      };
+                      const { bg, color } = colors[p];
+                      return (
+                        <button
+                          key={p}
+                          onClick={() =>
+                            setActivePriorities((prev) =>
+                              isActive ? prev.filter((x) => x !== p) : [...prev, p],
+                            )
+                          }
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            background: isActive ? color : bg,
+                            color: isActive ? '#fff' : color,
+                            border: `1px solid ${isActive ? color : 'transparent'}`,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Date range filter */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                    마감일 범위
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="date"
+                      value={dueDateFrom}
+                      onChange={(e) => setDueDateFrom(e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontFamily: 'inherit',
+                        background: '#fff',
+                        color: 'var(--color-text-primary)',
+                        outline: 'none',
+                      }}
+                      aria-label="마감일 시작"
+                    />
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>~</span>
+                    <input
+                      type="date"
+                      value={dueDateTo}
+                      onChange={(e) => setDueDateTo(e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontFamily: 'inherit',
+                        background: '#fff',
+                        color: 'var(--color-text-primary)',
+                        outline: 'none',
+                      }}
+                      aria-label="마감일 종료"
+                    />
+                    {(dueDateFrom || dueDateTo) && (
+                      <button
+                        onClick={() => { setDueDateFrom(''); setDueDateTo(''); }}
+                        style={{
+                          fontSize: 11, color: 'var(--color-text-muted)', background: 'none',
+                          border: 'none', cursor: 'pointer', padding: '2px 4px',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <BoardContainer
               board={displayBoard}
@@ -258,6 +451,7 @@ export function AppShell() {
               onCreateClose={() => setIsCreating(false)}
               selectedTicket={selectedTicket}
               onSelectTicket={setSelectedTicket}
+              currentMemberId={currentMemberId}
             />
           </div>
         </div>

@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
-import type { TicketWithMeta, ChecklistItem, Label, Issue, Member } from '@/types/index';
+import { CommentSection } from './CommentSection';
+import type { TicketWithMeta, ChecklistItem, Label, Issue, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 
@@ -15,6 +16,7 @@ interface TicketModalProps {
   onUpdate: (id: number, data: UpdateTicketInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onDuplicate?: () => Promise<void>;
+  currentMemberId?: number | null;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
@@ -39,6 +41,7 @@ export function TicketModal({
   onUpdate,
   onDelete,
   onDuplicate,
+  currentMemberId = null,
 }: TicketModalProps) {
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description ?? '');
@@ -61,18 +64,21 @@ export function TicketModal({
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [commentList, setCommentList] = useState<Comment[]>([]);
   const labelAreaRef = useRef<HTMLDivElement>(null);
 
-  // Fetch issues and members on mount
+  // Fetch issues, members, and comments on mount
   useEffect(() => {
     Promise.all([
       fetch('/api/issues').then((r) => (r.ok ? r.json() : null)),
       fetch('/api/members').then((r) => (r.ok ? r.json() : null)),
-    ]).then(([issuesData, membersData]) => {
+      fetch(`/api/tickets/${ticket.id}/comments`).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([issuesData, membersData, commentsData]) => {
       if (issuesData?.issues) setAllIssues(issuesData.issues);
       if (membersData?.members) setAllMembers(membersData.members);
+      if (commentsData?.comments) setCommentList(commentsData.comments);
     });
-  }, []);
+  }, [ticket.id]);
 
   // Close label picker on outside click
   useEffect(() => {
@@ -673,7 +679,7 @@ export function TicketModal({
             </div>
 
             {/* 체크리스트 section */}
-            <div style={{ padding: '16px 0' }}>
+            <div style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)' }}>
               <ChecklistSection
                 items={checklistItems}
                 onAdd={async (text) => {
@@ -707,6 +713,14 @@ export function TicketModal({
                 }}
               />
             </div>
+
+            {/* 댓글 section */}
+            <CommentSection
+              ticketId={ticket.id}
+              comments={commentList}
+              currentMemberId={currentMemberId}
+              onCommentsChange={setCommentList}
+            />
           </div>
 
           {/* ===== detail-footer ===== */}

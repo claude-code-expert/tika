@@ -1,4 +1,4 @@
-import { eq, and, asc, count, sql } from 'drizzle-orm';
+import { eq, and, asc, count, sql, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { tickets, checklistItems, ticketLabels, labels, members, issues } from '@/db/schema';
 import type { Ticket, TicketWithMeta, BoardData, TicketStatus } from '@/types/index';
@@ -336,4 +336,22 @@ export async function deleteTicket(id: number, workspaceId: number): Promise<boo
     .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId)))
     .returning({ id: tickets.id });
   return result.length > 0;
+}
+
+export async function getTicketsDueTomorrow(workspaceId: number): Promise<Ticket[]> {
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+
+  const rows = await db
+    .select()
+    .from(tickets)
+    .where(
+      and(
+        eq(tickets.workspaceId, workspaceId),
+        eq(tickets.dueDate, tomorrowStr),
+        ne(tickets.status, 'DONE'),
+      ),
+    );
+  return rows.map(toTicket);
 }

@@ -8,9 +8,7 @@ import { GeneralSection } from './GeneralSection';
 import { NotificationSection } from './NotificationSection';
 import { LabelSection } from './LabelSection';
 import { MemberSection } from './MemberSection';
-
-export type SectionKey = 'general' | 'notifications' | 'labels' | 'members';
-export type ToastType = 'success' | 'fail' | 'info';
+import type { SectionKey, ToastType } from './types';
 
 interface ToastState {
   message: string;

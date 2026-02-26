@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { SectionProps } from './SettingsShell';
+import type { SectionProps } from './types';
 import type { LabelWithCount } from '@/types/index';
 
 const PALETTE = [

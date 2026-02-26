@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { SectionProps } from './SettingsShell';
+import type { SectionProps } from './types';
 import type { MemberWithEmail, MemberRole } from '@/types/index';
 
 function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }: { title: string; message: string; confirmLabel: string; onConfirm: () => void; onCancel: () => void }) {

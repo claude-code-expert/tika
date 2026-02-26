@@ -19,8 +19,9 @@ export function ConfirmDialog({
   return (
     <Modal isOpen={isOpen} onClose={onCancel}>
       <div className="confirm-dialog">
-        <p>{message}</p>
-        <div className="modal-footer">
+        <div className="dialog-icon icon-danger">⚠️</div>
+        <p className="dialog-body">{message}</p>
+        <div className="dialog-footer">
           <Button variant="ghost" onClick={onCancel}>
             취소
           </Button>

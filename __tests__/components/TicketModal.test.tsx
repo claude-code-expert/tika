@@ -9,6 +9,19 @@ const mockOnDelete = jest.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default fetch mock: return empty lists for issues/members/labels
+  (global.fetch as jest.Mock).mockImplementation((url: string) => {
+    if (url === '/api/issues') {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ issues: [] }) });
+    }
+    if (url === '/api/members') {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ members: [] }) });
+    }
+    if (url === '/api/labels') {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ labels: [] }) });
+    }
+    return Promise.resolve({ ok: false });
+  });
 });
 
 const ticket: TicketWithMeta = {

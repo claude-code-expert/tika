@@ -10,6 +10,7 @@ interface HeaderProps {
   onNewTask: () => void;
   searchQuery?: string;
   onSearch?: (q: string) => void;
+  onToggleSidebar?: () => void;
 }
 
 function timeAgo(iso: string): string {
@@ -22,7 +23,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}일 전`;
 }
 
-export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
+export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar }: HeaderProps) {
   const { data: session } = useSession();
   const user = session?.user;
   const memberId = (user as Record<string, unknown> | undefined)?.memberId as number | undefined;
@@ -31,6 +32,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Notification state
   const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
@@ -41,6 +43,15 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
   const displayName = member?.displayName ?? user?.name ?? '사용자';
   const avatarColor = member?.color ?? '#629584';
   const initial = displayName.slice(0, 2).toUpperCase();
+
+  // Mobile detection
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Fetch member data
   useEffect(() => {
@@ -145,8 +156,34 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
           position: 'relative',
         }}
       >
-        {/* Left: Logo */}
+        {/* Left: Hamburger (mobile) + Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {/* Mobile hamburger */}
+          {isMobile && (
+            <button
+              onClick={onToggleSidebar}
+              aria-label="사이드바 열기"
+              style={{
+                width: 44,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-secondary)',
+                borderRadius: 6,
+                flexShrink: 0,
+              }}
+            >
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <line x1={3} y1={6} x2={21} y2={6} />
+                <line x1={3} y1={12} x2={21} y2={12} />
+                <line x1={3} y1={18} x2={21} y2={18} />
+              </svg>
+            </button>
+          )}
           <Link
             href="/"
             style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
@@ -169,16 +206,18 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
             >
               Tika
             </div>
-            <span
-              style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 700,
-                fontSize: 15,
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              Tickets in. Results out.
-            </span>
+            {!isMobile && (
+              <span
+                style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                Tickets in. Results out.
+              </span>
+            )}
           </Link>
         </div>
 
@@ -252,19 +291,25 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <button
             onClick={onNewTask}
+            aria-label="새 업무 생성"
             style={{
-              height: 32,
-              padding: '0 14px',
+              height: isMobile ? 44 : 32,
+              width: isMobile ? 44 : undefined,
+              padding: isMobile ? '0' : '0 14px',
               background: 'var(--color-accent)',
               color: '#fff',
               border: 'none',
-              borderRadius: 'var(--radius-button)',
-              fontSize: 13,
+              borderRadius: isMobile ? '50%' : 'var(--radius-button)',
+              fontSize: isMobile ? 20 : 13,
               fontWeight: 600,
               cursor: 'pointer',
               fontFamily: 'inherit',
               transition: 'background 0.15s',
               whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
             onMouseEnter={(e) =>
               ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent-hover)')
@@ -273,7 +318,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch }: HeaderProps) {
               ((e.currentTarget as HTMLElement).style.background = 'var(--color-accent)')
             }
           >
-            + 새 업무
+            {isMobile ? '+' : '+ 새 업무'}
           </button>
 
           {/* Notification button + dropdown */}

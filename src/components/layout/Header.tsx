@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
@@ -186,36 +187,27 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           )}
           <Link
             href="/"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
-            <div
-              style={{
-                width: 50,
-                height: 32,
-                background: 'var(--color-accent)',
-                borderRadius: 7,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 13,
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                flexShrink: 0,
-              }}
-            >
-              Tika
-            </div>
+            <Image
+              src="/images/tika-logo-combo.png"
+              alt="Tika"
+              width={72}
+              height={32}
+              style={{ objectFit: 'contain', flexShrink: 0 }}
+              priority
+            />
             {!isMobile && (
               <span
                 style={{
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: 'var(--color-text-primary)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: 'var(--color-text-secondary)',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Tickets in. Results out.
+                Plan Simply. Ship Boldly.
               </span>
             )}
           </Link>

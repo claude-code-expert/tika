@@ -127,9 +127,9 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          paddingLeft: 22,
         }}
       >
+        {/* Left: Priority */}
         <span
           style={{
             fontSize: 9,
@@ -143,47 +143,44 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
         >
           {priority.label}
         </span>
-        {/* Labels */}
-        {ticket.labels.length > 0 && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              minWidth: 0,
-              overflow: 'hidden',
-            }}
-          >
-            {ticket.labels.slice(0, 2).map((label) => (
-              <span
-                key={label.id}
-                style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  padding: '1px 5px',
-                  borderRadius: 3,
-                  background: label.color,
-                  color: '#fff',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: 60,
-                }}
-              >
-                {label.name}
-              </span>
-            ))}
-            {ticket.labels.length > 2 && (
-              <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
-                +{ticket.labels.length - 2}
-              </span>
-            )}
-          </div>
-        )}
-        {/* Spacer when no labels */}
-        {ticket.labels.length === 0 && <div style={{ flex: 1 }} />}
-        {/* Deadline */}
+        {/* Center: Labels */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 3,
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {ticket.labels.slice(0, 2).map((label) => (
+            <span
+              key={label.id}
+              style={{
+                fontSize: 9,
+                fontWeight: 600,
+                padding: '1px 5px',
+                borderRadius: 3,
+                background: label.color,
+                color: '#fff',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 60,
+              }}
+            >
+              {label.name}
+            </span>
+          ))}
+          {ticket.labels.length > 2 && (
+            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
+              +{ticket.labels.length - 2}
+            </span>
+          )}
+        </div>
+        {/* Right: Deadline */}
         {deadline && (
           <span
             style={{
@@ -223,6 +220,12 @@ export function Sidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [isMobile, setIsMobile] = useState(false);
+  const [toast, setToast] = useState(false);
+
+  const showToast = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 2000);
+  };
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -284,7 +287,9 @@ export function Sidebar({
         flexShrink: 0,
         display: 'flex',
         // On mobile, take no flex space — aside is rendered as fixed overlay
-        ...(isMobile ? { width: 0, overflow: 'visible', minWidth: 0 } : {}),
+        ...(isMobile
+          ? { width: 0, overflow: 'visible', minWidth: 0 }
+          : { width: collapsed ? 14 : undefined, overflow: 'visible' }),
       }}
     >
       {/* Floating toggle button — desktop only */}
@@ -417,22 +422,35 @@ export function Sidebar({
               ✕
             </button>
           ) : (
-            <svg
-              width={15}
-              height={15}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}
-              aria-hidden="true"
+            <button
+              onClick={showToast}
+              aria-label="설정"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
             >
-              <rect width={18} height={18} x={3} y={3} rx={2} />
-              <path d="M12 8v8" />
-              <path d="m8 12 4 4 4-4" />
-            </svg>
+              <svg
+                width={15}
+                height={15}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                <rect width={18} height={18} x={3} y={3} rx={2} />
+                <path d="M12 8v8" />
+                <path d="m8 12 4 4 4-4" />
+              </svg>
+            </button>
           )}
         </div>
       </div>
@@ -578,6 +596,29 @@ export function Sidebar({
       )}
       </aside>
     </div>
+
+    {/* Toast */}
+    {toast && (
+      <div
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(44, 62, 80, 0.92)',
+          color: '#fff',
+          fontSize: 13,
+          fontWeight: 500,
+          padding: '10px 20px',
+          borderRadius: 8,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        준비중입니다
+      </div>
+    )}
     </>
   );
 }

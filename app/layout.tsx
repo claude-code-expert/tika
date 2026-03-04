@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SessionProvider } from 'next-auth/react';
+import AgentationWrapper from '@/components/ui/AgentationWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SessionProvider>{children}</SessionProvider>
+        {process.env.NODE_ENV === 'development' && <AgentationWrapper />}
       </body>
     </html>
   );

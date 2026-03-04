@@ -15,15 +15,22 @@ jest.mock('@/db/queries/tickets', () => ({
   deleteTicket: jest.fn(),
 }));
 
+jest.mock('@/db/queries/ticketAssignees', () => ({
+  setAssignees: jest.fn(),
+  getAssigneesByTicket: jest.fn(),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '@/app/api/tickets/[id]/route';
 import { auth } from '@/lib/auth';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
+import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetTicketById = getTicketById as jest.Mock;
 const mockedUpdateTicket = updateTicket as jest.Mock;
 const mockedDeleteTicket = deleteTicket as jest.Mock;
+const mockedGetAssigneesByTicket = getAssigneesByTicket as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
 
@@ -50,6 +57,8 @@ function makePatchRequest(id: string, body: unknown): NextRequest {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: assignees query returns empty array
+  mockedGetAssigneesByTicket.mockResolvedValue([]);
 });
 
 describe('GET /api/tickets/:id', () => {

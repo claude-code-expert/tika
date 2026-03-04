@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
 import type { Member, NotificationLog } from '@/types/index';
+import { X, ArrowRight } from 'lucide-react';
 
 interface HeaderProps {
   onNewTask?: () => void;
@@ -268,12 +269,12 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                   border: 'none',
                   cursor: 'pointer',
                   color: 'var(--color-text-muted)',
-                  fontSize: 14,
                   lineHeight: 1,
                   padding: 2,
+                  display: 'flex',
                 }}
               >
-                ✕
+                <X size={14} />
               </button>
             )}
           </div>
@@ -558,7 +559,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                     borderTop: '1px solid var(--color-border)',
                   }}
                 >
-                  전체 보기 →
+                  전체 보기 <ArrowRight size={12} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
                 </Link>
               </div>
             )}

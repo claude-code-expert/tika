@@ -1,6 +1,6 @@
 import { eq, and, asc, count, sql, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { tickets, checklistItems, ticketLabels, labels, members, issues } from '@/db/schema';
+import { tickets, checklistItems, ticketLabels, labels, members, issues, ticketAssignees, workspaces } from '@/db/schema';
 import type { Ticket, TicketWithMeta, BoardData, TicketStatus } from '@/types/index';
 import { isOverdue } from '@/lib/utils';
 import { POSITION_GAP } from '@/lib/constants';
@@ -19,6 +19,8 @@ function toTicket(row: typeof tickets.$inferSelect): Ticket {
     dueDate: row.dueDate ?? null,
     issueId: row.issueId ?? null,
     assigneeId: row.assigneeId ?? null,
+    sprintId: row.sprintId ?? null,
+    storyPoints: row.storyPoints ?? null,
     completedAt: row.completedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -34,7 +36,7 @@ export async function getTicketCount(workspaceId: number): Promise<number> {
 }
 
 export async function getBoardData(workspaceId: number): Promise<BoardData> {
-  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allIssues] = await Promise.all(
+  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allIssues, allAssignees, workspaceRow] = await Promise.all(
     [
       db
         .select()
@@ -54,6 +56,12 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
         .orderBy(asc(checklistItems.position)),
       db.select().from(members).where(eq(members.workspaceId, workspaceId)),
       db.select().from(issues).where(eq(issues.workspaceId, workspaceId)),
+      db
+        .select({ ticketId: ticketAssignees.ticketId, member: members })
+        .from(ticketAssignees)
+        .innerJoin(members, eq(members.id, ticketAssignees.memberId))
+        .where(eq(members.workspaceId, workspaceId)),
+      db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1),
     ],
   );
 
@@ -73,6 +81,13 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
 
   const membersById = new Map(allMembers.map((m) => [m.id, m]));
   const issuesById = new Map(allIssues.map((i) => [i.id, i]));
+
+  const assigneesByTicket = new Map<number, typeof members.$inferSelect[]>();
+  for (const row of allAssignees) {
+    const arr = assigneesByTicket.get(row.ticketId) ?? [];
+    arr.push(row.member);
+    assigneesByTicket.set(row.ticketId, arr);
+  }
 
   const board: Record<TicketStatus, TicketWithMeta[]> = {
     BACKLOG: [],
@@ -102,12 +117,24 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
 
     const memberRow = row.assigneeId ? membersById.get(row.assigneeId) : null;
     const issueRow = row.issueId ? issuesById.get(row.issueId) : null;
+    const assigneeRows = assigneesByTicket.get(row.id) ?? [];
 
     const meta: TicketWithMeta = {
       ...ticket,
       isOverdue: isOverdue(ticket.dueDate, ticket.status),
       labels: ticketLabelsData,
       checklistItems: checklist,
+      assignees: assigneeRows.map((m) => ({
+        id: m.id,
+        userId: m.userId,
+        workspaceId: m.workspaceId,
+        displayName: m.displayName,
+        color: m.color,
+        role: m.role as import('@/types/index').Member['role'],
+        invitedBy: m.invitedBy ?? null,
+        joinedAt: m.joinedAt?.toISOString() ?? null,
+        createdAt: m.createdAt.toISOString(),
+      })),
       assignee: memberRow
         ? {
             id: memberRow.id,
@@ -116,6 +143,8 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
             displayName: memberRow.displayName,
             color: memberRow.color,
             role: memberRow.role as import('@/types/index').Member['role'],
+            invitedBy: memberRow.invitedBy ?? null,
+            joinedAt: memberRow.joinedAt?.toISOString() ?? null,
             createdAt: memberRow.createdAt.toISOString(),
           }
         : null,
@@ -138,7 +167,7 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
     }
   }
 
-  return { board, total };
+  return { board, total, workspaceName: workspaceRow[0]?.name };
 }
 
 export async function getTicketById(
@@ -193,6 +222,7 @@ export async function getTicketById(
       position: c.position,
       createdAt: c.createdAt.toISOString(),
     })),
+    assignees: [],
     assignee: mr
       ? {
           id: mr.id,
@@ -201,6 +231,8 @@ export async function getTicketById(
           displayName: mr.displayName,
           color: mr.color,
           role: mr.role as import('@/types/index').Member['role'],
+          invitedBy: mr.invitedBy ?? null,
+          joinedAt: mr.joinedAt?.toISOString() ?? null,
           createdAt: mr.createdAt.toISOString(),
         }
       : null,
@@ -228,6 +260,8 @@ export async function createTicket(
     dueDate?: string | null;
     issueId?: number | null;
     assigneeId?: number | null;
+    sprintId?: number | null;
+    storyPoints?: number | null;
     labelIds?: number[];
   },
 ): Promise<Ticket> {
@@ -254,6 +288,8 @@ export async function createTicket(
       dueDate: data.dueDate ?? null,
       issueId: data.issueId ?? null,
       assigneeId: data.assigneeId ?? null,
+      sprintId: data.sprintId ?? null,
+      storyPoints: data.storyPoints ?? null,
     })
     .returning();
 
@@ -281,6 +317,8 @@ export async function updateTicket(
     assigneeId: number | null;
     completedAt: Date | null;
     position: number;
+    sprintId: number | null;
+    storyPoints: number | null;
     labelIds: number[];
   }>,
 ): Promise<Ticket | null> {
@@ -296,6 +334,8 @@ export async function updateTicket(
   if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
   if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
   if (data.position !== undefined) updateData.position = data.position;
+  if (data.sprintId !== undefined) updateData.sprintId = data.sprintId;
+  if (data.storyPoints !== undefined) updateData.storyPoints = data.storyPoints;
 
   if (Object.keys(updateData).length === 0 && data.labelIds === undefined) {
     return getTicketById(id, workspaceId).then((t) => t);

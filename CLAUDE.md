@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-23
 ## Active Technologies
 - TypeScript 5.7 (strict mode) + Next.js 15 (App Router), Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5 (002-workspace-settings)
 - Vercel Postgres (Neon) — PostgreSQL (002-workspace-settings)
+- TypeScript 5.7 (strict mode) + Next.js 15 App Router, Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5, Tailwind CSS 4, @dnd-kit 6.x (001-team-collaboration)
 
 - TypeScript 5.7 (strict mode) + Next.js 15 (App Router), @dnd-kit 6.x, Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5, Tailwind CSS 4 (001-kanban-board)
 
@@ -25,6 +26,7 @@ npm test && npm run lint
 TypeScript 5.7 (strict mode): Follow standard conventions
 
 ## Recent Changes
+- 001-team-collaboration: Added TypeScript 5.7 (strict mode) + Next.js 15 App Router, Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5, Tailwind CSS 4, @dnd-kit 6.x
 - 002-workspace-settings: Added TypeScript 5.7 (strict mode) + Next.js 15 (App Router), Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5
 
 - 001-kanban-board: Added TypeScript 5.7 (strict mode) + Next.js 15 (App Router), @dnd-kit 6.x, Drizzle ORM 0.38, Zod 3.24, NextAuth.js v5, Tailwind CSS 4

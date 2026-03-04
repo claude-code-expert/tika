@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ChecklistItem } from '@/types/index';
 import { CHECKLIST_MAX_ITEMS } from '@/lib/constants';
+import { CheckSquare } from 'lucide-react';
 
 interface ChecklistSectionProps {
   items: ChecklistItem[];
@@ -61,7 +62,7 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
             gap: 6,
           }}
         >
-          ☑ 체크리스트
+          <CheckSquare size={13} /> 체크리스트
           {items.length > 0 && (
             <span
               style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 400 }}
@@ -96,7 +97,7 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
       )}
 
       {/* Items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {items.map((item) => (
           <div
             key={item.id}
@@ -106,7 +107,7 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              padding: '7px 10px',
+              padding: '2px 10px',
               borderRadius: 6,
               background: hoveredId === item.id ? 'var(--color-board-bg)' : 'transparent',
               transition: 'background 0.1s',

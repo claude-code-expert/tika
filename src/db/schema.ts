@@ -10,6 +10,7 @@ import {
   primaryKey,
   index,
   unique,
+  uuid,
 } from 'drizzle-orm/pg-core';
 
 // 1. users — Google OAuth (NextAuth manages)
@@ -29,6 +30,7 @@ export const workspaces = pgTable('workspaces', {
   ownerId: text('owner_id')
     .notNull()
     .references(() => users.id),
+  type: varchar('type', { length: 10 }).notNull().default('PERSONAL'), // 'PERSONAL' | 'TEAM'
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -64,10 +66,31 @@ export const members = pgTable(
       .references(() => workspaces.id),
     displayName: varchar('display_name', { length: 50 }).notNull(),
     color: varchar('color', { length: 7 }).notNull().default('#7EB4A2'),
-    role: varchar('role', { length: 10 }).notNull().default('member'), // 'admin' | 'member'
+    role: varchar('role', { length: 10 }).notNull().default('MEMBER'), // 'OWNER' | 'MEMBER' | 'VIEWER'
+    invitedBy: integer('invited_by'), // FK→members(id) — self-ref, set at app level
+    joinedAt: timestamp('joined_at', { withTimezone: true }), // null = workspace founder
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('members_user_workspace_unique').on(table.userId, table.workspaceId)],
+);
+
+// 12. sprints (defined before tickets for FK reference)
+export const sprints = pgTable(
+  'sprints',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 100 }).notNull(),
+    goal: text('goal'),
+    status: varchar('status', { length: 20 }).notNull().default('PLANNED'), // PLANNED|ACTIVE|COMPLETED|CANCELLED
+    startDate: date('start_date', { mode: 'string' }),
+    endDate: date('end_date', { mode: 'string' }),
+    storyPointsTotal: integer('story_points_total'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('idx_sprints_workspace_status').on(table.workspaceId, table.status)],
 );
 
 // 5. tickets
@@ -88,6 +111,8 @@ export const tickets = pgTable(
     dueDate: date('due_date', { mode: 'string' }),
     issueId: integer('issue_id').references(() => issues.id, { onDelete: 'set null' }),
     assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
+    sprintId: integer('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
+    storyPoints: integer('story_points'),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -102,6 +127,7 @@ export const tickets = pgTable(
       table.position,
     ),
     index('idx_tickets_due_date').on(table.dueDate),
+    index('idx_tickets_sprint_id').on(table.sprintId),
   ],
 );
 
@@ -211,4 +237,45 @@ export const ticketLabels = pgTable(
       .references(() => labels.id, { onDelete: 'cascade' }),
   },
   (table) => [primaryKey({ columns: [table.ticketId, table.labelId] })],
+);
+
+// 13. workspace_invites
+export const workspaceInvites = pgTable(
+  'workspace_invites',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    invitedBy: integer('invited_by')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    token: uuid('token').notNull().unique().defaultRandom(),
+    email: varchar('email', { length: 255 }).notNull(),
+    role: varchar('role', { length: 10 }).notNull(), // 'MEMBER' | 'VIEWER'
+    status: varchar('status', { length: 10 }).notNull().default('PENDING'), // PENDING|ACCEPTED|REJECTED|EXPIRED
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_workspace_invites_workspace_status').on(table.workspaceId, table.status),
+    index('idx_workspace_invites_token').on(table.token),
+  ],
+);
+
+// 14. ticket_assignees (M:N — multi-assignee)
+export const ticketAssignees = pgTable(
+  'ticket_assignees',
+  {
+    ticketId: integer('ticket_id')
+      .notNull()
+      .references(() => tickets.id, { onDelete: 'cascade' }),
+    memberId: integer('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ticketId, table.memberId] }),
+    index('idx_ticket_assignees_member_id').on(table.memberId),
+  ],
 );

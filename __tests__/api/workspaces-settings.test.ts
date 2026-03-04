@@ -10,18 +10,24 @@ jest.mock('@/db/queries/workspaces', () => ({
   getWorkspaceById: jest.fn(),
   updateWorkspace: jest.fn(),
 }));
+jest.mock('@/db/queries/members', () => ({
+  getMemberByUserId: jest.fn(),
+}));
 
 import { NextRequest } from 'next/server';
 import { PATCH } from '@/app/api/workspaces/[id]/route';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById, updateWorkspace } from '@/db/queries/workspaces';
+import { getMemberByUserId } from '@/db/queries/members';
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetWorkspaceById = getWorkspaceById as jest.Mock;
 const mockedUpdateWorkspace = updateWorkspace as jest.Mock;
+const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
 const mockWorkspace = { id: 1, name: '내 워크스페이스', description: null, ownerId: 'user-1', createdAt: '2026-01-01T00:00:00.000Z' };
+const mockOwnerMember = { id: 1, userId: 'user-1', workspaceId: 1, displayName: '홍길동', color: '#629584', role: 'OWNER', invitedBy: null, joinedAt: null, createdAt: '2026-01-01T00:00:00.000Z' };
 
 function makePatchRequest(id: string, body: unknown): [NextRequest, { params: Promise<{ id: string }> }] {
   const req = new NextRequest(`http://localhost/api/workspaces/${id}`, {
@@ -34,6 +40,8 @@ function makePatchRequest(id: string, body: unknown): [NextRequest, { params: Pr
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: user is OWNER of workspace (requireRole passes)
+  mockedGetMemberByUserId.mockResolvedValue(mockOwnerMember);
 });
 
 describe('PATCH /api/workspaces/[id]', () => {
@@ -57,6 +65,7 @@ describe('PATCH /api/workspaces/[id]', () => {
 
   it('다른 워크스페이스 수정 시도는 403을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce({ user: { id: 'user-1', workspaceId: 2 } });
+    mockedGetMemberByUserId.mockResolvedValueOnce(null); // not a member of workspace 1
     const [req, ctx] = makePatchRequest('1', { name: '새 이름' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
@@ -84,10 +93,10 @@ describe('PATCH /api/workspaces/[id]', () => {
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('이름 50자 초과는 400을 반환한다', async () => {
+  it('이름 100자 초과는 400을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedGetWorkspaceById.mockResolvedValueOnce(mockWorkspace);
-    const [req, ctx] = makePatchRequest('1', { name: 'a'.repeat(51) });
+    const [req, ctx] = makePatchRequest('1', { name: 'a'.repeat(101) });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(400);

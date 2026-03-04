@@ -184,9 +184,10 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
         style={{
           fontSize: 13,
           fontWeight: 600,
-          color: 'var(--color-text-primary)',
+          color: ticket.status === 'DONE' ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
           lineHeight: 1.4,
           marginBottom: ticket.description ? 5 : 10,
+          textDecoration: ticket.status === 'DONE' ? 'line-through' : 'none',
         }}
       >
         {ticket.title}

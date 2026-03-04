@@ -24,12 +24,11 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
   return (
     <div
       style={{
+        flex: 1,
         minWidth: 'var(--column-width)',
-        width: 'var(--column-width)',
         display: 'flex',
         flexDirection: 'column',
         maxHeight: '100%',
-        flexShrink: 0,
         background: 'var(--color-col-bg)',
         borderRadius: 'var(--radius-column)',
       }}
@@ -50,7 +49,7 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
           style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 700,
             color: 'var(--color-text-primary)',
           }}
         >
@@ -73,9 +72,11 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
       {/* Drop zone + cards */}
       <div
         ref={setNodeRef}
+        className="[&::-webkit-scrollbar]:hidden"
         style={{
           flex: 1,
           overflowY: 'auto',
+          scrollbarWidth: 'none',
           padding: 8,
           display: 'flex',
           flexDirection: 'column',

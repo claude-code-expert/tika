@@ -3,6 +3,7 @@ import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { updateTicketSchema } from '@/lib/validations';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
+import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -93,8 +94,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (result.data.status === 'DONE') completedAt = new Date();
     else if (result.data.status !== undefined) completedAt = null;
 
+    const { assigneeIds, ...restData } = result.data;
+
+    // Validate multi-assignees before update
+    if (assigneeIds !== undefined && assigneeIds.length > 5) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: '담당자는 최대 5명까지 지정할 수 있습니다' } },
+        { status: 400 },
+      );
+    }
+
     const ticket = await updateTicket(ticketId, workspaceId, {
-      ...result.data,
+      ...restData,
       completedAt,
     });
 
@@ -104,7 +115,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { status: 404 },
       );
     }
-    return NextResponse.json({ ticket });
+
+    // Update multi-assignees if provided
+    if (assigneeIds !== undefined) {
+      await setAssignees(ticketId, assigneeIds);
+    }
+
+    const assignees = await getAssigneesByTicket(ticketId);
+    return NextResponse.json({ ticket: { ...ticket, assignees } });
   } catch (error) {
     console.error('PATCH /api/tickets/:id error:', error);
     return NextResponse.json(

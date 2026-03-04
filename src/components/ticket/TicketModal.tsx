@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
@@ -8,6 +8,7 @@ import { CommentSection } from './CommentSection';
 import type { TicketWithMeta, ChecklistItem, Label, Issue, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
+import { FileText, AlertTriangle, Save, Copy, X, Trash2 } from 'lucide-react';
 
 interface TicketModalProps {
   ticket: TicketWithMeta;
@@ -17,6 +18,7 @@ interface TicketModalProps {
   onDelete: (id: number) => Promise<void>;
   onDuplicate?: () => Promise<void>;
   currentMemberId?: number | null;
+  workspaceName?: string;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
@@ -42,6 +44,7 @@ export function TicketModal({
   onDelete,
   onDuplicate,
   currentMemberId = null,
+  workspaceName,
 }: TicketModalProps) {
   const [title, setTitle] = useState(ticket.title);
   const [description, setDescription] = useState(ticket.description ?? '');
@@ -65,7 +68,14 @@ export function TicketModal({
   const [isSaving, setIsSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [commentList, setCommentList] = useState<Comment[]>([]);
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
   const labelAreaRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTitleClick = useCallback(() => {
+    setIsTitleEditing(true);
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }, []);
 
   // Fetch issues, members, and comments on mount
   useEffect(() => {
@@ -204,7 +214,71 @@ export function TicketModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} maxWidth={720}>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        maxWidth={720}
+        headerContent={
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{ flex: 1, minWidth: 0, cursor: isTitleEditing ? 'text' : 'pointer' }}
+            onClick={!isTitleEditing ? handleTitleClick : undefined}
+          >
+            {isTitleEditing ? (
+              <input
+                ref={titleInputRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => setIsTitleEditing(false)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setIsTitleEditing(false); }}
+                style={{
+                  width: '100%',
+                  border: 'none',
+                  borderBottom: '1.5px solid var(--color-accent)',
+                  outline: 'none',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: 'var(--color-text-primary)',
+                  background: 'transparent',
+                  padding: '2px 0',
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: 'var(--color-text-primary)',
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title="클릭하여 제목 편집"
+              >
+                {title}
+              </span>
+            )}
+          </div>
+          {workspaceName && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'var(--color-text-muted)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                userSelect: 'none',
+              }}
+            >
+              {workspaceName}-{ticket.id}
+            </span>
+          )}
+          </div>
+        }
+      >
         {/* Outer flex column — fills Modal panel */}
         <div
           style={{
@@ -218,17 +292,54 @@ export function TicketModal({
           {/* ===== detail-top ===== */}
           <div
             style={{
-              padding: '20px 24px 16px',
+              padding: '16px 24px',
               borderBottom: '1px solid var(--color-border)',
               flexShrink: 0,
             }}
           >
-            {/* Top bar: labels + close */}
+            {/* Issue selector — hidden for GOAL type */}
+            {ticket.type !== 'GOAL' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+                  상위 이슈 :
+                </span>
+                <select
+                  value={selectedIssueId ?? ''}
+                  onChange={(e) =>
+                    setSelectedIssueId(e.target.value ? Number(e.target.value) : null)
+                  }
+                  aria-label="상위 이슈"
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    background: 'var(--color-board-bg)',
+                    color: selectedIssueId
+                      ? 'var(--color-text-primary)'
+                      : 'var(--color-text-muted)',
+                    border: '1px solid var(--color-border)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    maxWidth: 280,
+                  }}
+                >
+                  <option value="">연결된 이슈 없음</option>
+                  {allIssues.map((issue) => (
+                    <option key={issue.id} value={issue.id}>
+                      [{issue.type.charAt(0)}] {issue.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Labels row */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                justifyContent: 'space-between',
                 gap: 12,
                 marginBottom: 14,
               }}
@@ -374,90 +485,6 @@ export function TicketModal({
                   </div>
                 )}
               </div>
-
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                style={{
-                  width: 28,
-                  height: 28,
-                  border: 'none',
-                  background: 'transparent',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 18,
-                  color: 'var(--color-text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontFamily: 'inherit',
-                  transition: 'background 0.1s, color 0.1s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-board-bg)';
-                  e.currentTarget.style.color = 'var(--color-text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-muted)';
-                }}
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Title */}
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={{
-                width: '100%',
-                border: 'none',
-                outline: 'none',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: 20,
-                fontWeight: 700,
-                color: 'var(--color-text-primary)',
-                lineHeight: 1.4,
-                marginBottom: 10,
-                background: 'transparent',
-              }}
-              aria-label="티켓 제목"
-            />
-
-            {/* Issue selector */}
-            <div style={{ marginBottom: 14 }}>
-              <select
-                value={selectedIssueId ?? ''}
-                onChange={(e) =>
-                  setSelectedIssueId(e.target.value ? Number(e.target.value) : null)
-                }
-                aria-label="상위 이슈"
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  background: 'var(--color-board-bg)',
-                  color: selectedIssueId
-                    ? 'var(--color-text-primary)'
-                    : 'var(--color-text-muted)',
-                  border: '1px solid var(--color-border)',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  maxWidth: 280,
-                }}
-              >
-                <option value="">이슈 없음</option>
-                {allIssues.map((issue) => (
-                  <option key={issue.id} value={issue.id}>
-                    [{issue.type.charAt(0)}] {issue.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Overdue warning */}
@@ -475,7 +502,7 @@ export function TicketModal({
                   color: '#DC2626',
                 }}
               >
-                ⚠ 마감 초과
+                <AlertTriangle size={13} style={{ flexShrink: 0 }} /> 마감 초과
               </div>
             )}
 
@@ -645,7 +672,7 @@ export function TicketModal({
                   gap: 6,
                 }}
               >
-                📝 설명
+                <FileText size={13} /> 설명
               </div>
               <textarea
                 value={description}
@@ -658,7 +685,7 @@ export function TicketModal({
                   resize: 'vertical',
                   minHeight: 80,
                   padding: '8px 12px',
-                  border: '1px solid var(--color-border)',
+                  border: '1.5px solid #CBD5E1',
                   borderRadius: 6,
                   fontSize: 14,
                   lineHeight: 1.7,
@@ -672,14 +699,14 @@ export function TicketModal({
                   e.target.style.borderColor = 'var(--color-accent)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--color-border)';
+                  e.target.style.borderColor = '#CBD5E1';
                 }}
                 aria-label="설명"
               />
             </div>
 
             {/* 체크리스트 section */}
-            <div style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border)' }}>
+            <div style={{ padding: '11px 0', borderBottom: '1px solid var(--color-border)' }}>
               <ChecklistSection
                 items={checklistItems}
                 onAdd={async (text) => {
@@ -758,7 +785,7 @@ export function TicketModal({
                   }
                 }}
               >
-                {isSaving ? '저장 중...' : '✏ 저장'}
+                {isSaving ? '저장 중...' : <><Save size={13} /> 저장</>}
               </button>
               <button
                 style={actionBtnStyle}
@@ -767,7 +794,7 @@ export function TicketModal({
                 onClick={onDuplicate ? async () => { setIsSaving(true); try { await onDuplicate(); onClose(); } finally { setIsSaving(false); } } : undefined}
                 title={onDuplicate ? '티켓 복제' : '복제 기능은 준비 중입니다'}
               >
-                📋 복제
+                <Copy size={13} /> 복제
               </button>
               <button
                 onClick={onClose}
@@ -776,7 +803,7 @@ export function TicketModal({
                 onMouseEnter={(e) => handleActionHover(e, true)}
                 onMouseLeave={(e) => handleActionHover(e, false)}
               >
-                ✕ 닫기
+                <X size={13} /> 닫기
               </button>
             </div>
             <button
@@ -786,7 +813,7 @@ export function TicketModal({
               onMouseEnter={(e) => handleDangerHover(e, true)}
               onMouseLeave={(e) => handleDangerHover(e, false)}
             >
-              🗑 삭제
+              <Trash2 size={13} /> 삭제
             </button>
           </div>
         </div>

@@ -17,9 +17,17 @@ import { Footer } from './Footer';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { TicketCard } from '@/components/board/TicketCard';
 import { useTickets } from '@/hooks/useTickets';
-import type { TicketWithMeta, TicketStatus, BoardData, TicketPriority } from '@/types/index';
+import type { TicketWithMeta, TicketStatus, BoardData, TicketPriority, TicketType } from '@/types/index';
+import { Settings, X } from 'lucide-react';
 
 type ActiveFilter = 'all' | 'this_week' | 'overdue';
+
+const TICKET_TYPE_FILTER_STYLES: Record<TicketType, { bg: string; color: string; label: string }> = {
+  GOAL: { bg: '#8B5CF6', color: '#fff', label: 'Goal' },
+  STORY: { bg: '#3B82F6', color: '#fff', label: 'Story' },
+  FEATURE: { bg: '#10B981', color: '#fff', label: 'Feature' },
+  TASK: { bg: '#F59E0B', color: '#fff', label: 'Task' },
+};
 
 function findTicket(board: BoardData, id: number): TicketWithMeta | null {
   for (const tickets of Object.values(board.board)) {
@@ -74,6 +82,7 @@ export function AppShell() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [activePriorities, setActivePriorities] = useState<TicketPriority[]>([]);
+  const [activeTypes, setActiveTypes] = useState<TicketType[]>([]);
   const [dueDateFrom, setDueDateFrom] = useState('');
   const [dueDateTo, setDueDateTo] = useState('');
 
@@ -138,6 +147,20 @@ export function AppShell() {
       };
     }
 
+    // Type filter
+    if (activeTypes.length > 0) {
+      const tf = (t: TicketWithMeta) => activeTypes.includes(t.type);
+      base = {
+        ...base,
+        board: {
+          BACKLOG: base.board.BACKLOG.filter(tf),
+          TODO: base.board.TODO.filter(tf),
+          IN_PROGRESS: base.board.IN_PROGRESS.filter(tf),
+          DONE: base.board.DONE.filter(tf),
+        },
+      };
+    }
+
     // Date range filter
     if (dueDateFrom || dueDateTo) {
       const rf = (t: TicketWithMeta) => {
@@ -159,7 +182,7 @@ export function AppShell() {
 
     const total = Object.values(base.board).reduce((s, arr) => s + arr.length, 0);
     return { ...base, total };
-  }, [filteredBoard, activeFilter, searchQuery, activePriorities, dueDateFrom, dueDateTo]);
+  }, [filteredBoard, activeFilter, searchQuery, activePriorities, activeTypes, dueDateFrom, dueDateTo]);
 
   const thisWeekCount = useMemo(() => {
     const now = new Date();
@@ -248,6 +271,7 @@ export function AppShell() {
           <Sidebar
             backlogTickets={displayBoard.board.BACKLOG}
             isLoading={isLoading}
+            workspaceName={board.workspaceName}
             onTicketClick={(ticket) => {
               setSelectedTicket(ticket);
               setIsMobileSidebarOpen(false);
@@ -260,7 +284,7 @@ export function AppShell() {
             onMobileClose={() => setIsMobileSidebarOpen(false)}
           />
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'auto' }}>
             {/* Filter bar */}
             <div className="filter-bar">
               <button
@@ -294,28 +318,29 @@ export function AppShell() {
                 onClick={() => setShowAdvancedFilter((p) => !p)}
                 title="고급 필터"
               >
-                ⚙ 필터
-                {(activePriorities.length > 0 || dueDateFrom || dueDateTo) && (
+                <Settings size={12} /> 필터
+                {(activePriorities.length > 0 || activeTypes.length > 0 || dueDateFrom || dueDateTo) && (
                   <span className="chip-count" style={{ background: 'var(--color-accent)', color: '#fff' }}>
-                    {activePriorities.length + (dueDateFrom || dueDateTo ? 1 : 0)}
+                    {activePriorities.length + activeTypes.length + (dueDateFrom || dueDateTo ? 1 : 0)}
                   </span>
                 )}
               </button>
 
               {/* Clear all filters shortcut */}
-              {(activeFilter !== 'all' || activePriorities.length > 0 || dueDateFrom || dueDateTo || searchQuery) && (
+              {(activeFilter !== 'all' || activePriorities.length > 0 || activeTypes.length > 0 || dueDateFrom || dueDateTo || searchQuery) && (
                 <button
                   className="chip"
                   onClick={() => {
                     setActiveFilter('all');
                     setActivePriorities([]);
+                    setActiveTypes([]);
                     setDueDateFrom('');
                     setDueDateTo('');
                     setShowAdvancedFilter(false);
                   }}
                   style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
                 >
-                  ✕ 초기화
+                  <X size={12} /> 초기화
                 </button>
               )}
             </div>
@@ -334,6 +359,42 @@ export function AppShell() {
                   flexShrink: 0,
                 }}
               >
+                {/* Type filter */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                    이슈 타입
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(Object.entries(TICKET_TYPE_FILTER_STYLES) as [TicketType, typeof TICKET_TYPE_FILTER_STYLES[TicketType]][]).map(([type, style]) => {
+                      const isActive = activeTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          onClick={() =>
+                            setActiveTypes((prev) =>
+                              isActive ? prev.filter((t) => t !== type) : [...prev, type],
+                            )
+                          }
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            background: isActive ? style.bg : style.bg + '22',
+                            color: isActive ? '#fff' : style.bg,
+                            border: `1px solid ${isActive ? style.bg : 'transparent'}`,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {style.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Priority filter */}
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
@@ -420,11 +481,11 @@ export function AppShell() {
                       <button
                         onClick={() => { setDueDateFrom(''); setDueDateTo(''); }}
                         style={{
-                          fontSize: 11, color: 'var(--color-text-muted)', background: 'none',
+                          display: 'flex', color: 'var(--color-text-muted)', background: 'none',
                           border: 'none', cursor: 'pointer', padding: '2px 4px',
                         }}
                       >
-                        ✕
+                        <X size={12} />
                       </button>
                     )}
                   </div>

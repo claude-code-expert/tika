@@ -16,9 +16,10 @@ interface ColumnProps {
   label: string;
   tickets: TicketWithMeta[];
   onTicketClick: (ticket: TicketWithMeta) => void;
+  workspaceName?: string;
 }
 
-export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
+export function Column({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -28,7 +29,6 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
         minWidth: 'var(--column-width)',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: '100%',
         background: 'var(--color-col-bg)',
         borderRadius: 'var(--radius-column)',
       }}
@@ -74,9 +74,6 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
         ref={setNodeRef}
         className="[&::-webkit-scrollbar]:hidden"
         style={{
-          flex: 1,
-          overflowY: 'auto',
-          scrollbarWidth: 'none',
           padding: 8,
           display: 'flex',
           flexDirection: 'column',
@@ -89,7 +86,7 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
       >
         <SortableContext items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} />
+            <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
           ))}
         </SortableContext>
 

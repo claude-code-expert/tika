@@ -3,6 +3,7 @@ import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { createTicketSchema } from '@/lib/validations';
 import { getBoardData, createTicket, getTicketCount } from '@/db/queries/tickets';
+import { setAssignees } from '@/db/queries/ticketAssignees';
 import { TICKET_MAX_PER_WORKSPACE } from '@/lib/constants';
 
 function getWorkspaceId(session: Session | null): number | null {
@@ -78,8 +79,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { labelIds, ...ticketData } = result.data;
+    const { labelIds, assigneeIds, ...ticketData } = result.data;
     const ticket = await createTicket(workspaceId, { ...ticketData, labelIds });
+
+    // Set multi-assignees if provided
+    if (assigneeIds && assigneeIds.length > 0) {
+      if (assigneeIds.length > 5) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: '담당자는 최대 5명까지 지정할 수 있습니다' } },
+          { status: 400 },
+        );
+      }
+      await setAssignees(ticket.id, assigneeIds);
+    }
+
     return NextResponse.json({ ticket }, { status: 201 });
   } catch (error) {
     console.error('POST /api/tickets error:', error);

@@ -29,6 +29,43 @@ export const ISSUE_TYPE = {
 } as const;
 export type IssueType = (typeof ISSUE_TYPE)[keyof typeof ISSUE_TYPE];
 
+// Phase 4: Team roles
+export const TEAM_ROLE = {
+  OWNER: 'OWNER',
+  MEMBER: 'MEMBER',
+  VIEWER: 'VIEWER',
+} as const;
+export type TeamRole = (typeof TEAM_ROLE)[keyof typeof TEAM_ROLE];
+
+// Backward compat alias
+export const MEMBER_ROLE = TEAM_ROLE;
+export type MemberRole = TeamRole;
+
+// Phase 4: Workspace type
+export const WORKSPACE_TYPE = {
+  PERSONAL: 'PERSONAL',
+  TEAM: 'TEAM',
+} as const;
+export type WorkspaceType = (typeof WORKSPACE_TYPE)[keyof typeof WORKSPACE_TYPE];
+
+// Phase 4: Sprint status
+export const SPRINT_STATUS = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type SprintStatus = (typeof SPRINT_STATUS)[keyof typeof SPRINT_STATUS];
+
+// Phase 4: Invite status
+export const INVITE_STATUS = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type InviteStatus = (typeof INVITE_STATUS)[keyof typeof INVITE_STATUS];
+
 export interface Ticket {
   id: number;
   workspaceId: number;
@@ -42,6 +79,8 @@ export interface Ticket {
   dueDate: string | null; // YYYY-MM-DD
   issueId: number | null;
   assigneeId: number | null;
+  sprintId: number | null; // Phase 4
+  storyPoints: number | null; // Phase 4
   completedAt: string | null; // ISO 8601
   createdAt: string;
   updatedAt: string;
@@ -53,6 +92,7 @@ export interface TicketWithMeta extends Ticket {
   checklistItems: ChecklistItem[];
   issue: Issue | null;
   assignee: Member | null;
+  assignees: Member[]; // Phase 4: multi-assignee
 }
 
 export interface ChecklistItem {
@@ -81,12 +121,6 @@ export interface Issue {
   createdAt: string;
 }
 
-export const MEMBER_ROLE = {
-  ADMIN: 'admin',
-  MEMBER: 'member',
-} as const;
-export type MemberRole = (typeof MEMBER_ROLE)[keyof typeof MEMBER_ROLE];
-
 export interface Member {
   id: number;
   userId: string;
@@ -94,6 +128,8 @@ export interface Member {
   displayName: string;
   color: string;
   role: MemberRole;
+  invitedBy: number | null; // Phase 4
+  joinedAt: string | null; // Phase 4
   createdAt: string;
 }
 
@@ -106,7 +142,48 @@ export interface Workspace {
   name: string;
   description: string | null;
   ownerId: string;
+  type: WorkspaceType; // Phase 4
   createdAt: string;
+}
+
+export interface WorkspaceWithRole extends Workspace {
+  role: TeamRole; // current user's role in this workspace
+}
+
+// Phase 4: Sprint
+export interface Sprint {
+  id: number;
+  workspaceId: number;
+  name: string;
+  goal: string | null;
+  status: SprintStatus;
+  startDate: string | null;
+  endDate: string | null;
+  storyPointsTotal: number | null;
+  createdAt: string;
+}
+
+export interface SprintWithTicketCount extends Sprint {
+  ticketCount: number;
+}
+
+// Phase 4: WorkspaceInvite
+export interface WorkspaceInvite {
+  id: number;
+  workspaceId: number;
+  invitedBy: number;
+  token: string;
+  email: string;
+  role: 'MEMBER' | 'VIEWER';
+  status: InviteStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+// Phase 4: TicketAssignee
+export interface TicketAssignee {
+  ticketId: number;
+  memberId: number;
 }
 
 export interface LabelWithCount extends Label {
@@ -142,6 +219,7 @@ export interface NotificationChannel {
 export interface BoardData {
   board: Record<TicketStatus, TicketWithMeta[]>;
   total: number;
+  workspaceName?: string;
 }
 
 export interface Comment {
@@ -171,4 +249,64 @@ export interface NotificationLog {
   sentAt: string; // ISO 8601
   errorMessage: string | null;
   isRead: boolean;
+}
+
+// Phase 4: Analytics types
+export interface BurndownDataPoint {
+  date: string;
+  remainingTickets: number;
+  remainingPoints: number;
+  idealTickets: number;
+}
+
+export interface CfdDataPoint {
+  date: string;
+  backlog: number;
+  todo: number;
+  inProgress: number;
+  done: number;
+}
+
+export interface VelocitySprint {
+  sprintId: number;
+  name: string;
+  completedPoints: number;
+  plannedPoints: number;
+}
+
+export interface CycleTimeDistribution {
+  days: number;
+  count: number;
+}
+
+export interface LabelAnalytic {
+  name: string;
+  color: string;
+  count: number;
+  percentage: number;
+}
+
+export interface MemberWorkload {
+  memberId: number;
+  displayName: string;
+  color: string;
+  role: TeamRole;
+  assigned: number;
+  inProgress: number;
+  completed: number;
+  byStatus: Record<TicketStatus, number>;
+}
+
+// Phase 4: Gantt chart item
+export interface GanttItem {
+  id: number;
+  type: TicketType | IssueType;
+  name: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assignees: Member[];
+  startDate: string | null;
+  endDate: string | null;
+  children: GanttItem[];
+  completionPct: number;
 }

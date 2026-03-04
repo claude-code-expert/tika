@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { updateMember, updateMemberRole, removeMember, getAdminCount, getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { updateMember, updateMemberRole, removeMember, getOwnerCount, getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { TEAM_ROLE } from '@/types/index';
 
 const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(50).optional(),
@@ -12,7 +13,7 @@ const updateProfileSchema = z.object({
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['admin', 'member']),
+  role: z.enum([TEAM_ROLE.OWNER, TEAM_ROLE.MEMBER, TEAM_ROLE.VIEWER]),
 });
 
 export async function PATCH(
@@ -51,14 +52,14 @@ export async function PATCH(
       }
 
       const { role } = result.data;
-      if (role === 'member') {
+      if (role !== TEAM_ROLE.OWNER) {
         const allMembers = await getMembersWithEmailByWorkspace(workspaceId);
         const targetMember = allMembers.find((m) => m.id === id);
-        if (targetMember?.role === 'admin') {
-          const adminCount = await getAdminCount(workspaceId);
-          if (adminCount <= 1) {
+        if (targetMember?.role === TEAM_ROLE.OWNER) {
+          const ownerCount = await getOwnerCount(workspaceId);
+          if (ownerCount <= 1) {
             return NextResponse.json(
-              { error: { code: 'LAST_ADMIN', message: '워크스페이스에 관리자가 최소 1명이어야 합니다' } },
+              { error: { code: 'LAST_OWNER', message: '워크스페이스에 OWNER가 최소 1명이어야 합니다' } },
               { status: 409 },
             );
           }
@@ -146,11 +147,11 @@ export async function DELETE(
       );
     }
 
-    if (targetMember.role === 'admin') {
-      const adminCount = await getAdminCount(workspaceId);
-      if (adminCount <= 1) {
+    if (targetMember.role === TEAM_ROLE.OWNER) {
+      const ownerCount = await getOwnerCount(workspaceId);
+      if (ownerCount <= 1) {
         return NextResponse.json(
-          { error: { code: 'LAST_ADMIN', message: '마지막 관리자는 제거할 수 없습니다' } },
+          { error: { code: 'LAST_OWNER', message: '마지막 OWNER는 제거할 수 없습니다' } },
           { status: 409 },
         );
       }

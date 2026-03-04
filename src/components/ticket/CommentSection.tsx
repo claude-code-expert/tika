@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Comment } from '@/types/index';
+import { MessageCircle } from 'lucide-react';
 
 interface CommentSectionProps {
   ticketId: number;
@@ -79,7 +80,7 @@ export function CommentSection({
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '8px 12px',
-    border: '1px solid var(--color-border)',
+    border: '1.5px solid #CBD5E1',
     borderRadius: 6,
     fontSize: 13,
     fontFamily: 'inherit',
@@ -105,7 +106,7 @@ export function CommentSection({
           gap: 6,
         }}
       >
-        💬 댓글 {comments.length > 0 && <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>({comments.length})</span>}
+        <MessageCircle size={13} /> 댓글 {comments.length > 0 && <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>({comments.length})</span>}
       </div>
 
       {/* New comment input */}
@@ -118,7 +119,7 @@ export function CommentSection({
           maxLength={500}
           style={inputStyle}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();

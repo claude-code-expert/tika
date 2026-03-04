@@ -3,6 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { TicketWithMeta, IssueType } from '@/types/index';
+import { AlertTriangle, Calendar, CheckSquare } from 'lucide-react';
 
 const TICKET_TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
   GOAL: { bg: '#8B5CF6', abbr: 'G' },
@@ -18,9 +19,9 @@ const ISSUE_TAG_STYLES: Record<IssueType, { bg: string; color: string }> = {
 };
 
 const PRIORITY_STYLES = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Crit' },
+  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Critical' },
   HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
-  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Med' },
+  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Medium' },
   LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
 };
 
@@ -48,9 +49,10 @@ function getDueDateState(
 interface TicketCardProps {
   ticket: TicketWithMeta;
   onClick?: () => void;
+  workspaceName?: string;
 }
 
-export function TicketCard({ ticket, onClick }: TicketCardProps) {
+export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
@@ -109,8 +111,8 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
       }}
       aria-label={`티켓: ${ticket.title}`}
     >
-      {/* Type indicator + Issue tag row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+      {/* Row 1: Type icon + Title (truncated) + overdue warning */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, minWidth: 0 }}>
         <span
           style={{
             display: 'inline-flex',
@@ -128,12 +130,58 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
         >
           {typeIndicator.abbr}
         </span>
-        {ticket.issue && issueStyle && (
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: ticket.status === 'DONE' ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+            textDecoration: ticket.status === 'DONE' ? 'line-through' : 'none',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {ticket.title}
+        </span>
+        {ticket.isOverdue && (
+          <span
+            aria-label="마감 초과"
+            style={{ color: '#DC2626', flexShrink: 0, display: 'flex' }}
+          >
+            <AlertTriangle size={12} />
+          </span>
+        )}
+        {workspaceName && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'var(--color-text-muted)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              marginLeft: 'auto',
+            }}
+          >
+            {workspaceName}-{ticket.id}
+          </span>
+        )}
+      </div>
+
+      {/* Issue tag (if linked) */}
+      {ticket.issue && issueStyle && (
+        <div style={{ marginBottom: 6 }}>
           <span
             style={{
               fontSize: 10,
               fontWeight: 600,
+              padding: '2px 7px',
+              borderRadius: 4,
+              background: issueStyle.bg,
               color: issueStyle.color,
+              display: 'inline-block',
+              maxWidth: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -141,57 +189,8 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
           >
             {ticket.issue.name}
           </span>
-        )}
-        {ticket.isOverdue && (
-          <span
-            aria-label="마감 초과"
-            style={{ marginLeft: 'auto', fontSize: 12, color: '#DC2626' }}
-          >
-            ⚠
-          </span>
-        )}
-      </div>
-
-      {/* Labels */}
-      {ticket.labels.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 7 }}>
-          {ticket.labels.slice(0, 3).map((label) => (
-            <span
-              key={label.id}
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: label.color,
-                color: '#fff',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {label.name}
-            </span>
-          ))}
-          {ticket.labels.length > 3 && (
-            <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
-              +{ticket.labels.length - 3}
-            </span>
-          )}
         </div>
       )}
-
-      {/* Title */}
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: ticket.status === 'DONE' ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-          lineHeight: 1.4,
-          marginBottom: ticket.description ? 5 : 10,
-          textDecoration: ticket.status === 'DONE' ? 'line-through' : 'none',
-        }}
-      >
-        {ticket.title}
-      </div>
 
       {/* Description */}
       {ticket.description && (
@@ -229,22 +228,38 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
           {priorityStyle.label}
         </span>
 
+        {/* Labels */}
+        {ticket.labels && ticket.labels.map((label) => (
+          <span
+            key={label.id}
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              padding: '1px 6px',
+              borderRadius: 3,
+              background: label.color,
+              color: '#fff',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {label.name}
+          </span>
+        ))}
+
         {/* Due date badge */}
         {dueDateState && ticket.dueDate && (
           <span
             style={{
               fontSize: 10,
-              fontWeight: 500,
-              padding: '2px 7px',
-              borderRadius: 4,
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
               gap: 3,
-              background: DUE_BADGE_STYLES[dueDateState].bg,
-              color: DUE_BADGE_STYLES[dueDateState].color,
+              color: ticket.isOverdue ? '#DC2626' : 'var(--color-text-muted)',
+              whiteSpace: 'nowrap',
             }}
           >
-            📅 <span>{ticket.dueDate}</span>
+            <Calendar size={10} /> <span>{ticket.dueDate}</span>
           </span>
         )}
 
@@ -259,33 +274,56 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
               gap: 3,
             }}
           >
-            ☑ <span>{completedCount}/{totalCount}</span>
+            <CheckSquare size={10} /> <span>{completedCount}/{totalCount}</span>
           </span>
         )}
 
-        {/* Assignee mini-avatar */}
-        {ticket.assignee && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                fontSize: 10,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                background: ticket.assignee.color,
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-              title={ticket.assignee.displayName}
-            >
-              {ticket.assignee.displayName.charAt(0).toUpperCase()}
+        {/* Assignee avatars — show multi-assignees if present, fallback to single assignee */}
+        {(() => {
+          const displayAssignees = (ticket.assignees && ticket.assignees.length > 0)
+            ? ticket.assignees
+            : ticket.assignee ? [ticket.assignee] : [];
+          if (displayAssignees.length === 0) return null;
+          const visible = displayAssignees.slice(0, 3);
+          const extra = displayAssignees.length - 3;
+          return (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'row-reverse' }}>
+                {extra > 0 && (
+                  <div
+                    style={{
+                      width: 22, height: 22, borderRadius: '50%',
+                      fontSize: 9, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', background: '#8993A4',
+                      border: '2px solid #fff',
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    }}
+                  >
+                    +{extra}
+                  </div>
+                )}
+                {[...visible].reverse().map((a) => (
+                  <div
+                    key={a.id}
+                    style={{
+                      width: 22, height: 22, borderRadius: '50%',
+                      fontSize: 10, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', background: a.color,
+                      border: '2px solid #fff',
+                      marginRight: -6,
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    }}
+                    title={a.displayName}
+                  >
+                    {a.displayName.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

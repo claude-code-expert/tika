@@ -4,6 +4,7 @@ import {
   TICKET_PRIORITY,
   TICKET_TYPE,
   ISSUE_TYPE,
+  TEAM_ROLE,
 } from '@/types/index';
 import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from './constants';
 
@@ -37,6 +38,9 @@ export const createTicketSchema = z.object({
     .optional(),
   issueId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
+  assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
+  sprintId: z.number().int().positive().nullable().optional(),
+  storyPoints: z.number().int().min(1).max(100).nullable().optional(),
   labelIds: z.array(z.number().int().positive()).optional(),
 });
 
@@ -63,6 +67,9 @@ export const updateTicketSchema = z.object({
     .optional(),
   issueId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
+  assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
+  sprintId: z.number().int().positive().nullable().optional(),
+  storyPoints: z.number().int().min(1).max(100).nullable().optional(),
   labelIds: z.array(z.number().int().positive()).optional(),
 });
 
@@ -116,14 +123,27 @@ export const updateChecklistItemSchema = z.object({
   isCompleted: z.boolean().optional(),
 });
 
+// Workspace schemas
+export const createWorkspaceSchema = z.object({
+  name: z
+    .string()
+    .min(1, '워크스페이스 이름을 입력해주세요')
+    .max(100, '워크스페이스 이름은 100자 이하여야 합니다'),
+  description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
+});
+
 export const updateWorkspaceSchema = z
   .object({
-    name: z.string().min(1, '이름은 1자 이상 입력해야 합니다').max(50, '이름은 50자 이하여야 합니다').optional(),
+    name: z.string().min(1, '이름은 1자 이상 입력해야 합니다').max(100, '이름은 100자 이하여야 합니다').optional(),
     description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
   })
   .refine((data) => data.name !== undefined || data.description !== undefined, {
     message: '수정할 항목이 없습니다',
   });
+
+export const deleteWorkspaceSchema = z.object({
+  confirmName: z.string().min(1, '워크스페이스 이름을 입력해주세요'),
+});
 
 export const upsertNotificationChannelSchema = z
   .object({
@@ -151,8 +171,76 @@ export const upsertNotificationChannelSchema = z
     { message: '활성화된 채널에는 설정 값이 필요합니다', path: ['config'] },
   );
 
+// Member role schema (Phase 4: updated to OWNER/MEMBER/VIEWER)
 export const updateMemberRoleSchema = z.object({
-  role: z.enum(['admin', 'member']),
+  role: z.enum([TEAM_ROLE.OWNER, TEAM_ROLE.MEMBER, TEAM_ROLE.VIEWER]),
+});
+
+// Invite schemas
+export const createInviteSchema = z.object({
+  email: z.string().email('이메일 형식이 올바르지 않습니다'),
+  role: z.enum([TEAM_ROLE.MEMBER, TEAM_ROLE.VIEWER]),
+});
+
+// Sprint schemas
+export const createSprintSchema = z.object({
+  name: z
+    .string()
+    .min(1, '스프린트 이름을 입력해주세요')
+    .max(100, '스프린트 이름은 100자 이하여야 합니다'),
+  goal: z.string().max(500, '목표는 500자 이하여야 합니다').nullable().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
+  storyPointsTotal: z.number().int().min(0).nullable().optional(),
+});
+
+export const updateSprintSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    goal: z.string().max(500).nullable().optional(),
+    startDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+      .nullable()
+      .optional(),
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+      .nullable()
+      .optional(),
+    storyPointsTotal: z.number().int().min(0).nullable().optional(),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.goal !== undefined ||
+      data.startDate !== undefined ||
+      data.endDate !== undefined ||
+      data.storyPointsTotal !== undefined,
+    { message: '수정할 항목이 없습니다' },
+  );
+
+export const completeSprintSchema = z.object({
+  ticketMoves: z.array(
+    z
+      .object({
+        ticketId: z.number().int().positive(),
+        destination: z.enum(['backlog', 'sprint']),
+        targetSprintId: z.number().int().positive().optional(),
+      })
+      .refine(
+        (item) => item.destination !== 'sprint' || item.targetSprintId !== undefined,
+        { message: 'sprint 목적지에는 targetSprintId가 필요합니다' },
+      ),
+  ),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
@@ -164,3 +252,9 @@ export type CreateIssueInput = z.infer<typeof createIssueSchema>;
 export type UpdateIssueInput = z.infer<typeof updateIssueSchema>;
 export type CreateChecklistItemInput = z.infer<typeof createChecklistItemSchema>;
 export type UpdateChecklistItemInput = z.infer<typeof updateChecklistItemSchema>;
+export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
+export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>;
+export type CreateInviteInput = z.infer<typeof createInviteSchema>;
+export type CreateSprintInput = z.infer<typeof createSprintSchema>;
+export type UpdateSprintInput = z.infer<typeof updateSprintSchema>;
+export type CompleteSprintInput = z.infer<typeof completeSprintSchema>;

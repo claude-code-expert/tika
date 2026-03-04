@@ -6,6 +6,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
 import type { TicketWithMeta } from '@/types/index';
+import { ChevronRight, ChevronLeft, X } from 'lucide-react';
 
 const TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
   GOAL: { bg: '#8B5CF6', abbr: 'G' },
@@ -15,9 +16,9 @@ const TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
 };
 
 const PRIORITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Crit' },
+  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Critical' },
   HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
-  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Med' },
+  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Medium' },
   LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
 };
 
@@ -42,7 +43,7 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max) + '…' : text;
 }
 
-function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: () => void }) {
+function SidebarTask({ ticket, onClick, workspaceName }: { ticket: TicketWithMeta; onClick?: () => void; workspaceName?: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
@@ -116,6 +117,8 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {truncate(ticket.title, 20)}
@@ -155,7 +158,7 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
             overflow: 'hidden',
           }}
         >
-          {ticket.labels.slice(0, 2).map((label) => (
+          {ticket.labels.map((label) => (
             <span
               key={label.id}
               style={{
@@ -168,17 +171,13 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                maxWidth: 60,
+                flexShrink: 1,
+                minWidth: 0,
               }}
             >
               {label.name}
             </span>
           ))}
-          {ticket.labels.length > 2 && (
-            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
-              +{ticket.labels.length - 2}
-            </span>
-          )}
         </div>
         {/* Right: Deadline */}
         {deadline && (
@@ -186,7 +185,7 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
             style={{
               fontSize: 10,
               color: ticket.isOverdue ? '#DC2626' : 'var(--color-text-muted)',
-              fontWeight: ticket.isOverdue ? 600 : 400,
+              fontWeight: 600,
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}
@@ -202,6 +201,7 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
 interface SidebarProps {
   backlogTickets: TicketWithMeta[];
   isLoading: boolean;
+  workspaceName?: string;
   onTicketClick?: (ticket: TicketWithMeta) => void;
   onAddTicket?: () => void;
   isMobileOpen?: boolean;
@@ -211,6 +211,7 @@ interface SidebarProps {
 export function Sidebar({
   backlogTickets,
   isLoading,
+  workspaceName,
   onTicketClick,
   onAddTicket,
   isMobileOpen = false,
@@ -325,7 +326,7 @@ export function Sidebar({
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
           title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
-          {collapsed ? '▶' : '◀'}
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       )}
 
@@ -415,11 +416,10 @@ export function Sidebar({
                 border: 'none',
                 cursor: 'pointer',
                 color: 'var(--color-text-muted)',
-                fontSize: 18,
                 flexShrink: 0,
               }}
             >
-              ✕
+              <X size={18} />
             </button>
           ) : (
             <button
@@ -561,6 +561,7 @@ export function Sidebar({
                 key={ticket.id}
                 ticket={ticket}
                 onClick={() => onTicketClick?.(ticket)}
+                workspaceName={workspaceName}
               />
             ))}
           </SortableContext>

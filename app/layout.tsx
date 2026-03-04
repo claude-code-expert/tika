@@ -5,6 +5,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Tika',
   description: '티켓 기반 칸반 보드 TODO 앱',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/images/tika-app-icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

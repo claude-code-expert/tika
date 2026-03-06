@@ -34,7 +34,7 @@ export async function PUT(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const channel = await upsertNotificationChannel(workspaceId, type as NotificationChannelType, {
       config: parsed.data.config as NotificationChannel['config'],
       enabled: parsed.data.enabled,

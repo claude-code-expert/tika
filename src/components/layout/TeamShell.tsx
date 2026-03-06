@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { TeamSidebar } from '@/components/team/TeamSidebar';
@@ -17,6 +18,7 @@ interface TeamShellProps {
 
 export function TeamShell({ workspaceId, role, workspaceName, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+  const router = useRouter();
 
   const handleNewTask = useCallback(() => setIsNewTicketOpen(true), []);
 
@@ -28,8 +30,9 @@ export function TeamShell({ workspaceId, role, workspaceName, children }: TeamSh
         body: JSON.stringify({ ...data, workspaceId }),
       });
       setIsNewTicketOpen(false);
+      router.push(`/team/${workspaceId}/board`);
     },
-    [workspaceId],
+    [workspaceId, router],
   );
 
   return (

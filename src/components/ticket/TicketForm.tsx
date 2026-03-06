@@ -118,47 +118,42 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const assigneeInputRef = useRef<HTMLInputElement>(null);
   const assigneeDropdownRef = useRef<HTMLDivElement>(null);
 
-  /* ── Story points & sprint ── */
-  const [storyPoints, setStoryPoints] = useState<string>(
-    initialData?.storyPoints != null ? String(initialData.storyPoints) : '',
-  );
+  /* ── Sprint ── */
   const [sprintId, setSprintId] = useState<number | null>(initialData?.sprintId ?? null);
   const [activeSprints, setActiveSprints] = useState<Sprint[]>([]);
 
-  /* ── Fetch labels, issues, members on mount ── */
+  /* ── Fetch labels, issues, members, sprints on mount (parallel) ── */
   useEffect(() => {
-    fetch('/api/labels')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setAllLabels(data.labels))
-      .catch(() => {});
-    fetch('/api/issues')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setAllIssues(data.issues))
-      .catch(() => {});
-    fetch('/api/members')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { members?: Member[] } | null) => {
-        if (data?.members) {
-          setAllMembers(data.members);
-          // default to self if no assignee set yet
-          if (selectedAssigneeIds.length === 0 && data.members.length > 0 && mode === 'create') {
-            const self = data.members[0];
-            setSelectedAssigneeIds([self.id]);
-            setAssigneeInputText(self.displayName);
-          } else if (initialData?.assignees?.length) {
-            setAssigneeInputText(initialData.assignees.map((a) => a.displayName).join(', '));
-          }
+    Promise.all([
+      fetch('/api/labels').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/issues').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/members').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      workspaceId
+        ? fetch(`/api/workspaces/${workspaceId}/sprints`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([labelsData, issuesData, membersData, sprintsData]: [
+      { labels?: Label[] } | null,
+      { issues?: Issue[] } | null,
+      { members?: Member[] } | null,
+      { sprints?: Sprint[] } | null,
+    ]) => {
+      if (labelsData?.labels) setAllLabels(labelsData.labels);
+      if (issuesData?.issues) setAllIssues(issuesData.issues);
+      if (membersData?.members) {
+        const mems = membersData.members;
+        setAllMembers(mems);
+        if (selectedAssigneeIds.length === 0 && mems.length > 0 && mode === 'create') {
+          const self = mems[0];
+          setSelectedAssigneeIds([self.id]);
+          setAssigneeInputText(self.displayName);
+        } else if (initialData?.assignees?.length) {
+          setAssigneeInputText(initialData.assignees.map((a) => a.displayName).join(', '));
         }
-      })
-      .catch(() => {});
-    if (workspaceId) {
-      fetch(`/api/workspaces/${workspaceId}/sprints`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: { sprints?: Sprint[] } | null) => {
-          if (data?.sprints) setActiveSprints(data.sprints.filter((s) => s.status === 'ACTIVE' || s.status === 'PLANNED'));
-        })
-        .catch(() => {});
-    }
+      }
+      if (sprintsData?.sprints) {
+        setActiveSprints(sprintsData.sprints.filter((s) => s.status === 'ACTIVE' || s.status === 'PLANNED'));
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
@@ -192,23 +187,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showAssigneeDropdown, allMembers, selectedAssigneeIds]);
 
-  /* ── Auto-calculate story points from date range (weekdays only) ── */
-  const [storyPointsManuallyEdited, setStoryPointsManuallyEdited] = useState(false);
-  useEffect(() => {
-    if (storyPointsManuallyEdited) return;
-    if (!startDate || !dueDate) return;
-    const start = new Date(startDate);
-    const end = new Date(dueDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return;
-    let weekdays = 0;
-    const cur = new Date(start);
-    while (cur <= end) {
-      const day = cur.getDay();
-      if (day !== 0 && day !== 6) weekdays++;
-      cur.setDate(cur.getDate() + 1);
-    }
-    setStoryPoints(String(Math.min(weekdays, 100)));
-  }, [startDate, dueDate, storyPointsManuallyEdited]);
 
   /* ── Reset issueId when type changes (may invalidate parent) ── */
   useEffect(() => {
@@ -272,7 +250,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         return;
       }
 
-      const spParsed = storyPoints.trim() ? Number(storyPoints.trim()) : null;
       const formData: CreateTicketInput = {
         title: title.trim(),
         type: type as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE],
@@ -283,7 +260,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         issueId: issueId ?? null,
         assigneeId: selectedAssigneeIds[0] ?? null,
         assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
-        storyPoints: spParsed,
+        storyPoints: null,
         sprintId: sprintId ?? null,
         labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
       };
@@ -526,58 +503,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
             )}
           </div>
 
-          {/* Assignee */}
-          <div ref={assigneeDropdownRef} style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
-            <div style={sectionHeaderStyle}>
-              <Users size={13} style={{ opacity: 0.7 }} />
-              담당자
-            </div>
-            {selectedAssigneeIds.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {allMembers.filter((m) => selectedAssigneeIds.includes(m.id)).map((m) => (
-                  <span key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 12, background: m.color + '22', border: `1px solid ${m.color}55`, fontSize: 12, color: 'var(--color-text-primary)' }}>
-                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {m.displayName.charAt(0).toUpperCase()}
-                    </span>
-                    {m.displayName}
-                    <button type="button"
-                      onClick={() => setSelectedAssigneeIds((prev) => prev.filter((id) => id !== m.id))}
-                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'var(--color-text-muted)', lineHeight: 1, fontSize: 12 }}
-                      aria-label={`${m.displayName} 담당자 제거`}>×</button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <input ref={assigneeInputRef} type="text" value={assigneeInputText}
-              placeholder="담당자 이름 입력..."
-              onClick={() => { setAssigneeInputText(''); setShowAssigneeDropdown(true); }}
-              onChange={(e) => { setAssigneeInputText(e.target.value); setShowAssigneeDropdown(true); }}
-              style={{ ...inputStyle }}
-              onFocus={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-accent)')}
-              onBlur={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-border)')}
-            />
-            {showAssigneeDropdown && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, boxShadow: 'var(--shadow-card)', maxHeight: 160, overflowY: 'auto', marginTop: 2 }}>
-                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).map((m) => (
-                  <button key={m.id} type="button"
-                    onMouseDown={(e) => { e.preventDefault(); setSelectedAssigneeIds([m.id]); setAssigneeInputText(m.displayName); setShowAssigneeDropdown(false); }}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)')}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'none')}
-                  >
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {m.displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>{m.displayName}</span>
-                  </button>
-                ))}
-                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).length === 0 && (
-                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>일치하는 멤버 없음</div>
-                )}
-              </div>
-            )}
-            {assigneeError && <span style={{ fontSize: 11, color: '#DC2626' }}>{assigneeError}</span>}
-          </div>
         {/* ── end left panel content ── */}
         </div>
         {/* end LEFT */}
@@ -640,15 +565,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
             />
           </MetaRow>
 
-          <MetaRow label="스토리 포인트">
-            <input
-              type="number" min={1} max={100} placeholder="1–100"
-              value={storyPoints}
-              onChange={(e) => { setStoryPointsManuallyEdited(true); setStoryPoints(e.target.value); }}
-              style={metaDateStyle}
-            />
-          </MetaRow>
-
           {activeSprints.length > 0 && (
             <MetaRow label="스프린트">
               <select
@@ -663,6 +579,58 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
               </select>
             </MetaRow>
           )}
+
+          {/* Assignee */}
+          <div ref={assigneeDropdownRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 0', borderBottom: '1px solid var(--color-border)', position: 'relative' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              담당자
+            </div>
+            {selectedAssigneeIds.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
+                {allMembers.filter((m) => selectedAssigneeIds.includes(m.id)).map((m) => (
+                  <span key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 12, background: m.color + '22', border: `1px solid ${m.color}55`, fontSize: 12, color: 'var(--color-text-primary)' }}>
+                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {m.displayName.charAt(0).toUpperCase()}
+                    </span>
+                    {m.displayName}
+                    <button type="button"
+                      onClick={() => setSelectedAssigneeIds((prev) => prev.filter((id) => id !== m.id))}
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'var(--color-text-muted)', lineHeight: 1, fontSize: 12 }}
+                      aria-label={`${m.displayName} 담당자 제거`}>×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <input ref={assigneeInputRef} type="text" value={assigneeInputText}
+              placeholder="담당자 이름 입력..."
+              onClick={() => { setAssigneeInputText(''); setShowAssigneeDropdown(true); }}
+              onChange={(e) => { setAssigneeInputText(e.target.value); setShowAssigneeDropdown(true); }}
+              style={{ ...metaDateStyle }}
+              onFocus={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-accent)')}
+              onBlur={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-border)')}
+            />
+            {showAssigneeDropdown && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, boxShadow: 'var(--shadow-card)', maxHeight: 160, overflowY: 'auto', marginTop: 2 }}>
+                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).map((m) => (
+                  <button key={m.id} type="button"
+                    onMouseDown={(e) => { e.preventDefault(); setSelectedAssigneeIds([m.id]); setAssigneeInputText(m.displayName); setShowAssigneeDropdown(false); }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)')}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'none')}
+                  >
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {m.displayName.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>{m.displayName}</span>
+                  </button>
+                ))}
+                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).length === 0 && (
+                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>일치하는 멤버 없음</div>
+                )}
+              </div>
+            )}
+            {assigneeError && <span style={{ fontSize: 11, color: '#DC2626' }}>{assigneeError}</span>}
+          </div>
         </div>
         {/* end RIGHT */}
 

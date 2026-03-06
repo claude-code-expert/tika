@@ -126,14 +126,13 @@ export function useTickets(initialData?: BoardData) {
           const err = await res.json();
           throw new Error(err.error?.message ?? '순서 변경에 실패했습니다');
         }
-        // Refresh board to reflect actual DB positions
-        await fetchBoard();
+        // Optimistic UI already reflects the move; no re-fetch needed
       } catch (err) {
         setBoard(snapshot);
         throw err;
       }
     },
-    [board, fetchBoard],
+    [board],
   );
 
   // T057: filteredBoard — only show tickets that include ALL activeLabels

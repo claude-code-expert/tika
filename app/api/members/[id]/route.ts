@@ -38,7 +38,7 @@ export async function PATCH(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const body = await request.json();
 
     // Role update request (settings page)
@@ -80,7 +80,7 @@ export async function PATCH(
     }
 
     // Profile update request (own profile only)
-    const memberId = (session.user as Record<string, unknown>).memberId as number;
+    const memberId = session.user.memberId as number;
     if (memberId !== id) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '본인의 프로필만 수정할 수 있습니다' } },
@@ -136,7 +136,7 @@ export async function DELETE(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const allMembers = await getMembersWithEmailByWorkspace(workspaceId);
     const targetMember = allMembers.find((m) => m.id === id);
 

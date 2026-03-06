@@ -1,4 +1,4 @@
-import { eq, and, count, gte, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, count, gte, isNotNull, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { tickets, sprints, labels, ticketLabels, members, ticketAssignees } from '@/db/schema';
 import type {
@@ -145,25 +145,31 @@ export async function getVelocityData(workspaceId: number): Promise<VelocitySpri
     .where(and(eq(sprints.workspaceId, workspaceId), eq(sprints.status, 'COMPLETED')))
     .orderBy(sprints.createdAt);
 
-  const result: VelocitySprint[] = [];
+  if (completedSprints.length === 0) return [];
 
-  for (const sprint of completedSprints) {
-    const doneTickets = await db
-      .select({ storyPoints: tickets.storyPoints })
-      .from(tickets)
-      .where(and(eq(tickets.sprintId, sprint.id), eq(tickets.status, 'DONE')));
+  const sprintIds = completedSprints.map((s) => s.id);
 
-    const completedPoints = doneTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+  // Single GROUP BY query instead of N+1 loop
+  const ticketRows = await db
+    .select({
+      sprintId: tickets.sprintId,
+      completedPoints: sql<number>`coalesce(sum(${tickets.storyPoints}), 0)`.as('completedPoints'),
+    })
+    .from(tickets)
+    .where(and(inArray(tickets.sprintId, sprintIds), eq(tickets.status, 'DONE')))
+    .groupBy(tickets.sprintId);
 
-    result.push({
-      sprintId: sprint.id,
-      name: sprint.name,
-      completedPoints,
-      plannedPoints: sprint.storyPointsTotal ?? 0,
-    });
+  const pointsBySprintId: Record<number, number> = {};
+  for (const row of ticketRows) {
+    if (row.sprintId != null) pointsBySprintId[row.sprintId] = Number(row.completedPoints);
   }
 
-  return result;
+  return completedSprints.map((sprint) => ({
+    sprintId: sprint.id,
+    name: sprint.name,
+    completedPoints: pointsBySprintId[sprint.id] ?? 0,
+    plannedPoints: sprint.storyPointsTotal ?? 0,
+  }));
 }
 
 // ─── Cycle Time ───────────────────────────────────────────────────────────────

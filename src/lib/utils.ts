@@ -47,13 +47,15 @@ export async function duplicateTicket(
   })) as { id: number } | undefined;
 
   if (created?.id && ticket.checklistItems.length > 0) {
-    for (const item of ticket.checklistItems) {
-      await fetch(`/api/tickets/${created.id}/checklist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: item.text }),
-      }).catch(() => {});
-    }
+    await Promise.all(
+      ticket.checklistItems.map((item) =>
+        fetch(`/api/tickets/${created.id}/checklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: item.text }),
+        }).catch(() => {}),
+      ),
+    );
   }
 }
 

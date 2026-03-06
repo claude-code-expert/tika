@@ -97,14 +97,18 @@ export function TicketModal({
   // ── UI state ──
   const [isSaving, setIsSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [assigneeSearched, setAssigneeSearched] = useState(false);
+  const [showIssuePicker, setShowIssuePicker] = useState(false);
+  const [issueSearch, setIssueSearch] = useState('');
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
+  const issueAreaRef = useRef<HTMLDivElement>(null);
 
   // ── auto-resize title textarea ──
   const autoResizeTitle = useCallback(() => {
@@ -155,6 +159,18 @@ export function TicketModal({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showAssigneePicker]);
 
+  // ── outside click: issue picker ──
+  useEffect(() => {
+    if (!showIssuePicker) return;
+    const handleClick = (e: MouseEvent) => {
+      if (issueAreaRef.current && !issueAreaRef.current.contains(e.target as Node)) {
+        setShowIssuePicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showIssuePicker]);
+
   // ── dirty check ──
   const isDirty =
     title !== ticket.title ||
@@ -197,6 +213,19 @@ export function TicketModal({
     await onDelete(ticket.id);
     setShowDelete(false);
     onClose();
+  };
+
+  // ── duplicate ──
+  const handleDuplicate = async () => {
+    if (!onDuplicate) return;
+    setShowDuplicateConfirm(false);
+    setIsSaving(true);
+    try {
+      await onDuplicate();
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // ── label helpers ──
@@ -392,19 +421,7 @@ export function TicketModal({
                 style={iconBtnBase}
                 title="복제"
                 aria-label="복제"
-                onClick={
-                  onDuplicate
-                    ? async () => {
-                        setIsSaving(true);
-                        try {
-                          await onDuplicate();
-                          onClose();
-                        } finally {
-                          setIsSaving(false);
-                        }
-                      }
-                    : undefined
-                }
+                onClick={onDuplicate ? () => setShowDuplicateConfirm(true) : undefined}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'var(--color-board-bg)';
                   e.currentTarget.style.color = 'var(--color-text-primary)';
@@ -460,7 +477,7 @@ export function TicketModal({
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
           {/* ══════════ scrollable area (title + two-column grid) ══════════ */}
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
             {/* ── TITLE SECTION ── */}
             <div
@@ -506,43 +523,195 @@ export function TicketModal({
                 }}
               />
 
-              {/* Breadcrumb — select box */}
-              {ticket.type !== 'GOAL' && (
-                <div style={{ marginTop: 6 }}>
-                  <select
-                    value={selectedIssueId ?? ''}
-                    onChange={(e) => setSelectedIssueId(e.target.value ? Number(e.target.value) : null)}
-                    aria-label="상위 이슈 선택"
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      background: 'var(--color-board-bg)',
-                      color: 'var(--color-text-primary)',
-                      border: '1px solid var(--color-border)',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                      maxWidth: 320,
-                    }}
-                  >
-                    <option value="">상위 이슈 없음</option>
-                    {allIssues
-                      .filter((issue) => {
-                        if (ticket.type === 'STORY') return issue.type === 'GOAL';
-                        if (ticket.type === 'FEATURE') return issue.type === 'STORY';
-                        if (ticket.type === 'TASK') return issue.type === 'FEATURE';
-                        return false;
-                      })
-                      .map((issue) => (
-                        <option key={issue.id} value={issue.id}>
-                          [{issue.type.charAt(0)}] {issue.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
+              {/* Breadcrumb line: issue select (left) + type select (right) */}
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                {ticket.type !== 'GOAL' ? (() => {
+                  const filteredIssues = allIssues.filter((issue) => {
+                    if (ticket.type === 'STORY') return issue.type === 'GOAL';
+                    if (ticket.type === 'FEATURE') return issue.type === 'STORY';
+                    if (ticket.type === 'TASK') return issue.type === 'FEATURE';
+                    return false;
+                  });
+                  const selectedIssue = filteredIssues.find((i) => i.id === selectedIssueId) ?? null;
+                  return (
+                    <div ref={issueAreaRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                      {/* Breadcrumb trigger */}
+                      <button
+                        onClick={() => setShowIssuePicker((p) => !p)}
+                        aria-label="상위 이슈 선택"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          background: 'none',
+                          border: 'none',
+                          padding: '2px 4px',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: 12,
+                          color: selectedIssue ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          transition: 'background 0.12s',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+                      >
+                        {selectedIssue ? (
+                          <>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700,
+                              padding: '1px 5px', borderRadius: 3,
+                              background: selectedIssue.type === 'GOAL' ? '#EDE9FE' : selectedIssue.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                              color: selectedIssue.type === 'GOAL' ? '#6D28D9' : selectedIssue.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                              flexShrink: 0,
+                            }}>
+                              {selectedIssue.type.charAt(0)}
+                            </span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {selectedIssue.name}
+                            </span>
+                          </>
+                        ) : (
+                          <span style={{ fontStyle: 'italic' }}>상위 이슈 없음</span>
+                        )}
+                        <span style={{ fontSize: 9, opacity: 0.5, flexShrink: 0 }}>▾</span>
+                      </button>
+
+                      {/* Dropdown */}
+                      {showIssuePicker && (() => {
+                        const searched = issueSearch.length >= 2
+                          ? filteredIssues.filter((i) => i.name.toLowerCase().includes(issueSearch.toLowerCase()))
+                          : filteredIssues;
+                        return (
+                        <div style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 4px)',
+                          left: 0,
+                          zIndex: 500,
+                          background: '#fff',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 8,
+                          boxShadow: 'var(--shadow-dropdown)',
+                          minWidth: 220,
+                          maxWidth: 320,
+                          maxHeight: 260,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          overflow: 'hidden',
+                        }}>
+                          {/* Search input */}
+                          <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+                            <input
+                              autoFocus
+                              type="text"
+                              placeholder="이슈 검색..."
+                              value={issueSearch}
+                              onChange={(e) => setIssueSearch(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '5px 8px',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: 5,
+                                fontSize: 12,
+                                fontFamily: 'inherit',
+                                color: 'var(--color-text-primary)',
+                                background: 'var(--color-board-bg)',
+                                outline: 'none',
+                              }}
+                            />
+                          </div>
+
+                          {/* List */}
+                          <div style={{ overflowY: 'auto', padding: '4px 0' }}>
+                          {/* 상위 이슈 없음 */}
+                          <button
+                            onClick={() => { setSelectedIssueId(null); setShowIssuePicker(false); setIssueSearch(''); }}
+                            style={{
+                              display: 'block', width: '100%', textAlign: 'left',
+                              padding: '7px 12px', border: 'none', background: 'none',
+                              fontSize: 12, color: 'var(--color-text-muted)', fontStyle: 'italic',
+                              cursor: 'pointer', fontFamily: 'inherit',
+                              backgroundColor: selectedIssueId === null ? 'var(--color-board-bg)' : 'transparent',
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedIssueId === null ? 'var(--color-board-bg)' : 'transparent'; }}
+                          >
+                            상위 이슈 없음
+                          </button>
+                          {searched.length > 0 && (
+                            <div style={{ height: 1, background: 'var(--color-border)', margin: '2px 0' }} />
+                          )}
+                          {searched.map((issue) => (
+                            <button
+                              key={issue.id}
+                              onClick={() => { setSelectedIssueId(issue.id); setShowIssuePicker(false); setIssueSearch(''); }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 7,
+                                width: '100%', textAlign: 'left',
+                                padding: '7px 12px', border: 'none', background: 'none',
+                                fontSize: 12, color: 'var(--color-text-primary)',
+                                cursor: 'pointer', fontFamily: 'inherit',
+                                backgroundColor: selectedIssueId === issue.id ? 'var(--color-board-bg)' : 'transparent',
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedIssueId === issue.id ? 'var(--color-board-bg)' : 'transparent'; }}
+                            >
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, flexShrink: 0,
+                                padding: '1px 5px', borderRadius: 3,
+                                background: issue.type === 'GOAL' ? '#EDE9FE' : issue.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                                color: issue.type === 'GOAL' ? '#6D28D9' : issue.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                              }}>
+                                {issue.type.charAt(0)}
+                              </span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {issue.name}
+                              </span>
+                            </button>
+                          ))}
+                          </div>
+                          {/* end List */}
+                        </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })() : <div />}
+
+                {/* Type select — right side */}
+                <select
+                  value={type}
+                  onChange={(e) =>
+                    setType(e.target.value as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE])
+                  }
+                  aria-label="유형"
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    background: 'var(--color-board-bg)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    flexShrink: 0,
+                  }}
+                >
+                  {Object.values(TICKET_TYPE).map((t) => (
+                    <option key={t} value={t}>
+                      {t === 'GOAL' ? 'Goal' :
+                       t === 'STORY' ? 'Story' :
+                       t === 'FEATURE' ? 'Feature' : 'Task'}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             {/* ── end TITLE SECTION ── */}
 
@@ -551,6 +720,7 @@ export function TicketModal({
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 180px',
+                flex: 1,
               }}
             >
               {/* ── LEFT: content area ── */}
@@ -771,207 +941,17 @@ export function TicketModal({
                   />
                 </div>
 
-                {/* 담당자 section */}
-                <div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--color-text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.6px',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Users size={13} style={{ opacity: 0.7 }} />
-                    담당자
+                {/* Created / Updated at */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>수정일</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.updatedAt.slice(0, 10)}</span>
                   </div>
-                  <div ref={assigneeAreaRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {/* Add assignee: button or input (left) */}
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      {!showAssigneePicker ? (
-                        <button
-                          onClick={() => { setShowAssigneePicker(true); setAssigneeSearch(''); }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '5px 10px',
-                            borderRadius: 6,
-                            border: '1px dashed #9CA3AF',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s',
-                            fontSize: 12,
-                            color: 'var(--color-text-muted)',
-                            background: 'transparent',
-                            fontFamily: 'inherit',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--color-accent)';
-                            e.currentTarget.style.color = 'var(--color-accent)';
-                            e.currentTarget.style.background = 'var(--color-accent-light, #E8F5F0)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = '#9CA3AF';
-                            e.currentTarget.style.color = 'var(--color-text-muted)';
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                        >
-                          <UserPlus size={12} />
-                          담당자 추가
-                        </button>
-                      ) : (
-                        <div>
-                          <input
-                            type="text"
-                            value={assigneeSearch}
-                            onChange={(e) => { setAssigneeSearch(e.target.value); setAssigneeSearched(false); }}
-                            placeholder="이름으로 검색..."
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') { setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }
-                              if (e.key === 'Enter' && assigneeSearch.length >= 2) { setAssigneeSearched(true); }
-                            }}
-                            style={{
-                              width: 140,
-                              padding: '5px 10px',
-                              border: '1px solid var(--color-accent)',
-                              borderRadius: 6,
-                              fontSize: 12,
-                              fontFamily: 'inherit',
-                              color: 'var(--color-text-primary)',
-                              background: '#fff',
-                              outline: 'none',
-                              boxShadow: '0 0 0 3px var(--color-accent-light, #E8F5F0)',
-                            }}
-                          />
-                          {/* Filtered member list */}
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: 'calc(100% + 4px)',
-                              left: 0,
-                              background: '#fff',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: 8,
-                              boxShadow: 'var(--shadow-dropdown)',
-                              zIndex: 200,
-                              padding: 4,
-                              minWidth: 160,
-                              maxHeight: 180,
-                              overflowY: 'auto',
-                            }}
-                          >
-                            {selectedAssigneeIds.length >= 3 ? (
-                              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>
-                                모든 멤버가 배정됨
-                              </p>
-                            ) : !assigneeSearched ? (
-                              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>
-                                2글자 이상 입력 후 Enter
-                              </p>
-                            ) : unassignedMembers.filter(m =>
-                              m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase())
-                            ).length === 0 ? (
-                              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>
-                                검색 결과 없음
-                              </p>
-                            ) : (
-                              unassignedMembers
-                                .filter(m => m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase()))
-                                .map((member) => (
-                                  <button
-                                    key={member.id}
-                                    onMouseDown={(e) => { e.preventDefault(); addAssignee(member.id); setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 8,
-                                      padding: '6px 8px',
-                                      borderRadius: 6,
-                                      border: 'none',
-                                      background: 'transparent',
-                                      width: '100%',
-                                      cursor: 'pointer',
-                                      fontFamily: 'inherit',
-                                      transition: 'background 0.12s',
-                                      textAlign: 'left',
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-board-bg)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                  >
-                                    <span style={{
-                                      width: 20, height: 20, borderRadius: '50%', background: member.color,
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      color: '#fff', fontSize: 9, fontWeight: 700, flexShrink: 0,
-                                    }}>
-                                      {member.displayName.charAt(0)}
-                                    </span>
-                                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-                                      {member.displayName}
-                                    </span>
-                                  </button>
-                                ))
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Assignee chips — outlined, right-aligned */}
-                    {currentAssignees.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1, justifyContent: 'flex-end' }}>
-                        {currentAssignees.map((member) => (
-                          <span
-                            key={member.id}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              height: 24,
-                              padding: '0 8px',
-                              borderRadius: 5,
-                              background: 'transparent',
-                              border: `1.5px solid ${member.color}`,
-                              color: member.color,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {member.displayName}
-                            <button
-                              onClick={() => removeAssignee(member.id)}
-                              aria-label={`${member.displayName} 담당자 제거`}
-                              style={{
-                                width: 12,
-                                height: 12,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: 'none',
-                                background: 'transparent',
-                                color: 'inherit',
-                                cursor: 'pointer',
-                                fontSize: 10,
-                                lineHeight: 1,
-                                padding: 0,
-                                opacity: 0.6,
-                                transition: 'opacity 0.12s',
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
-                            >×</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>생성일</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.createdAt.slice(0, 10)}</span>
                   </div>
                 </div>
-
               </div>
               {/* ── end LEFT ── */}
 
@@ -1041,26 +1021,6 @@ export function TicketModal({
                   </select>
                 </MetaRow>
 
-                {/* Type */}
-                <MetaRow label="유형">
-                  <select
-                    value={type}
-                    onChange={(e) =>
-                      setType(e.target.value as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE])
-                    }
-                    aria-label="유형"
-                    style={metaSelectStyle}
-                  >
-                    {Object.values(TICKET_TYPE).map((t) => (
-                      <option key={t} value={t}>
-                        {t === 'GOAL' ? 'Goal' :
-                         t === 'STORY' ? 'Story' :
-                         t === 'FEATURE' ? 'Feature' : 'Task'}
-                      </option>
-                    ))}
-                  </select>
-                </MetaRow>
-
                 {/* Start date */}
                 <MetaRow label="시작 예정일">
                   <input
@@ -1127,8 +1087,6 @@ export function TicketModal({
                 <div
                   style={{
                     marginTop: 8,
-                    paddingTop: 12,
-                    borderTop: '1px solid var(--color-border)',
                   }}
                 >
                   <div
@@ -1208,33 +1166,86 @@ export function TicketModal({
                     </span>
                   </div>
 
-                  {/* Created at */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>생성일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                      {ticket.createdAt.slice(0, 10)}
-                    </span>
-                  </div>
+                </div>
 
-                  {/* Updated at */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>수정일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                      {ticket.updatedAt.slice(0, 10)}
-                    </span>
+                {/* 담당자 section */}
+                <div ref={assigneeAreaRef} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, position: 'relative' }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+                    담당자
                   </div>
+                  {currentAssignees.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                      {currentAssignees.map((member) => (
+                        <span
+                          key={member.id}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            height: 24, padding: '0 8px', borderRadius: 5,
+                            background: 'transparent', border: `1.5px solid ${member.color}`,
+                            color: member.color, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {member.displayName}
+                          <button
+                            onClick={() => removeAssignee(member.id)}
+                            aria-label={`${member.displayName} 담당자 제거`}
+                            style={{ width: 12, height: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 10, lineHeight: 1, padding: 0, opacity: 0.6, transition: 'opacity 0.12s' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {!showAssigneePicker ? (
+                    <button
+                      onClick={() => { setShowAssigneePicker(true); setAssigneeSearch(''); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px dashed #9CA3AF', cursor: 'pointer', transition: 'all 0.15s', fontSize: 12, color: 'var(--color-text-muted)', background: 'transparent', fontFamily: 'inherit' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-accent-light, #E8F5F0)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#9CA3AF'; e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <UserPlus size={12} />
+                      담당자 추가
+                    </button>
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text" value={assigneeSearch}
+                        onChange={(e) => { setAssigneeSearch(e.target.value); setAssigneeSearched(false); }}
+                        placeholder="이름으로 검색..."
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') { setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }
+                          if (e.key === 'Enter' && assigneeSearch.length >= 2) { setAssigneeSearched(true); }
+                        }}
+                        style={{ width: '100%', padding: '5px 10px', border: '1px solid var(--color-accent)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', color: 'var(--color-text-primary)', background: '#fff', outline: 'none', boxShadow: '0 0 0 3px var(--color-accent-light, #E8F5F0)' }}
+                      />
+                      <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 8, boxShadow: 'var(--shadow-dropdown)', zIndex: 200, padding: 4, maxHeight: 180, overflowY: 'auto' }}>
+                        {selectedAssigneeIds.length >= 3 ? (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>모든 멤버가 배정됨</p>
+                        ) : !assigneeSearched ? (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>2글자 이상 입력 후 Enter</p>
+                        ) : unassignedMembers.filter(m => m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase())).length === 0 ? (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>검색 결과 없음</p>
+                        ) : (
+                          unassignedMembers.filter(m => m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase())).map((member) => (
+                            <button
+                              key={member.id}
+                              onMouseDown={(e) => { e.preventDefault(); addAssignee(member.id); setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', width: '100%', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', textAlign: 'left' }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-board-bg)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <span style={{ width: 20, height: 20, borderRadius: '50%', background: member.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>
+                                {member.displayName.charAt(0)}
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)' }}>{member.displayName}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* ── end RIGHT ── */}
@@ -1340,6 +1351,15 @@ export function TicketModal({
         message={`"${ticket.title}" 티켓을 삭제하시겠습니까?`}
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showDuplicateConfirm}
+        message={`"${ticket.title}" 티켓을 복사해서 새 티켓을 만들겠습니까?`}
+        confirmLabel="복제"
+        confirmVariant="primary"
+        onConfirm={handleDuplicate}
+        onCancel={() => setShowDuplicateConfirm(false)}
       />
     </>
   );

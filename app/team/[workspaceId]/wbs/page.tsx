@@ -20,18 +20,16 @@ export default async function TeamWbsPage({
   const session = await auth();
   if (!session?.user) redirect('/login');
 
-  const userId = (session.user as Record<string, unknown>).id as string;
-  const [workspace, member] = await Promise.all([
+  const userId = session.user.id as string;
+  const [workspace, member, issues, boardData] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
+    getIssuesByWorkspace(workspaceId),
+    getBoardData(workspaceId),
   ]);
   if (!workspace || !member) redirect('/');
 
   const role = member.role as TeamRole;
-  const [issues, boardData] = await Promise.all([
-    getIssuesByWorkspace(workspaceId),
-    getBoardData(workspaceId),
-  ]);
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
 

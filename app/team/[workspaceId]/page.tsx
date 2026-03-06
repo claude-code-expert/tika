@@ -27,22 +27,20 @@ export default async function TeamDashboardPage({
     redirect('/login');
   }
 
-  const userId = (session.user as Record<string, unknown>).id as string;
+  const userId = session.user.id as string;
 
-  const [workspace, member] = await Promise.all([
+  const [workspace, member, boardData, workload, issues, cfdData] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
+    getBoardData(workspaceId),
+    getMemberWorkload(workspaceId),
+    getIssuesByWorkspace(workspaceId),
+    getCfdData(workspaceId, 21), // 3주치 fetch 후 워킹데이만 추출
   ]);
 
   if (!workspace || !member) {
     redirect('/');
   }
-
-  const [boardData, workload, issues] = await Promise.all([
-    getBoardData(workspaceId),
-    getMemberWorkload(workspaceId),
-    getIssuesByWorkspace(workspaceId),
-  ]);
 
   const role = member.role as TeamRole;
 
@@ -68,7 +66,6 @@ export default async function TeamDashboardPage({
   }
 
   // Trend data from CFD — 워킹데이(월~금) 기준 최근 7일치
-  const cfdData = await getCfdData(workspaceId, 21); // 3주치 fetch 후 워킹데이만 추출
   const allTrendData = cfdData.map((d, i, arr) => ({
     date: d.date,
     created: i > 0

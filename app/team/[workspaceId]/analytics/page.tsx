@@ -32,16 +32,10 @@ export default async function TeamAnalyticsPage({
   const session = await auth();
   if (!session?.user) redirect('/login');
 
-  const userId = (session.user as Record<string, unknown>).id as string;
-  const [workspace, member] = await Promise.all([
+  const userId = session.user.id as string;
+  const [workspace, member, sprints, boardData, velocity, cfd, cycleTime, labelAnalytics] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
-  ]);
-  if (!workspace || !member) redirect('/');
-
-  const role = member.role as TeamRole;
-
-  const [sprints, boardData, velocity, cfd, cycleTime, labelAnalytics] = await Promise.all([
     getSprintsByWorkspace(workspaceId),
     getBoardData(workspaceId),
     getVelocityData(workspaceId),
@@ -49,6 +43,9 @@ export default async function TeamAnalyticsPage({
     getCycleTimeData(workspaceId),
     getLabelAnalytics(workspaceId),
   ]);
+  if (!workspace || !member) redirect('/');
+
+  const role = member.role as TeamRole;
 
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
   const burndownData = activeSprint ? await getBurndownData(workspaceId, activeSprint.id) : [];

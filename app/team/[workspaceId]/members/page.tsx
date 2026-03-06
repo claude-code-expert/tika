@@ -24,24 +24,22 @@ export default async function TeamMembersPage({
   const session = await auth();
   if (!session?.user) redirect('/login');
 
-  const userId = (session.user as Record<string, unknown>).id as string;
+  const userId = session.user.id as string;
 
-  const [workspace, currentMember] = await Promise.all([
+  const [workspace, currentMember, workload, boardData, allMembers, joinRequests] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
+    getMemberWorkload(workspaceId),
+    getBoardData(workspaceId),
+    getMembersByWorkspace(workspaceId),
+    getJoinRequests(workspaceId, 'PENDING'),
   ]);
 
   if (!workspace || !currentMember) redirect('/');
 
   const role = currentMember.role as TeamRole;
   const isOwner = role === 'OWNER';
-
-  const [workload, boardData, allMembers, pendingRequests] = await Promise.all([
-    getMemberWorkload(workspaceId),
-    getBoardData(workspaceId),
-    getMembersByWorkspace(workspaceId),
-    isOwner ? getJoinRequests(workspaceId, 'PENDING') : Promise.resolve([]),
-  ]);
+  const pendingRequests = isOwner ? joinRequests : [];
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
 

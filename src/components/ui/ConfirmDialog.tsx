@@ -6,6 +6,8 @@ import { Button } from './Button';
 interface ConfirmDialogProps {
   isOpen: boolean;
   message?: string;
+  confirmLabel?: string;
+  confirmVariant?: 'danger' | 'primary';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -13,6 +15,8 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({
   isOpen,
   message = '정말 삭제하시겠습니까?',
+  confirmLabel = '삭제',
+  confirmVariant = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -34,7 +38,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center"
+      className="fixed inset-0 z-[400] flex items-center justify-center"
       role="alertdialog"
       aria-modal="true"
     >
@@ -45,8 +49,8 @@ export function ConfirmDialog({
           <Button variant="secondary" size="sm" onClick={onCancel}>
             취소
           </Button>
-          <Button variant="danger" size="sm" onClick={onConfirm}>
-            삭제
+          <Button variant={confirmVariant} size="sm" onClick={onConfirm}>
+            {confirmLabel}
           </Button>
         </div>
       </div>

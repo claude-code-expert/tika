@@ -130,6 +130,8 @@ export const tickets = pgTable(
     ),
     index('idx_tickets_due_date').on(table.dueDate),
     index('idx_tickets_sprint_id').on(table.sprintId),
+    index('idx_tickets_assignee_id').on(table.assigneeId),
+    index('idx_tickets_issue_id').on(table.issueId),
   ],
 );
 
@@ -202,7 +204,10 @@ export const comments = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [index('idx_comments_ticket_id').on(table.ticketId)],
+  (table) => [
+    index('idx_comments_ticket_id').on(table.ticketId),
+    index('idx_comments_member_id').on(table.memberId),
+  ],
 );
 
 // 11. notification_logs

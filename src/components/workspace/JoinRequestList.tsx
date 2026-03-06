@@ -24,7 +24,7 @@ export function JoinRequestList({ workspaceId, initialRequests }: JoinRequestLis
   const setRowState = (id: number, partial: Partial<RowState>) => {
     setRowStates((prev) => ({
       ...prev,
-      [id]: { loadingApprove: false, loadingReject: false, error: null, ...prev[id], ...partial },
+      [id]: { ...(prev[id] ?? { loadingApprove: false, loadingReject: false, error: null }), ...partial },
     }));
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { TicketWithMeta, IssueType } from '@/types/index';
@@ -38,7 +38,7 @@ interface TicketCardProps {
   workspaceName?: string;
 }
 
-export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) {
+function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
   const [copied, setCopied] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
@@ -53,17 +53,32 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
     });
   }, [workspaceName, ticket.id]);
 
-  const style = {
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-  };
+  }), [transform, transition, isDragging]);
 
-  const completedCount = ticket.checklistItems.filter((c) => c.isCompleted).length;
+  const completedCount = useMemo(
+    () => ticket.checklistItems.filter((c) => c.isCompleted).length,
+    [ticket.checklistItems],
+  );
   const totalCount = ticket.checklistItems.length;
-  const dueDateState = getDueDateState(ticket.dueDate, ticket.isOverdue);
+  const dueDateState = useMemo(
+    () => getDueDateState(ticket.dueDate, ticket.isOverdue),
+    [ticket.dueDate, ticket.isOverdue],
+  );
   const issueStyle = ticket.issue ? ISSUE_TAG_STYLES[ticket.issue.type] : null;
   const typeIndicator = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
+  const displayAssignees = useMemo(
+    () =>
+      ticket.assignees && ticket.assignees.length > 0
+        ? ticket.assignees
+        : ticket.assignee
+          ? [ticket.assignee]
+          : [],
+    [ticket.assignees, ticket.assignee],
+  );
 
   const handleClick = () => {
     if (!isDragging) onClick?.();
@@ -259,9 +274,6 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
 
         {/* Assignee avatars — show multi-assignees if present, fallback to single assignee */}
         {(() => {
-          const displayAssignees = (ticket.assignees && ticket.assignees.length > 0)
-            ? ticket.assignees
-            : ticket.assignee ? [ticket.assignee] : [];
           if (displayAssignees.length === 0) return null;
           const visible = displayAssignees.slice(0, 3);
           const extra = displayAssignees.length - 3;
@@ -309,3 +321,5 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
     </div>
   );
 }
+
+export const TicketCard = memo(TicketCardInner);

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const check = await requireRole(userId, workspaceId, 'OWNER');
     if (isRoleError(check)) return check;
 

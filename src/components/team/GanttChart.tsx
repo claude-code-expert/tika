@@ -272,25 +272,6 @@ export function GanttChart({ items, dateRange }: GanttChartProps) {
           style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}
         >
           <div style={{ width: timelineW, minHeight: totalH - HEADER_H }}>
-            {/* Today line */}
-            {(() => {
-              const todayX = xForDate(new Date().toISOString().slice(0, 10));
-              if (todayX === null) return null;
-              return (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: todayX,
-                    top: 0,
-                    bottom: 0,
-                    width: 1,
-                    background: '#EF4444',
-                    opacity: 0.5,
-                    zIndex: 2,
-                  }}
-                />
-              );
-            })()}
 
             {flatItems.map((item, i) => {
               const x1 = xForDate(item.startDate);

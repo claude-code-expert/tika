@@ -480,3 +480,35 @@ When completing a task, always end with a Korean summary:
 - 무엇을 변경했는지
 - 왜 그렇게 했는지
 - 주의할 점이 있는지
+
+---
+
+## 9. Agentation UI 연동 (개발 전용)
+
+UI 작업 시 Claude Code는 agentation MCP 도구로 사용자의 화면 어노테이션을 실시간 수신한다.
+
+- **상세 가이드:** `docs/AGENTATION-UI.md`
+- **컴포넌트:** `src/components/ui/AgentationWrapper.tsx`
+- **MCP 엔드포인트:** `http://localhost:4747`
+
+### UI 작업 기본 루프
+
+1. `npm run dev` 실행 → 브라우저에서 tika 열기
+2. agentation 툴바(우하단)로 UI 요소 어노테이션
+3. Claude Code → `agentation_watch_annotations` 수신 대기
+4. 어노테이션 확인 후 코드 수정
+5. `agentation_resolve(annotationId, summary)` 또는 `agentation_acknowledge` 호출
+
+### 현재 활성 MCP 도구
+
+| 도구 | 역할 |
+|------|------|
+| `agentation_watch_annotations` | 새 어노테이션 대기 (blocking) |
+| `agentation_get_all_pending` | 미처리 어노테이션 전체 조회 |
+| `agentation_get_pending(sessionId)` | 특정 세션 미처리 조회 |
+| `agentation_acknowledge(annotationId)` | 수신 확인 |
+| `agentation_resolve(annotationId, summary)` | 처리 완료 |
+| `agentation_dismiss(annotationId, reason)` | 미처리 사유와 함께 무시 |
+| `agentation_reply(annotationId, message)` | 스레드 답글 |
+| `agentation_list_sessions` | 세션 목록 |
+| `agentation_get_session(sessionId)` | 세션 + 어노테이션 상세 |

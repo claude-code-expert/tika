@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SCR-003 — 티켓 상세 | Tika</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --font-display:'Plus Jakarta Sans','Noto Sans KR',sans-serif;
+  --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+  --bg-app:#F0F2F5;
+  --bg-card:#FFFFFF;
+  --bg-sidebar:#F4F6F9;
+  --bg-hover:#F0F4F8;
+  --text-primary:#1E2D3D;
+  --text-secondary:#4A5C6E;
+  --text-muted:#8A96A4;
+  --accent:#629584;
+  --accent-hover:#527D6F;
+  --accent-light:#E8F5F0;
+  --accent-mid:#B8D8D0;
+  --border:#E2E6EC;
+  --border-strong:#CDD3DC;
+  --danger:#DC2626;
+  --danger-light:#FEF2F2;
+  --danger-border:#FECACA;
+  --radius-sm:6px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --radius-xl:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.07);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.14);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:var(--font-body);font-size:14px;color:var(--text-primary);background:var(--bg-app);-webkit-font-smoothing:antialiased}
+
+/* ─── OVERLAY ─── */
+.overlay{position:fixed;inset:0;background:rgba(10,20,35,0.50);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px 40px;overflow-y:auto}
+
+/* ─── MODAL SHELL ─── */
+.modal{
+  background:var(--bg-card);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-lg);
+  width:100%;max-width:860px;
+  animation:slideIn .22s ease-out;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-14px) scale(.98)}to{opacity:1;transform:none}}
+
+/* ─── HEADER BAR ─── */
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-card);
+  position:sticky;top:0;z-index:10;
+}
+.modal-header-left{display:flex;align-items:center;gap:10px;min-width:0}
+.ticket-id{
+  font-family:var(--font-display);font-size:11px;font-weight:600;
+  color:var(--accent);background:var(--accent-light);
+  padding:3px 8px;border-radius:4px;white-space:nowrap;letter-spacing:.3px;
+}
+.ticket-type-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  height:22px;padding:0 8px;border-radius:4px;
+  font-size:11px;font-weight:600;letter-spacing:.3px;
+  white-space:nowrap;
+}
+.type-goal{background:#EDE9FE;color:#6D28D9}
+.type-story{background:#DBEAFE;color:#1D4ED8}
+.type-feature{background:#D1FAE5;color:#065F46}
+.type-task{background:#FEF3C7;color:#92400E}
+
+.modal-header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.icon-btn{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:none;border-radius:var(--radius-sm);background:transparent;
+  color:var(--text-muted);cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.icon-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+.icon-btn.danger:hover{background:var(--danger-light);color:var(--danger)}
+.ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ic svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+/* ─── TITLE SECTION ─── */
+.modal-title-section{padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+.ticket-title{
+  font-family:var(--font-display);font-size:19px;font-weight:700;
+  color:var(--text-primary);line-height:1.45;
+  width:100%;border:none;outline:none;background:transparent;
+  font-family:var(--font-display);resize:none;
+  cursor:text;
+}
+.ticket-title:focus{
+  background:var(--bg-sidebar);border-radius:var(--radius-sm);
+  padding:6px 8px;margin:-6px -8px;
+}
+
+/* ─── BREADCRUMB ─── */
+.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:10px}
+.bc-item{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px 3px 4px;
+  border-radius:5px;background:var(--bg-sidebar);
+  font-size:11px;font-weight:500;color:var(--text-secondary);
+  cursor:default;
+}
+.bc-type{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:3px;
+  font-size:9px;font-weight:700;color:#fff;letter-spacing:0;
+}
+.bc-goal{background:#8B5CF6}.bc-story{background:#3B82F6}
+.bc-feature{background:#10B981}.bc-task{background:#F59E0B}
+.bc-sep{color:var(--text-muted);font-size:12px;padding:0 1px}
+.bc-edit{
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  border:1px dashed var(--border-strong);border-radius:4px;
+  background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;
+}
+.bc-edit:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* ─── LABELS ROW ─── */
+.labels-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:12px}
+.label-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  height:22px;padding:0 8px;border-radius:4px;
+  font-size:11px;font-weight:600;color:#fff;white-space:nowrap;
+}
+.label-rm{
+  width:12px;height:12px;display:inline-flex;align-items:center;justify-content:center;
+  border:none;background:rgba(0,0,0,0.2);border-radius:50%;
+  color:inherit;cursor:pointer;font-size:9px;line-height:1;padding:0;transition:background .12s;
+}
+.label-rm:hover{background:rgba(0,0,0,0.4)}
+.label-add-btn{
+  height:22px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;
+  border:1px dashed var(--border-strong);border-radius:4px;
+  background:transparent;font-size:11px;font-weight:500;color:var(--text-muted);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.label-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* ─── LABEL PICKER ─── */
+.label-picker{
+  display:none;flex-wrap:wrap;gap:5px;
+  padding:10px 12px;margin-top:6px;
+  background:var(--bg-sidebar);border:1px solid var(--border);
+  border-radius:var(--radius-md);
+}
+.label-picker.open{display:flex}
+.label-opt{
+  display:inline-flex;align-items:center;height:24px;padding:0 10px;
+  border-radius:4px;font-size:11px;font-weight:600;color:#fff;
+  cursor:pointer;opacity:.8;transition:opacity .12s;border:none;
+}
+.label-opt:hover{opacity:1}
+.label-opt.used{opacity:.3;pointer-events:none;cursor:default}
+
+/* ─── TWO-COLUMN BODY ─── */
+.modal-body{display:grid;grid-template-columns:1fr 260px;gap:0}
+
+/* ─── LEFT CONTENT AREA ─── */
+.content-area{padding:20px 24px;border-right:1px solid var(--border);min-height:380px;display:flex;flex-direction:column;gap:24px}
+
+/* ─── SECTION ─── */
+.section{}
+.section-label{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;
+}
+.section-label svg{opacity:.7}
+
+/* description */
+.desc-area{
+  width:100%;min-height:80px;
+  padding:10px 14px;
+  border:1px solid var(--border);border-radius:var(--radius-md);
+  font-family:var(--font-body);font-size:14px;color:var(--text-primary);
+  line-height:1.7;background:var(--bg-sidebar);resize:vertical;
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.desc-area:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.desc-area::placeholder{color:var(--text-muted)}
+
+/* checklist */
+.checklist{list-style:none;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.checklist-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-bottom:1px solid var(--border);
+  font-size:13px;transition:background .12s;
+}
+.checklist-item:last-child{border-bottom:none}
+.checklist-item:hover{background:var(--bg-hover)}
+.cl-check{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.cl-text{flex:1;color:var(--text-primary)}
+.cl-text.done{text-decoration:line-through;color:var(--text-muted)}
+.cl-del{
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  border:none;background:transparent;color:var(--text-muted);
+  cursor:pointer;border-radius:50%;transition:all .12s;flex-shrink:0;
+  opacity:0;
+}
+.checklist-item:hover .cl-del{opacity:1}
+.cl-del:hover{background:var(--danger-light);color:var(--danger)}
+.checklist-progress{
+  display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text-muted);
+}
+.progress-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s ease}
+
+.cl-add-row{display:flex;gap:6px;margin-top:8px}
+.cl-add-input{
+  flex:1;height:34px;padding:0 12px;
+  border:1px dashed var(--border-strong);border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:13px;color:var(--text-primary);
+  background:transparent;outline:none;transition:all .15s;
+}
+.cl-add-input:focus{border-style:solid;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-light)}
+.cl-add-input::placeholder{color:var(--text-muted)}
+.btn-sm-accent{
+  height:34px;padding:0 14px;border:none;border-radius:var(--radius-sm);
+  background:var(--accent);color:#fff;
+  font-family:var(--font-body);font-size:12px;font-weight:600;
+  cursor:pointer;transition:background .15s;white-space:nowrap;
+}
+.btn-sm-accent:hover{background:var(--accent-hover)}
+
+/* ─── ASSIGNEE ─── */
+.assignee-list{display:flex;flex-direction:column;gap:2px}
+.assignee-item{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 10px;border-radius:var(--radius-sm);
+  transition:background .12s;
+}
+.assignee-item:hover{background:var(--bg-hover)}
+.av{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:10px;font-weight:700;flex-shrink:0;
+}
+.assignee-name{font-size:13px;font-weight:500;flex:1}
+.assignee-role{font-size:11px;color:var(--text-muted)}
+.assignee-rm{
+  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  border:none;background:transparent;color:var(--text-muted);
+  cursor:pointer;border-radius:50%;transition:all .12s;
+  opacity:0;
+}
+.assignee-item:hover .assignee-rm{opacity:1}
+.assignee-rm:hover{background:var(--danger-light);color:var(--danger)}
+.assignee-add{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:var(--radius-sm);
+  border:1px dashed var(--border-strong);
+  margin-top:4px;cursor:pointer;transition:all .15s;
+  font-size:12px;color:var(--text-muted);background:transparent;width:100%;
+}
+.assignee-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* ─── COMMENTS ─── */
+.comment-list{display:flex;flex-direction:column;gap:0}
+.comment-item{
+  display:flex;gap:10px;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.comment-item:last-child{border-bottom:none}
+.comment-body{flex:1;min-width:0}
+.comment-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.comment-author{font-size:12px;font-weight:600;color:var(--text-primary)}
+.comment-time{font-size:11px;color:var(--text-muted)}
+.comment-text{font-size:13px;color:var(--text-secondary);line-height:1.6}
+.comment-actions-row{display:flex;gap:8px;margin-top:4px}
+.comment-action-btn{
+  font-size:11px;color:var(--text-muted);background:none;border:none;
+  cursor:pointer;padding:0;transition:color .12s;
+}
+.comment-action-btn:hover{color:var(--text-primary)}
+
+.comment-form{display:flex;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.comment-form-right{flex:1;display:flex;flex-direction:column;gap:8px}
+.comment-input{
+  width:100%;min-height:40px;max-height:100px;
+  padding:9px 12px;
+  border:1px solid var(--border);border-radius:var(--radius-md);
+  font-family:var(--font-body);font-size:13px;color:var(--text-primary);
+  resize:vertical;outline:none;transition:all .15s;background:var(--bg-sidebar);
+}
+.comment-input:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.comment-input::placeholder{color:var(--text-muted)}
+.comment-submit{
+  align-self:flex-end;height:30px;padding:0 14px;
+  border:none;border-radius:var(--radius-sm);
+  background:var(--accent);color:#fff;
+  font-family:var(--font-body);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .15s;
+}
+.comment-submit:hover{background:var(--accent-hover)}
+.comment-submit:disabled{opacity:.4;cursor:default}
+
+/* ─── RIGHT SIDEBAR (META) ─── */
+.meta-panel{padding:20px 20px;display:flex;flex-direction:column;gap:6px}
+
+.meta-row{
+  display:flex;flex-direction:column;gap:4px;
+  padding:8px 0;border-bottom:1px solid var(--border);
+}
+.meta-row:last-child{border-bottom:none}
+.meta-key{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.meta-val{display:flex;align-items:center;gap:6px;min-height:28px}
+.meta-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--bg-sidebar);
+  font-family:var(--font-body);font-size:12px;font-weight:500;
+  color:var(--text-secondary);cursor:pointer;transition:all .15s;
+  width:100%;justify-content:space-between;
+}
+.meta-btn:hover{border-color:var(--border-strong);background:var(--bg-hover)}
+.meta-btn .chevron{color:var(--text-muted);transition:transform .15s}
+.meta-btn:hover .chevron{transform:translateY(1px)}
+
+/* Status badges */
+.badge{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-backlog{background:#F1F3F6;color:#5A6B7F}
+.badge-todo{background:#DBEAFE;color:#1E40AF}
+.badge-inprogress{background:#FEF3C7;color:#92400E}
+.badge-done{background:#D1FAE5;color:#065F46}
+.badge-critical{background:#FEE2E2;color:#DC2626}
+.badge-high{background:#FFEDD5;color:#C2410C}
+.badge-medium{background:#FEF9C3;color:#A16207}
+.badge-low{background:#F3F4F6;color:#6B7280}
+
+.date-val{font-size:12px;color:var(--text-primary);font-weight:500}
+.date-empty{font-size:12px;color:var(--text-muted);font-style:italic}
+
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-active{background:var(--accent)}
+
+.meta-date-input{
+  width:100%;height:28px;padding:0 8px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:12px;color:var(--text-primary);
+  background:var(--bg-sidebar);outline:none;transition:all .15s;cursor:pointer;
+}
+.meta-date-input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-light)}
+
+/* Created at static */
+.created-val{font-size:12px;color:var(--text-secondary)}
+
+/* ─── FOOTER ─── */
+.modal-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-top:1px solid var(--border);
+  background:var(--bg-sidebar);
+}
+.footer-left{display:flex;align-items:center;gap:8px}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:34px;padding:0 16px;border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;border:none;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg-hover);color:var(--text-primary);border-color:var(--border-strong)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger-border)}
+.btn-danger:hover{background:var(--danger-light)}
+
+/* ─── TOAST ─── */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--text-primary);color:#fff;
+  padding:9px 20px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  z-index:9999;transition:transform .25s ease,opacity .25s ease;
+  opacity:0;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* status select dropdown */
+.meta-select{
+  width:100%;height:28px;padding:0 8px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:12px;color:var(--text-primary);
+  background:var(--bg-sidebar);outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238A96A4' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;padding-right:26px;
+}
+.meta-select:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-light)}
+</style>
+</head>
+<body>
+<div class="overlay">
+  <div class="modal">
+
+    <!-- ════════════ HEADER BAR ════════════ -->
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="ticket-id">TKT-042</span>
+        <span class="ticket-type-badge type-feature">
+          <span class="ic" style="width:11px;height:11px">
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          Feature
+        </span>
+      </div>
+      <div class="modal-header-actions">
+        <button class="icon-btn" title="복제" onclick="showToast('복제되었습니다')">
+          <span class="ic" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span>
+        </button>
+        <button class="icon-btn danger" title="삭제" onclick="confirmDelete()">
+          <span class="ic" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></span>
+        </button>
+        <button class="icon-btn" title="닫기" onclick="showToast('창을 닫습니다')">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════ TITLE SECTION ════════════ -->
+    <div class="modal-title-section">
+      <!-- Title -->
+      <textarea class="ticket-title" rows="1" id="titleInput"
+        oninput="autoResize(this)"
+        onfocus="autoResize(this)"
+      >사용자 인증 API 설계 및 JWT 미들웨어 구현</textarea>
+
+      <!-- Breadcrumb — 상위 이슈 -->
+      <div class="breadcrumb">
+        <span class="bc-item"><span class="bc-type bc-goal">G</span>MVP 출시</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-item"><span class="bc-type bc-story">S</span>사용자 인증 시스템</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-item"><span class="bc-type bc-feature">F</span>인증 API</span>
+        <button class="bc-edit" title="상위 이슈 변경" onclick="showToast('상위 이슈 편집')">
+          <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>
+        </button>
+      </div>
+
+      <!-- Labels -->
+      <div class="labels-row" id="labelsRow">
+        <span class="label-chip" style="background:#00c950">백엔드 <button class="label-rm" onclick="this.parentElement.remove();updateLabelPicker()">×</button></span>
+        <span class="label-chip" style="background:#615fff">인프라 <button class="label-rm" onclick="this.parentElement.remove();updateLabelPicker()">×</button></span>
+        <button class="label-add-btn" id="labelAddBtn" onclick="toggleLabelPicker()">
+          <span class="ic" style="width:10px;height:10px"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+          라벨 추가
+        </button>
+      </div>
+      <div class="label-picker" id="labelPicker">
+        <button class="label-opt" style="background:#2b7fff" onclick="addLabel('프론트엔드','#2b7fff',this)">프론트엔드</button>
+        <button class="label-opt used" style="background:#00c950">백엔드</button>
+        <button class="label-opt" style="background:#ad46ff" onclick="addLabel('디자인','#ad46ff',this)">디자인</button>
+        <button class="label-opt" style="background:#fb2c36" onclick="addLabel('버그','#fb2c36',this)">버그</button>
+        <button class="label-opt" style="background:#ffac6d;color:#3D2200" onclick="addLabel('문서','#ffac6d',this)">문서</button>
+        <button class="label-opt used" style="background:#615fff">인프라</button>
+      </div>
+    </div>
+
+    <!-- ════════════ TWO-COLUMN BODY ════════════ -->
+    <div class="modal-body">
+
+      <!-- ── LEFT: CONTENT ── -->
+      <div class="content-area">
+
+        <!-- 설명 -->
+        <div class="section">
+          <div class="section-label">
+            <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg></span>
+            설명
+          </div>
+          <textarea class="desc-area" placeholder="티켓에 대한 설명을 입력하세요..." rows="4">JWT 기반 인증 시스템의 엔드포인트 설계 및 미들웨어 구현. Access Token / Refresh Token 분리, 토큰 갱신 로직, 미들웨어 체인 설계가 필요합니다. /api/auth/login, /api/auth/refresh, /api/auth/logout 세 엔드포인트를 구현해야 합니다.</textarea>
+        </div>
+
+        <!-- 체크리스트 -->
+        <div class="section">
+          <div class="section-label">
+            <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+            체크리스트
+          </div>
+          <div class="checklist-progress">
+            <span id="clProgress">2 / 4 완료</span>
+            <div class="progress-bar"><div class="progress-fill" id="clFill" style="width:50%"></div></div>
+            <span id="clPercent">50%</span>
+          </div>
+          <ul class="checklist" id="checklist">
+            <li class="checklist-item" data-done="true">
+              <input class="cl-check" type="checkbox" checked onchange="toggleCl(this)"/>
+              <span class="cl-text done">JWT 토큰 생성 / 검증 로직 구현</span>
+              <button class="cl-del" onclick="deleteCl(this)" title="삭제">
+                <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+              </button>
+            </li>
+            <li class="checklist-item" data-done="false">
+              <input class="cl-check" type="checkbox" onchange="toggleCl(this)"/>
+              <span class="cl-text">API 엔드포인트 명세 작성</span>
+              <button class="cl-del" onclick="deleteCl(this)" title="삭제">
+                <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+              </button>
+            </li>
+            <li class="checklist-item" data-done="true">
+              <input class="cl-check" type="checkbox" checked onchange="toggleCl(this)"/>
+              <span class="cl-text done">미들웨어 체인 설계</span>
+              <button class="cl-del" onclick="deleteCl(this)" title="삭제">
+                <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+              </button>
+            </li>
+            <li class="checklist-item" data-done="false">
+              <input class="cl-check" type="checkbox" onchange="toggleCl(this)"/>
+              <span class="cl-text">토큰 갱신 로직 테스트 작성</span>
+              <button class="cl-del" onclick="deleteCl(this)" title="삭제">
+                <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+              </button>
+            </li>
+          </ul>
+          <div class="cl-add-row">
+            <input class="cl-add-input" type="text" placeholder="새 항목 입력 후 Enter 또는 추가 클릭..." id="clInput"/>
+            <button class="btn-sm-accent" onclick="addCl()">추가</button>
+          </div>
+        </div>
+
+        <!-- 담당자 -->
+        <div class="section">
+          <div class="section-label">
+            <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            담당자
+          </div>
+          <div class="assignee-list" id="assigneeList">
+            <div class="assignee-item">
+              <div class="av" style="background:#7EB4A2">홍</div>
+              <div style="flex:1">
+                <div class="assignee-name">홍길동</div>
+                <div class="assignee-role">Frontend Developer</div>
+              </div>
+              <button class="assignee-rm" onclick="this.closest('.assignee-item').remove()" title="제거">
+                <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+              </button>
+            </div>
+          </div>
+          <button class="assignee-add" onclick="showToast('담당자 선택 팝업')">
+            <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg></span>
+            담당자 추가
+          </button>
+        </div>
+
+        <!-- 댓글 -->
+        <div class="section">
+          <div class="section-label">
+            <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            댓글
+            <span id="commentCount" style="font-size:10px;background:var(--bg-hover);padding:1px 6px;border-radius:10px;font-weight:600;color:var(--text-muted)">2</span>
+          </div>
+
+          <div class="comment-list" id="commentList">
+            <div class="comment-item">
+              <div class="av" style="background:#60A5FA;width:26px;height:26px;font-size:9px;flex-shrink:0">김</div>
+              <div class="comment-body">
+                <div class="comment-meta">
+                  <span class="comment-author">김민수</span>
+                  <span class="comment-time">2025년 2월 21일 10:00</span>
+                </div>
+                <div class="comment-text">API 명세 작성 시 Swagger 문서도 같이 업데이트해주세요. 프론트엔드 팀이 참고해야 합니다.</div>
+                <div class="comment-actions-row">
+                  <button class="comment-action-btn" onclick="showToast('수정 모드')">수정</button>
+                  <button class="comment-action-btn" style="color:#DC2626" onclick="this.closest('.comment-item').remove();updateCommentCount()">삭제</button>
+                </div>
+              </div>
+            </div>
+            <div class="comment-item">
+              <div class="av" style="background:#7EB4A2;width:26px;height:26px;font-size:9px;flex-shrink:0">홍</div>
+              <div class="comment-body">
+                <div class="comment-meta">
+                  <span class="comment-author">홍길동</span>
+                  <span class="comment-time">2025년 2월 21일 14:30</span>
+                </div>
+                <div class="comment-text">네, Swagger 연동 항목도 체크리스트에 추가할게요. 리뷰 부탁드립니다!</div>
+                <div class="comment-actions-row">
+                  <button class="comment-action-btn" onclick="showToast('수정 모드')">수정</button>
+                  <button class="comment-action-btn" style="color:#DC2626" onclick="this.closest('.comment-item').remove();updateCommentCount()">삭제</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 댓글 입력 -->
+          <div class="comment-form">
+            <div class="av" style="background:#7EB4A2;width:26px;height:26px;font-size:9px;flex-shrink:0;border:none">홍</div>
+            <div class="comment-form-right">
+              <textarea class="comment-input" id="commentInput" placeholder="댓글을 입력하세요... (Enter로 전송, Shift+Enter 줄바꿈)" rows="2"></textarea>
+              <button class="comment-submit" id="commentBtn" disabled onclick="submitComment()">댓글 작성</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content-area -->
+
+      <!-- ── RIGHT: META PANEL ── -->
+      <div class="meta-panel">
+
+        <!-- 상태 -->
+        <div class="meta-row">
+          <div class="meta-key">상태</div>
+          <div class="meta-val">
+            <select class="meta-select" id="statusSelect" onchange="updateStatusBadge()">
+              <option value="backlog">📋 백로그</option>
+              <option value="todo" selected>📌 TODO</option>
+              <option value="inprogress">🔄 진행중</option>
+              <option value="done">✅ 완료</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 우선순위 -->
+        <div class="meta-row">
+          <div class="meta-key">우선순위</div>
+          <div class="meta-val">
+            <select class="meta-select" id="prioritySelect">
+              <option value="critical">🔴 긴급</option>
+              <option value="high" selected>🟠 높음</option>
+              <option value="medium">🟡 중간</option>
+              <option value="low">⚪ 낮음</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 작성일 -->
+        <div class="meta-row">
+          <div class="meta-key">작성일</div>
+          <div class="meta-val">
+            <span class="created-val">2025년 2월 19일</span>
+          </div>
+        </div>
+
+        <!-- 시작예정일 -->
+        <div class="meta-row">
+          <div class="meta-key">시작 예정일</div>
+          <div class="meta-val">
+            <input class="meta-date-input" type="date" id="startDate" value="2025-02-20"/>
+          </div>
+        </div>
+
+        <!-- 종료예정일 -->
+        <div class="meta-row">
+          <div class="meta-key">종료 예정일</div>
+          <div class="meta-val">
+            <input class="meta-date-input" type="date" id="endDate" value="2025-02-28"/>
+          </div>
+        </div>
+
+        <!-- 구분선 + 빠른 정보 -->
+        <div style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">요약</div>
+
+          <!-- 체크리스트 진행률 미니 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text-secondary)">체크리스트</span>
+            <span style="font-size:11px;font-weight:600;color:var(--accent)" id="clSummary">2/4</span>
+          </div>
+          <div class="progress-bar" style="margin-bottom:14px">
+            <div class="progress-fill" id="clFillSide" style="width:50%"></div>
+          </div>
+
+          <!-- 댓글 수 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text-secondary)">댓글</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-secondary)" id="commentCountSide">2개</span>
+          </div>
+
+          <!-- 수정일 -->
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:var(--text-secondary)">수정일</span>
+            <span style="font-size:11px;color:var(--text-muted)">2월 21일</span>
+          </div>
+        </div>
+
+      </div><!-- /meta-panel -->
+
+    </div><!-- /modal-body -->
+
+    <!-- ════════════ FOOTER ════════════ -->
+    <div class="modal-footer">
+      <div class="footer-left">
+        <button class="btn btn-primary" onclick="saveTicket()">
+          <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+          저장
+        </button>
+        <button class="btn btn-ghost" onclick="showToast('창을 닫습니다')">
+          닫기
+        </button>
+      </div>
+      <button class="btn btn-danger" onclick="confirmDelete()">
+        <span class="ic" style="width:13px;height:13px"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></span>
+        삭제
+      </button>
+    </div>
+
+  </div><!-- /modal -->
+</div><!-- /overlay -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─── Title auto-resize ─── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+window.addEventListener('load', () => autoResize(document.getElementById('titleInput')));
+
+/* ─── Toast ─── */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ─── Label picker ─── */
+function toggleLabelPicker() {
+  document.getElementById('labelPicker').classList.toggle('open');
+}
+function addLabel(name, bg, btn) {
+  btn.classList.add('used');
+  const row = document.getElementById('labelsRow');
+  const addBtn = document.getElementById('labelAddBtn');
+  const chip = document.createElement('span');
+  chip.className = 'label-chip';
+  chip.style.background = bg;
+  chip.innerHTML = name + ' <button class="label-rm" onclick="this.parentElement.remove();updateLabelPicker()">×</button>';
+  row.insertBefore(chip, addBtn);
+  document.getElementById('labelPicker').classList.remove('open');
+}
+function updateLabelPicker() {
+  // re-sync used state if needed
+}
+document.addEventListener('click', e => {
+  const picker = document.getElementById('labelPicker');
+  if (picker.classList.contains('open')) {
+    if (!e.target.closest('#labelPicker') && !e.target.closest('#labelAddBtn')) {
+      picker.classList.remove('open');
+    }
+  }
+});
+
+/* ─── Checklist ─── */
+function updateClProgress() {
+  const items = document.querySelectorAll('#checklist .checklist-item');
+  const total = items.length;
+  const done = document.querySelectorAll('#checklist .checklist-item[data-done="true"]').length;
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('clProgress').textContent = `${done} / ${total} 완료`;
+  document.getElementById('clPercent').textContent = `${pct}%`;
+  document.getElementById('clFill').style.width = pct + '%';
+  document.getElementById('clFillSide').style.width = pct + '%';
+  document.getElementById('clSummary').textContent = `${done}/${total}`;
+}
+function toggleCl(cb) {
+  const li = cb.closest('.checklist-item');
+  const span = li.querySelector('.cl-text');
+  const done = cb.checked;
+  li.dataset.done = done;
+  span.classList.toggle('done', done);
+  updateClProgress();
+}
+function deleteCl(btn) {
+  btn.closest('.checklist-item').remove();
+  updateClProgress();
+}
+function addCl() {
+  const input = document.getElementById('clInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const li = document.createElement('li');
+  li.className = 'checklist-item';
+  li.dataset.done = 'false';
+  li.innerHTML = `
+    <input class="cl-check" type="checkbox" onchange="toggleCl(this)"/>
+    <span class="cl-text">${text}</span>
+    <button class="cl-del" onclick="deleteCl(this)" title="삭제">
+      <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+    </button>`;
+  document.getElementById('checklist').appendChild(li);
+  input.value = '';
+  input.focus();
+  updateClProgress();
+}
+document.getElementById('clInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addCl(); }
+});
+
+/* ─── Comments ─── */
+const commentInput = document.getElementById('commentInput');
+const commentBtn = document.getElementById('commentBtn');
+commentInput.addEventListener('input', () => {
+  commentBtn.disabled = !commentInput.value.trim();
+});
+commentInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!commentBtn.disabled) submitComment(); }
+});
+function submitComment() {
+  const text = commentInput.value.trim();
+  if (!text) return;
+  const now = new Date();
+  const timeStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const item = document.createElement('div');
+  item.className = 'comment-item';
+  item.innerHTML = `
+    <div class="av" style="background:#7EB4A2;width:26px;height:26px;font-size:9px;flex-shrink:0">홍</div>
+    <div class="comment-body">
+      <div class="comment-meta">
+        <span class="comment-author">홍길동</span>
+        <span class="comment-time">${timeStr}</span>
+      </div>
+      <div class="comment-text">${text}</div>
+      <div class="comment-actions-row">
+        <button class="comment-action-btn" onclick="showToast('수정 모드')">수정</button>
+        <button class="comment-action-btn" style="color:#DC2626" onclick="this.closest('.comment-item').remove();updateCommentCount()">삭제</button>
+      </div>
+    </div>`;
+  document.getElementById('commentList').appendChild(item);
+  item.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  commentInput.value = '';
+  commentBtn.disabled = true;
+  updateCommentCount();
+}
+function updateCommentCount() {
+  const count = document.querySelectorAll('#commentList .comment-item').length;
+  document.getElementById('commentCount').textContent = count;
+  document.getElementById('commentCountSide').textContent = count + '개';
+}
+
+/* ─── Save / Delete ─── */
+function saveTicket() {
+  showToast('저장되었습니다 ✓');
+}
+function confirmDelete() {
+  if (confirm('이 티켓을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+    showToast('티켓이 삭제되었습니다');
+  }
+}
+</script>
+</body>
+</html>

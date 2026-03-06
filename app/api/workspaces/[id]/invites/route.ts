@@ -5,7 +5,7 @@ import {
   createInvite,
   getPendingInviteByEmail,
 } from '@/db/queries/invites';
-import { getMemberByUserId, getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { getMembersWithEmailByWorkspace } from '@/db/queries/members';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { createInviteSchema } from '@/lib/validations';
 import { TEAM_ROLE } from '@/types/index';

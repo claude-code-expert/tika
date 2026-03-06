@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { SessionProvider } from 'next-auth/react';
-import AgentationWrapper from '@/components/ui/AgentationWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
           rel="stylesheet"
@@ -25,7 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SessionProvider>{children}</SessionProvider>
-        {process.env.NODE_ENV === 'development' && <AgentationWrapper />}
       </body>
     </html>
   );

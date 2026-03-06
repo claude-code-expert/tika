@@ -74,11 +74,12 @@ export function Column({ status, label, tickets, onTicketClick, workspaceName }:
         ref={setNodeRef}
         className="[&::-webkit-scrollbar]:hidden"
         style={{
+          flex: 1,
           padding: 8,
+          paddingBottom: 38,
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
-          minHeight: 100,
           background: isOver ? 'rgba(98, 149, 132, 0.08)' : 'rgba(0, 0, 0, 0.02)',
           borderRadius: '0 0 var(--radius-column) var(--radius-column)',
           transition: 'background 0.15s',

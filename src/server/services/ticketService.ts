@@ -1,6 +1,6 @@
 import { db } from '@/server/db';
 import { tickets } from '@/server/db/schema';
-import { eq, min, ne, asc, and, gt } from 'drizzle-orm';
+import { eq, min, ne, asc, and } from 'drizzle-orm';
 import {
   TICKET_STATUS,
   TICKET_PRIORITY,

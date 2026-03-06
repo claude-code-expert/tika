@@ -49,7 +49,7 @@ export default async function TeamBurndownPage({
   const storyPointsTotal = burndownData.length > 0 ? burndownData[0].remainingPoints : 0;
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>

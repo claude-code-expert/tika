@@ -2,49 +2,75 @@
 
 import type { Label } from '@/types/index';
 
-type LabelSize = 'xs' | 'sm';
-
-interface LabelBadgeProps {
-  label: Label;
-  size?: LabelSize;
+// luminosity-based text color (same logic as LabelSection)
+function labelTextColor(hex: string): string {
+  try {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? '#333' : '#fff';
+  } catch {
+    return '#fff';
+  }
 }
 
-export function LabelBadge({ label, size = 'sm' }: LabelBadgeProps) {
-  const height = size === 'xs' ? 16 : 20;
-  const padding = size === 'xs' ? '0 6px' : '0 8px';
-  const fontSize = size === 'xs' ? 9 : 10;
-  const dotSize = size === 'xs' ? 5 : 6;
-  const gap = size === 'xs' ? 3 : 4;
+interface LabelBadgeProps {
+  label: Pick<Label, 'name' | 'color'>;
+  size?: 'sm' | 'md';
+  onRemove?: () => void;
+}
+
+export function LabelBadge({ label, size = 'sm', onRemove }: LabelBadgeProps) {
+  const tc = labelTextColor(label.color);
+  const sizeStyle =
+    size === 'md'
+      ? { height: 24, padding: '0 12px', borderRadius: 12, fontSize: 12, fontWeight: 600 }
+      : { height: 20, padding: '0 9px', borderRadius: 10, fontSize: 11, fontWeight: 500 };
 
   return (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap,
-        height,
-        padding,
-        borderRadius: 4,
-        fontSize,
-        fontWeight: 600,
-        fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-        whiteSpace: 'nowrap',
-        userSelect: 'none',
-        backgroundColor: label.color + '22',
-        color: label.color,
+        gap: 5,
+        whiteSpace: 'nowrap' as const,
+        userSelect: 'none' as const,
+        background: label.color,
+        color: tc,
+        flexShrink: 0,
+        ...sizeStyle,
       }}
     >
-      <span
-        style={{
-          display: 'inline-block',
-          borderRadius: '50%',
-          backgroundColor: label.color,
-          width: dotSize,
-          height: dotSize,
-          flexShrink: 0,
-        }}
-      />
       {label.name}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          aria-label={`${label.name} 라벨 제거`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 12,
+            height: 12,
+            border: 'none',
+            background: 'transparent',
+            color: 'inherit',
+            cursor: 'pointer',
+            padding: 0,
+            opacity: 0.7,
+            fontSize: 11,
+            lineHeight: 1,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+        >
+          ×
+        </button>
+      )}
     </span>
   );
 }
+
+// re-export text color utility for reuse
+export { labelTextColor };

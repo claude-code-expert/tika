@@ -19,6 +19,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 100 }).notNull(),
   avatarUrl: text('avatar_url'),
+  userType: varchar('user_type', { length: 20 }), // NULL = onboarding incomplete | 'USER' = personal | 'WORKSPACE' = team
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -31,6 +32,7 @@ export const workspaces = pgTable('workspaces', {
     .notNull()
     .references(() => users.id),
   type: varchar('type', { length: 10 }).notNull().default('PERSONAL'), // 'PERSONAL' | 'TEAM'
+  isSearchable: boolean('is_searchable').notNull().default(false), // false = private, true = visible in search
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -277,5 +279,28 @@ export const ticketAssignees = pgTable(
   (table) => [
     primaryKey({ columns: [table.ticketId, table.memberId] }),
     index('idx_ticket_assignees_member_id').on(table.memberId),
+  ],
+);
+
+// 15. workspace_join_requests — join request from user to workspace (onboarding flow)
+export const workspaceJoinRequests = pgTable(
+  'workspace_join_requests',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    message: text('message'),
+    status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING' | 'APPROVED' | 'REJECTED'
+    reviewedBy: integer('reviewed_by').references(() => members.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('join_requests_workspace_user_unique').on(table.workspaceId, table.userId),
+    index('idx_join_requests_workspace_status').on(table.workspaceId, table.status),
   ],
 );

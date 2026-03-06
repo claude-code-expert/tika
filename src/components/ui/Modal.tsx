@@ -10,10 +10,14 @@ interface ModalProps {
   title?: string;
   headerContent?: React.ReactNode;
   maxWidth?: number;
+  maxHeight?: string;
+  height?: string;
+  headerPadding?: string;
   resizable?: boolean;
+  hideCloseButton?: boolean;
 }
 
-export function Modal({ isOpen, onClose, children, title, headerContent, maxWidth = 560, resizable = false }: ModalProps) {
+export function Modal({ isOpen, onClose, children, title, headerContent, maxWidth = 560, maxHeight, height, headerPadding, resizable = false, hideCloseButton = false }: ModalProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [modalSize, setModalSize] = useState<{ width: number | null; height: number | null }>({ width: null, height: null });
   const modalRef = useRef<HTMLDivElement>(null);
@@ -127,8 +131,8 @@ export function Modal({ isOpen, onClose, children, title, headerContent, maxWidt
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           width: modalSize.width ? `${modalSize.width}px` : '100%',
           maxWidth: isMobile ? '100%' : (modalSize.width ? 'none' : maxWidth),
-          maxHeight: isMobile ? '92vh' : (modalSize.height ? 'none' : '90vh'),
-          height: modalSize.height ? `${modalSize.height}px` : undefined,
+          maxHeight: isMobile ? '92vh' : (modalSize.height ? 'none' : (maxHeight ?? '90vh')),
+          height: modalSize.height ? `${modalSize.height}px` : (isMobile ? undefined : height),
           display: 'flex',
           flexDirection: 'column',
           animation: 'modalIn 0.2s ease-out',
@@ -139,7 +143,7 @@ export function Modal({ isOpen, onClose, children, title, headerContent, maxWidt
         {/* Header — always visible */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: headerPadding ?? '16px 20px',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -165,27 +169,29 @@ export function Modal({ isOpen, onClose, children, title, headerContent, maxWidt
               ) : null
             )}
           </div>
-          <button
-            className="modal-close-btn"
-            onClick={onClose}
-            style={{
-              flexShrink: 0,
-              width: 28,
-              height: 28,
-              border: 'none',
-              background: 'transparent',
-              borderRadius: 6,
-              cursor: 'pointer',
-              color: 'var(--color-text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.1s, color 0.1s',
-            }}
-            aria-label="닫기"
-          >
-            <X size={16} />
-          </button>
+          {!hideCloseButton && (
+            <button
+              className="modal-close-btn"
+              onClick={onClose}
+              style={{
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                border: 'none',
+                background: 'transparent',
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.1s, color 0.1s',
+              }}
+              aria-label="닫기"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {children}

@@ -43,6 +43,13 @@
       "when": 1772587918637,
       "tag": "0005_lyrical_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772641543538,
+      "tag": "0006_talented_stryfe",
+      "breakpoints": true
     }
   ]
 }

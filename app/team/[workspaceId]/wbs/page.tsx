@@ -60,7 +60,7 @@ export default async function TeamWbsPage({
   const endDate = new Date(new Date(maxDate).getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
         {/* Header */}
         <div style={{ marginBottom: 20 }}>

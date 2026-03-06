@@ -258,3 +258,24 @@ export type CreateInviteInput = z.infer<typeof createInviteSchema>;
 export type CreateSprintInput = z.infer<typeof createSprintSchema>;
 export type UpdateSprintInput = z.infer<typeof updateSprintSchema>;
 export type CompleteSprintInput = z.infer<typeof completeSprintSchema>;
+
+// Onboarding schemas
+export const patchUserTypeSchema = z.object({
+  userType: z.enum(['USER', 'WORKSPACE']),
+});
+
+export const postJoinRequestSchema = z.object({
+  message: z.string().max(500).optional(),
+});
+
+export const patchJoinRequestSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT']),
+});
+
+export const workspaceSearchSchema = z.object({
+  q: z.string().min(1).max(50),
+});
+
+export type PatchUserTypeInput = z.infer<typeof patchUserTypeSchema>;
+export type PostJoinRequestInput = z.infer<typeof postJoinRequestSchema>;
+export type PatchJoinRequestInput = z.infer<typeof patchJoinRequestSchema>;

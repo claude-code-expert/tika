@@ -1,6 +1,6 @@
 export class TicketNotFoundError extends Error {
   constructor(id: number) {
-    super(`티켓을 찾을 수 없습니다`);
+    super(`티켓을 찾을 수 없습니다 (id: ${id})`);
     this.name = 'TicketNotFoundError';
   }
 }

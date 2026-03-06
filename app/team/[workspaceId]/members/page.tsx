@@ -4,11 +4,13 @@ import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
 import { getMemberWorkload } from '@/db/queries/analytics';
 import { getBoardData } from '@/db/queries/tickets';
+import { getJoinRequests } from '@/db/queries/joinRequests';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { MemberDetailCard } from '@/components/team/MemberDetailCard';
 import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
 import { RoleBadge } from '@/components/ui/RoleBadge';
+import { JoinRequestList } from '@/components/workspace/JoinRequestList';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
 
 export default async function TeamMembersPage({
@@ -34,16 +36,17 @@ export default async function TeamMembersPage({
   const role = currentMember.role as TeamRole;
   const isOwner = role === 'OWNER';
 
-  const [workload, boardData, allMembers] = await Promise.all([
+  const [workload, boardData, allMembers, pendingRequests] = await Promise.all([
     getMemberWorkload(workspaceId),
     getBoardData(workspaceId),
     getMembersByWorkspace(workspaceId),
+    isOwner ? getJoinRequests(workspaceId, 'PENDING') : Promise.resolve([]),
   ]);
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -143,6 +146,11 @@ export default async function TeamMembersPage({
             ))}
           </div>
         </section>
+
+        {/* Join requests section (OWNER only) */}
+        {isOwner && (
+          <JoinRequestList workspaceId={workspaceId} initialRequests={pendingRequests} />
+        )}
       </div>
     </TeamShell>
   );

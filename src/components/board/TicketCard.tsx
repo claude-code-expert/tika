@@ -1,16 +1,14 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { TicketWithMeta, IssueType } from '@/types/index';
 import { AlertTriangle, Calendar, CheckSquare } from 'lucide-react';
-
-const TICKET_TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
-  GOAL: { bg: '#8B5CF6', abbr: 'G' },
-  STORY: { bg: '#3B82F6', abbr: 'S' },
-  FEATURE: { bg: '#10B981', abbr: 'F' },
-  TASK: { bg: '#F59E0B', abbr: 'T' },
-};
+import { TICKET_TYPE_META } from '@/lib/constants';
+import { PriorityBadge } from '@/components/ui/Chips';
+import { LabelBadge } from '@/components/label/LabelBadge';
+import { Toast } from '@/components/ui/Toast';
 
 const ISSUE_TAG_STYLES: Record<IssueType, { bg: string; color: string }> = {
   GOAL: { bg: '#F3E8FF', color: '#8B5CF6' },
@@ -18,18 +16,6 @@ const ISSUE_TAG_STYLES: Record<IssueType, { bg: string; color: string }> = {
   FEATURE: { bg: '#D1FAE5', color: '#10B981' },
 };
 
-const PRIORITY_STYLES = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Critical' },
-  HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
-  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Medium' },
-  LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
-};
-
-const DUE_BADGE_STYLES = {
-  normal: { bg: '#F0FDF4', color: '#16A34A' },
-  soon: { bg: '#FEF9C3', color: '#A16207' },
-  overdue: { bg: '#FEE2E2', color: '#DC2626' },
-};
 
 function getDueDateState(
   dueDate: string | null,
@@ -53,9 +39,19 @@ interface TicketCardProps {
 }
 
 export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) {
+  const [copied, setCopied] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
+
+  const handleCopyId = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `${workspaceName}-${ticket.id}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [workspaceName, ticket.id]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,8 +63,7 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
   const totalCount = ticket.checklistItems.length;
   const dueDateState = getDueDateState(ticket.dueDate, ticket.isOverdue);
   const issueStyle = ticket.issue ? ISSUE_TAG_STYLES[ticket.issue.type] : null;
-  const priorityStyle = PRIORITY_STYLES[ticket.priority];
-  const typeIndicator = TICKET_TYPE_INDICATOR[ticket.type] ?? TICKET_TYPE_INDICATOR.TASK;
+  const typeIndicator = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
 
   const handleClick = () => {
     if (!isDragging) onClick?.();
@@ -155,6 +150,8 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
         )}
         {workspaceName && (
           <span
+            onClick={handleCopyId}
+            title="클릭하여 복사"
             style={{
               fontSize: 11,
               fontWeight: 500,
@@ -162,7 +159,13 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
               whiteSpace: 'nowrap',
               flexShrink: 0,
               marginLeft: 'auto',
+              cursor: 'pointer',
+              padding: '1px 4px',
+              borderRadius: 3,
+              transition: 'background 0.1s',
             }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.06)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
             {workspaceName}-{ticket.id}
           </span>
@@ -215,35 +218,11 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         {/* Priority badge */}
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            padding: '2px 7px',
-            borderRadius: 4,
-            background: priorityStyle.bg,
-            color: priorityStyle.color,
-          }}
-        >
-          {priorityStyle.label}
-        </span>
+        <PriorityBadge priority={ticket.priority} size="sm" />
 
         {/* Labels */}
         {ticket.labels && ticket.labels.map((label) => (
-          <span
-            key={label.id}
-            style={{
-              fontSize: 9,
-              fontWeight: 600,
-              padding: '1px 6px',
-              borderRadius: 3,
-              background: label.color,
-              color: '#fff',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {label.name}
-          </span>
+          <LabelBadge key={label.id} label={label} size="sm" />
         ))}
 
         {/* Due date badge */}
@@ -325,6 +304,8 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
           );
         })()}
       </div>
+
+      {copied && <Toast message="복사되었습니다" />}
     </div>
   );
 }

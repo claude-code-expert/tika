@@ -124,15 +124,18 @@ export function TicketModal({
 
   // ── fetch issues, members, comments ──
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
     Promise.all([
-      fetch('/api/issues').then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/members').then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/tickets/${ticket.id}/comments`).then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/issues', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/members', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`/api/tickets/${ticket.id}/comments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]).then(([issuesData, membersData, commentsData]) => {
       if (issuesData?.issues) setAllIssues(issuesData.issues);
       if (membersData?.members) setAllMembers(membersData.members);
       if (commentsData?.comments) setCommentList(commentsData.comments);
     });
+    return () => controller.abort();
   }, [ticket.id]);
 
   // ── outside click: label picker ──
@@ -870,15 +873,15 @@ export function TicketModal({
                                   alignItems: 'center',
                                   height: 22,
                                   padding: '0 10px',
-                                  borderRadius: 11,
+                                  borderRadius: 4,
                                   fontSize: 11,
                                   fontWeight: 500,
                                   cursor: isUsed ? 'default' : 'pointer',
-                                  border: isUsed ? `2px solid ${label.color}` : '2px solid transparent',
-                                  background: label.color,
-                                  color: labelTextColor(label.color),
+                                  border: `1px solid ${label.color}`,
+                                  background: isUsed ? `${label.color}18` : 'transparent',
+                                  color: '#2C3E50',
                                   fontFamily: 'inherit',
-                                  opacity: isUsed ? 0.4 : 1,
+                                  opacity: isUsed ? 0.5 : 1,
                                   transition: 'opacity 0.12s',
                                   pointerEvents: isUsed ? 'none' : 'auto',
                                 }}

@@ -38,6 +38,11 @@ export function useTickets(initialData?: BoardData) {
     }
   }, [initialData, fetchBoard]);
 
+  // Sync when server re-renders with new initialData (e.g. after router.refresh())
+  useEffect(() => {
+    if (initialData) setBoard(initialData);
+  }, [initialData]);
+
   const createTicket = useCallback(
     async (data: CreateTicketInput) => {
       const res = await fetch('/api/tickets', {

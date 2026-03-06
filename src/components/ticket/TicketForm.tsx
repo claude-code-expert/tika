@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import useSWR from 'swr';
 import type { TicketWithMeta, Issue, Label, Member, Sprint } from '@/types/index';
 import { TICKET_TYPE, TICKET_PRIORITY, TICKET_STATUS } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
@@ -8,6 +9,7 @@ import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS } from '@/lib/constants';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
 import { labelTextColor } from '@/components/label/LabelBadge';
 import { FileText, Users, Tag, CheckSquare } from 'lucide-react';
+import { fetcher } from '@/lib/fetcher';
 
 /* ── Type badge config (breadcrumb.html large style) ── */
 const TYPE_CONFIG = [
@@ -122,40 +124,42 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const [sprintId, setSprintId] = useState<number | null>(initialData?.sprintId ?? null);
   const [activeSprints, setActiveSprints] = useState<Sprint[]>([]);
 
-  /* ── Fetch labels, issues, members, sprints on mount (parallel) ── */
+  /* ── Load labels, issues, members, sprints via SWR ── */
+  const { data: labelsData } = useSWR<{ labels: Label[] }>('/api/labels', fetcher);
+  const { data: issuesData } = useSWR<{ issues: Issue[] }>('/api/issues', fetcher);
+  const { data: membersData } = useSWR<{ members: Member[] }>('/api/members', fetcher);
+  const { data: sprintsData } = useSWR<{ sprints: Sprint[] }>(
+    workspaceId ? `/api/workspaces/${workspaceId}/sprints` : null,
+    fetcher,
+  );
+
   useEffect(() => {
-    Promise.all([
-      fetch('/api/labels').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('/api/issues').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('/api/members').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      workspaceId
-        ? fetch(`/api/workspaces/${workspaceId}/sprints`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
-        : Promise.resolve(null),
-    ]).then(([labelsData, issuesData, membersData, sprintsData]: [
-      { labels?: Label[] } | null,
-      { issues?: Issue[] } | null,
-      { members?: Member[] } | null,
-      { sprints?: Sprint[] } | null,
-    ]) => {
-      if (labelsData?.labels) setAllLabels(labelsData.labels);
-      if (issuesData?.issues) setAllIssues(issuesData.issues);
-      if (membersData?.members) {
-        const mems = membersData.members;
-        setAllMembers(mems);
-        if (selectedAssigneeIds.length === 0 && mems.length > 0 && mode === 'create') {
-          const self = mems[0];
-          setSelectedAssigneeIds([self.id]);
-          setAssigneeInputText(self.displayName);
-        } else if (initialData?.assignees?.length) {
-          setAssigneeInputText(initialData.assignees.map((a) => a.displayName).join(', '));
-        }
-      }
-      if (sprintsData?.sprints) {
-        setActiveSprints(sprintsData.sprints.filter((s) => s.status === 'ACTIVE' || s.status === 'PLANNED'));
-      }
-    });
+    if (labelsData?.labels) setAllLabels(labelsData.labels);
+  }, [labelsData]);
+
+  useEffect(() => {
+    if (issuesData?.issues) setAllIssues(issuesData.issues);
+  }, [issuesData]);
+
+  useEffect(() => {
+    const members = membersData?.members;
+    if (!members?.length) return;
+    setAllMembers(members);
+    if (selectedAssigneeIds.length === 0 && mode === 'create') {
+      const self = members[0];
+      setSelectedAssigneeIds([self.id]);
+      setAssigneeInputText(self.displayName);
+    } else if (initialData?.assignees?.length) {
+      setAssigneeInputText(initialData.assignees.map((a) => a.displayName).join(', '));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [membersData]);
+
+  useEffect(() => {
+    const sprints = sprintsData?.sprints ?? [];
+    const active = sprints.filter((s) => s.status === 'ACTIVE' || s.status === 'PLANNED');
+    setActiveSprints(active);
+  }, [sprintsData]);
 
   /* ── Close issue dropdown on outside click ── */
   useEffect(() => {
@@ -452,7 +456,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
                     <button key={label.id} type="button"
                       onClick={() => handleLabelToggle(label.id)}
                       disabled={!isSelected && isAtLimit}
-                      style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 9px', borderRadius: 10, fontSize: 11, fontWeight: 500, cursor: !isSelected && isAtLimit ? 'not-allowed' : 'pointer', border: 'none', background: label.color, color: labelTextColor(label.color), fontFamily: 'inherit', transition: 'opacity 0.15s', opacity: !isSelected && isAtLimit ? 0.4 : 1, boxShadow: isSelected ? `0 0 0 2px #fff, 0 0 0 4px ${label.color}` : 'none' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 9px', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: !isSelected && isAtLimit ? 'not-allowed' : 'pointer', border: `1px solid ${label.color}`, background: isSelected ? `${label.color}18` : 'transparent', color: '#2C3E50', fontFamily: 'inherit', transition: 'opacity 0.15s, background 0.12s', opacity: !isSelected && isAtLimit ? 0.4 : 1 }}
                     >
                       {label.name}
                     </button>

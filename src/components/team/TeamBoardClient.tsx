@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -26,6 +26,7 @@ import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import type { TicketWithMeta, BoardData } from '@/types/index';
+import { useBoardRefreshRegistry } from '@/lib/board-refresh-context';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const BACKLOG_MIN = 180;
@@ -366,8 +367,11 @@ interface TeamBoardClientProps {
 }
 
 export function TeamBoardClient({ initialData, currentMemberId }: TeamBoardClientProps) {
-  const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder } =
+  const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder, fetchBoard } =
     useTickets(initialData);
+
+  const { register } = useBoardRefreshRegistry();
+  useEffect(() => { register(fetchBoard); }, [register, fetchBoard]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<TicketWithMeta | null>(null);

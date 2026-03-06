@@ -23,8 +23,9 @@ export function ConfirmDialog({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
     },
-    [onCancel],
+    [onCancel, onConfirm],
   );
 
   useEffect(() => {

@@ -6,9 +6,10 @@ import type { WorkspaceWithRole } from '@/types/index';
 
 interface WorkspaceSwitcherProps {
   currentWorkspaceId: number;
+  currentWorkspaceName?: string;
 }
 
-export function WorkspaceSwitcher({ currentWorkspaceId }: WorkspaceSwitcherProps) {
+export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: WorkspaceSwitcherProps) {
   const router = useRouter();
   const [workspaces, setWorkspaces] = useState<WorkspaceWithRole[]>([]);
   const [open, setOpen] = useState(false);
@@ -32,7 +33,8 @@ export function WorkspaceSwitcher({ currentWorkspaceId }: WorkspaceSwitcherProps
   }, []);
 
   const current = workspaces.find((w) => w.id === currentWorkspaceId);
-  const currentName = current?.name ?? '워크스페이스';
+  // Use server-provided name as fallback to avoid flash of '워크스페이스' before API loads
+  const currentName = current?.name ?? currentWorkspaceName ?? '워크스페이스';
 
   function handleSelect(ws: WorkspaceWithRole) {
     setOpen(false);

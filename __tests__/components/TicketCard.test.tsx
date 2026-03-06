@@ -45,7 +45,7 @@ describe('TicketCard', () => {
     render(<TicketCard ticket={baseTicket} />);
 
     expect(screen.getByText('API 설계 문서 작성')).toBeInTheDocument();
-    expect(screen.getByText('Med')).toBeInTheDocument();
+    expect(screen.getByText('Medium')).toBeInTheDocument();
   });
 
   it('타입 인디케이터가 표시된다', () => {
@@ -96,7 +96,7 @@ describe('TicketCard', () => {
     expect(screen.getByText('Bug')).toBeInTheDocument();
   });
 
-  it('라벨이 4개 이상이면 +N 오버플로우가 표시된다', () => {
+  it('라벨이 여러 개이면 모든 라벨이 표시된다', () => {
     const withManyLabels: TicketWithMeta = {
       ...baseTicket,
       labels: Array.from({ length: 5 }, (_, i) => ({
@@ -108,7 +108,7 @@ describe('TicketCard', () => {
       })),
     };
     render(<TicketCard ticket={withManyLabels} />);
-    expect(screen.getByText('+2')).toBeInTheDocument();
+    expect(screen.getByText('라벨5')).toBeInTheDocument();
   });
 
   it('체크리스트가 있으면 완료/전체 카운트가 표시된다', () => {
@@ -142,9 +142,9 @@ describe('TicketCard', () => {
 
   it.each([
     ['LOW', 'Low'],
-    ['MEDIUM', 'Med'],
+    ['MEDIUM', 'Medium'],
     ['HIGH', 'High'],
-    ['CRITICAL', 'Crit'],
+    ['CRITICAL', 'Critical'],
   ] as const)('priority=%s → "%s" 뱃지가 표시된다', (priority, label) => {
     render(<TicketCard ticket={{ ...baseTicket, priority }} />);
     expect(screen.getByText(label)).toBeInTheDocument();

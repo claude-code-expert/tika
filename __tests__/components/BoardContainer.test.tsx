@@ -40,9 +40,12 @@ const mockTicket: TicketWithMeta = {
   status: 'TODO',
   priority: 'HIGH',
   position: 0,
+  startDate: null,
   dueDate: '2026-03-15',
   issueId: null,
   assigneeId: null,
+  sprintId: null,
+  storyPoints: null,
   completedAt: null,
   createdAt: '2026-02-17T00:00:00.000Z',
   updatedAt: '2026-02-17T00:00:00.000Z',
@@ -51,6 +54,7 @@ const mockTicket: TicketWithMeta = {
   checklistItems: [],
   issue: null,
   assignee: null,
+  assignees: [],
 };
 
 const mockBoard: BoardData = {
@@ -81,12 +85,12 @@ beforeEach(() => {
 describe('BoardContainer', () => {
   it('"새 업무 생성" 모달이 표시된다 (isCreating=true)', () => {
     render(<BoardContainer {...defaultProps} isCreating={true} />);
-    expect(screen.getByText('새 업무 생성')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('업무 제목을 입력하세요')).toBeInTheDocument();
   });
 
   it('isCreating=false이면 생성 모달이 표시되지 않는다', () => {
     render(<BoardContainer {...defaultProps} />);
-    expect(screen.queryByText('새 업무 생성')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('업무 제목을 입력하세요')).not.toBeInTheDocument();
   });
 
   it('3개 칼럼 헤더(TODO/In Progress/Done)가 표시된다', () => {

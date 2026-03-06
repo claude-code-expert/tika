@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
 import type { Member, NotificationLog } from '@/types/index';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, Users, Plus, ChevronRight } from 'lucide-react';
+import type { WorkspaceWithRole } from '@/types/index';
+import { useOutsideClick } from '@/hooks/useOutsideClick';
 
 interface HeaderProps {
   onNewTask?: () => void;
@@ -42,6 +45,13 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  // Team workspace state
+  const [teamWorkspaces, setTeamWorkspaces] = useState<WorkspaceWithRole[]>([]);
+  const [isTeamOpen, setIsTeamOpen] = useState(false);
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const teamRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
   const displayName = member?.displayName ?? user?.name ?? '사용자';
   const avatarColor = member?.color ?? '#629584';
   const initial = displayName.slice(0, 2).toUpperCase();
@@ -54,6 +64,46 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  // Fetch team workspaces
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/workspaces')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { workspaces?: WorkspaceWithRole[] } | null) => {
+        if (data?.workspaces) {
+          setTeamWorkspaces(data.workspaces.filter((w) => w.type === 'TEAM'));
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  useOutsideClick(teamRef, isTeamOpen, () => setIsTeamOpen(false));
+
+  const handleCreateTeam = async () => {
+    const name = prompt('팀 워크스페이스 이름을 입력하세요');
+    if (!name?.trim()) return;
+    setIsCreatingTeam(true);
+    try {
+      const res = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), type: 'TEAM' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const ws = data.workspace as WorkspaceWithRole;
+        setTeamWorkspaces((prev) => [...prev, ws]);
+        setIsTeamOpen(false);
+        router.push(`/team/${ws.id}`);
+      } else {
+        const err = await res.json();
+        alert(err?.error?.message ?? '생성 실패');
+      }
+    } finally {
+      setIsCreatingTeam(false);
+    }
+  };
 
   // Fetch member data
   useEffect(() => {
@@ -83,40 +133,24 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   }, [user]);
 
   // Close notif dropdown on outside click → mark as read
-  useEffect(() => {
-    if (!isNotifOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setIsNotifOpen(false);
-        if (unreadCount > 0) {
-          fetch('/api/notifications/logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'markAllRead' }),
-          })
-            .then(() => {
-              setUnreadCount(0);
-              setNotifLogs((prev) => prev.map((l) => ({ ...l, isRead: true })));
-            })
-            .catch(() => {});
-        }
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [isNotifOpen, unreadCount]);
+  const handleNotifClose = useCallback(() => {
+    setIsNotifOpen(false);
+    if (unreadCount > 0) {
+      fetch('/api/notifications/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'markAllRead' }),
+      })
+        .then(() => {
+          setUnreadCount(0);
+          setNotifLogs((prev) => prev.map((l) => ({ ...l, isRead: true })));
+        })
+        .catch(() => {});
+    }
+  }, [unreadCount]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!isDropdownOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [isDropdownOpen]);
+  useOutsideClick(notifRef, isNotifOpen, handleNotifClose);
+  useOutsideClick(dropdownRef, isDropdownOpen, () => setIsDropdownOpen(false));
 
   // Close dropdown on ESC
   useEffect(() => {
@@ -316,11 +350,203 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             </button>
           )}
 
+          {/* Team workspace button + dropdown */}
+          <div ref={teamRef} style={{ position: 'relative' }}>
+            <button
+              aria-label="팀 워크스페이스"
+              title="팀 워크스페이스"
+              onClick={() => {
+                setIsNotifOpen(false);
+                setIsDropdownOpen(false);
+                setIsTeamOpen((prev) => !prev);
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                border: 'none',
+                background: isTeamOpen ? 'var(--color-sidebar-bg)' : 'transparent',
+                borderRadius: 'var(--radius-button)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isTeamOpen ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                transition: 'background 0.15s, color 0.15s',
+                position: 'relative',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isTeamOpen) (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
+            >
+              <Users size={16} />
+              {teamWorkspaces.length > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 3,
+                    right: 3,
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: 'var(--color-accent)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+            </button>
+
+            {/* Team workspace dropdown */}
+            {isTeamOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  right: 0,
+                  width: 280,
+                  background: '#fff',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  border: '1px solid var(--color-border)',
+                  zIndex: 100,
+                  overflow: 'hidden',
+                  animation: 'modalIn 0.15s ease-out',
+                }}
+              >
+                {/* Header */}
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Users size={13} style={{ color: 'var(--color-accent)' }} />
+                    팀 워크스페이스
+                  </span>
+                  <button
+                    onClick={handleCreateTeam}
+                    disabled={isCreatingTeam}
+                    title="새 팀 만들기"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--color-accent)',
+                      background: 'none',
+                      border: '1px solid var(--color-accent)',
+                      borderRadius: 5,
+                      cursor: isCreatingTeam ? 'default' : 'pointer',
+                      opacity: isCreatingTeam ? 0.5 : 1,
+                      fontFamily: 'inherit',
+                      padding: '3px 8px',
+                    }}
+                  >
+                    <Plus size={11} /> 새 팀
+                  </button>
+                </div>
+
+                {/* Workspace list */}
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                  {teamWorkspaces.length === 0 ? (
+                    <div style={{ padding: '20px 14px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 10 }}>
+                        팀 워크스페이스가 없습니다
+                      </p>
+                      <button
+                        onClick={handleCreateTeam}
+                        disabled={isCreatingTeam}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#fff',
+                          background: 'var(--color-accent)',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '6px 14px',
+                          cursor: isCreatingTeam ? 'default' : 'pointer',
+                          fontFamily: 'inherit',
+                          opacity: isCreatingTeam ? 0.5 : 1,
+                        }}
+                      >
+                        <Plus size={12} /> 팀 만들기
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '4px 0' }}>
+                      {teamWorkspaces.map((ws) => (
+                        <a
+                          key={ws.id}
+                          href={`/team/${ws.id}`}
+                          onClick={() => setIsTeamOpen(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 14px',
+                            textDecoration: 'none',
+                            transition: 'background 0.1s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F8F9FB')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 7,
+                              background: 'var(--color-accent)',
+                              color: '#fff',
+                              fontSize: 13,
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            }}
+                          >
+                            {ws.name.slice(0, 1).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#2C3E50', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {ws.name}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#8993A4', marginTop: 1 }}>
+                              {ws.role === 'OWNER' ? '관리자' : ws.role === 'MEMBER' ? '멤버' : '뷰어'}
+                            </div>
+                          </div>
+                          <ChevronRight size={13} style={{ color: '#8993A4', flexShrink: 0 }} />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Notification button + dropdown */}
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button
               aria-label="알림"
-              onClick={() => setIsNotifOpen((prev) => !prev)}
+              onClick={() => {
+                setIsNotifOpen((prev) => {
+                  if (!prev) { setIsTeamOpen(false); setIsDropdownOpen(false); }
+                  return !prev;
+                });
+              }}
               style={{
                 width: 32,
                 height: 32,
@@ -609,7 +835,12 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           {/* User Avatar + Dropdown */}
           <div ref={dropdownRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              onClick={() => {
+                setIsDropdownOpen((prev) => {
+                  if (!prev) { setIsTeamOpen(false); setIsNotifOpen(false); }
+                  return !prev;
+                });
+              }}
               title={displayName}
               style={{
                 width: 32,

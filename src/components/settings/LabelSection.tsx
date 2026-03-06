@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { SectionProps } from './types';
 import type { LabelWithCount } from '@/types/index';
+import { LabelBadge } from '@/components/label/LabelBadge';
 
 const PALETTE = [
   '#fb2c36', '#615fff', '#00c950', '#2b7fff', '#ad46ff', '#ff29d3',
@@ -10,15 +11,6 @@ const PALETTE = [
   '#ffac6d', '#f7d1d1', '#f7a2ff', '#c1d1ff', '#c5dbdc',
 ];
 
-function hexLum(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return 0.299 * r + 0.587 * g + 0.114 * b;
-}
-function labelTextColor(bg: string): string {
-  return hexLum(bg) > 160 ? '#333' : '#fff';
-}
 
 function ColorSwatches({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) {
   return (
@@ -186,9 +178,7 @@ export function LabelSection({ showToast }: SectionProps) {
           />
           <ColorSwatches selected={newColor} onSelect={setNewColor} />
           {newName.trim() && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', borderRadius: 11, fontSize: 11, fontWeight: 500, background: newColor, color: labelTextColor(newColor) }}>
-              {newName.trim()}
-            </span>
+            <LabelBadge label={{ name: newName.trim(), color: newColor }} />
           )}
           <button onClick={handleAdd} style={{ ...leInput, height: 30, padding: '0 12px', cursor: 'pointer', background: '#629584', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500 }}>추가</button>
           <button onClick={() => setCreatorOpen(false)} style={{ ...leInput, height: 30, padding: '0 8px', cursor: 'pointer', background: 'transparent', border: 'none', color: '#8993A4' }}>취소</button>
@@ -198,7 +188,6 @@ export function LabelSection({ showToast }: SectionProps) {
       {/* Label List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {labels.map((label) => {
-          const tc = labelTextColor(label.color);
           if (editingId === label.id) {
             return (
               <div key={label.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '12px 14px', background: '#E8F5F0', border: '2px solid #629584', borderRadius: 6 }}>
@@ -212,9 +201,7 @@ export function LabelSection({ showToast }: SectionProps) {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingId(null); }}
                 />
                 <ColorSwatches selected={editColor} onSelect={setEditColor} />
-                <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', borderRadius: 11, fontSize: 11, fontWeight: 500, background: editColor, color: labelTextColor(editColor) }}>
-                  {editName || '미리보기'}
-                </span>
+                <LabelBadge label={{ name: editName || '미리보기', color: editColor }} />
                 <button onClick={handleSaveEdit} style={{ height: 28, padding: '0 10px', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none' }}>저장</button>
                 <button onClick={() => setEditingId(null)} style={{ height: 28, padding: '0 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: 'transparent', border: 'none', color: '#8993A4' }}>취소</button>
               </div>
@@ -222,10 +209,7 @@ export function LabelSection({ showToast }: SectionProps) {
           }
           return (
             <div key={label.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6 }}>
-              <span style={{ width: 14, height: 14, borderRadius: '50%', background: label.color, flexShrink: 0, display: 'inline-block' }} />
-              <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 10px', borderRadius: 11, fontSize: 11, fontWeight: 500, background: label.color, color: tc, flexShrink: 0 }}>
-                {label.name}
-              </span>
+              <LabelBadge label={label} />
               <span style={{ flex: 1, fontSize: 12, fontWeight: 500, minWidth: 0 }}>{label.name}</span>
               <span style={{ fontSize: 11, color: '#8993A4', fontFamily: 'monospace', minWidth: 60 }}>{label.color}</span>
               <span style={{ fontSize: 11, color: '#8993A4', whiteSpace: 'nowrap' }}>{label.ticketCount}개 티켓</span>

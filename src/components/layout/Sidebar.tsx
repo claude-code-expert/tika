@@ -1,26 +1,18 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
 import type { TicketWithMeta } from '@/types/index';
 import { ChevronRight, ChevronLeft, X } from 'lucide-react';
-
-const TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
-  GOAL: { bg: '#8B5CF6', abbr: 'G' },
-  STORY: { bg: '#3B82F6', abbr: 'S' },
-  FEATURE: { bg: '#10B981', abbr: 'F' },
-  TASK: { bg: '#F59E0B', abbr: 'T' },
-};
-
-const PRIORITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Critical' },
-  HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
-  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Medium' },
-  LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
-};
+import { useResizable } from '@/hooks/useResizable';
+import { truncate } from '@/lib/utils';
+import { TICKET_TYPE_META } from '@/lib/constants';
+import { PriorityBadge } from '@/components/ui/Chips';
+import { LabelBadge } from '@/components/label/LabelBadge';
+import { Toast } from '@/components/ui/Toast';
 
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 400;
@@ -39,11 +31,8 @@ function formatDeadline(dueDate: string | null, isOverdue: boolean): string | nu
   return dueDate;
 }
 
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text;
-}
 
-function SidebarTask({ ticket, onClick, workspaceName }: { ticket: TicketWithMeta; onClick?: () => void; workspaceName?: string }) {
+function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: () => void; workspaceName?: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
@@ -54,8 +43,7 @@ function SidebarTask({ ticket, onClick, workspaceName }: { ticket: TicketWithMet
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const type = TYPE_INDICATOR[ticket.type] ?? TYPE_INDICATOR.TASK;
-  const priority = PRIORITY_STYLES[ticket.priority] ?? PRIORITY_STYLES.MEDIUM;
+  const type = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
   const deadline = formatDeadline(ticket.dueDate, ticket.isOverdue);
 
   return (
@@ -133,19 +121,7 @@ function SidebarTask({ ticket, onClick, workspaceName }: { ticket: TicketWithMet
         }}
       >
         {/* Left: Priority */}
-        <span
-          style={{
-            fontSize: 9,
-            fontWeight: 600,
-            padding: '1px 5px',
-            borderRadius: 3,
-            background: priority.bg,
-            color: priority.color,
-            flexShrink: 0,
-          }}
-        >
-          {priority.label}
-        </span>
+        <PriorityBadge priority={ticket.priority} size="sm" />
         {/* Center: Labels */}
         <div
           style={{
@@ -159,24 +135,7 @@ function SidebarTask({ ticket, onClick, workspaceName }: { ticket: TicketWithMet
           }}
         >
           {ticket.labels.map((label) => (
-            <span
-              key={label.id}
-              style={{
-                fontSize: 9,
-                fontWeight: 600,
-                padding: '1px 5px',
-                borderRadius: 3,
-                background: label.color,
-                color: '#fff',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                flexShrink: 1,
-                minWidth: 0,
-              }}
-            >
-              {label.name}
-            </span>
+            <LabelBadge key={label.id} label={label} size="sm" />
           ))}
         </div>
         {/* Right: Deadline */}
@@ -219,8 +178,8 @@ export function Sidebar({
 }: SidebarProps) {
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
   const [collapsed, setCollapsed] = useState(false);
-  const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [isMobile, setIsMobile] = useState(false);
+  const { width, handleResizeStart, isResizing } = useResizable(SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX);
   const [toast, setToast] = useState(false);
 
   const showToast = () => {
@@ -235,36 +194,6 @@ export function Sidebar({
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-  const isResizing = useRef(false);
-  const startX = useRef(0);
-  const startWidth = useRef(SIDEBAR_DEFAULT);
-
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    startX.current = e.clientX;
-    startWidth.current = width;
-
-    const onMove = (ev: MouseEvent) => {
-      if (!isResizing.current) return;
-      const delta = ev.clientX - startX.current;
-      const next = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startWidth.current + delta));
-      setWidth(next);
-    };
-
-    const onUp = () => {
-      isResizing.current = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [width]);
 
   return (
     <>
@@ -598,28 +527,7 @@ export function Sidebar({
       </aside>
     </div>
 
-    {/* Toast */}
-    {toast && (
-      <div
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(44, 62, 80, 0.92)',
-          color: '#fff',
-          fontSize: 13,
-          fontWeight: 500,
-          padding: '10px 20px',
-          borderRadius: 8,
-          zIndex: 9999,
-          pointerEvents: 'none',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        준비중입니다
-      </div>
-    )}
+    {toast && <Toast message="준비중입니다" />}
     </>
   );
 }

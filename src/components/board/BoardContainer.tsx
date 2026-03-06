@@ -91,6 +91,7 @@ export function BoardContainer({
         isOpen={isCreating}
         onClose={handleCreateClose}
         resizable
+        maxWidth={800}
         headerContent={
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <label

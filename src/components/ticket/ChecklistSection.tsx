@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import type { ChecklistItem } from '@/types/index';
 import { CHECKLIST_MAX_ITEMS } from '@/lib/constants';
 import { CheckSquare } from 'lucide-react';
@@ -107,7 +107,7 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              padding: '2px 10px',
+              padding: '0 8px',
               borderRadius: 6,
               background: hoveredId === item.id ? 'var(--color-board-bg)' : 'transparent',
               transition: 'background 0.1s',
@@ -127,12 +127,14 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
               aria-label={item.text}
             />
             <span
+              onClick={() => onToggle(item.id, !item.isCompleted)}
               style={{
                 flex: 1,
                 fontSize: 13,
                 color: item.isCompleted ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
                 lineHeight: 1.4,
                 textDecoration: item.isCompleted ? 'line-through' : 'none',
+                cursor: 'pointer',
               }}
             >
               {item.text}
@@ -183,10 +185,10 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
             maxLength={200}
             style={{
               flex: 1,
-              padding: '6px 10px',
+              padding: '3.5px 10px',
               border: '1.5px dashed var(--color-border-hover)',
               borderRadius: 5,
-              fontSize: 13,
+              fontSize: 12,
               fontFamily: 'inherit',
               color: 'var(--color-text-primary)',
               background: '#fff',

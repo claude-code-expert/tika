@@ -1,3 +1,42 @@
+// Onboarding: user type
+export const USER_TYPE = {
+  USER: 'USER',
+  WORKSPACE: 'WORKSPACE',
+} as const;
+export type UserType = (typeof USER_TYPE)[keyof typeof USER_TYPE] | null;
+
+// Onboarding: join request status
+export const JOIN_REQUEST_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type JoinRequestStatus = (typeof JOIN_REQUEST_STATUS)[keyof typeof JOIN_REQUEST_STATUS];
+
+export interface JoinRequest {
+  id: number;
+  workspaceId: number;
+  userId: string;
+  message: string | null;
+  status: JoinRequestStatus;
+  reviewedBy: number | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface JoinRequestWithUser extends JoinRequest {
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+}
+
+export interface WorkspaceSearchResult {
+  id: number;
+  name: string;
+  description: string | null;
+  memberCount: number;
+}
+
 export const TICKET_STATUS = {
   BACKLOG: 'BACKLOG',
   TODO: 'TODO',

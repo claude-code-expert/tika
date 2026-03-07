@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -12,7 +13,8 @@ import { truncate } from '@/lib/utils';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
-import { Toast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useSession } from 'next-auth/react';
 
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 400;
@@ -176,15 +178,32 @@ export function Sidebar({
   isMobileOpen = false,
   onMobileClose,
 }: SidebarProps) {
+  const { data: session } = useSession();
+  const workspaceId = (session?.user as Record<string, unknown> | undefined)?.workspaceId as number | undefined;
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { width, handleResizeStart, isResizing } = useResizable(SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX);
-  const [toast, setToast] = useState(false);
+  const router = useRouter();
+  const [showNoWorkspaceModal, setShowNoWorkspaceModal] = useState(false);
+  const [showWorkspaceList, setShowWorkspaceList] = useState(false);
+  const [workspaceList, setWorkspaceList] = useState<Array<{ id: number; name: string; type: string }>>([]);
 
-  const showToast = () => {
-    setToast(true);
-    setTimeout(() => setToast(false), 2000);
+  const handleWorkspaceArrowClick = async () => {
+    if (!workspaceName) {
+      setShowNoWorkspaceModal(true);
+      return;
+    }
+    if (showWorkspaceList) {
+      setShowWorkspaceList(false);
+      return;
+    }
+    const res = await fetch('/api/workspaces');
+    if (res.ok) {
+      const data = await res.json() as { workspaces?: Array<{ id: number; name: string; type: string }> };
+      setWorkspaceList(data.workspaces ?? []);
+    }
+    setShowWorkspaceList(true);
   };
 
   useEffect(() => {
@@ -292,7 +311,7 @@ export function Sidebar({
         }}
       >
       {/* Workspace header */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', position: 'relative' }}>
         <div
           style={{
             display: 'flex',
@@ -352,8 +371,8 @@ export function Sidebar({
             </button>
           ) : (
             <button
-              onClick={showToast}
-              aria-label="설정"
+              onClick={handleWorkspaceArrowClick}
+              aria-label="팀 워크스페이스 참여"
               style={{
                 background: 'none',
                 border: 'none',
@@ -382,6 +401,103 @@ export function Sidebar({
             </button>
           )}
         </div>
+
+        {/* Workspace list dropdown */}
+        {showWorkspaceList && (
+          <>
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 299 }}
+              onClick={() => setShowWorkspaceList(false)}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 300,
+                background: 'var(--color-card-bg)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                overflow: 'hidden',
+              }}
+            >
+              {workspaceList.map((ws) => (
+                <button
+                  key={ws.id}
+                  onClick={() => {
+                    setShowWorkspaceList(false);
+                    router.push(ws.type === 'TEAM' ? `/workspace/${ws.id}` : '/');
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 12px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: 13,
+                    color: 'var(--color-text-primary)',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-hover)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
+                >
+                  <div
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 4,
+                      background: 'var(--color-accent)',
+                      color: '#fff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {ws.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {ws.name}
+                  </span>
+                  {ws.type === 'TEAM' && (
+                    <span style={{ fontSize: 10, color: 'var(--color-text-muted)', flexShrink: 0 }}>팀</span>
+                  )}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setShowWorkspaceList(false);
+                  router.push('/onboarding/workspace');
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 12px',
+                  background: 'none',
+                  border: 'none',
+                  borderTop: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontSize: 13,
+                  color: 'var(--color-text-muted)',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-hover)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
+              >
+                + 워크스페이스 참여 또는 생성
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Backlog list */}
@@ -417,29 +533,9 @@ export function Sidebar({
           >
             내 업무
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-              {backlogTickets.length}건
-            </span>
-            {onAddTicket && (
-              <button
-                onClick={onAddTicket}
-                style={{
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: 'var(--color-accent)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  lineHeight: 1,
-                }}
-                aria-label="새 업무 추가"
-              >
-                +
-              </button>
-            )}
-          </div>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+            {backlogTickets.length}건
+          </span>
         </div>
 
         {isLoading ? (
@@ -462,23 +558,7 @@ export function Sidebar({
               color: 'var(--color-text-muted)',
             }}
           >
-            <p style={{ marginBottom: 8 }}>할 일을 추가해보세요</p>
-            {onAddTicket && (
-              <button
-                onClick={onAddTicket}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'var(--color-accent)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
-              >
-                새 업무 추가 +
-              </button>
-            )}
+            <p>할 일을 추가해보세요</p>
           </div>
         ) : (
           <SortableContext
@@ -496,6 +576,48 @@ export function Sidebar({
           </SortableContext>
         )}
       </div>
+
+      {/* Trash link */}
+      {workspaceId && (
+        <div style={{ flexShrink: 0 }}>
+          <a
+            href={`/workspace/${workspaceId}/trash`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              height: 30,
+              padding: '0 16px',
+              fontSize: 11,
+              color: '#5A6B7F',
+              fontWeight: 400,
+              background: 'transparent',
+              textDecoration: 'none',
+              transition: 'background 0.1s, color 0.1s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#E2E5EA';
+              e.currentTarget.style.color = '#2C3E50';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#5A6B7F';
+            }}
+          >
+            <span style={{ color: '#8993A4', display: 'inline-flex', flexShrink: 0 }}>
+              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" /><path d="M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </span>
+            휴지통
+          </a>
+        </div>
+      )}
 
       {/* Resize handle — desktop only */}
       {!isMobile && !collapsed && (
@@ -527,7 +649,14 @@ export function Sidebar({
       </aside>
     </div>
 
-    {toast && <Toast message="준비중입니다" />}
-    </>
+    <ConfirmDialog
+      isOpen={showNoWorkspaceModal}
+      message="워크스페이스가 없습니다. 개설하시겠습니까?"
+      confirmLabel="확인"
+      confirmVariant="primary"
+      onConfirm={() => router.push('/onboarding')}
+      onCancel={() => setShowNoWorkspaceModal(false)}
+    />
+</>
   );
 }

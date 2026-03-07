@@ -28,6 +28,7 @@ const baseTicket: TicketWithMeta = {
   priority: 'MEDIUM',
   position: 0,
   dueDate: '2026-03-01',
+  plannedEndDate: '2026-03-01',
   parentId: null,
   assigneeId: null,
   completedAt: null,
@@ -59,7 +60,7 @@ describe('TicketCard', () => {
   });
 
   it('dueDate=null이면 날짜가 표시되지 않는다', () => {
-    render(<TicketCard ticket={{ ...baseTicket, dueDate: null }} />);
+    render(<TicketCard ticket={{ ...baseTicket, dueDate: null, plannedEndDate: null }} />);
     expect(screen.queryByText('2026-03-01')).not.toBeInTheDocument();
   });
 

@@ -236,7 +236,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
             icon={<Building2 size={32} />}
             title="워크스페이스"
             description="팀과 함께 협업하는 공간"
-            features={['멤버 초대 & 협업', '워크스페이스별 칸반 보드 관리', '번다운, 간트 차트, 팀 WBS 차트 및 통합 대시보드']}
+            features={['멤버 초대 & 협업', '개인과 분리되는 팀 워크스페이스 제공', '번다운, 간트 차트, 팀 WBS 차트 및 통합 대시보드']}
             isLoading={loading !== null}
             isActive={loading === 'WORKSPACE'}
             onClick={() => handleSelect('WORKSPACE')}

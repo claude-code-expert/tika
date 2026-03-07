@@ -5,6 +5,7 @@ import { db } from '@/db/index';
 import { users, members, workspaces } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
+
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
@@ -22,12 +23,11 @@ export default async function HomePage() {
     workspaceId?: number | null;
   };
 
-  let userType = sessionUser.userType ?? null;
   const userId = sessionUser.id;
+  let userType = sessionUser.userType ?? null;
 
-  // JWT may be stale immediately after onboarding type selection (update() timing).
-  // Fall back to a direct DB lookup when userType is null to avoid spurious /onboarding redirect.
-  if (userType === null && userId) {
+  // JWT may be stale after onboarding — check DB directly to avoid spurious redirect
+  if (!userType && userId) {
     const [dbUser] = await db
       .select({ userType: users.userType })
       .from(users)
@@ -36,27 +36,23 @@ export default async function HomePage() {
     userType = dbUser?.userType ?? null;
   }
 
-  // Onboarding not completed: route to wizard
-  if (userType === null) {
-    redirect('/onboarding');
-  }
+  // Onboarding not completed
+  if (!userType) redirect('/onboarding');
 
-  // Workspace user: route to first team workspace or workspace onboarding
-  if (userType === 'WORKSPACE' && userId) {
-    const [membership] = await db
-      .select({ workspaceId: members.workspaceId })
+  // Route based on primary workspace type
+  if (userId) {
+    const [primary] = await db
+      .select({ workspaceId: members.workspaceId, type: workspaces.type })
       .from(members)
       .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
-      .where(and(eq(members.userId, userId), eq(workspaces.type, 'TEAM')))
+      .where(and(eq(members.userId, userId), eq(members.isPrimary, true)))
       .limit(1);
 
-    if (membership) {
-      redirect(`/team/${membership.workspaceId}`);
-    } else {
-      redirect('/onboarding/workspace');
+    if (primary?.type === 'TEAM') {
+      redirect(`/workspace/${primary.workspaceId}`);
     }
   }
 
-  // USER type: render personal board
+  // Primary is PERSONAL (or no primary set) → render personal board
   return <AppShell />;
 }

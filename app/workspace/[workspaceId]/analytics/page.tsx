@@ -86,7 +86,7 @@ export default async function TeamAnalyticsPage({
   }
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
         {/* Header */}
         <div style={{ marginBottom: 20 }}>

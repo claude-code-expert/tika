@@ -21,6 +21,7 @@ export function GeneralSection({ showToast }: SectionProps) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [iconColor, setIconColor] = useState('#629584');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export function GeneralSection({ showToast }: SectionProps) {
           setWorkspace(ws);
           setName(ws.name);
           setDescription(ws.description ?? '');
+          setIconColor(ws.iconColor ?? '#629584');
         }
       })
       .catch(() => {});
@@ -48,7 +50,7 @@ export function GeneralSection({ showToast }: SectionProps) {
       const res = await fetch(`/api/workspaces/${workspace.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || null }),
+        body: JSON.stringify({ name: name.trim(), description: description.trim() || null, iconColor }),
       });
       if (!res.ok) {
         const data = (await res.json()) as { error?: { message?: string } };
@@ -119,6 +121,31 @@ export function GeneralSection({ showToast }: SectionProps) {
           <div style={{ fontSize: 11, color: '#8993A4', marginTop: -4, paddingLeft: 122 }}>
             프로젝트 설명은 사이드바와 초대 이메일에 표시됩니다.
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ minWidth: 110, fontSize: 12, color: '#5A6B7F', fontWeight: 500, flexShrink: 0 }}>아이콘 색상</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {['#629584', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#10B981', '#ffa8d3', '#c7c758', '#50bef0'].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setIconColor(c)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    backgroundColor: c,
+                    border: iconColor === c ? '2px solid #2C3E50' : '2px solid transparent',
+                    cursor: 'pointer',
+                    padding: 0,
+                    outline: 'none',
+                    transition: 'border-color 0.15s, transform 0.15s',
+                    transform: iconColor === c ? 'scale(1.15)' : 'scale(1)',
+                  }}
+                  aria-label={`아이콘 색상 ${c}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
@@ -136,47 +163,7 @@ export function GeneralSection({ showToast }: SectionProps) {
         </div>
       </div>
 
-      {/* 환경 설정 */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 6, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx={12} cy={12} r={10} />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 16, fontWeight: 600, color: '#2C3E50' }}>환경 설정</span>
-        </div>
-        <p style={{ fontSize: 12, color: '#8993A4', marginBottom: 16, lineHeight: 1.5 }}>시간대, 언어, 날짜 형식 등 프로젝트의 환경 설정을 관리합니다.</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-          {[
-            { label: '시간대', defaultValue: 'Asia/Seoul (UTC+9)', options: ['Asia/Seoul (UTC+9)', 'Asia/Tokyo (UTC+9)', 'America/New_York (UTC-5)', 'America/Los_Angeles (UTC-8)', 'Europe/London (UTC+0)'] },
-            { label: '언어', defaultValue: '한국어', options: ['한국어', 'English', '日本語'] },
-            { label: '날짜 형식', defaultValue: 'YYYY-MM-DD', options: ['YYYY-MM-DD', 'MM/DD/YYYY', 'DD.MM.YYYY'] },
-            { label: '주간 시작일', defaultValue: '월요일', options: ['월요일', '일요일'] },
-          ].map(({ label, options }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ minWidth: 110, fontSize: 12, color: '#5A6B7F', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-              <select style={{ ...fieldInputStyle, cursor: 'pointer' }}>
-                {options.map((o) => <option key={o}>{o}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => showToast('환경 설정이 저장되었습니다', 'success')}
-            style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-              <polyline points="17 21 17 13 7 13 7 21" />
-              <polyline points="7 3 7 8 15 8" />
-            </svg>
-            저장
-          </button>
-        </div>
-      </div>
+
 
       {/* 위험 영역 */}
       <div style={{ border: '1px solid #FECACA', borderRadius: 8, padding: 20, background: '#FFFBFB' }}>

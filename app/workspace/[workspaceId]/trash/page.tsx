@@ -2,12 +2,12 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId } from '@/db/queries/members';
-import { getBoardData } from '@/db/queries/tickets';
+import { getDeletedTickets } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
-import { TeamBoardClient } from '@/components/team/TeamBoardClient';
+import { TrashClient } from '@/components/team/TrashClient';
 import type { TeamRole } from '@/types/index';
 
-export default async function TeamBoardPage({
+export default async function TrashPage({
   params,
 }: {
   params: Promise<{ workspaceId: string }>;
@@ -32,15 +32,11 @@ export default async function TeamBoardPage({
   }
 
   const role = member.role as TeamRole;
-  const boardData = await getBoardData(workspaceId);
+  const deletedTickets = await getDeletedTickets(workspaceId);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
-      <TeamBoardClient
-        initialData={boardData}
-        workspaceId={workspaceId}
-        currentMemberId={member.id}
-      />
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
+      <TrashClient initialTickets={deletedTickets} />
     </TeamShell>
   );
 }

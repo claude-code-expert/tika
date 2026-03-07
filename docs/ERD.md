@@ -168,6 +168,7 @@ entity "**tickets**" as tickets {
     sprint_id      : INT          <<FK → sprints.id, ON DELETE SET NULL>>
     story_points   : INT
     completed_at   : TIMESTAMPTZ
+    deleted        : BOOLEAN      DEFAULT false
   * created_at     : TIMESTAMPTZ
   * updated_at     : TIMESTAMPTZ
   --
@@ -176,6 +177,7 @@ entity "**tickets**" as tickets {
   IDX: (sprint_id)
   IDX: (assignee_id)
   IDX: (issue_id)
+  IDX: (workspace_id, deleted)
 }
 
 ' ── 7. checklist_items ───────────────────────────────────

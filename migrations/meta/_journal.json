@@ -57,6 +57,20 @@
       "when": 1772811759037,
       "tag": "0007_chunky_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772822178163,
+      "tag": "0008_lush_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772847242094,
+      "tag": "0009_tricky_grandmaster",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,7 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 100 }).notNull(),
   avatarUrl: text('avatar_url'),
   userType: varchar('user_type', { length: 20 }), // NULL = onboarding incomplete | 'USER' = personal | 'WORKSPACE' = team
+  bgcolor: varchar('bg_color', { length: 7 }), // user-chosen avatar background color (HEX)
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -116,6 +117,7 @@ export const tickets = pgTable(
     sprintId: integer('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
     storyPoints: integer('story_points'),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    deleted: boolean('deleted').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
@@ -132,6 +134,7 @@ export const tickets = pgTable(
     index('idx_tickets_sprint_id').on(table.sprintId),
     index('idx_tickets_assignee_id').on(table.assigneeId),
     index('idx_tickets_issue_id').on(table.issueId),
+    index('idx_tickets_workspace_deleted').on(table.workspaceId, table.deleted),
   ],
 );
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { updateMember, updateMemberRole, removeMember, getOwnerCount, getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { updateUserBgcolor } from '@/db/queries/users';
 import { TEAM_ROLE } from '@/types/index';
 
 const updateProfileSchema = z.object({
@@ -102,6 +103,12 @@ export async function PATCH(
         { error: { code: 'NOT_FOUND', message: '멤버를 찾을 수 없습니다' } },
         { status: 404 },
       );
+    }
+
+    // Sync chosen color to users.bgcolor
+    if (result.data.color) {
+      const userId = (session.user as unknown as Record<string, unknown>).id as string;
+      await updateUserBgcolor(userId, result.data.color);
     }
 
     return NextResponse.json({ member });

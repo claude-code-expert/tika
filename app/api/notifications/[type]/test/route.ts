@@ -24,7 +24,7 @@ export async function POST(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     console.log(`[notification/test] workspaceId=${workspaceId} type=${type}`);
 
     // 1. request body에서 config 읽기 (저장 전 테스트 지원)

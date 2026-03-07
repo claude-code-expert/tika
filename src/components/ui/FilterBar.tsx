@@ -29,11 +29,11 @@ export function FilterBar({ labels = [], activeLabels = [], onLabelToggle, onCle
         <button
           key={label.id}
           onClick={() => onLabelToggle?.(label.id)}
-          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition`}
+          className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition`}
           style={
             activeLabels.includes(label.id)
-              ? { backgroundColor: label.color, color: '#fff' }
-              : { backgroundColor: label.color + '22', color: label.color }
+              ? { backgroundColor: label.color + '18', color: '#2C3E50', border: `1px solid ${label.color}` }
+              : { backgroundColor: 'transparent', color: '#2C3E50', border: `1px solid ${label.color}` }
           }
         >
           {label.name}

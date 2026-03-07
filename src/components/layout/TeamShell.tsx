@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { TeamSidebar } from '@/components/team/TeamSidebar';
 import { TicketForm } from '@/components/ticket/TicketForm';
 import type { TeamRole } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
+import { BoardRefreshContext } from '@/lib/board-refresh-context';
 
 interface TeamShellProps {
   workspaceId: number;
@@ -17,6 +19,13 @@ interface TeamShellProps {
 
 export function TeamShell({ workspaceId, role, workspaceName, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+  const router = useRouter();
+  const fetchBoardRef = useRef<(() => Promise<void>) | null>(null);
+
+  const boardRefreshCtx = useMemo(
+    () => ({ register: (fn: () => Promise<void>) => { fetchBoardRef.current = fn; } }),
+    [],
+  );
 
   const handleNewTask = useCallback(() => setIsNewTicketOpen(true), []);
 
@@ -28,8 +37,10 @@ export function TeamShell({ workspaceId, role, workspaceName, children }: TeamSh
         body: JSON.stringify({ ...data, workspaceId }),
       });
       setIsNewTicketOpen(false);
+      router.push(`/team/${workspaceId}/board`);
+      await fetchBoardRef.current?.();
     },
-    [workspaceId],
+    [workspaceId, router],
   );
 
   return (
@@ -99,7 +110,9 @@ export function TeamShell({ workspaceId, role, workspaceName, children }: TeamSh
             background: '#E8EDF2',
           }}
         >
-          {children}
+          <BoardRefreshContext.Provider value={boardRefreshCtx}>
+            {children}
+          </BoardRefreshContext.Provider>
         </main>
       </div>
 

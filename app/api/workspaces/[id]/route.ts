@@ -28,7 +28,7 @@ export async function PATCH(
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
 
     const check = await requireRole(userId, workspaceId, TEAM_ROLE.OWNER);
     if (isRoleError(check)) return check;
@@ -83,7 +83,7 @@ export async function DELETE(
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
 
     const check = await requireRole(userId, workspaceId, TEAM_ROLE.OWNER);
     if (isRoleError(check)) return check;

@@ -21,11 +21,10 @@ interface LabelBadgeProps {
 }
 
 export function LabelBadge({ label, size = 'sm', onRemove }: LabelBadgeProps) {
-  const tc = labelTextColor(label.color);
   const sizeStyle =
     size === 'md'
-      ? { height: 24, padding: '0 12px', borderRadius: 12, fontSize: 12, fontWeight: 600 }
-      : { height: 20, padding: '0 9px', borderRadius: 10, fontSize: 11, fontWeight: 500 };
+      ? { height: 24, padding: '0 10px', borderRadius: 4, fontSize: 12, fontWeight: 600 }
+      : { height: 20, padding: '0 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 };
 
   return (
     <span
@@ -35,8 +34,9 @@ export function LabelBadge({ label, size = 'sm', onRemove }: LabelBadgeProps) {
         gap: 5,
         whiteSpace: 'nowrap' as const,
         userSelect: 'none' as const,
-        background: label.color,
-        color: tc,
+        background: 'transparent',
+        color: '#2C3E50',
+        border: `1px solid ${label.color}`,
         flexShrink: 0,
         ...sizeStyle,
       }}

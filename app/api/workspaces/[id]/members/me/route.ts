@@ -26,7 +26,7 @@ export async function DELETE(
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const member = await getMemberByUserId(userId, workspaceId);
 
     if (!member) {

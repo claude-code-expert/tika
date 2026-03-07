@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { TicketStatus, TicketWithMeta } from '@/types/index';
@@ -19,8 +20,9 @@ interface ColumnProps {
   workspaceName?: string;
 }
 
-export function Column({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
+function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const sortableItems = useMemo(() => tickets.map((t) => t.id), [tickets]);
 
   return (
     <div
@@ -85,7 +87,7 @@ export function Column({ status, label, tickets, onTicketClick, workspaceName }:
           transition: 'background 0.15s',
         }}
       >
-        <SortableContext items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
           {tickets.map((ticket) => (
             <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
           ))}
@@ -110,3 +112,5 @@ export function Column({ status, label, tickets, onTicketClick, workspaceName }:
     </div>
   );
 }
+
+export const Column = memo(ColumnInner);

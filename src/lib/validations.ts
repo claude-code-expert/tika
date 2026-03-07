@@ -3,7 +3,6 @@ import {
   TICKET_STATUS,
   TICKET_PRIORITY,
   TICKET_TYPE,
-  ISSUE_TYPE,
   TEAM_ROLE,
 } from '@/types/index';
 import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from './constants';
@@ -11,7 +10,6 @@ import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from './constants';
 const ticketStatusValues = Object.values(TICKET_STATUS) as [string, ...string[]];
 const ticketPriorityValues = Object.values(TICKET_PRIORITY) as [string, ...string[]];
 const ticketTypeValues = Object.values(TICKET_TYPE) as [string, ...string[]];
-const issueTypeValues = Object.values(ISSUE_TYPE) as [string, ...string[]];
 
 export const createTicketSchema = z.object({
   title: z
@@ -36,7 +34,7 @@ export const createTicketSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
     .nullable()
     .optional(),
-  issueId: z.number().int().positive().nullable().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
   assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
   sprintId: z.number().int().positive().nullable().optional(),
@@ -65,7 +63,7 @@ export const updateTicketSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
     .nullable()
     .optional(),
-  issueId: z.number().int().positive().nullable().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
   assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
   sprintId: z.number().int().positive().nullable().optional(),
@@ -95,20 +93,6 @@ export const updateLabelSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, '색상 코드가 올바르지 않습니다 (#RRGGBB)')
     .optional(),
-});
-
-export const createIssueSchema = z.object({
-  name: z
-    .string()
-    .min(1, '이슈명을 입력해주세요')
-    .max(100, '이슈명은 100자 이하여야 합니다'),
-  type: z.enum(issueTypeValues as [string, ...string[]]),
-  parentId: z.number().int().positive().nullable().optional(),
-});
-
-export const updateIssueSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  parentId: z.number().int().positive().nullable().optional(),
 });
 
 export const createChecklistItemSchema = z.object({
@@ -248,8 +232,6 @@ export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
 export type ReorderInput = z.infer<typeof reorderSchema>;
 export type CreateLabelInput = z.infer<typeof createLabelSchema>;
 export type UpdateLabelInput = z.infer<typeof updateLabelSchema>;
-export type CreateIssueInput = z.infer<typeof createIssueSchema>;
-export type UpdateIssueInput = z.infer<typeof updateIssueSchema>;
 export type CreateChecklistItemInput = z.infer<typeof createChecklistItemSchema>;
 export type UpdateChecklistItemInput = z.infer<typeof updateChecklistItemSchema>;
 export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;

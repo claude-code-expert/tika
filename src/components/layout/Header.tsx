@@ -65,17 +65,29 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Fetch team workspaces
+  // Fetch workspaces, member, notification logs in parallel
   useEffect(() => {
     if (!user) return;
-    fetch('/api/workspaces')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { workspaces?: WorkspaceWithRole[] } | null) => {
-        if (data?.workspaces) {
-          setTeamWorkspaces(data.workspaces.filter((w) => w.type === 'TEAM'));
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/workspaces').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/members').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/notifications/logs').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([workspacesData, membersData, notifData]: [
+      { workspaces?: WorkspaceWithRole[] } | null,
+      { members?: Member[] } | null,
+      { logs?: NotificationLog[]; unreadCount?: number } | null,
+    ]) => {
+      if (workspacesData?.workspaces) {
+        setTeamWorkspaces(workspacesData.workspaces.filter((w) => w.type === 'TEAM'));
+      }
+      if (membersData?.members?.length) {
+        setMember(membersData.members[0]);
+      }
+      if (notifData) {
+        setNotifLogs(notifData.logs ?? []);
+        setUnreadCount(notifData.unreadCount ?? 0);
+      }
+    });
   }, [user]);
 
   useOutsideClick(teamRef, isTeamOpen, () => setIsTeamOpen(false));
@@ -104,33 +116,6 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
       setIsCreatingTeam(false);
     }
   };
-
-  // Fetch member data
-  useEffect(() => {
-    if (!user) return;
-    fetch('/api/members')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.members?.length) {
-          setMember(data.members[0]);
-        }
-      })
-      .catch(() => {});
-  }, [user]);
-
-  // Fetch notification logs on mount
-  useEffect(() => {
-    if (!user) return;
-    fetch('/api/notifications/logs')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { logs?: NotificationLog[]; unreadCount?: number } | null) => {
-        if (data) {
-          setNotifLogs(data.logs ?? []);
-          setUnreadCount(data.unreadCount ?? 0);
-        }
-      })
-      .catch(() => {});
-  }, [user]);
 
   // Close notif dropdown on outside click → mark as read
   const handleNotifClose = useCallback(() => {
@@ -221,7 +206,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             </button>
           )}
           <Link
-            href="/"
+            href={teamWorkspaces.length > 0 ? `/team/${teamWorkspaces[0].id}` : '/'}
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
             <Image

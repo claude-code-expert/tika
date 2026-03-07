@@ -74,7 +74,7 @@ export async function POST(
       );
     }
 
-    const memberId = (session.user as Record<string, unknown>).memberId as number | null ?? null;
+    const memberId = session.user.memberId as number | null ?? null;
     const comment = await createComment(ticketId, memberId, parsed.data.text);
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

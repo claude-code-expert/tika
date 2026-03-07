@@ -12,7 +12,7 @@ export async function GET() {
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const membersList = await getMembersWithEmailByWorkspace(workspaceId);
 
     return NextResponse.json({ members: membersList });

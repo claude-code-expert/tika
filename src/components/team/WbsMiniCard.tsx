@@ -1,6 +1,6 @@
 'use client';
 
-import type { Issue } from '@/types/index';
+import type { Ticket } from '@/types/index';
 
 const TYPE_COLORS: Record<string, { bg: string; label: string }> = {
   GOAL: { bg: '#8B5CF6', label: 'G' },
@@ -9,17 +9,17 @@ const TYPE_COLORS: Record<string, { bg: string; label: string }> = {
 };
 
 interface WbsMiniCardProps {
-  issues: Issue[];
+  issues: Ticket[];
 }
 
-interface TreeNode extends Issue {
+interface TreeNode extends Ticket {
   children: TreeNode[];
 }
 
-function buildTree(issues: Issue[]): TreeNode[] {
+function buildTree(tickets: Ticket[]): TreeNode[] {
   const map = new Map<number, TreeNode>();
-  for (const issue of issues) {
-    map.set(issue.id, { ...issue, children: [] });
+  for (const ticket of tickets) {
+    map.set(ticket.id, { ...ticket, children: [] });
   }
   const roots: TreeNode[] = [];
   for (const node of map.values()) {
@@ -72,7 +72,7 @@ function IssueRow({ node, depth }: { node: TreeNode; depth: number }) {
             whiteSpace: 'nowrap',
           }}
         >
-          {node.name}
+          {node.title}
         </span>
       </div>
       {node.children.map((child) => (

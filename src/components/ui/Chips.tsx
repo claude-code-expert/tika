@@ -1,4 +1,4 @@
-import type { TicketPriority, TicketStatus, IssueType, TicketType } from '@/types/index';
+import type { TicketPriority, TicketStatus, TicketType } from '@/types/index';
 
 // ─── Priority ──────────────────────────────────────────────────────────────────
 
@@ -93,7 +93,7 @@ export const ISSUE_TYPE_CONFIG: Record<
 };
 
 interface IssueTypeBadgeProps {
-  type: IssueType | TicketType | string;
+  type: TicketType | string;
   size?: number;
   showLabel?: boolean;
 }

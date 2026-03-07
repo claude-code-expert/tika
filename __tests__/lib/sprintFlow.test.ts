@@ -123,7 +123,7 @@ describe('Sprint Flow Logic', () => {
       position: 0,
       startDate: null,
       dueDate: null,
-      issueId: null,
+      parentId: null,
       assigneeId: null,
       sprintId: null,
       storyPoints: null,

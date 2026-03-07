@@ -19,9 +19,8 @@ export function GoalProgressRow({ goals, allTickets }: GoalProgressRowProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {goals.slice(0, 5).map((goal) => {
-        // Count child tickets (any ticket with this goal's issueId relationship)
-        // For simplicity: count DONE vs total tickets under same issue
-        const related = allTickets.filter((t) => t.issueId === goal.issueId && t.id !== goal.id);
+        // Count direct child tickets (tickets whose parentId is this goal)
+        const related = allTickets.filter((t) => t.parentId === goal.id);
         const done = related.filter((t) => t.status === 'DONE').length;
         const total = related.length;
         const pct = total > 0 ? Math.round((done / total) * 100) : (goal.status === 'DONE' ? 100 : 0);

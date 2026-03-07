@@ -1,4 +1,4 @@
-import { eq, and, count, gte, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, count, gte, isNotNull, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { tickets, sprints, labels, ticketLabels, members, ticketAssignees } from '@/db/schema';
 import type {
@@ -30,7 +30,7 @@ export async function getBurndownData(
   const sprintTickets = await db
     .select({ id: tickets.id, completedAt: tickets.completedAt, storyPoints: tickets.storyPoints })
     .from(tickets)
-    .where(and(eq(tickets.sprintId, sprintId), eq(tickets.workspaceId, workspaceId)));
+    .where(and(eq(tickets.sprintId, sprintId), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
 
   const total = sprintTickets.length;
   const totalPoints = sprintTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
@@ -83,7 +83,7 @@ export async function getCfdData(
   const statusRows = await db
     .select({ status: tickets.status, cnt: count() })
     .from(tickets)
-    .where(eq(tickets.workspaceId, workspaceId))
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
     .groupBy(tickets.status);
 
   const currentCounts: Record<string, number> = {};
@@ -101,6 +101,7 @@ export async function getCfdData(
         eq(tickets.status, 'DONE'),
         isNotNull(tickets.completedAt),
         gte(tickets.completedAt, cutoff),
+        eq(tickets.deleted, false),
       ),
     );
 
@@ -145,25 +146,31 @@ export async function getVelocityData(workspaceId: number): Promise<VelocitySpri
     .where(and(eq(sprints.workspaceId, workspaceId), eq(sprints.status, 'COMPLETED')))
     .orderBy(sprints.createdAt);
 
-  const result: VelocitySprint[] = [];
+  if (completedSprints.length === 0) return [];
 
-  for (const sprint of completedSprints) {
-    const doneTickets = await db
-      .select({ storyPoints: tickets.storyPoints })
-      .from(tickets)
-      .where(and(eq(tickets.sprintId, sprint.id), eq(tickets.status, 'DONE')));
+  const sprintIds = completedSprints.map((s) => s.id);
 
-    const completedPoints = doneTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+  // Single GROUP BY query instead of N+1 loop
+  const ticketRows = await db
+    .select({
+      sprintId: tickets.sprintId,
+      completedPoints: sql<number>`coalesce(sum(${tickets.storyPoints}), 0)`.as('completedPoints'),
+    })
+    .from(tickets)
+    .where(and(inArray(tickets.sprintId, sprintIds), eq(tickets.status, 'DONE'), eq(tickets.deleted, false)))
+    .groupBy(tickets.sprintId);
 
-    result.push({
-      sprintId: sprint.id,
-      name: sprint.name,
-      completedPoints,
-      plannedPoints: sprint.storyPointsTotal ?? 0,
-    });
+  const pointsBySprintId: Record<number, number> = {};
+  for (const row of ticketRows) {
+    if (row.sprintId != null) pointsBySprintId[row.sprintId] = Number(row.completedPoints);
   }
 
-  return result;
+  return completedSprints.map((sprint) => ({
+    sprintId: sprint.id,
+    name: sprint.name,
+    completedPoints: pointsBySprintId[sprint.id] ?? 0,
+    plannedPoints: sprint.storyPointsTotal ?? 0,
+  }));
 }
 
 // ─── Cycle Time ───────────────────────────────────────────────────────────────
@@ -177,6 +184,7 @@ export async function getCycleTimeData(workspaceId: number): Promise<CycleTimeDi
         eq(tickets.workspaceId, workspaceId),
         eq(tickets.status, 'DONE'),
         isNotNull(tickets.completedAt),
+        eq(tickets.deleted, false),
       ),
     );
 
@@ -242,7 +250,7 @@ export async function getMemberWorkload(workspaceId: number): Promise<MemberWork
     })
     .from(ticketAssignees)
     .innerJoin(tickets, eq(tickets.id, ticketAssignees.ticketId))
-    .where(inArray(ticketAssignees.memberId, memberIds))
+    .where(and(inArray(ticketAssignees.memberId, memberIds), eq(tickets.deleted, false)))
     .groupBy(ticketAssignees.memberId, tickets.status);
 
   // Build lookup: memberId → status → count

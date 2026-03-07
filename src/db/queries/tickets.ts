@@ -1,6 +1,6 @@
-import { eq, and, asc, count, sql, ne } from 'drizzle-orm';
+import { eq, and, asc, desc, count, sql, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { tickets, checklistItems, ticketLabels, labels, members, issues, ticketAssignees, workspaces } from '@/db/schema';
+import { tickets, checklistItems, ticketLabels, labels, members, ticketAssignees, workspaces } from '@/db/schema';
 import type { Ticket, TicketWithMeta, BoardData, TicketStatus } from '@/types/index';
 import { isOverdue } from '@/lib/utils';
 import { POSITION_GAP } from '@/lib/constants';
@@ -17,13 +17,28 @@ function toTicket(row: typeof tickets.$inferSelect): Ticket {
     position: row.position,
     startDate: row.startDate ?? null,
     dueDate: row.dueDate ?? null,
-    issueId: row.issueId ?? null,
+    parentId: row.parentId ?? null,
     assigneeId: row.assigneeId ?? null,
     sprintId: row.sprintId ?? null,
     storyPoints: row.storyPoints ?? null,
     completedAt: row.completedAt?.toISOString() ?? null,
+    deleted: row.deleted,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toMember(m: typeof members.$inferSelect): import('@/types/index').Member {
+  return {
+    id: m.id,
+    userId: m.userId,
+    workspaceId: m.workspaceId,
+    displayName: m.displayName,
+    color: m.color,
+    role: m.role as import('@/types/index').Member['role'],
+    invitedBy: m.invitedBy ?? null,
+    joinedAt: m.joinedAt?.toISOString() ?? null,
+    createdAt: m.createdAt.toISOString(),
   };
 }
 
@@ -31,17 +46,17 @@ export async function getTicketCount(workspaceId: number): Promise<number> {
   const [result] = await db
     .select({ count: count() })
     .from(tickets)
-    .where(eq(tickets.workspaceId, workspaceId));
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
   return Number(result.count);
 }
 
 export async function getBoardData(workspaceId: number): Promise<BoardData> {
-  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allIssues, allAssignees, workspaceRow] = await Promise.all(
+  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allAssignees, workspaceRow] = await Promise.all(
     [
       db
         .select()
         .from(tickets)
-        .where(eq(tickets.workspaceId, workspaceId))
+        .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
         .orderBy(asc(tickets.position)),
       db
         .select({ ticketId: ticketLabels.ticketId, label: labels })
@@ -52,10 +67,9 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
         .select()
         .from(checklistItems)
         .innerJoin(tickets, eq(checklistItems.ticketId, tickets.id))
-        .where(eq(tickets.workspaceId, workspaceId))
+        .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
         .orderBy(asc(checklistItems.position)),
       db.select().from(members).where(eq(members.workspaceId, workspaceId)),
-      db.select().from(issues).where(eq(issues.workspaceId, workspaceId)),
       db
         .select({ ticketId: ticketAssignees.ticketId, member: members })
         .from(ticketAssignees)
@@ -80,7 +94,7 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
   }
 
   const membersById = new Map(allMembers.map((m) => [m.id, m]));
-  const issuesById = new Map(allIssues.map((i) => [i.id, i]));
+  const ticketsById = new Map(allTickets.map((t) => [t.id, t]));
 
   const assigneesByTicket = new Map<number, typeof members.$inferSelect[]>();
   for (const row of allAssignees) {
@@ -116,7 +130,7 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
     }));
 
     const memberRow = row.assigneeId ? membersById.get(row.assigneeId) : null;
-    const issueRow = row.issueId ? issuesById.get(row.issueId) : null;
+    const parentRow = row.parentId ? ticketsById.get(row.parentId) : null;
     const assigneeRows = assigneesByTicket.get(row.id) ?? [];
 
     const meta: TicketWithMeta = {
@@ -124,40 +138,9 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
       isOverdue: isOverdue(ticket.dueDate, ticket.status),
       labels: ticketLabelsData,
       checklistItems: checklist,
-      assignees: assigneeRows.map((m) => ({
-        id: m.id,
-        userId: m.userId,
-        workspaceId: m.workspaceId,
-        displayName: m.displayName,
-        color: m.color,
-        role: m.role as import('@/types/index').Member['role'],
-        invitedBy: m.invitedBy ?? null,
-        joinedAt: m.joinedAt?.toISOString() ?? null,
-        createdAt: m.createdAt.toISOString(),
-      })),
-      assignee: memberRow
-        ? {
-            id: memberRow.id,
-            userId: memberRow.userId,
-            workspaceId: memberRow.workspaceId,
-            displayName: memberRow.displayName,
-            color: memberRow.color,
-            role: memberRow.role as import('@/types/index').Member['role'],
-            invitedBy: memberRow.invitedBy ?? null,
-            joinedAt: memberRow.joinedAt?.toISOString() ?? null,
-            createdAt: memberRow.createdAt.toISOString(),
-          }
-        : null,
-      issue: issueRow
-        ? {
-            id: issueRow.id,
-            workspaceId: issueRow.workspaceId,
-            name: issueRow.name,
-            type: issueRow.type as import('@/types/index').IssueType,
-            parentId: issueRow.parentId ?? null,
-            createdAt: issueRow.createdAt.toISOString(),
-          }
-        : null,
+      assignees: assigneeRows.map(toMember),
+      assignee: memberRow ? toMember(memberRow) : null,
+      parent: parentRow ? toTicket(parentRow) : null,
     };
 
     const status = ticket.status as TicketStatus;
@@ -170,6 +153,90 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
   return { board, total, workspaceName: workspaceRow[0]?.name };
 }
 
+export async function getWbsTickets(workspaceId: number): Promise<TicketWithMeta[]> {
+  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allAssignees] = await Promise.all([
+    db
+      .select()
+      .from(tickets)
+      .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
+      .orderBy(asc(tickets.position)),
+    db
+      .select({ ticketId: ticketLabels.ticketId, label: labels })
+      .from(ticketLabels)
+      .innerJoin(labels, eq(ticketLabels.labelId, labels.id))
+      .where(eq(labels.workspaceId, workspaceId)),
+    db
+      .select()
+      .from(checklistItems)
+      .innerJoin(tickets, eq(checklistItems.ticketId, tickets.id))
+      .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
+      .orderBy(asc(checklistItems.position)),
+    db.select().from(members).where(eq(members.workspaceId, workspaceId)),
+    db
+      .select({ ticketId: ticketAssignees.ticketId, member: members })
+      .from(ticketAssignees)
+      .innerJoin(members, eq(members.id, ticketAssignees.memberId))
+      .where(eq(members.workspaceId, workspaceId)),
+  ]);
+
+  const labelsByTicket = new Map<number, typeof labels.$inferSelect[]>();
+  for (const row of allTicketLabels) {
+    const arr = labelsByTicket.get(row.ticketId) ?? [];
+    arr.push(row.label);
+    labelsByTicket.set(row.ticketId, arr);
+  }
+
+  const checklistByTicket = new Map<number, (typeof checklistItems.$inferSelect)[]>();
+  for (const row of allChecklistItems) {
+    const arr = checklistByTicket.get(row.checklist_items.ticketId) ?? [];
+    arr.push(row.checklist_items);
+    checklistByTicket.set(row.checklist_items.ticketId, arr);
+  }
+
+  const membersById = new Map(allMembers.map((m) => [m.id, m]));
+  const ticketsById = new Map(allTickets.map((t) => [t.id, t]));
+
+  const assigneesByTicket = new Map<number, typeof members.$inferSelect[]>();
+  for (const row of allAssignees) {
+    const arr = assigneesByTicket.get(row.ticketId) ?? [];
+    arr.push(row.member);
+    assigneesByTicket.set(row.ticketId, arr);
+  }
+
+  return allTickets.map((row) => {
+    const ticket = toTicket(row);
+    const ticketLabelsData = (labelsByTicket.get(row.id) ?? []).map((l) => ({
+      id: l.id,
+      workspaceId: l.workspaceId,
+      name: l.name,
+      color: l.color,
+      createdAt: l.createdAt.toISOString(),
+    }));
+    const checklist = (checklistByTicket.get(row.id) ?? []).map((c) => ({
+      id: c.id,
+      ticketId: c.ticketId,
+      text: c.text,
+      isCompleted: c.isCompleted,
+      position: c.position,
+      createdAt: c.createdAt.toISOString(),
+    }));
+
+    const memberRow = row.assigneeId ? membersById.get(row.assigneeId) : null;
+    const parentRow = row.parentId ? ticketsById.get(row.parentId) : null;
+    const assigneeRows = assigneesByTicket.get(row.id) ?? [];
+
+    return {
+      ...ticket,
+      isOverdue: isOverdue(ticket.dueDate, ticket.status),
+      labels: ticketLabelsData,
+      checklistItems: checklist,
+      assignees: assigneeRows.map(toMember),
+      assignee: memberRow ? toMember(memberRow) : null,
+      parent: parentRow ? toTicket(parentRow) : null,
+    };
+  });
+}
+
 export async function getTicketById(
   id: number,
   workspaceId: number,
@@ -177,11 +244,11 @@ export async function getTicketById(
   const [row] = await db
     .select()
     .from(tickets)
-    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId)))
+    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
     .limit(1);
   if (!row) return null;
 
-  const [checklist, ticketLabelRows, memberRow, issueRow] = await Promise.all([
+  const [checklist, ticketLabelRows, memberRow, parentRow, assigneeRows] = await Promise.all([
     db
       .select()
       .from(checklistItems)
@@ -195,14 +262,19 @@ export async function getTicketById(
     row.assigneeId
       ? db.select().from(members).where(eq(members.id, row.assigneeId)).limit(1)
       : Promise.resolve([]),
-    row.issueId
-      ? db.select().from(issues).where(eq(issues.id, row.issueId)).limit(1)
+    row.parentId
+      ? db.select().from(tickets).where(eq(tickets.id, row.parentId)).limit(1)
       : Promise.resolve([]),
+    db
+      .select({ member: members })
+      .from(ticketAssignees)
+      .innerJoin(members, eq(members.id, ticketAssignees.memberId))
+      .where(eq(ticketAssignees.ticketId, id)),
   ]);
 
   const ticket = toTicket(row);
   const mr = (memberRow as typeof members.$inferSelect[])[0];
-  const ir = (issueRow as typeof issues.$inferSelect[])[0];
+  const pr = (parentRow as typeof tickets.$inferSelect[])[0];
 
   return {
     ...ticket,
@@ -222,30 +294,9 @@ export async function getTicketById(
       position: c.position,
       createdAt: c.createdAt.toISOString(),
     })),
-    assignees: [],
-    assignee: mr
-      ? {
-          id: mr.id,
-          userId: mr.userId,
-          workspaceId: mr.workspaceId,
-          displayName: mr.displayName,
-          color: mr.color,
-          role: mr.role as import('@/types/index').Member['role'],
-          invitedBy: mr.invitedBy ?? null,
-          joinedAt: mr.joinedAt?.toISOString() ?? null,
-          createdAt: mr.createdAt.toISOString(),
-        }
-      : null,
-    issue: ir
-      ? {
-          id: ir.id,
-          workspaceId: ir.workspaceId,
-          name: ir.name,
-          type: ir.type as import('@/types/index').IssueType,
-          parentId: ir.parentId ?? null,
-          createdAt: ir.createdAt.toISOString(),
-        }
-      : null,
+    assignees: assigneeRows.map((r) => toMember(r.member)),
+    assignee: mr ? toMember(mr) : null,
+    parent: pr ? toTicket(pr) : null,
   };
 }
 
@@ -258,7 +309,7 @@ export async function createTicket(
     priority?: string;
     startDate?: string | null;
     dueDate?: string | null;
-    issueId?: number | null;
+    parentId?: number | null;
     assigneeId?: number | null;
     sprintId?: number | null;
     storyPoints?: number | null;
@@ -269,7 +320,7 @@ export async function createTicket(
   const [minRow] = await db
     .select({ minPos: sql<number>`MIN(${tickets.position})` })
     .from(tickets)
-    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, 'BACKLOG')));
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, 'BACKLOG'), eq(tickets.deleted, false)));
 
   const minPos = minRow?.minPos ?? null;
   const position = minPos !== null ? minPos - POSITION_GAP : 0;
@@ -286,7 +337,7 @@ export async function createTicket(
       position,
       startDate: data.startDate ?? null,
       dueDate: data.dueDate ?? null,
-      issueId: data.issueId ?? null,
+      parentId: data.parentId ?? null,
       assigneeId: data.assigneeId ?? null,
       sprintId: data.sprintId ?? null,
       storyPoints: data.storyPoints ?? null,
@@ -313,7 +364,7 @@ export async function updateTicket(
     priority: string;
     startDate: string | null;
     dueDate: string | null;
-    issueId: number | null;
+    parentId: number | null;
     assigneeId: number | null;
     completedAt: Date | null;
     position: number;
@@ -330,7 +381,7 @@ export async function updateTicket(
   if (data.priority !== undefined) updateData.priority = data.priority;
   if (data.startDate !== undefined) updateData.startDate = data.startDate;
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
-  if (data.issueId !== undefined) updateData.issueId = data.issueId;
+  if (data.parentId !== undefined) updateData.parentId = data.parentId;
   if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
   if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
   if (data.position !== undefined) updateData.position = data.position;
@@ -347,7 +398,7 @@ export async function updateTicket(
     const [row] = await db
       .update(tickets)
       .set(updateData)
-      .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId)))
+      .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
       .returning();
     updated = row;
   }
@@ -365,15 +416,108 @@ export async function updateTicket(
   const ticket = await db
     .select()
     .from(tickets)
-    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId)))
+    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
     .limit(1);
   return ticket[0] ? toTicket(ticket[0]) : null;
 }
 
 export async function deleteTicket(id: number, workspaceId: number): Promise<boolean> {
   const result = await db
+    .update(tickets)
+    .set({ deleted: true })
+    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
+    .returning({ id: tickets.id });
+  return result.length > 0;
+}
+
+export async function getDeletedTickets(workspaceId: number): Promise<TicketWithMeta[]> {
+  const [allTickets, allTicketLabels, allChecklistItems, allMembers, allAssignees] = await Promise.all([
+    db
+      .select()
+      .from(tickets)
+      .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
+      .orderBy(desc(tickets.updatedAt)),
+    db
+      .select({ ticketId: ticketLabels.ticketId, label: labels })
+      .from(ticketLabels)
+      .innerJoin(labels, eq(ticketLabels.labelId, labels.id))
+      .where(eq(labels.workspaceId, workspaceId)),
+    db
+      .select()
+      .from(checklistItems)
+      .innerJoin(tickets, eq(checklistItems.ticketId, tickets.id))
+      .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
+      .orderBy(asc(checklistItems.position)),
+    db.select().from(members).where(eq(members.workspaceId, workspaceId)),
+    db
+      .select({ ticketId: ticketAssignees.ticketId, member: members })
+      .from(ticketAssignees)
+      .innerJoin(members, eq(members.id, ticketAssignees.memberId))
+      .where(eq(members.workspaceId, workspaceId)),
+  ]);
+
+  const labelsByTicket = new Map<number, typeof labels.$inferSelect[]>();
+  for (const row of allTicketLabels) {
+    const arr = labelsByTicket.get(row.ticketId) ?? [];
+    arr.push(row.label);
+    labelsByTicket.set(row.ticketId, arr);
+  }
+
+  const checklistByTicket = new Map<number, (typeof checklistItems.$inferSelect)[]>();
+  for (const row of allChecklistItems) {
+    const arr = checklistByTicket.get(row.checklist_items.ticketId) ?? [];
+    arr.push(row.checklist_items);
+    checklistByTicket.set(row.checklist_items.ticketId, arr);
+  }
+
+  const membersById = new Map(allMembers.map((m) => [m.id, m]));
+  const ticketsById = new Map(allTickets.map((t) => [t.id, t]));
+
+  const assigneesByTicket = new Map<number, typeof members.$inferSelect[]>();
+  for (const row of allAssignees) {
+    const arr = assigneesByTicket.get(row.ticketId) ?? [];
+    arr.push(row.member);
+    assigneesByTicket.set(row.ticketId, arr);
+  }
+
+  return allTickets.map((row) => {
+    const ticket = toTicket(row);
+    const ticketLabelsData = (labelsByTicket.get(row.id) ?? []).map((l) => ({
+      id: l.id,
+      workspaceId: l.workspaceId,
+      name: l.name,
+      color: l.color,
+      createdAt: l.createdAt.toISOString(),
+    }));
+    const checklist = (checklistByTicket.get(row.id) ?? []).map((c) => ({
+      id: c.id,
+      ticketId: c.ticketId,
+      text: c.text,
+      isCompleted: c.isCompleted,
+      position: c.position,
+      createdAt: c.createdAt.toISOString(),
+    }));
+
+    const memberRow = row.assigneeId ? membersById.get(row.assigneeId) : null;
+    const parentRow = row.parentId ? ticketsById.get(row.parentId) : null;
+    const assigneeRows = assigneesByTicket.get(row.id) ?? [];
+
+    return {
+      ...ticket,
+      isOverdue: isOverdue(ticket.dueDate, ticket.status),
+      labels: ticketLabelsData,
+      checklistItems: checklist,
+      assignees: assigneeRows.map(toMember),
+      assignee: memberRow ? toMember(memberRow) : null,
+      parent: parentRow ? toTicket(parentRow) : null,
+    };
+  });
+}
+
+export async function permanentDeleteTicket(id: number, workspaceId: number): Promise<boolean> {
+  const result = await db
     .delete(tickets)
-    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId)))
+    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
     .returning({ id: tickets.id });
   return result.length > 0;
 }
@@ -391,6 +535,7 @@ export async function getTicketsDueTomorrow(workspaceId: number): Promise<Ticket
         eq(tickets.workspaceId, workspaceId),
         eq(tickets.dueDate, tomorrowStr),
         ne(tickets.status, 'DONE'),
+        eq(tickets.deleted, false),
       ),
     );
   return rows.map(toTicket);

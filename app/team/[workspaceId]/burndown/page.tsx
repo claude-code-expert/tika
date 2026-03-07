@@ -26,25 +26,24 @@ export default async function TeamBurndownPage({
   const session = await auth();
   if (!session?.user) redirect('/login');
 
-  const userId = (session.user as Record<string, unknown>).id as string;
-  const [workspace, member] = await Promise.all([
+  const userId = session.user.id as string;
+  const [workspace, member, sprints, velocity, cfd] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
+    getSprintsByWorkspace(workspaceId),
+    getVelocityData(workspaceId),
+    getCfdData(workspaceId, 30),
   ]);
   if (!workspace || !member) redirect('/');
 
   const role = member.role as TeamRole;
-  const sprints = await getSprintsByWorkspace(workspaceId);
-
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
   const selectedSprintId = sprintIdStr ? Number(sprintIdStr) : activeSprint?.id;
   const selectedSprint = sprints.find((s) => s.id === selectedSprintId);
 
-  const [burndownData, velocity, cfd] = await Promise.all([
-    selectedSprintId ? getBurndownData(workspaceId, selectedSprintId) : Promise.resolve([]),
-    getVelocityData(workspaceId),
-    getCfdData(workspaceId, 30),
-  ]);
+  const burndownData = selectedSprintId
+    ? await getBurndownData(workspaceId, selectedSprintId)
+    : [];
 
   const storyPointsTotal = burndownData.length > 0 ? burndownData[0].remainingPoints : 0;
 

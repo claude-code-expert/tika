@@ -2,9 +2,8 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId } from '@/db/queries/members';
-import { getBoardData } from '@/db/queries/tickets';
+import { getBoardData, getWbsTickets } from '@/db/queries/tickets';
 import { getMemberWorkload, getCfdData } from '@/db/queries/analytics';
-import { getIssuesByWorkspace } from '@/db/queries/issues';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { TrendChart } from '@/components/team/charts/TrendChart';
 import { PriorityStatusMatrix } from '@/components/team/charts/PriorityStatusMatrix';
@@ -27,28 +26,26 @@ export default async function TeamDashboardPage({
     redirect('/login');
   }
 
-  const userId = (session.user as Record<string, unknown>).id as string;
+  const userId = session.user.id as string;
 
-  const [workspace, member] = await Promise.all([
+  const [workspace, member, boardData, workload, wbsTickets, cfdData] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
+    getBoardData(workspaceId),
+    getMemberWorkload(workspaceId),
+    getWbsTickets(workspaceId),
+    getCfdData(workspaceId, 21), // 3주치 fetch 후 워킹데이만 추출
   ]);
 
   if (!workspace || !member) {
     redirect('/');
   }
 
-  const [boardData, workload, issues] = await Promise.all([
-    getBoardData(workspaceId),
-    getMemberWorkload(workspaceId),
-    getIssuesByWorkspace(workspaceId),
-  ]);
-
   const role = member.role as TeamRole;
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
   const doneTickets = allTickets.filter((t) => t.status === 'DONE');
-  const goalTickets = allTickets.filter((t) => t.type === 'GOAL');
+  const goalTickets = wbsTickets.filter((t) => t.type === 'GOAL');
   const overdueTickets = allTickets.filter((t) => t.isOverdue);
   const today = new Date();
   const threeDays = new Date(today.getTime() + 3 * 86400000);
@@ -68,7 +65,6 @@ export default async function TeamDashboardPage({
   }
 
   // Trend data from CFD — 워킹데이(월~금) 기준 최근 7일치
-  const cfdData = await getCfdData(workspaceId, 21); // 3주치 fetch 후 워킹데이만 추출
   const allTrendData = cfdData.map((d, i, arr) => ({
     date: d.date,
     created: i > 0
@@ -141,12 +137,12 @@ export default async function TeamDashboardPage({
 
           {/* Goal Progress */}
           <Card title="목표 진행률">
-            <GoalProgressRow goals={goalTickets} allTickets={allTickets} />
+            <GoalProgressRow goals={goalTickets} allTickets={wbsTickets} />
           </Card>
 
           {/* WBS Mini Card */}
           <Card title="이슈 계층 (WBS)">
-            <WbsMiniCard issues={issues} />
+            <WbsMiniCard issues={wbsTickets} />
           </Card>
         </div>
       </div>

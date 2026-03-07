@@ -19,7 +19,7 @@ export async function GET() {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const workspaces = await getWorkspacesByMemberId(userId);
 
     return NextResponse.json({ workspaces });
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
-    const displayName = ((session.user as Record<string, unknown>).name as string) ?? '사용자';
+    const userId = session.user.id as string;
+    const displayName = (session.user.name as string) ?? '사용자';
 
     const body = await request.json();
     const result = createWorkspaceSchema.safeParse(body);

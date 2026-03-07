@@ -10,6 +10,9 @@ const COLOR_SWATCHES = [
   '#F59E0B',
   '#EF4444',
   '#10B981',
+  '#ffa8d3',
+  '#c7c758',
+  '#50bef0',
 ];
 
 interface ProfileModalProps {
@@ -147,11 +150,12 @@ export function ProfileModal({
                 type="button"
                 onClick={() => setColor(c)}
                 style={{
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
                   backgroundColor: c,
-                  border: color === c ? '3px solid var(--color-text-primary)' : '3px solid transparent',
+                  border:
+                    color === c ? '3px solid var(--color-text-primary)' : '3px solid transparent',
                   cursor: 'pointer',
                   padding: 0,
                   outline: 'none',
@@ -165,9 +169,7 @@ export function ProfileModal({
         </div>
 
         {/* Error */}
-        {error && (
-          <p style={{ color: '#EF4444', fontSize: 13, marginBottom: 12 }}>{error}</p>
-        )}
+        {error && <p style={{ color: '#EF4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

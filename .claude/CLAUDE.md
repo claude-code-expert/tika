@@ -15,6 +15,17 @@ Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개
 
 **현재 버전:** 0.1.0 (MVP, 단일 사용자)
 
+> 주요 문서 참고 /docs 하위
+
+## Investigation Rules
+
+- When the same problem recurs and resolution is requested again, always perform a thorough source-level deep dive before responding.
+- Never claim to have confirmed a fix without actually reading the relevant source code.
+
+## Session Continuity
+
+- After /compact completes and a new session context begins, always re-read CLAUDE.md to re-establish project context before proceeding.
+
 ---
 
 ## 2. 기술 스택
@@ -116,130 +127,6 @@ npm run dev                    # 개발 서버 시작
 
 ---
 
-## 4. 디렉토리 구조
-
-```
-tika/
-├── app/                                  # Next.js App Router (라우팅 레이어)
-│   ├── api/
-│   │   ├── tickets/                      # 티켓 API
-│   │   │   ├── route.ts                  # GET /api/tickets, POST /api/tickets
-│   │   │   ├── [id]/
-│   │   │   │   ├── route.ts              # GET, PATCH, DELETE /api/tickets/:id
-│   │   │   │   └── checklist/            # (FR-008) 체크리스트 API
-│   │   │   │       ├── route.ts          # POST /api/tickets/:id/checklist
-│   │   │   │       └── [itemId]/route.ts # PATCH, DELETE
-│   │   │   └── reorder/route.ts          # PATCH /api/tickets/reorder
-│   │   ├── labels/                       # (FR-009) 라벨 API
-│   │   │   ├── route.ts                  # GET, POST /api/labels
-│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/labels/:id
-│   │   ├── issues/                       # (FR-010) 이슈 계층 API
-│   │   │   ├── route.ts                  # GET, POST /api/issues
-│   │   │   └── [id]/route.ts            # PATCH, DELETE /api/issues/:id
-│   │   ├── members/                      # (FR-011) 멤버 API
-│   │   │   ├── route.ts                  # GET /api/members (Phase 1: 본인만)
-│   │   │   └── [id]/route.ts            # Phase 4에서 활성화
-│   │   ├── workspaces/                   # (FR-012) 워크스페이스 API
-│   │   │   └── route.ts                  # GET /api/workspaces
-│   │   └── auth/[...nextauth]/route.ts  # (FR-013) NextAuth 핸들러
-│   ├── login/page.tsx                    # (FR-013) 로그인 페이지
-│   ├── settings/page.tsx                 # (Phase 2) 설정 페이지
-│   ├── layout.tsx                        # 루트 HTML 레이아웃
-│   ├── page.tsx                          # 메인 페이지 (서버 컴포넌트)
-│   └── globals.css                       # 글로벌 스타일
-│
-├── src/                                  # 애플리케이션 소스 코드
-│   ├── components/                       # React 컴포넌트
-│   │   ├── board/                        # 칸반 보드 컴포넌트
-│   │   │   ├── BoardContainer.tsx        # 보드 최상위 클라이언트 컨테이너
-│   │   │   ├── Board.tsx                 # 4칼럼 그리드 레이아웃
-│   │   │   ├── Column.tsx                # 단일 칼럼 (Droppable)
-│   │   │   └── TicketCard.tsx            # 카드 컴포넌트 (Draggable)
-│   │   ├── ticket/                       # 티켓 관련 UI
-│   │   │   ├── TicketForm.tsx            # 생성/수정 폼
-│   │   │   ├── TicketModal.tsx           # 상세 보기 모달
-│   │   │   └── ChecklistSection.tsx      # (FR-008) 체크리스트 UI
-│   │   ├── label/                        # (FR-009) 라벨 컴포넌트
-│   │   │   ├── LabelBadge.tsx            # 라벨 뱃지
-│   │   │   └── LabelSelector.tsx         # 라벨 선택/생성기
-│   │   ├── issue/                        # (FR-010) 이슈 계층 컴포넌트
-│   │   │   └── IssueBreadcrumb.tsx       # 이슈 브레드크럼
-│   │   └── ui/                           # 공통 UI 컴포넌트
-│   │       ├── Button.tsx                # 범용 버튼
-│   │       ├── Badge.tsx                 # 우선순위 뱃지
-│   │       ├── Modal.tsx                 # 모달 컨테이너
-│   │       ├── ConfirmDialog.tsx         # 삭제 확인 다이얼로그
-│   │       ├── Avatar.tsx                # (FR-011) 담당자 아바타
-│   │       └── FilterBar.tsx             # 필터 바
-│   │
-│   ├── db/                               # 데이터베이스 레이어
-│   │   ├── index.ts                      # Drizzle 인스턴스 생성
-│   │   ├── schema.ts                     # Drizzle 테이블 정의 (8개 테이블)
-│   │   ├── queries/                      # 데이터베이스 쿼리 함수
-│   │   │   ├── tickets.ts               # 티켓 CRUD 쿼리
-│   │   │   ├── checklist.ts             # (FR-008) 체크리스트 쿼리
-│   │   │   ├── labels.ts                # (FR-009) 라벨 쿼리
-│   │   │   ├── issues.ts                # (FR-010) 이슈 쿼리
-│   │   │   └── members.ts               # (FR-011) 멤버 쿼리
-│   │   └── seed.ts                       # 시드 데이터 스크립트
-│   │
-│   ├── hooks/                            # 커스텀 React 훅
-│   │   ├── useTickets.ts                 # 보드 상태 관리 훅
-│   │   ├── useLabels.ts                  # (FR-009) 라벨 상태 훅
-│   │   └── useIssues.ts                  # (FR-010) 이슈 상태 훅
-│   │
-│   ├── lib/                              # 유틸리티 및 헬퍼
-│   │   ├── constants.ts                  # 상수 (색상, 제한값, 간격)
-│   │   ├── validations.ts               # Zod 검증 스키마
-│   │   └── utils.ts                      # 헬퍼 함수 (그룹핑, 마감일 체크)
-│   │
-│   └── types/                            # TypeScript 타입 정의
-│       └── index.ts                      # 공유 타입 (중앙 집중)
-│
-├── docs/                                 # 프로젝트 문서
-│   ├── PRD.md                            # 제품 요구사항
-│   ├── TRD.md                            # 기술 요구사항 (이 문서)
-│   ├── REQUIREMENTS.md                   # 상세 요구사항 명세 (v0.2.0)
-│   ├── API_SPEC.md                       # API 명세서
-│   ├── DATA_MODEL.md                     # 데이터 모델
-│   ├── COMPONENT_SPEC.md                 # 컴포넌트 명세
-│   ├── SCREEN_SPEC.md                    # 화면 정의서
-│   ├── TEST_CASES.md                     # 테스트 케이스
-│   ├── front/                            # 프론트엔드 디자인 참조
-│   │   ├── tika-main.html               # HTML 프로토타입
-│   │   ├── DESIGN_SYSTEM.md             # 디자인 시스템 v2.0
-│   │   ├── UI_COMPONENT_GUIDE.md        # UI 컴포넌트 가이드
-│   │   └── COLOR.json                    # 색상 팔레트
-│   ├── enterprise/                       # 확장 계획
-│   │   ├── feature-expansion-roadmap.md  # Phase 2+ 기능 분석
-│   │   └── operations-guide.md           # 운영 가이드
-│   └── phase/                            # Phase 3~5 설계
-│       ├── REQUIREMENTS-Phase3.md
-│       ├── REQUIREMENTS-Phase4.md
-│       └── REQUIREMENTS-Phase5.md
-│
-├── migrations/                           # Drizzle ORM 마이그레이션 (자동 생성)
-│
-├── __tests__/                            # 테스트 파일
-│   ├── api/                              # API 테스트
-│   └── components/                       # 컴포넌트 테스트
-│
-├── .claude/                              # Claude Code 설정
-│   ├── CLAUDE.md                         # 프로젝트 가이드
-│   ├── settings.json                     # 팀 공유 설정
-│   ├── commands/                         # 슬래시 명령어
-│   ├── agents/                           # 에이전트 프롬프트
-│   └── rules/                            # 자동 적용 규칙
-│
-├── .env.example                          # 환경 변수 템플릿
-├── drizzle.config.ts                     # Drizzle Kit 설정
-├── next.config.ts                        # Next.js 설정
-├── tsconfig.json                         # TypeScript 설정
-├── jest.config.ts                        # Jest 설정
-├── .prettierrc                           # Prettier 설정
-└── package.json                          # 의존성 및 스크립트
-```
-
 ### 코드 배치 규칙
 
 - **라우팅/API:** `app/` 디렉토리에 배치 (Next.js App Router 규칙)
@@ -260,7 +147,7 @@ tika/
 
 ---
 
-## 5. 코딩 규칙
+## 4. 코딩 규칙
 
 ### 네이밍 컨벤션
 
@@ -317,7 +204,7 @@ tika/
 
 ---
 
-## 6. 금지 사항과 예외 규칙
+## 5. 금지 사항과 예외 규칙
 
 ## 🚨 절대 금지 사항 (CRITICAL - 반드시 준수)
 
@@ -382,72 +269,13 @@ npm audit fix --force     # ❌ 절대 금지
 
 ---
 
-## 7. 데이터베이스 스키마 참고
+## 6. 데이터베이스 스키마 참고
 
-Phase 1 테이블 구성 (8개):
-
-| 테이블          | 설명                                | 관계                                                         |
-| --------------- | ----------------------------------- | ------------------------------------------------------------ |
-| users           | Google OAuth 사용자                 | 인증 엔티티                                                  |
-| workspaces      | 워크스페이스                        | users 1:N (owner_id FK)                                      |
-| tickets         | 티켓 (칸반 카드)                    | workspaces 1:N (workspace_id FK)                             |
-| checklist_items | 체크리스트 항목                     | tickets 1:N (ON DELETE CASCADE)                              |
-| labels          | 라벨 정의                           | workspaces 1:N (workspace_id FK), UNIQUE(workspace_id, name) |
-| ticket_labels   | 티켓-라벨 매핑                      | M:N (tickets, labels, ON DELETE CASCADE)                     |
-| issues          | 이슈 계층 (Goal/Story/Feature/Task) | workspaces 1:N, self-referencing (ON DELETE SET NULL)        |
-| members         | 멤버 (담당자)                       | users 1:N, workspaces 1:N, UNIQUE(user_id, workspace_id)     |
-
-### tickets 테이블
-
-| 칼럼         | 타입         | 제약                                          | 기본값    | 설명                                   |
-| ------------ | ------------ | --------------------------------------------- | --------- | -------------------------------------- |
-| id           | SERIAL       | PK                                            | -         | 고유 ID                                |
-| workspace_id | INT          | NOT NULL, FK → workspaces(id)                 | -         | 소속 워크스페이스                      |
-| title        | VARCHAR(200) | NOT NULL                                      | -         | 제목 (1~200자)                         |
-| description  | TEXT         | NULLABLE                                      | NULL      | 설명 (최대 1000자)                     |
-| type         | VARCHAR(10)  | NOT NULL                                      | -         | 타입: GOAL, STORY, FEATURE, TASK       |
-| status       | VARCHAR(20)  | NOT NULL                                      | 'BACKLOG' | 상태: BACKLOG, TODO, IN_PROGRESS, DONE |
-| priority     | VARCHAR(10)  | NOT NULL                                      | 'MEDIUM'  | 우선순위: LOW, MEDIUM, HIGH, CRITICAL  |
-| position     | INTEGER      | NOT NULL                                      | 0         | 칼럼 내 정렬 순서                      |
-| due_date     | DATE         | NULLABLE                                      | NULL      | 마감일 (YYYY-MM-DD)                    |
-| issue_id     | INT          | NULLABLE, FK → issues(id) ON DELETE SET NULL  | NULL      | 상위 이슈                              |
-| assignee_id  | INT          | NULLABLE, FK → members(id) ON DELETE SET NULL | NULL      | 담당자                                 |
-| completed_at | TIMESTAMPTZ  | NULLABLE                                      | NULL      | 완료 시각                              |
-| created_at   | TIMESTAMPTZ  | NOT NULL                                      | now()     | 생성 시각                              |
-| updated_at   | TIMESTAMPTZ  | NOT NULL                                      | now()     | 수정 시각                              |
-
-**인덱스:** `idx_tickets_status_position` → (status, position), `idx_tickets_due_date` → (due_date)
-
-> 상세 스키마 (users, workspaces, checklist_items, labels, ticket_labels, issues, members): DATA_MODEL.md 및 REQUIREMENTS.md FR-008~FR-013 참조
+> ERD.md 참고
 
 ---
 
-## 8. API 엔드포인트 요약
-
-모든 API 요청은 세션 검증 필수 (미인증 시 401 UNAUTHORIZED).
-
-| 메서드 | 경로                               | 상태코드 | 설명                                                      | 관련 FR |
-| ------ | ---------------------------------- | -------- | --------------------------------------------------------- | ------- |
-| POST   | /api/tickets                       | 201      | 티켓 생성                                                 | FR-001  |
-| GET    | /api/tickets                       | 200      | 전체 티켓 조회 (보드 데이터)                              | FR-002  |
-| GET    | /api/tickets/:id                   | 200      | 단일 티켓 조회                                            | FR-003  |
-| PATCH  | /api/tickets/:id                   | 200      | 티켓 수정                                                 | FR-004  |
-| DELETE | /api/tickets/:id                   | 204      | 티켓 삭제                                                 | FR-005  |
-| PATCH  | /api/tickets/reorder               | 200      | 드래그앤드롭 순서 변경                                    | FR-006  |
-| POST   | /api/tickets/:id/checklist         | 201      | 체크리스트 항목 추가                                      | FR-008  |
-| PATCH  | /api/tickets/:id/checklist/:itemId | 200      | 체크리스트 항목 수정/토글                                 | FR-008  |
-| DELETE | /api/tickets/:id/checklist/:itemId | 204      | 체크리스트 항목 삭제                                      | FR-008  |
-| GET    | /api/labels                        | 200      | 전체 라벨 목록                                            | FR-009  |
-| POST   | /api/labels                        | 201      | 라벨 생성                                                 | FR-009  |
-| PATCH  | /api/labels/:id                    | 200      | 라벨 수정                                                 | FR-009  |
-| DELETE | /api/labels/:id                    | 204      | 라벨 삭제                                                 | FR-009  |
-| GET    | /api/issues                        | 200      | 전체 이슈 계층 목록                                       | FR-010  |
-| POST   | /api/issues                        | 201      | 이슈 생성                                                 | FR-010  |
-| PATCH  | /api/issues/:id                    | 200      | 이슈 수정                                                 | FR-010  |
-| DELETE | /api/issues/:id                    | 204      | 이슈 삭제                                                 | FR-010  |
-| GET    | /api/members                       | 200      | 멤버 목록 (Phase 1: 본인만)                               | FR-011  |
-| GET    | /api/workspaces                    | 200      | 현재 사용자 워크스페이스 목록                             | FR-012  |
-| —      | /api/auth/\*                       | —        | NextAuth 자동 라우트 (signin, callback, signout, session) | FR-013  |
+## 7. API 엔드포인트 요약
 
 > 상세 요청/응답 사양: API_SPEC.md 참조
 
@@ -482,33 +310,3 @@ When completing a task, always end with a Korean summary:
 - 주의할 점이 있는지
 
 ---
-
-## 9. Agentation UI 연동 (개발 전용)
-
-UI 작업 시 Claude Code는 agentation MCP 도구로 사용자의 화면 어노테이션을 실시간 수신한다.
-
-- **상세 가이드:** `docs/AGENTATION-UI.md`
-- **컴포넌트:** `src/components/ui/AgentationWrapper.tsx`
-- **MCP 엔드포인트:** `http://localhost:4747`
-
-### UI 작업 기본 루프
-
-1. `npm run dev` 실행 → 브라우저에서 tika 열기
-2. agentation 툴바(우하단)로 UI 요소 어노테이션
-3. Claude Code → `agentation_watch_annotations` 수신 대기
-4. 어노테이션 확인 후 코드 수정
-5. `agentation_resolve(annotationId, summary)` 또는 `agentation_acknowledge` 호출
-
-### 현재 활성 MCP 도구
-
-| 도구 | 역할 |
-|------|------|
-| `agentation_watch_annotations` | 새 어노테이션 대기 (blocking) |
-| `agentation_get_all_pending` | 미처리 어노테이션 전체 조회 |
-| `agentation_get_pending(sessionId)` | 특정 세션 미처리 조회 |
-| `agentation_acknowledge(annotationId)` | 수신 확인 |
-| `agentation_resolve(annotationId, summary)` | 처리 완료 |
-| `agentation_dismiss(annotationId, reason)` | 미처리 사유와 함께 무시 |
-| `agentation_reply(annotationId, message)` | 스레드 답글 |
-| `agentation_list_sessions` | 세션 목록 |
-| `agentation_get_session(sessionId)` | 세션 + 어노테이션 상세 |

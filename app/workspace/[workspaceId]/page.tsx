@@ -120,7 +120,7 @@ export default async function TeamDashboardPage({
     .slice(-7);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
         {/* Page title */}
         <div style={{ marginBottom: 20 }}>

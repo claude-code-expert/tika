@@ -4,12 +4,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { BreadcrumbPicker } from './BreadcrumbPicker';
 import { ChecklistSection } from './ChecklistSection';
 import { CommentSection } from './CommentSection';
 import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
-import { TICKET_TYPE_META } from '@/lib/constants';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
 import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
 import {
@@ -17,7 +17,7 @@ import {
   Users,
   UserPlus,
   Save,
-  CopyPlus,
+  Link2,
   X,
   Trash2,
   Copy,
@@ -32,13 +32,6 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   DONE: { bg: '#D1FAE5', color: '#065F46' },
 };
 
-const TYPE_BADGE_STYLES: Record<string, { bg: string; color: string }> = {
-  GOAL: { bg: '#EDE9FE', color: '#6D28D9' },
-  STORY: { bg: '#DBEAFE', color: '#1D4ED8' },
-  FEATURE: { bg: '#D1FAE5', color: '#065F46' },
-  TASK: { bg: '#FEF3C7', color: '#92400E' },
-};
-
 // ─── constants ─────────────────────────────────────────────────────────────────
 
 const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
@@ -50,8 +43,7 @@ function UrlCopyBadge({ ticket, workspaceName }: { ticket: TicketWithMeta; works
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [hover, setHover] = useState(false);
-  const prefix = (workspaceName ?? 'tkt').toLowerCase();
-  const path = `/team/${ticket.workspaceId}/${prefix}-${ticket.id}`;
+  const path = `/workspace/${ticket.workspaceId}/${ticket.id}`;
   const fullUrl = typeof window !== 'undefined'
     ? `${window.location.origin}${path}`
     : path;
@@ -271,15 +263,11 @@ export function TicketModal({
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [assigneeSearched, setAssigneeSearched] = useState(false);
-  const [showParentPicker, setShowParentPicker] = useState(false);
-  const [parentSearch, setParentSearch] = useState('');
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
-  const parentAreaRef = useRef<HTMLDivElement>(null);
-
   // ── auto-resize title textarea ──
   const autoResizeTitle = useCallback(() => {
     const el = titleTextareaRef.current;
@@ -301,7 +289,9 @@ export function TicketModal({
       fetch('/api/members', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`/api/tickets/${ticket.id}/comments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]).then(([parentsData, membersData, commentsData]) => {
-      if (parentsData?.tickets) setAllParents(parentsData.tickets);
+      if (parentsData?.tickets) {
+        setAllParents(parentsData.tickets);
+      }
       if (membersData?.members) setAllMembers(membersData.members);
       if (commentsData?.comments) setCommentList(commentsData.comments);
     });
@@ -332,19 +322,7 @@ export function TicketModal({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showAssigneePicker]);
 
-  // ── outside click: parent picker ──
-  useEffect(() => {
-    if (!showParentPicker) return;
-    const handleClick = (e: MouseEvent) => {
-      if (parentAreaRef.current && !parentAreaRef.current.contains(e.target as Node)) {
-        setShowParentPicker(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showParentPicker]);
-
-  // ── dirty check ──
+// ── dirty check ──
   const isDirty =
     title !== ticket.title ||
     description !== (ticket.description ?? '') ||
@@ -444,8 +422,6 @@ export function TicketModal({
   const currentAssignees = allMembers.filter((m) => selectedAssigneeIds.includes(m.id));
   const unassignedMembers = allMembers.filter((m) => !selectedAssigneeIds.includes(m.id));
 
-  const typeMeta = TICKET_TYPE_META[type];
-  const typeBadgeStyle = TYPE_BADGE_STYLES[type];
   const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.TODO;
   const priorityStyle = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.MEDIUM;
   const completedItems = checklistItems.filter((i) => i.isCompleted).length;
@@ -501,7 +477,7 @@ export function TicketModal({
 
   const metaDateStyle: React.CSSProperties = {
     width: '100%',
-    height: 28,
+    height: 32,
     padding: '0 8px',
     border: '1px solid var(--color-border)',
     borderRadius: 6,
@@ -511,6 +487,8 @@ export function TicketModal({
     background: 'var(--color-board-bg)',
     outline: 'none',
     cursor: 'pointer',
+    // Ensure native date picker renders at correct size across environments
+    boxSizing: 'border-box',
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -532,74 +510,24 @@ export function TicketModal({
               width: '100%',
             }}
           >
-            {/* Left: ticket ID + URL copy + type badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span
-                style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: 'var(--color-accent)',
-                  background: 'var(--color-accent-light, #E8F5F0)',
-                  padding: '3px 8px',
-                  borderRadius: 4,
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '0.3px',
-                }}
-              >
-                {workspaceName ?? 'TKT'}-{ticket.id}
-              </span>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  height: 22,
-                  padding: '0 8px',
-                  borderRadius: 4,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.3px',
-                  background: typeBadgeStyle.bg,
-                  color: typeBadgeStyle.color,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 14,
-                    height: 14,
-                    borderRadius: 3,
-                    background: typeMeta.bg,
-                    color: '#fff',
-                    fontSize: 9,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}
-                >
-                  {typeMeta.abbr}
-                </span>
-                {typeMeta.label}
-              </span>
-            </div>
+            {/* Left: Breadcrumb picker */}
+            <BreadcrumbPicker
+              ticketType={type}
+              parentId={ticket.parentId ?? null}
+              parent={ticket.parent}
+              allParents={allParents}
+              onChange={(id) => setSelectedParentId(id)}
+            />
 
             {/* Right: URL + icon action buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <UrlCopyBadge ticket={ticket} workspaceName={workspaceName} />
               <IconBtnWithTooltip
-                label="복제"
-                icon={<CopyPlus size={15} />}
-                onClick={onDuplicate ? () => setShowDuplicateConfirm(true) : undefined}
-              />
-              <IconBtnWithTooltip
-                label="삭제"
-                icon={<Trash2 size={15} />}
-                onClick={() => setShowDelete(true)}
-                hoverBg="#FEF2F2"
-                hoverColor="#DC2626"
+                label="URL 복사"
+                icon={<Link2 size={15} />}
+                onClick={() => {
+                  const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
+                  navigator.clipboard.writeText(url);
+                }}
               />
               <IconBtnWithTooltip
                 label="닫기"
@@ -694,156 +622,7 @@ export function TicketModal({
                 ))}
               </select>
 
-              {/* Parent breadcrumb */}
-              {ticket.type !== 'GOAL' && (() => {
-                const filteredParents = allParents.filter((p) => {
-                  if (ticket.type === 'STORY') return p.type === 'GOAL';
-                  if (ticket.type === 'FEATURE') return p.type === 'STORY';
-                  if (ticket.type === 'TASK') return p.type === 'FEATURE';
-                  return false;
-                });
-                const selectedParent = filteredParents.find((p) => p.id === selectedParentId) ?? null;
-                return (
-                  <div ref={parentAreaRef} style={{ position: 'relative', flexShrink: 0 }}>
-                    <button
-                      onClick={() => setShowParentPicker((p) => !p)}
-                      aria-label="상위 이슈 선택"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        background: 'none',
-                        border: 'none',
-                        padding: '2px 4px',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        fontSize: 11,
-                        color: selectedParent ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
-                        maxWidth: 160,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        transition: 'background 0.12s',
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
-                    >
-                      {selectedParent ? (
-                        <>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700,
-                            padding: '1px 5px', borderRadius: 3,
-                            background: selectedParent.type === 'GOAL' ? '#EDE9FE' : selectedParent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                            color: selectedParent.type === 'GOAL' ? '#6D28D9' : selectedParent.type === 'STORY' ? '#1D4ED8' : '#065F46',
-                            flexShrink: 0,
-                          }}>
-                            {selectedParent.type.charAt(0)}
-                          </span>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {selectedParent.title}
-                          </span>
-                        </>
-                      ) : (
-                        <span style={{ fontStyle: 'italic' }}>상위 이슈</span>
-                      )}
-                      <span style={{ fontSize: 9, opacity: 0.5, flexShrink: 0 }}>▾</span>
-                    </button>
 
-                    {showParentPicker && (() => {
-                      const searched = parentSearch.length >= 2
-                        ? filteredParents.filter((p) => p.title.toLowerCase().includes(parentSearch.toLowerCase()))
-                        : filteredParents;
-                      return (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 4px)',
-                        left: 0,
-                        zIndex: 500,
-                        background: '#fff',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 8,
-                        boxShadow: 'var(--shadow-dropdown)',
-                        minWidth: 220,
-                        maxWidth: 320,
-                        maxHeight: 260,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                      }}>
-                        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-                          <input
-                            autoFocus
-                            type="text"
-                            placeholder="이슈 검색..."
-                            value={parentSearch}
-                            onChange={(e) => setParentSearch(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '5px 8px',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: 5,
-                              fontSize: 12,
-                              fontFamily: 'inherit',
-                              color: 'var(--color-text-primary)',
-                              background: 'var(--color-board-bg)',
-                              outline: 'none',
-                            }}
-                          />
-                        </div>
-                        <div style={{ overflowY: 'auto', padding: '4px 0' }}>
-                        <button
-                          onClick={() => { setSelectedParentId(null); setShowParentPicker(false); setParentSearch(''); }}
-                          style={{
-                            display: 'block', width: '100%', textAlign: 'left',
-                            padding: '7px 12px', border: 'none', background: 'none',
-                            fontSize: 12, color: 'var(--color-text-muted)', fontStyle: 'italic',
-                            cursor: 'pointer', fontFamily: 'inherit',
-                            backgroundColor: selectedParentId === null ? 'var(--color-board-bg)' : 'transparent',
-                          }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === null ? 'var(--color-board-bg)' : 'transparent'; }}
-                        >
-                          상위 이슈 없음
-                        </button>
-                        {searched.length > 0 && (
-                          <div style={{ height: 1, background: 'var(--color-border)', margin: '2px 0' }} />
-                        )}
-                        {searched.map((parent) => (
-                          <button
-                            key={parent.id}
-                            onClick={() => { setSelectedParentId(parent.id); setShowParentPicker(false); setParentSearch(''); }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 7,
-                              width: '100%', textAlign: 'left',
-                              padding: '7px 12px', border: 'none', background: 'none',
-                              fontSize: 12, color: 'var(--color-text-primary)',
-                              cursor: 'pointer', fontFamily: 'inherit',
-                              backgroundColor: selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent',
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent'; }}
-                          >
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, flexShrink: 0,
-                              padding: '1px 5px', borderRadius: 3,
-                              background: parent.type === 'GOAL' ? '#EDE9FE' : parent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                              color: parent.type === 'GOAL' ? '#6D28D9' : parent.type === 'STORY' ? '#1D4ED8' : '#065F46',
-                            }}>
-                              {parent.type.charAt(0)}
-                            </span>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {parent.title}
-                            </span>
-                          </button>
-                        ))}
-                        </div>
-                      </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })()}
             </div>
             {/* ── end TITLE SECTION ── */}
 
@@ -1153,7 +932,12 @@ export function TicketModal({
                   <input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      // Workaround: body overflow:hidden (set by Modal) causes Chrome's native
+                      // date picker to stay open after selection. Blur forces it to close.
+                      e.target.blur();
+                    }}
                     aria-label="시작 예정일"
                     style={metaDateStyle}
                     onFocus={(e) => {
@@ -1175,7 +959,10 @@ export function TicketModal({
                     <input
                       type="date"
                       value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
+                      onChange={(e) => {
+                        setDueDate(e.target.value);
+                        e.target.blur(); // same Chrome body overflow:hidden workaround
+                      }}
                       aria-label="종료 예정일"
                       style={{
                         ...metaDateStyle,
@@ -1455,6 +1242,7 @@ export function TicketModal({
                   e.currentTarget.style.borderColor = '#9CA3AF';
                 }}
               >
+                <X size={13} />
                 닫기
               </button>
             </div>

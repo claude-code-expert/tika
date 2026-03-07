@@ -35,7 +35,7 @@ export function WorkspaceCreator() {
         throw new Error(data.error?.message ?? '오류가 발생했습니다.');
       }
 
-      router.push(`/team/${data.workspace.id}`);
+      router.push(`/workspace/${data.workspace.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다. 다시 시도해주세요.');
       setLoading(false);

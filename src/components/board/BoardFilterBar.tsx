@@ -104,7 +104,7 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
       {showAdvancedFilter && (
         <div
           style={{
-            padding: '10px 16px',
+            padding: '7px 16px 10px',
             background: 'var(--color-sidebar-bg)',
             borderBottom: '1px solid var(--color-border)',
             display: 'flex',
@@ -118,7 +118,7 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 600,
                 color: 'var(--color-text-muted)',
                 marginBottom: 6,
@@ -159,7 +159,7 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 600,
                 color: 'var(--color-text-muted)',
                 marginBottom: 6,
@@ -203,7 +203,7 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 600,
                 color: 'var(--color-text-muted)',
                 marginBottom: 6,

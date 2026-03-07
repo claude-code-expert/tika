@@ -140,6 +140,7 @@ export const updateWorkspaceSchema = z
   .object({
     name: z.string().min(1, '이름은 1자 이상 입력해야 합니다').max(100, '이름은 100자 이하여야 합니다').optional(),
     description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
+    iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '올바른 HEX 색상 코드를 입력해주세요').nullable().optional(),
   })
   .refine((data) => data.name !== undefined || data.description !== undefined, {
     message: '수정할 항목이 없습니다',
@@ -277,6 +278,11 @@ export const workspaceSearchSchema = z.object({
   q: z.string().min(1).max(50),
 });
 
+export const withdrawAccountSchema = z.object({
+  confirmEmail: z.string().email('올바른 이메일을 입력해주세요'),
+});
+
 export type PatchUserTypeInput = z.infer<typeof patchUserTypeSchema>;
 export type PostJoinRequestInput = z.infer<typeof postJoinRequestSchema>;
 export type PatchJoinRequestInput = z.infer<typeof patchJoinRequestSchema>;
+export type WithdrawAccountInput = z.infer<typeof withdrawAccountSchema>;

@@ -3,6 +3,68 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-03-08 (BreadcrumbPicker 공통 모듈화 + 개인 워크스페이스 상세 페이지 레이아웃 수정)
+
+### 🎯 Prompts
+1. "브래드 크럼에 상위 선택 후 하위가 있는데도 여전히 회색으로 선택하세요가 되어있어. 이건 비활성화 효과라 회색 효과 제거해줘야지"
+2. "브레드 크럼 영역 공통 모듈로 재사용 할수 있도록 해. 상세 페이지 랜딩 영역에서도 재사용할거야"
+3. "[date picker] 날짜 픽커 모듈이 vercel에 배포하면 제대로 안되는데 버전 차이나 다른 라이브러리 충돌이 있는지 검사해봐. prod 배포후에는 날짜 클릭해도 창이 안닫히고 달력 사이즈도 작아"
+4. "장세보기 모달의 브레드 크럼 공통 컴포넌트 적용 @TicketDetailPage"
+5. "브래드 크럼 위치는 [title section]이 아니라 [header bar]로 이동되어야 해"
+6. "[ticket ID badge villains-default-20] 삭제"
+7. "[type badge T Task] 이 영역은 [right meta panel] 이 영역의 상태 위로 이동. 이슈타입 타이틀이 위에 오도록"
+8. "수정일 생성일 [Modal format is correct]. [TicketDetailPage version] 이건 정렬도 그렇고 위치가 엉망이야"
+9. "[title section showing T Task above textarea] 좌측에 제목, 우측에 이슈타입 1열로 정렬"
+10. "[CommentSection] 댓글 500자 체크는 남기고 Ctrl+Enter로 등록 텍스트는 삭제"
+11. "http://localhost:3000/workspace/1/2 이런식으로 상세 페이지 랜딩한 경우, 지금 유저는 개인워크스페이스 이기 때문에 좌측에 팀메뉴가 아니라 내 워크스페이스와 backlog 영역이 노출되어야 해"
+12. "개인 워크스페이스 상세 페이지에서 보드로 돌아가기 클릭하면 팀 메뉴가 나오는데 개인일 경우 백로그 사이드바만 나와야해"
+
+### ✅ Changes
+
+#### 신규 컴포넌트
+- **Added**: `src/components/ticket/BreadcrumbPicker.tsx` — 브레드크럼 선택기 공통 모듈 추출
+  - `ANCESTOR_TYPES_MAP` export (TASK→[GOAL,STORY,FEATURE], FEATURE→[GOAL,STORY], STORY→[GOAL])
+  - `position: fixed` + `getBoundingClientRect()` — modal overflow:hidden 클리핑 우회
+  - outside-click 핸들러: dropdown ref + 버튼 ref 모두 제외 (더블토글 버그 수정)
+  - `options` 필터: 상위 선택 시 `t.parentId === parentSelectionId` (계층형 연동)
+  - 활성 미선택 = 흰 배경 + solid border / 비활성(옵션 없음) = 회색 배경 + dashed border
+- **Added**: `src/components/layout/PersonalTicketShell.tsx` — 개인 워크스페이스 티켓 상세용 레이아웃 shell
+  - Header + DndContext + Sidebar(백로그) + Footer 구성
+  - Sidebar의 `useSortable`/`useDroppable` 요구사항으로 DndContext 래핑 필수
+
+#### 수정 컴포넌트
+- **Modified**: `src/components/ticket/TicketModal.tsx`
+  - 인라인 브레드크럼 JSX(~80줄) 제거 → `<BreadcrumbPicker>` 컴포넌트 사용
+  - 날짜 picker 프로덕션 버그 수정: `e.target.blur()` — `document.body.overflow:hidden`(Modal) 상태에서 Chrome 네이티브 날짜 picker가 선택 후 닫히지 않는 문제
+  - `metaDateStyle` height 28→32, `boxSizing: 'border-box'` 추가
+- **Modified**: `src/components/ticket/TicketDetailPage.tsx`
+  - 인라인 단일 레벨 parent 선택기(160+줄) 제거 → `<BreadcrumbPicker>` 적용
+  - 헤더 바: 브레드크럼 이동, 티켓 ID 배지 삭제
+  - 타이틀 섹션: title textarea(좌, flex:1) + 이슈타입 배지(우, flexShrink:0) 1열 정렬
+  - 이슈타입 배지: 우측 meta panel 상단으로 이동 (상태 위)
+  - 수정일/생성일: 우측 meta panel 하단으로 이동 (Modal 형식과 동일)
+  - `backUrl?: string` prop 추가 — 개인/팀 워크스페이스별 돌아가기 URL 분기
+- **Modified**: `src/components/ticket/CommentSection.tsx`
+  - `{newText.length}/500 · Ctrl+Enter로 등록` → `{newText.length}/500`
+
+#### 라우트 수정
+- **Modified**: `app/workspace/[workspaceId]/[ticketId]/page.tsx`
+  - `workspace.type === 'PERSONAL'`이면 `getBoardData` 후 `PersonalTicketShell` + `backUrl="/"` 사용
+  - 팀 워크스페이스는 기존 `TeamShell` 유지
+- **Modified**: `app/workspace/[workspaceId]/board/page.tsx`
+  - `workspace.type === 'PERSONAL'`이면 `/`로 redirect — 개인 사용자가 팀 보드 URL 직접 접근 시 팀 메뉴 노출 방지
+
+### 📁 Files Modified
+- `src/components/ticket/BreadcrumbPicker.tsx` (신규, ~275 lines)
+- `src/components/layout/PersonalTicketShell.tsx` (신규, ~90 lines)
+- `src/components/ticket/TicketModal.tsx` (수정)
+- `src/components/ticket/TicketDetailPage.tsx` (수정)
+- `src/components/ticket/CommentSection.tsx` (수정)
+- `app/workspace/[workspaceId]/[ticketId]/page.tsx` (수정)
+- `app/workspace/[workspaceId]/board/page.tsx` (수정)
+
+---
+
 ## [feature/wbs] - 2026-03-07 (issues 테이블 → tickets.parent_id 통합 + 문서 현행화)
 
 ### 🎯 Prompts

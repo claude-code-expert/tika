@@ -2,8 +2,9 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId } from '@/db/queries/members';
-import { getTicketById } from '@/db/queries/tickets';
+import { getTicketById, getBoardData } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
+import { PersonalTicketShell } from '@/components/layout/PersonalTicketShell';
 import { TicketDetailPage } from '@/components/ticket/TicketDetailPage';
 import type { TeamRole } from '@/types/index';
 
@@ -43,8 +44,27 @@ export default async function TicketPage({
     notFound();
   }
 
+  if (workspace.type === 'PERSONAL') {
+    const boardData = await getBoardData(workspaceId);
+    return (
+      <PersonalTicketShell
+        backlogTickets={boardData.board.BACKLOG}
+        workspaceName={workspace.name}
+        workspaceId={workspaceId}
+      >
+        <TicketDetailPage
+          ticket={ticket}
+          workspaceId={workspaceId}
+          workspaceName={workspace.name}
+          currentMemberId={member.id}
+          backUrl="/"
+        />
+      </PersonalTicketShell>
+    );
+  }
+
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <TicketDetailPage
         ticket={ticket}
         workspaceId={workspaceId}

@@ -21,6 +21,7 @@ export const users = pgTable('users', {
   avatarUrl: text('avatar_url'),
   userType: varchar('user_type', { length: 20 }), // NULL = onboarding incomplete | 'USER' = personal | 'WORKSPACE' = team
   bgcolor: varchar('bg_color', { length: 7 }), // user-chosen avatar background color (HEX)
+  withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }), // null = active, set = withdrawn
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -33,6 +34,7 @@ export const workspaces = pgTable('workspaces', {
     .notNull()
     .references(() => users.id),
   type: varchar('type', { length: 10 }).notNull().default('PERSONAL'), // 'PERSONAL' | 'TEAM'
+  iconColor: varchar('icon_color', { length: 7 }), // HEX color for workspace icon (e.g. '#629584')
   isSearchable: boolean('is_searchable').notNull().default(false), // false = private, true = visible in search
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -52,6 +54,7 @@ export const members = pgTable(
     displayName: varchar('display_name', { length: 50 }).notNull(),
     color: varchar('color', { length: 7 }).notNull().default('#7EB4A2'),
     role: varchar('role', { length: 10 }).notNull().default('MEMBER'), // 'OWNER' | 'MEMBER' | 'VIEWER'
+    isPrimary: boolean('is_primary').notNull().default(false), // default navigation target for this user
     invitedBy: integer('invited_by'), // FK→members(id) — self-ref, set at app level
     joinedAt: timestamp('joined_at', { withTimezone: true }), // null = workspace founder
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

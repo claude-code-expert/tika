@@ -37,24 +37,6 @@ export const workspaces = pgTable('workspaces', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-// 3. issues (defined before tickets for FK reference)
-export const issues = pgTable(
-  'issues',
-  {
-    id: serial('id').primaryKey(),
-    workspaceId: integer('workspace_id')
-      .notNull()
-      .references(() => workspaces.id),
-    name: varchar('name', { length: 100 }).notNull(),
-    type: varchar('type', { length: 10 }).notNull(), // GOAL | STORY | FEATURE
-    parentId: integer('parent_id'), // self-reference — set via alter later or handled at app level
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('idx_issues_workspace_type').on(table.workspaceId, table.type),
-    index('idx_issues_parent_id').on(table.parentId),
-  ],
-);
 
 // 4. members (defined before tickets for FK reference)
 export const members = pgTable(
@@ -112,7 +94,7 @@ export const tickets = pgTable(
     position: integer('position').notNull().default(0),
     startDate: date('start_date', { mode: 'string' }),
     dueDate: date('due_date', { mode: 'string' }),
-    issueId: integer('issue_id').references(() => issues.id, { onDelete: 'set null' }),
+    parentId: integer('parent_id'), // self-reference — handled at app level
     assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
     sprintId: integer('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
     storyPoints: integer('story_points'),
@@ -133,7 +115,7 @@ export const tickets = pgTable(
     index('idx_tickets_due_date').on(table.dueDate),
     index('idx_tickets_sprint_id').on(table.sprintId),
     index('idx_tickets_assignee_id').on(table.assigneeId),
-    index('idx_tickets_issue_id').on(table.issueId),
+    index('idx_tickets_parent_id').on(table.parentId),
     index('idx_tickets_workspace_deleted').on(table.workspaceId, table.deleted),
   ],
 );

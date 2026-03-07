@@ -42,7 +42,7 @@ export async function duplicateTicket(
     priority: ticket.priority,
     dueDate: ticket.dueDate ?? undefined,
     labelIds: ticket.labels.map((l) => l.id),
-    issueId: ticket.issueId ?? undefined,
+    parentId: ticket.parentId ?? undefined,
     assigneeId: ticket.assigneeId ?? undefined,
   })) as { id: number } | undefined;
 

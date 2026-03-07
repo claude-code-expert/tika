@@ -3,7 +3,7 @@
 > DB: PostgreSQL (Vercel Postgres / Neon)
 > ORM: Drizzle ORM 0.38
 > 소스: `src/db/schema.ts`, `docs/TABLE_DEFINITION.md`
-> 최종 수정일: 2026-03-07
+> 최종 수정일: 2026-03-07 (migration 0010: issues → tickets.parent_id)
 
 ---
 
@@ -13,19 +13,18 @@
 |---|----------|------|------|
 | 1 | `users` | Google OAuth 사용자 | 인증 엔티티 |
 | 2 | `workspaces` | 워크스페이스 | users 1:N (owner_id FK) |
-| 3 | `issues` | 이슈 계층 (Goal/Story/Feature) | workspaces 1:N, self-ref (parent_id) |
-| 4 | `members` | 워크스페이스 멤버 | users × workspaces, UNIQUE(user_id, workspace_id) |
-| 5 | `sprints` | 스프린트 | workspaces 1:N (ON DELETE CASCADE) |
-| 6 | `tickets` | 칸반 티켓 | workspaces 1:N, sprints FK |
-| 7 | `checklist_items` | 체크리스트 항목 | tickets 1:N, ON DELETE CASCADE |
-| 8 | `labels` | 라벨 정의 | workspaces 1:N, UNIQUE(workspace_id, name) |
-| 9 | `ticket_labels` | 티켓-라벨 매핑 (M:N) | tickets × labels, ON DELETE CASCADE |
-| 10 | `notification_channels` | 알림 채널 설정 | workspaces 1:N, UNIQUE(workspace_id, type) |
-| 11 | `comments` | 티켓 댓글 | tickets 1:N (CASCADE), members FK (SET NULL) |
-| 12 | `notification_logs` | 알림 발송 이력 | workspaces 1:N, tickets FK (SET NULL) |
-| 13 | `workspace_invites` | 초대 토큰 | workspaces 1:N (CASCADE), members (invitedBy) |
-| 14 | `ticket_assignees` | 다중 담당자 (M:N) | tickets × members, ON DELETE CASCADE |
-| 15 | `workspace_join_requests` | 워크스페이스 가입 요청 | workspaces × users, UNIQUE(workspace_id, user_id) |
+| 3 | `members` | 워크스페이스 멤버 | users × workspaces, UNIQUE(user_id, workspace_id) |
+| 4 | `sprints` | 스프린트 | workspaces 1:N (ON DELETE CASCADE) |
+| 5 | `tickets` | 칸반 티켓 (GOAL/STORY/FEATURE/TASK) | workspaces 1:N, self-ref (parent_id), sprints FK |
+| 6 | `checklist_items` | 체크리스트 항목 | tickets 1:N, ON DELETE CASCADE |
+| 7 | `labels` | 라벨 정의 | workspaces 1:N, UNIQUE(workspace_id, name) |
+| 8 | `ticket_labels` | 티켓-라벨 매핑 (M:N) | tickets × labels, ON DELETE CASCADE |
+| 9 | `notification_channels` | 알림 채널 설정 | workspaces 1:N, UNIQUE(workspace_id, type) |
+| 10 | `comments` | 티켓 댓글 | tickets 1:N (CASCADE), members FK (SET NULL) |
+| 11 | `notification_logs` | 알림 발송 이력 | workspaces 1:N, tickets FK (SET NULL) |
+| 12 | `workspace_invites` | 초대 토큰 | workspaces 1:N (CASCADE), members (invitedBy) |
+| 13 | `ticket_assignees` | 다중 담당자 (M:N) | tickets × members, ON DELETE CASCADE |
+| 14 | `workspace_join_requests` | 워크스페이스 가입 요청 | workspaces × users, UNIQUE(workspace_id, user_id) |
 
 ---
 
@@ -98,22 +97,7 @@ entity "**workspaces**" as workspaces {
   * created_at     : TIMESTAMPTZ
 }
 
-' ── 3. issues ────────────────────────────────────────────
-entity "**issues**" as issues {
-  * id             : SERIAL       <<PK>>
-  --
-  * workspace_id   : INT          <<FK → workspaces.id>>
-  * name           : VARCHAR(100)
-  * type           : VARCHAR(10)
-  .. GOAL | STORY | FEATURE ..
-    parent_id      : INT          <<FK → issues.id (self-ref)>>
-  * created_at     : TIMESTAMPTZ
-  --
-  IDX: (workspace_id, type)
-  IDX: (parent_id)
-}
-
-' ── 4. members ───────────────────────────────────────────
+' ── 3. members ───────────────────────────────────────────
 entity "**members**" as members {
   * id             : SERIAL       <<PK>>
   --
@@ -147,7 +131,7 @@ entity "**sprints**" as sprints {
   IDX: (workspace_id, status)
 }
 
-' ── 6. tickets ───────────────────────────────────────────
+' ── 5. tickets ───────────────────────────────────────────
 entity "**tickets**" as tickets {
   * id             : SERIAL       <<PK>>
   --
@@ -163,12 +147,12 @@ entity "**tickets**" as tickets {
   * position       : INT          DEFAULT 0
     start_date     : DATE
     due_date       : DATE
-    issue_id       : INT          <<FK → issues.id, ON DELETE SET NULL>>
+    parent_id      : INT          <<self-ref: GOAL>STORY>FEATURE>TASK>>
     assignee_id    : INT          <<FK → members.id, ON DELETE SET NULL>>
     sprint_id      : INT          <<FK → sprints.id, ON DELETE SET NULL>>
     story_points   : INT
     completed_at   : TIMESTAMPTZ
-    deleted        : BOOLEAN      DEFAULT false
+  * deleted        : BOOLEAN      DEFAULT false
   * created_at     : TIMESTAMPTZ
   * updated_at     : TIMESTAMPTZ
   --
@@ -176,11 +160,11 @@ entity "**tickets**" as tickets {
   IDX: (due_date)
   IDX: (sprint_id)
   IDX: (assignee_id)
-  IDX: (issue_id)
+  IDX: (parent_id)
   IDX: (workspace_id, deleted)
 }
 
-' ── 7. checklist_items ───────────────────────────────────
+' ── 6. checklist_items ───────────────────────────────────
 entity "**checklist_items**" as checklist_items {
   * id             : SERIAL       <<PK>>
   --
@@ -194,7 +178,7 @@ entity "**checklist_items**" as checklist_items {
   LIMIT: max 20 per ticket
 }
 
-' ── 8. labels ────────────────────────────────────────────
+' ── 7. labels ────────────────────────────────────────────
 entity "**labels**" as labels {
   * id             : SERIAL       <<PK>>
   --
@@ -207,7 +191,7 @@ entity "**labels**" as labels {
   LIMIT: max 20 per workspace
 }
 
-' ── 9. ticket_labels (M:N junction) ──────────────────────
+' ── 8. ticket_labels (M:N junction) ──────────────────────
 entity "**ticket_labels**" as ticket_labels #FAFBFF {
   * ticket_id      : INT          <<PK, FK → tickets.id, ON DELETE CASCADE>>
   * label_id       : INT          <<PK, FK → labels.id, ON DELETE CASCADE>>
@@ -216,7 +200,7 @@ entity "**ticket_labels**" as ticket_labels #FAFBFF {
   LIMIT: max 5 labels per ticket
 }
 
-' ── 10. notification_channels ─────────────────────────────
+' ── 9. notification_channels ─────────────────────────────
 entity "**notification_channels**" as notification_channels {
   * id             : SERIAL       <<PK>>
   --
@@ -231,7 +215,7 @@ entity "**notification_channels**" as notification_channels {
   UK: (workspace_id, type)
 }
 
-' ── 11. comments ─────────────────────────────────────────
+' ── 10. comments ─────────────────────────────────────────
 entity "**comments**" as comments {
   * id             : SERIAL       <<PK>>
   --
@@ -245,7 +229,7 @@ entity "**comments**" as comments {
   IDX: (member_id)
 }
 
-' ── 12. notification_logs ────────────────────────────────
+' ── 11. notification_logs ────────────────────────────────
 entity "**notification_logs**" as notification_logs {
   * id             : SERIAL       <<PK>>
   --
@@ -264,7 +248,7 @@ entity "**notification_logs**" as notification_logs {
   IDX: (sent_at)
 }
 
-' ── 13. workspace_invites ────────────────────────────────
+' ── 12. workspace_invites ────────────────────────────────
 entity "**workspace_invites**" as workspace_invites {
   * id             : SERIAL       <<PK>>
   --
@@ -283,7 +267,7 @@ entity "**workspace_invites**" as workspace_invites {
   IDX: (token)
 }
 
-' ── 14. ticket_assignees (M:N) ───────────────────────────
+' ── 13. ticket_assignees (M:N) ───────────────────────────
 entity "**ticket_assignees**" as ticket_assignees #FAFBFF {
   * ticket_id      : INT          <<PK, FK → tickets.id, CASCADE>>
   * member_id      : INT          <<PK, FK → members.id, CASCADE>>
@@ -292,7 +276,7 @@ entity "**ticket_assignees**" as ticket_assignees #FAFBFF {
   IDX: (member_id)
 }
 
-' ── 15. workspace_join_requests ──────────────────────────
+' ── 14. workspace_join_requests ──────────────────────────
 entity "**workspace_join_requests**" as workspace_join_requests {
   * id             : SERIAL       <<PK>>
   --
@@ -322,9 +306,6 @@ users                ||--o{ members              : "joins as\n(user_id)"
 ' users → workspace_join_requests
 users                ||--o{ workspace_join_requests : "requests\n(user_id)"
 
-' workspaces → issues  (1:N)
-workspaces           ||--|{ issues               : "contains\n(workspace_id)"
-
 ' workspaces → members  (1:N)
 workspaces           ||--|{ members              : "has member\n(workspace_id)"
 
@@ -349,11 +330,8 @@ workspaces           ||--o{ workspace_invites    : "invites\n(workspace_id)"
 ' workspaces → workspace_join_requests  (1:N)
 workspaces           ||--o{ workspace_join_requests : "receives\n(workspace_id)"
 
-' issues → issues  (self-referencing 1:N for hierarchy)
-issues               |o--o{ issues               : "parent\n(parent_id)"
-
-' issues → tickets  (1:N via issue_id, optional)
-issues               ||--o{ tickets              : "groups\n(issue_id)"
+' tickets → tickets  (self-referencing 1:N for GOAL>STORY>FEATURE>TASK hierarchy)
+tickets              |o--o{ tickets               : "parent\n(parent_id)"
 
 ' sprints → tickets  (1:N)
 sprints              ||--o{ tickets              : "includes\n(sprint_id)"
@@ -394,18 +372,16 @@ members              ||--o{ ticket_assignees      : "handles\n(member_id)"
 ```
 users ──1:N──> workspaces
   │                │
-  │                ├──1:N──> issues (self-ref: parent_id)
-  │                │
   │                ├──1:N──> members ──self-ref──> invited_by
   │                │
   │                ├──1:N──> sprints
   │                │           │
   │                │           └──1:N──> tickets
   │                │
-  │                ├──1:N──> tickets ──1:N──> checklist_items
+  │                ├──1:N──> tickets (self-ref: parent_id  GOAL>STORY>FEATURE>TASK)
+  │                │           │           ──1:N──> checklist_items
   │                │           │           ──1:N──> comments
   │                │           │           ──1:N──> notification_logs
-  │                │           ├── FK ──> issues       (issue_id,    ON DELETE SET NULL)
   │                │           ├── FK ──> members      (assignee_id, ON DELETE SET NULL)
   │                │           ├── FK ──> sprints      (sprint_id,   ON DELETE SET NULL)
   │                │           ├── M:N ──> labels      (via ticket_labels,    CASCADE)
@@ -457,26 +433,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.3 issues
-
-이슈 계층 구조 (Goal > Story > Feature). 티켓의 상위 개념으로 자기참조 FK를 통해 계층 관계를 표현한다.
-
-| 칼럼 | DB 칼럼명 | 타입 | 제약 | 기본값 | 설명 |
-|------|----------|------|------|--------|------|
-| id | `id` | SERIAL | **PK** | auto-increment | 고유 ID |
-| workspaceId | `workspace_id` | INT | NOT NULL, **FK** → workspaces(id) | — | 소속 워크스페이스 |
-| name | `name` | VARCHAR(100) | NOT NULL | — | 이슈 이름 |
-| type | `type` | VARCHAR(10) | NOT NULL | — | `GOAL` \| `STORY` \| `FEATURE` |
-| parentId | `parent_id` | INT | NULLABLE, **FK** → issues(id) ON DELETE SET NULL | NULL | 상위 이슈 (self-ref) |
-| createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
-
-**인덱스**:
-- `idx_issues_workspace_type` → (workspace_id, type)
-- `idx_issues_parent_id` → (parent_id)
-
----
-
-### 4.4 members
+### 4.3 members
 
 워크스페이스 내 멤버. 사용자가 워크스페이스에 참여하면 자동 생성된다.
 
@@ -496,7 +453,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.5 sprints
+### 4.4 sprints
 
 스프린트 단위 작업 기간 관리.
 
@@ -516,9 +473,9 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.6 tickets
+### 4.5 tickets
 
-칸반 보드의 핵심 엔티티. 4단계 워크플로우를 가진다.
+칸반 보드 및 WBS의 핵심 엔티티. GOAL > STORY > FEATURE > TASK 계층 구조를 `parent_id` 자기 참조로 표현하며, 4단계 워크플로우를 가진다.
 
 | 칼럼 | DB 칼럼명 | 타입 | 제약 | 기본값 | 설명 |
 |------|----------|------|------|--------|------|
@@ -532,11 +489,12 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | position | `position` | INT | NOT NULL | `0` | 칼럼 내 정렬 순서 (gap-based) |
 | startDate | `start_date` | DATE | NULLABLE | NULL | 시작일 (YYYY-MM-DD) |
 | dueDate | `due_date` | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
-| issueId | `issue_id` | INT | NULLABLE, **FK** → issues(id) ON DELETE SET NULL | NULL | 상위 이슈 |
-| assigneeId | `assignee_id` | INT | NULLABLE, **FK** → members(id) ON DELETE SET NULL | NULL | 단일 담당자 (레거시) |
+| parentId | `parent_id` | INT | NULLABLE (self-ref) | NULL | 상위 티켓 (GOAL/STORY/FEATURE 계층용) |
+| assigneeId | `assignee_id` | INT | NULLABLE, **FK** → members(id) ON DELETE SET NULL | NULL | 담당자 |
 | sprintId | `sprint_id` | INT | NULLABLE, **FK** → sprints(id) ON DELETE SET NULL | NULL | 소속 스프린트 |
 | storyPoints | `story_points` | INT | NULLABLE | NULL | 스토리 포인트 |
 | completedAt | `completed_at` | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 (DONE 전환 시 자동 설정) |
+| deleted | `deleted` | BOOLEAN | NOT NULL | `false` | 논리 삭제 여부 |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 | updatedAt | `updated_at` | TIMESTAMPTZ | NOT NULL | `now()` | 수정 시각 (`$onUpdate`) |
 
@@ -545,11 +503,12 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 - `idx_tickets_due_date` → (due_date)
 - `idx_tickets_sprint_id` → (sprint_id)
 - `idx_tickets_assignee_id` → (assignee_id)
-- `idx_tickets_issue_id` → (issue_id)
+- `idx_tickets_parent_id` → (parent_id)
+- `idx_tickets_workspace_deleted` → (workspace_id, deleted)
 
 ---
 
-### 4.7 checklist_items
+### 4.6 checklist_items
 
 티켓에 소속된 체크리스트 항목. 티켓 삭제 시 CASCADE로 함께 삭제된다.
 
@@ -568,7 +527,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.8 labels
+### 4.7 labels
 
 워크스페이스 단위의 라벨 정의.
 
@@ -586,7 +545,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.9 ticket_labels
+### 4.8 ticket_labels
 
 티켓과 라벨의 다대다(M:N) 매핑 테이블.
 
@@ -601,7 +560,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.10 notification_channels
+### 4.9 notification_channels
 
 워크스페이스별 알림 채널 설정 (Slack/Telegram). 채널 타입당 1개 (upsert).
 
@@ -619,7 +578,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.11 comments
+### 4.10 comments
 
 티켓 댓글. 티켓 삭제 시 CASCADE 삭제.
 
@@ -638,7 +597,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.12 notification_logs
+### 4.11 notification_logs
 
 알림 발송 이력. 읽음 여부 포함.
 
@@ -660,7 +619,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.13 workspace_invites
+### 4.12 workspace_invites
 
 워크스페이스 초대 토큰. 만료 기간 있음.
 
@@ -682,7 +641,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.14 ticket_assignees
+### 4.13 ticket_assignees
 
 티켓의 다중 담당자(M:N) 매핑 테이블.
 
@@ -697,7 +656,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-### 4.15 workspace_join_requests
+### 4.14 workspace_join_requests
 
 사용자가 팀 워크스페이스 참여를 요청하는 테이블 (온보딩 플로우).
 
@@ -725,11 +684,9 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | workspaces.owner_id → users.id | RESTRICT | 사용자 삭제 시 워크스페이스 보호 |
 | members.user_id → users.id | RESTRICT | — |
 | sprints.workspace_id → workspaces.id | **CASCADE** | 워크스페이스 삭제 시 스프린트 삭제 |
-| issues.workspace_id → workspaces.id | RESTRICT | — |
-| issues.parent_id → issues.id | **SET NULL** | 상위 이슈 삭제 시 하위는 고아 처리 |
 | members.workspace_id → workspaces.id | RESTRICT | — |
 | tickets.workspace_id → workspaces.id | RESTRICT | — |
-| tickets.issue_id → issues.id | **SET NULL** | 이슈 삭제 시 티켓 연결 해제 |
+| tickets.parent_id → tickets.id | (no FK constraint) | 앱 레벨 자기 참조; 부모 삭제 시 자식 parent_id는 앱에서 처리 |
 | tickets.assignee_id → members.id | **SET NULL** | 멤버 삭제 시 담당자 해제 |
 | tickets.sprint_id → sprints.id | **SET NULL** | 스프린트 삭제 시 연결 해제 |
 | checklist_items.ticket_id → tickets.id | **CASCADE** | 티켓 삭제 시 체크리스트 삭제 |
@@ -761,3 +718,4 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | `0004_*.sql` | `sprints` 테이블 신규 생성, tickets `sprint_id`/`story_points` 추가, `idx_tickets_sprint_id` 인덱스 |
 | `0005_*.sql` | `comments`, `notification_logs`, `workspace_invites`, `ticket_assignees` 테이블 신규 생성 |
 | `0006_talented_stryfe.sql` | `workspace_join_requests` 테이블 신규 생성, users `user_type` 추가 |
+| `0010_issues_to_tickets.sql` | `issues` 테이블 폐기, tickets에 `parent_id` 자기참조 추가 (GOAL/STORY/FEATURE → tickets 통합) |

@@ -57,7 +57,7 @@ const mockTicket: Ticket = {
   position: 0,
   startDate: null,
   dueDate: '2026-02-27',
-  issueId: null,
+  parentId: null,
   assigneeId: null,
   completedAt: null,
   createdAt: '2026-02-01T00:00:00.000Z',

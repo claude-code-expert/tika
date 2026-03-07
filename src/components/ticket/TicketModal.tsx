@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
-import type { TicketWithMeta, ChecklistItem, Label, Issue, Member, Comment } from '@/types/index';
+import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { TICKET_TYPE_META } from '@/lib/constants';
@@ -73,7 +73,7 @@ export function TicketModal({
   const [type, setType] = useState(ticket.type);
   const [startDate, setStartDate] = useState(ticket.startDate ?? '');
   const [dueDate, setDueDate] = useState(ticket.dueDate ?? '');
-  const [selectedIssueId, setSelectedIssueId] = useState<number | null>(ticket.issueId ?? null);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(ticket.parentId ?? null);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(() => {
     const ids = new Set(ticket.assignees.map((a) => a.id));
     if (ticket.assignee) ids.add(ticket.assignee.id);
@@ -90,8 +90,8 @@ export function TicketModal({
   const [labelsLoaded, setLabelsLoaded] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
 
-  // ── issue / member state ──
-  const [allIssues, setAllIssues] = useState<Issue[]>([]);
+  // ── parent / member state ──
+  const [allParents, setAllParents] = useState<Ticket[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
 
   // ── UI state ──
@@ -101,14 +101,14 @@ export function TicketModal({
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [assigneeSearched, setAssigneeSearched] = useState(false);
-  const [showIssuePicker, setShowIssuePicker] = useState(false);
-  const [issueSearch, setIssueSearch] = useState('');
+  const [showParentPicker, setShowParentPicker] = useState(false);
+  const [parentSearch, setParentSearch] = useState('');
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
-  const issueAreaRef = useRef<HTMLDivElement>(null);
+  const parentAreaRef = useRef<HTMLDivElement>(null);
 
   // ── auto-resize title textarea ──
   const autoResizeTitle = useCallback(() => {
@@ -122,16 +122,16 @@ export function TicketModal({
     autoResizeTitle();
   }, [title, autoResizeTitle]);
 
-  // ── fetch issues, members, comments ──
+  // ── fetch parents, members, comments ──
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
     Promise.all([
-      fetch('/api/issues', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/tickets?types=GOAL,STORY,FEATURE', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch('/api/members', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`/api/tickets/${ticket.id}/comments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([issuesData, membersData, commentsData]) => {
-      if (issuesData?.issues) setAllIssues(issuesData.issues);
+    ]).then(([parentsData, membersData, commentsData]) => {
+      if (parentsData?.tickets) setAllParents(parentsData.tickets);
       if (membersData?.members) setAllMembers(membersData.members);
       if (commentsData?.comments) setCommentList(commentsData.comments);
     });
@@ -162,17 +162,17 @@ export function TicketModal({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showAssigneePicker]);
 
-  // ── outside click: issue picker ──
+  // ── outside click: parent picker ──
   useEffect(() => {
-    if (!showIssuePicker) return;
+    if (!showParentPicker) return;
     const handleClick = (e: MouseEvent) => {
-      if (issueAreaRef.current && !issueAreaRef.current.contains(e.target as Node)) {
-        setShowIssuePicker(false);
+      if (parentAreaRef.current && !parentAreaRef.current.contains(e.target as Node)) {
+        setShowParentPicker(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [showIssuePicker]);
+  }, [showParentPicker]);
 
   // ── dirty check ──
   const isDirty =
@@ -183,7 +183,7 @@ export function TicketModal({
     type !== ticket.type ||
     startDate !== (ticket.startDate ?? '') ||
     dueDate !== (ticket.dueDate ?? '') ||
-    selectedIssueId !== (ticket.issueId ?? null) ||
+    selectedParentId !== (ticket.parentId ?? null) ||
     JSON.stringify([...selectedAssigneeIds].sort()) !==
       JSON.stringify([...ticket.assignees.map((a) => a.id)].sort());
 
@@ -200,7 +200,7 @@ export function TicketModal({
       if (type !== ticket.type) patch.type = type;
       if (startDate !== (ticket.startDate ?? '')) patch.startDate = startDate || null;
       if (dueDate !== (ticket.dueDate ?? '')) patch.dueDate = dueDate || null;
-      if (selectedIssueId !== (ticket.issueId ?? null)) patch.issueId = selectedIssueId;
+      if (selectedParentId !== (ticket.parentId ?? null)) patch.parentId = selectedParentId;
       const origIds = [...ticket.assignees.map((a) => a.id)].sort().join(',');
       const newIds = [...selectedAssigneeIds].sort().join(',');
       if (origIds !== newIds) patch.assigneeIds = selectedAssigneeIds;
@@ -529,18 +529,18 @@ export function TicketModal({
               {/* Breadcrumb line: issue select (left) + type select (right) */}
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 {ticket.type !== 'GOAL' ? (() => {
-                  const filteredIssues = allIssues.filter((issue) => {
-                    if (ticket.type === 'STORY') return issue.type === 'GOAL';
-                    if (ticket.type === 'FEATURE') return issue.type === 'STORY';
-                    if (ticket.type === 'TASK') return issue.type === 'FEATURE';
+                  const filteredParents = allParents.filter((p) => {
+                    if (ticket.type === 'STORY') return p.type === 'GOAL';
+                    if (ticket.type === 'FEATURE') return p.type === 'STORY';
+                    if (ticket.type === 'TASK') return p.type === 'FEATURE';
                     return false;
                   });
-                  const selectedIssue = filteredIssues.find((i) => i.id === selectedIssueId) ?? null;
+                  const selectedParent = filteredParents.find((p) => p.id === selectedParentId) ?? null;
                   return (
-                    <div ref={issueAreaRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                    <div ref={parentAreaRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                       {/* Breadcrumb trigger */}
                       <button
-                        onClick={() => setShowIssuePicker((p) => !p)}
+                        onClick={() => setShowParentPicker((p) => !p)}
                         aria-label="상위 이슈 선택"
                         style={{
                           display: 'inline-flex',
@@ -553,7 +553,7 @@ export function TicketModal({
                           cursor: 'pointer',
                           fontFamily: 'inherit',
                           fontSize: 12,
-                          color: selectedIssue ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
+                          color: selectedParent ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
                           maxWidth: '100%',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -563,19 +563,19 @@ export function TicketModal({
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                       >
-                        {selectedIssue ? (
+                        {selectedParent ? (
                           <>
                             <span style={{
                               fontSize: 10, fontWeight: 700,
                               padding: '1px 5px', borderRadius: 3,
-                              background: selectedIssue.type === 'GOAL' ? '#EDE9FE' : selectedIssue.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                              color: selectedIssue.type === 'GOAL' ? '#6D28D9' : selectedIssue.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                              background: selectedParent.type === 'GOAL' ? '#EDE9FE' : selectedParent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                              color: selectedParent.type === 'GOAL' ? '#6D28D9' : selectedParent.type === 'STORY' ? '#1D4ED8' : '#065F46',
                               flexShrink: 0,
                             }}>
-                              {selectedIssue.type.charAt(0)}
+                              {selectedParent.type.charAt(0)}
                             </span>
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {selectedIssue.name}
+                              {selectedParent.title}
                             </span>
                           </>
                         ) : (
@@ -585,10 +585,10 @@ export function TicketModal({
                       </button>
 
                       {/* Dropdown */}
-                      {showIssuePicker && (() => {
-                        const searched = issueSearch.length >= 2
-                          ? filteredIssues.filter((i) => i.name.toLowerCase().includes(issueSearch.toLowerCase()))
-                          : filteredIssues;
+                      {showParentPicker && (() => {
+                        const searched = parentSearch.length >= 2
+                          ? filteredParents.filter((p) => p.title.toLowerCase().includes(parentSearch.toLowerCase()))
+                          : filteredParents;
                         return (
                         <div style={{
                           position: 'absolute',
@@ -612,8 +612,8 @@ export function TicketModal({
                               autoFocus
                               type="text"
                               placeholder="이슈 검색..."
-                              value={issueSearch}
-                              onChange={(e) => setIssueSearch(e.target.value)}
+                              value={parentSearch}
+                              onChange={(e) => setParentSearch(e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '5px 8px',
@@ -632,47 +632,47 @@ export function TicketModal({
                           <div style={{ overflowY: 'auto', padding: '4px 0' }}>
                           {/* 상위 이슈 없음 */}
                           <button
-                            onClick={() => { setSelectedIssueId(null); setShowIssuePicker(false); setIssueSearch(''); }}
+                            onClick={() => { setSelectedParentId(null); setShowParentPicker(false); setParentSearch(''); }}
                             style={{
                               display: 'block', width: '100%', textAlign: 'left',
                               padding: '7px 12px', border: 'none', background: 'none',
                               fontSize: 12, color: 'var(--color-text-muted)', fontStyle: 'italic',
                               cursor: 'pointer', fontFamily: 'inherit',
-                              backgroundColor: selectedIssueId === null ? 'var(--color-board-bg)' : 'transparent',
+                              backgroundColor: selectedParentId === null ? 'var(--color-board-bg)' : 'transparent',
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedIssueId === null ? 'var(--color-board-bg)' : 'transparent'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === null ? 'var(--color-board-bg)' : 'transparent'; }}
                           >
                             상위 이슈 없음
                           </button>
                           {searched.length > 0 && (
                             <div style={{ height: 1, background: 'var(--color-border)', margin: '2px 0' }} />
                           )}
-                          {searched.map((issue) => (
+                          {searched.map((parent) => (
                             <button
-                              key={issue.id}
-                              onClick={() => { setSelectedIssueId(issue.id); setShowIssuePicker(false); setIssueSearch(''); }}
+                              key={parent.id}
+                              onClick={() => { setSelectedParentId(parent.id); setShowParentPicker(false); setParentSearch(''); }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 7,
                                 width: '100%', textAlign: 'left',
                                 padding: '7px 12px', border: 'none', background: 'none',
                                 fontSize: 12, color: 'var(--color-text-primary)',
                                 cursor: 'pointer', fontFamily: 'inherit',
-                                backgroundColor: selectedIssueId === issue.id ? 'var(--color-board-bg)' : 'transparent',
+                                backgroundColor: selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent',
                               }}
                               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedIssueId === issue.id ? 'var(--color-board-bg)' : 'transparent'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent'; }}
                             >
                               <span style={{
                                 fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 padding: '1px 5px', borderRadius: 3,
-                                background: issue.type === 'GOAL' ? '#EDE9FE' : issue.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                                color: issue.type === 'GOAL' ? '#6D28D9' : issue.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                                background: parent.type === 'GOAL' ? '#EDE9FE' : parent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                                color: parent.type === 'GOAL' ? '#6D28D9' : parent.type === 'STORY' ? '#1D4ED8' : '#065F46',
                               }}>
-                                {issue.type.charAt(0)}
+                                {parent.type.charAt(0)}
                               </span>
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {issue.name}
+                                {parent.title}
                               </span>
                             </button>
                           ))}

@@ -12,7 +12,7 @@ const baseTicket: TicketWithMeta = {
   priority: 'MEDIUM',
   position: 0,
   dueDate: null,
-  issueId: null,
+  parentId: null,
   assigneeId: null,
   completedAt: null,
   createdAt: '2026-02-17T00:00:00.000Z',
@@ -20,7 +20,7 @@ const baseTicket: TicketWithMeta = {
   isOverdue: false,
   labels: [],
   checklistItems: [],
-  issue: null,
+  parent: null,
   assignee: null,
 };
 

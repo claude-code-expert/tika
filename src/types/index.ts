@@ -61,13 +61,6 @@ export const TICKET_TYPE = {
 } as const;
 export type TicketType = (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE];
 
-export const ISSUE_TYPE = {
-  GOAL: 'GOAL',
-  STORY: 'STORY',
-  FEATURE: 'FEATURE',
-} as const;
-export type IssueType = (typeof ISSUE_TYPE)[keyof typeof ISSUE_TYPE];
-
 // Phase 4: Team roles
 export const TEAM_ROLE = {
   OWNER: 'OWNER',
@@ -116,7 +109,7 @@ export interface Ticket {
   position: number;
   startDate: string | null; // YYYY-MM-DD
   dueDate: string | null; // YYYY-MM-DD
-  issueId: number | null;
+  parentId: number | null;
   assigneeId: number | null;
   sprintId: number | null; // Phase 4
   storyPoints: number | null; // Phase 4
@@ -130,7 +123,7 @@ export interface TicketWithMeta extends Ticket {
   isOverdue: boolean;
   labels: Label[];
   checklistItems: ChecklistItem[];
-  issue: Issue | null;
+  parent: Ticket | null;
   assignee: Member | null;
   assignees: Member[]; // Phase 4: multi-assignee
 }
@@ -149,15 +142,6 @@ export interface Label {
   workspaceId: number;
   name: string;
   color: string;
-  createdAt: string;
-}
-
-export interface Issue {
-  id: number;
-  workspaceId: number;
-  name: string;
-  type: IssueType;
-  parentId: number | null;
   createdAt: string;
 }
 
@@ -340,7 +324,7 @@ export interface MemberWorkload {
 // Phase 4: Gantt chart item
 export interface GanttItem {
   id: number;
-  type: TicketType | IssueType;
+  type: TicketType;
   name: string;
   status: TicketStatus;
   priority: TicketPriority;

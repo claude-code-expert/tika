@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const check = await requireRole(userId, workspaceId, 'VIEWER');
     if (isRoleError(check)) return check;
 
@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const check = await requireRole(userId, workspaceId, 'OWNER');
     if (isRoleError(check)) return check;
 
@@ -119,7 +119,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const check = await requireRole(userId, workspaceId, 'OWNER');
     if (isRoleError(check)) return check;
 

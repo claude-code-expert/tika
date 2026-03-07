@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "bg_color" varchar(7);

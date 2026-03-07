@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { TicketWithMeta, IssueType } from '@/types/index';
+import type { TicketWithMeta, TicketType } from '@/types/index';
 import { AlertTriangle, Calendar, CheckSquare } from 'lucide-react';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import { Toast } from '@/components/ui/Toast';
 
-const ISSUE_TAG_STYLES: Record<IssueType, { bg: string; color: string }> = {
+const PARENT_TAG_STYLES: Record<string, { bg: string; color: string }> = {
   GOAL: { bg: '#F3E8FF', color: '#8B5CF6' },
   STORY: { bg: '#DBEAFE', color: '#3B82F6' },
   FEATURE: { bg: '#D1FAE5', color: '#10B981' },
@@ -38,7 +38,7 @@ interface TicketCardProps {
   workspaceName?: string;
 }
 
-export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) {
+function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
   const [copied, setCopied] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
@@ -53,17 +53,32 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
     });
   }, [workspaceName, ticket.id]);
 
-  const style = {
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-  };
+  }), [transform, transition, isDragging]);
 
-  const completedCount = ticket.checklistItems.filter((c) => c.isCompleted).length;
+  const completedCount = useMemo(
+    () => ticket.checklistItems.filter((c) => c.isCompleted).length,
+    [ticket.checklistItems],
+  );
   const totalCount = ticket.checklistItems.length;
-  const dueDateState = getDueDateState(ticket.dueDate, ticket.isOverdue);
-  const issueStyle = ticket.issue ? ISSUE_TAG_STYLES[ticket.issue.type] : null;
+  const dueDateState = useMemo(
+    () => getDueDateState(ticket.dueDate, ticket.isOverdue),
+    [ticket.dueDate, ticket.isOverdue],
+  );
+  const parentStyle = ticket.parent ? PARENT_TAG_STYLES[ticket.parent.type as TicketType] : null;
   const typeIndicator = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
+  const displayAssignees = useMemo(
+    () =>
+      ticket.assignees && ticket.assignees.length > 0
+        ? ticket.assignees
+        : ticket.assignee
+          ? [ticket.assignee]
+          : [],
+    [ticket.assignees, ticket.assignee],
+  );
 
   const handleClick = () => {
     if (!isDragging) onClick?.();
@@ -172,8 +187,8 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
         )}
       </div>
 
-      {/* Issue tag (if linked) */}
-      {ticket.issue && issueStyle && (
+      {/* Parent tag (if linked) */}
+      {ticket.parent && parentStyle && (
         <div style={{ marginBottom: 6 }}>
           <span
             style={{
@@ -181,8 +196,8 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
               fontWeight: 600,
               padding: '2px 7px',
               borderRadius: 4,
-              background: issueStyle.bg,
-              color: issueStyle.color,
+              background: parentStyle.bg,
+              color: parentStyle.color,
               display: 'inline-block',
               maxWidth: '100%',
               overflow: 'hidden',
@@ -190,7 +205,7 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
               whiteSpace: 'nowrap',
             }}
           >
-            {ticket.issue.name}
+            {ticket.parent.title}
           </span>
         </div>
       )}
@@ -259,9 +274,6 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
 
         {/* Assignee avatars — show multi-assignees if present, fallback to single assignee */}
         {(() => {
-          const displayAssignees = (ticket.assignees && ticket.assignees.length > 0)
-            ? ticket.assignees
-            : ticket.assignee ? [ticket.assignee] : [];
           if (displayAssignees.length === 0) return null;
           const visible = displayAssignees.slice(0, 3);
           const extra = displayAssignees.length - 3;
@@ -309,3 +321,5 @@ export function TicketCard({ ticket, onClick, workspaceName }: TicketCardProps) 
     </div>
   );
 }
+
+export const TicketCard = memo(TicketCardInner);

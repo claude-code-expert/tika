@@ -42,7 +42,7 @@ const mockTicket: TicketWithMeta = {
   position: 0,
   startDate: null,
   dueDate: '2026-03-15',
-  issueId: null,
+  parentId: null,
   assigneeId: null,
   sprintId: null,
   storyPoints: null,
@@ -52,7 +52,7 @@ const mockTicket: TicketWithMeta = {
   isOverdue: false,
   labels: [],
   checklistItems: [],
-  issue: null,
+  parent: null,
   assignee: null,
   assignees: [],
 };

@@ -72,8 +72,8 @@ export function CycleTimeAnalysis({
 
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
         {/* Y grid */}
-        {[0, Math.round(maxCount / 2), maxCount].map((v) => (
-          <g key={v}>
+        {[0, Math.round(maxCount / 2), maxCount].map((v, i) => (
+          <g key={i}>
             <line x1={padL} x2={padL + innerW} y1={yScale(v)} y2={yScale(v)} stroke="#F3F4F6" strokeWidth={1} />
             <text x={padL - 4} y={yScale(v) + 4} textAnchor="end" fontSize={9} fill="#9CA3AF">{v}</text>
           </g>

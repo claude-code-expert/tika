@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const limitParam = new URL(request.url).searchParams.get('limit');
     const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 200) : 20;
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const body = (await request.json().catch(() => ({}))) as { action?: string };
 
     if (body.action !== 'markAllRead') {

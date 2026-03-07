@@ -19,7 +19,7 @@ export async function POST(
 
     const { token } = await params;
     const userEmail = session.user.email as string | undefined;
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const displayName = (session.user.name as string | null) ?? '사용자';
 
     const invite = await getInviteByToken(token);

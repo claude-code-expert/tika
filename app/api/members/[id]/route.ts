@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { updateMember, updateMemberRole, removeMember, getOwnerCount, getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { updateUserBgcolor } from '@/db/queries/users';
 import { TEAM_ROLE } from '@/types/index';
 
 const updateProfileSchema = z.object({
@@ -38,7 +39,7 @@ export async function PATCH(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const body = await request.json();
 
     // Role update request (settings page)
@@ -80,7 +81,7 @@ export async function PATCH(
     }
 
     // Profile update request (own profile only)
-    const memberId = (session.user as Record<string, unknown>).memberId as number;
+    const memberId = session.user.memberId as number;
     if (memberId !== id) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '본인의 프로필만 수정할 수 있습니다' } },
@@ -102,6 +103,12 @@ export async function PATCH(
         { error: { code: 'NOT_FOUND', message: '멤버를 찾을 수 없습니다' } },
         { status: 404 },
       );
+    }
+
+    // Sync chosen color to users.bgcolor
+    if (result.data.color) {
+      const userId = (session.user as unknown as Record<string, unknown>).id as string;
+      await updateUserBgcolor(userId, result.data.color);
     }
 
     return NextResponse.json({ member });
@@ -136,7 +143,7 @@ export async function DELETE(
       );
     }
 
-    const workspaceId = (session.user as Record<string, unknown>).workspaceId as number;
+    const workspaceId = session.user.workspaceId as number;
     const allMembers = await getMembersWithEmailByWorkspace(workspaceId);
     const targetMember = allMembers.find((m) => m.id === id);
 

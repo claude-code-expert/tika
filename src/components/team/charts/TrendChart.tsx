@@ -84,8 +84,8 @@ export function TrendChart({ data, height = 160 }: TrendChartProps) {
       ))}
 
       {/* Y-axis labels */}
-      {gridValues.map((v) => (
-        <text key={v} x={padL - 4} y={yScale(v) + 4} textAnchor="end" fontSize={9} fill="#8993A4">
+      {gridValues.map((v, i) => (
+        <text key={i} x={padL - 4} y={yScale(v) + 4} textAnchor="end" fontSize={9} fill="#8993A4">
           {v}
         </text>
       ))}

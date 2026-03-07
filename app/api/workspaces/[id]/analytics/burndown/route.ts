@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
+    const userId = session.user.id as string;
     const allowed = await requireRole(userId, workspaceId, 'VIEWER');
     if (!allowed) {
       return NextResponse.json(

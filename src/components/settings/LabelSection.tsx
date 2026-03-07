@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import type { SectionProps } from './types';
 import type { LabelWithCount } from '@/types/index';
 import { LabelBadge } from '@/components/label/LabelBadge';
@@ -92,6 +93,7 @@ export function LabelSection({ showToast }: SectionProps) {
         return;
       }
       await fetchLabels();
+      mutate('/api/labels');
       setNewName('');
       setCreatorOpen(false);
       showToast(`"${name}" 라벨이 추가되었습니다`, 'success');
@@ -116,6 +118,7 @@ export function LabelSection({ showToast }: SectionProps) {
         return;
       }
       await fetchLabels();
+      mutate('/api/labels');
       setEditingId(null);
       showToast('라벨이 수정되었습니다', 'success');
     } catch {
@@ -127,6 +130,7 @@ export function LabelSection({ showToast }: SectionProps) {
     try {
       await fetch(`/api/labels/${label.id}`, { method: 'DELETE' });
       await fetchLabels();
+      mutate('/api/labels');
       setConfirmDelete(null);
       showToast(`"${label.name}" 라벨이 삭제되었습니다`, 'success');
     } catch {

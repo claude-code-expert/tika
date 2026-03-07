@@ -3,14 +3,14 @@
 import { useState, useCallback, useMemo, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { TicketWithMeta, IssueType } from '@/types/index';
+import type { TicketWithMeta, TicketType } from '@/types/index';
 import { AlertTriangle, Calendar, CheckSquare } from 'lucide-react';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import { Toast } from '@/components/ui/Toast';
 
-const ISSUE_TAG_STYLES: Record<IssueType, { bg: string; color: string }> = {
+const PARENT_TAG_STYLES: Record<string, { bg: string; color: string }> = {
   GOAL: { bg: '#F3E8FF', color: '#8B5CF6' },
   STORY: { bg: '#DBEAFE', color: '#3B82F6' },
   FEATURE: { bg: '#D1FAE5', color: '#10B981' },
@@ -68,7 +68,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
     () => getDueDateState(ticket.dueDate, ticket.isOverdue),
     [ticket.dueDate, ticket.isOverdue],
   );
-  const issueStyle = ticket.issue ? ISSUE_TAG_STYLES[ticket.issue.type] : null;
+  const parentStyle = ticket.parent ? PARENT_TAG_STYLES[ticket.parent.type as TicketType] : null;
   const typeIndicator = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
   const displayAssignees = useMemo(
     () =>
@@ -187,8 +187,8 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         )}
       </div>
 
-      {/* Issue tag (if linked) */}
-      {ticket.issue && issueStyle && (
+      {/* Parent tag (if linked) */}
+      {ticket.parent && parentStyle && (
         <div style={{ marginBottom: 6 }}>
           <span
             style={{
@@ -196,8 +196,8 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
               fontWeight: 600,
               padding: '2px 7px',
               borderRadius: 4,
-              background: issueStyle.bg,
-              color: issueStyle.color,
+              background: parentStyle.bg,
+              color: parentStyle.color,
               display: 'inline-block',
               maxWidth: '100%',
               overflow: 'hidden',
@@ -205,7 +205,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
               whiteSpace: 'nowrap',
             }}
           >
-            {ticket.issue.name}
+            {ticket.parent.title}
           </span>
         </div>
       )}

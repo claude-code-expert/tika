@@ -4,7 +4,6 @@ import {
   reorderSchema,
   createLabelSchema,
   updateLabelSchema,
-  createIssueSchema,
   createChecklistItemSchema,
   updateChecklistItemSchema,
 } from '@/lib/validations';
@@ -207,45 +206,6 @@ describe('updateLabelSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.errors[0].message).toBe('색상 코드가 올바르지 않습니다 (#RRGGBB)');
-    }
-  });
-});
-
-describe('createIssueSchema', () => {
-  it('유효한 이슈 입력이 통과한다', () => {
-    const result = createIssueSchema.safeParse({ name: '기능 구현', type: 'FEATURE' });
-
-    expect(result.success).toBe(true);
-  });
-
-  it('name이 비어 있으면 에러를 반환한다', () => {
-    const result = createIssueSchema.safeParse({ name: '', type: 'GOAL' });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.errors[0].message).toBe('이슈명을 입력해주세요');
-    }
-  });
-
-  it('name이 100자를 초과하면 에러를 반환한다', () => {
-    const result = createIssueSchema.safeParse({ name: 'a'.repeat(101), type: 'STORY' });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.errors[0].message).toBe('이슈명은 100자 이하여야 합니다');
-    }
-  });
-
-  it('유효하지 않은 type이면 에러를 반환한다', () => {
-    const result = createIssueSchema.safeParse({ name: '이슈', type: 'TASK' });
-
-    expect(result.success).toBe(false);
-  });
-
-  it('유효한 type 값(GOAL/STORY/FEATURE)은 모두 통과한다', () => {
-    for (const type of ['GOAL', 'STORY', 'FEATURE'] as const) {
-      const result = createIssueSchema.safeParse({ name: '이슈', type });
-      expect(result.success).toBe(true);
     }
   });
 });

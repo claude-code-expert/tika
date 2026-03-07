@@ -1,5 +1,5 @@
 import { db } from './index';
-import { labels, issues, tickets, checklistItems, ticketLabels } from './schema';
+import { labels, tickets, checklistItems, ticketLabels } from './schema';
 import { DEFAULT_LABELS } from '@/lib/constants';
 import { eq } from 'drizzle-orm';
 
@@ -22,32 +22,32 @@ export async function seedDefaultLabels(workspaceId: number): Promise<void> {
 
 export async function seedDefaultIssues(workspaceId: number): Promise<void> {
   const existing = await db
-    .select({ id: issues.id })
-    .from(issues)
-    .where(eq(issues.workspaceId, workspaceId));
+    .select({ id: tickets.id, title: tickets.title })
+    .from(tickets)
+    .where(eq(tickets.workspaceId, workspaceId));
 
-  if (existing.length > 0) return;
+  if (existing.some((t) => t.title === 'MVP 출시')) return;
 
   // GOAL
   const [goal] = await db
-    .insert(issues)
-    .values({ workspaceId, name: 'MVP 출시', type: 'GOAL', parentId: null })
-    .returning({ id: issues.id });
+    .insert(tickets)
+    .values({ workspaceId, title: 'MVP 출시', type: 'GOAL', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: null })
+    .returning({ id: tickets.id });
 
   // STORY
   const [story1, story2] = await db
-    .insert(issues)
+    .insert(tickets)
     .values([
-      { workspaceId, name: '사용자 인증 시스템', type: 'STORY', parentId: goal.id },
-      { workspaceId, name: '칸반 보드', type: 'STORY', parentId: goal.id },
+      { workspaceId, title: '사용자 인증 시스템', type: 'STORY', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: goal.id },
+      { workspaceId, title: '칸반 보드', type: 'STORY', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, parentId: goal.id },
     ])
-    .returning({ id: issues.id });
+    .returning({ id: tickets.id });
 
   // FEATURE
-  await db.insert(issues).values([
-    { workspaceId, name: '인증 API', type: 'FEATURE', parentId: story1.id },
-    { workspaceId, name: '드래그앤드롭', type: 'FEATURE', parentId: story2.id },
-    { workspaceId, name: '티켓 CRUD', type: 'FEATURE', parentId: story2.id },
+  await db.insert(tickets).values([
+    { workspaceId, title: '인증 API', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: story1.id },
+    { workspaceId, title: '드래그앤드롭', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: story2.id },
+    { workspaceId, title: '티켓 CRUD', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, parentId: story2.id },
   ]);
 }
 
@@ -56,11 +56,11 @@ export async function seedSampleTickets(
   memberId?: number,
 ): Promise<void> {
   const existing = await db
-    .select({ id: tickets.id })
+    .select({ id: tickets.id, title: tickets.title })
     .from(tickets)
     .where(eq(tickets.workspaceId, workspaceId));
 
-  if (existing.length > 0) return;
+  if (existing.some((t) => t.title === '알림 기능 조사')) return;
 
   // Fetch label IDs (assumes seedDefaultLabels ran first)
   const allLabels = await db
@@ -70,13 +70,13 @@ export async function seedSampleTickets(
 
   const labelId = (name: string) => allLabels.find((l) => l.name === name)?.id;
 
-  // Fetch issue IDs
-  const allIssues = await db
-    .select({ id: issues.id, name: issues.name })
-    .from(issues)
-    .where(eq(issues.workspaceId, workspaceId));
+  // Fetch parent ticket IDs (GOAL/STORY/FEATURE hierarchy)
+  const parentTickets = await db
+    .select({ id: tickets.id, title: tickets.title })
+    .from(tickets)
+    .where(eq(tickets.workspaceId, workspaceId));
 
-  const issueId = (name: string) => allIssues.find((i) => i.name === name)?.id;
+  const parentId = (title: string) => parentTickets.find((t) => t.title === title)?.id;
 
   const sampleTickets = [
     // BACKLOG
@@ -113,7 +113,7 @@ export async function seedSampleTickets(
       status: 'TODO' as const,
       priority: 'HIGH' as const,
       position: 0,
-      issueId: issueId('드래그앤드롭'),
+      parentId: parentId('드래그앤드롭'),
       assigneeId: memberId,
     },
     {
@@ -123,7 +123,7 @@ export async function seedSampleTickets(
       status: 'TODO' as const,
       priority: 'MEDIUM' as const,
       position: 1024,
-      issueId: issueId('드래그앤드롭'),
+      parentId: parentId('드래그앤드롭'),
       assigneeId: memberId,
     },
     // IN_PROGRESS
@@ -134,7 +134,7 @@ export async function seedSampleTickets(
       status: 'IN_PROGRESS' as const,
       priority: 'HIGH' as const,
       position: 0,
-      issueId: issueId('인증 API'),
+      parentId: parentId('인증 API'),
       assigneeId: memberId,
     },
     {

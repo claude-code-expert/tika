@@ -2,7 +2,7 @@
 
 > 소스: `src/db/schema.ts` (Drizzle ORM)
 > DB: PostgreSQL (Vercel Postgres / Neon)
-> 최종 수정일: 2026-02-25
+> 최종 수정일: 2026-03-07
 
 ---
 
@@ -12,13 +12,12 @@
 |---|----------|------|-----------|
 | 1 | `users` | Google OAuth 사용자 | 1:1 per Google 계정 |
 | 2 | `workspaces` | 워크스페이스 | users 1:N |
-| 3 | `issues` | 이슈 계층 (Goal/Story/Feature) | workspaces 1:N, self-ref |
-| 4 | `members` | 워크스페이스 멤버 | users × workspaces |
-| 5 | `tickets` | 칸반 티켓 | workspaces 1:N |
-| 6 | `checklist_items` | 체크리스트 항목 | tickets 1:N |
-| 7 | `labels` | 라벨 정의 | workspaces 1:N |
-| 8 | `ticket_labels` | 티켓-라벨 매핑 (M:N) | tickets × labels |
-| 9 | `notification_channels` | 알림 채널 설정 (Slack/Telegram) | workspaces 1:N |
+| 3 | `members` | 워크스페이스 멤버 | users × workspaces |
+| 4 | `tickets` | 칸반 티켓 (GOAL/STORY/FEATURE/TASK) | workspaces 1:N, self-ref (parent_id) |
+| 5 | `checklist_items` | 체크리스트 항목 | tickets 1:N |
+| 6 | `labels` | 라벨 정의 | workspaces 1:N |
+| 7 | `ticket_labels` | 티켓-라벨 매핑 (M:N) | tickets × labels |
+| 8 | `notification_channels` | 알림 채널 설정 (Slack/Telegram) | workspaces 1:N |
 
 ---
 
@@ -32,6 +31,8 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | email | `email` | VARCHAR(255) | NOT NULL, UNIQUE | — | 이메일 |
 | name | `name` | VARCHAR(100) | NOT NULL | — | 사용자 이름 |
 | avatarUrl | `avatar_url` | TEXT | NULLABLE | NULL | 프로필 이미지 URL |
+| userType | `user_type` | VARCHAR(20) | NULLABLE | NULL | 온보딩 상태: NULL=미완료 \| `'USER'` \| `'WORKSPACE'` |
+| bgColor | `bg_color` | VARCHAR(7) | NULLABLE | NULL | 아바타 배경색 (HEX) |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 
 **인덱스**: `users_email_unique` → (email)
@@ -48,30 +49,13 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | name | `name` | VARCHAR(100) | NOT NULL | `'내 워크스페이스'` | 워크스페이스 이름 (최대 50자) |
 | description | `description` | TEXT | NULLABLE | NULL | 워크스페이스 설명 (최대 200자) |
 | ownerId | `owner_id` | TEXT | NOT NULL, **FK** → users(id) | — | 소유자 |
+| type | `type` | VARCHAR(10) | NOT NULL | `'PERSONAL'` | `'PERSONAL'` \| `'TEAM'` |
+| isSearchable | `is_searchable` | BOOLEAN | NOT NULL | `false` | false=비공개, true=검색 가능 |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 
 ---
 
-## 3. issues
-
-이슈 계층 구조 (Goal > Story > Feature). 티켓의 상위 개념으로, 자기참조 FK를 통해 계층 관계를 표현한다.
-
-| 칼럼 | DB 칼럼명 | 타입 | 제약 | 기본값 | 설명 |
-|------|----------|------|------|--------|------|
-| id | `id` | SERIAL | **PK** | auto-increment | 고유 ID |
-| workspaceId | `workspace_id` | INT | NOT NULL, **FK** → workspaces(id) | — | 소속 워크스페이스 |
-| name | `name` | VARCHAR(100) | NOT NULL | — | 이슈 이름 |
-| type | `type` | VARCHAR(10) | NOT NULL | — | `GOAL` \| `STORY` \| `FEATURE` |
-| parentId | `parent_id` | INT | NULLABLE | NULL | 상위 이슈 (self-ref) |
-| createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
-
-**인덱스**:
-- `idx_issues_workspace_type` → (workspace_id, type)
-- `idx_issues_parent_id` → (parent_id)
-
----
-
-## 4. members
+## 3. members
 
 워크스페이스 내 멤버 (담당자). 사용자가 워크스페이스에 참여하면 자동 생성된다.
 
@@ -82,16 +66,19 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | workspaceId | `workspace_id` | INT | NOT NULL, **FK** → workspaces(id) | — | 소속 워크스페이스 |
 | displayName | `display_name` | VARCHAR(50) | NOT NULL | — | 표시 이름 (이니셜) |
 | color | `color` | VARCHAR(7) | NOT NULL | `'#7EB4A2'` | 아바타 색상 (HEX) |
-| role | `role` | VARCHAR(10) | NOT NULL | `'member'` | 역할: `admin` \| `member` |
+| role | `role` | VARCHAR(10) | NOT NULL | `'MEMBER'` | 역할: `'OWNER'` \| `'MEMBER'` \| `'VIEWER'` |
+| invitedBy | `invited_by` | INT | NULLABLE, **FK** → members(id) | NULL | 초대한 멤버 (self-ref) |
+| joinedAt | `joined_at` | TIMESTAMPTZ | NULLABLE | NULL | 참여 시각 |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 
 **유니크 제약**: `members_user_workspace_unique` → (user_id, workspace_id)
 
 ---
 
-## 5. tickets
+## 4. tickets
 
-칸반 보드의 핵심 엔티티. 4단계 워크플로우(BACKLOG → TODO → IN_PROGRESS → DONE)를 가진다.
+칸반 보드 및 WBS의 핵심 엔티티. GOAL > STORY > FEATURE > TASK 계층 구조를 `parent_id` 자기 참조로 표현한다.
+4단계 워크플로우(BACKLOG → TODO → IN_PROGRESS → DONE)를 가진다.
 
 | 칼럼 | DB 칼럼명 | 타입 | 제약 | 기본값 | 설명 |
 |------|----------|------|------|--------|------|
@@ -105,8 +92,10 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | position | `position` | INT | NOT NULL | `0` | 칼럼 내 정렬 순서 (gap-based) |
 | startDate | `start_date` | DATE | NULLABLE | NULL | 시작일 (YYYY-MM-DD) |
 | dueDate | `due_date` | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
-| issueId | `issue_id` | INT | NULLABLE, **FK** → issues(id) ON DELETE SET NULL | NULL | 상위 이슈 |
+| parentId | `parent_id` | INT | NULLABLE (self-ref) | NULL | 상위 티켓 (GOAL/STORY/FEATURE 계층) |
 | assigneeId | `assignee_id` | INT | NULLABLE, **FK** → members(id) ON DELETE SET NULL | NULL | 담당자 |
+| sprintId | `sprint_id` | INT | NULLABLE, **FK** → sprints(id) ON DELETE SET NULL | NULL | 소속 스프린트 |
+| storyPoints | `story_points` | INT | NULLABLE | NULL | 스토리 포인트 |
 | completedAt | `completed_at` | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 (DONE 전환 시 자동 설정) |
 | deleted | `deleted` | BOOLEAN | NOT NULL | `false` | 논리 삭제 여부 (soft delete) |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
@@ -116,10 +105,13 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 - `idx_tickets_workspace_status_position` → (workspace_id, status, position)
 - `idx_tickets_due_date` → (due_date)
 - `idx_tickets_workspace_deleted` → (workspace_id, deleted)
+- `idx_tickets_parent_id` → (parent_id)
+- `idx_tickets_assignee_id` → (assignee_id)
+- `idx_tickets_sprint_id` → (sprint_id)
 
 ---
 
-## 6. checklist_items
+## 5. checklist_items
 
 티켓에 소속된 체크리스트 항목. 티켓 삭제 시 CASCADE로 함께 삭제된다.
 
@@ -138,7 +130,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-## 7. labels
+## 6. labels
 
 워크스페이스 단위의 라벨 정의.
 
@@ -156,7 +148,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
-## 8. ticket_labels
+## 7. ticket_labels
 
 티켓과 라벨의 다대다(M:N) 매핑 테이블.
 
@@ -171,9 +163,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 
 ---
 
----
-
-## 9. notification_channels
+## 8. notification_channels
 
 워크스페이스별 알림 채널 설정 (Slack/Telegram). 채널 타입당 1개 (upsert).
 
@@ -182,7 +172,7 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | id | `id` | SERIAL | **PK** | auto-increment | 고유 ID |
 | workspaceId | `workspace_id` | INT | NOT NULL, **FK** → workspaces(id) | — | 소속 워크스페이스 |
 | type | `type` | VARCHAR(20) | NOT NULL | — | 채널 타입: `slack` \| `telegram` |
-| config | `config` | JSONB | NOT NULL | — | 채널 설정 JSON (`webhookUrl` 또는 `botToken`+`chatId`) |
+| config | `config` | TEXT | NOT NULL | `'{}'` | 채널 설정 JSON |
 | enabled | `enabled` | BOOLEAN | NOT NULL | `false` | 활성화 여부 |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 | updatedAt | `updated_at` | TIMESTAMPTZ | NOT NULL | `now()` | 수정 시각 |
@@ -196,13 +186,11 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 ```
 users ──1:N──> workspaces
   │                │
-  │                ├──1:N──> issues (self-ref: parent_id)
+  │                ├──1:N──> members ──self-ref──> invited_by
   │                │           │
-  │                ├──1:N──> members
+  │                ├──1:N──> tickets (self-ref: parent_id  GOAL>STORY>FEATURE>TASK)
   │                │           │
-  │                ├──1:N──> tickets ──1:N──> checklist_items
-  │                │           │
-  │                │           ├── FK ──> issues (issue_id, ON DELETE SET NULL)
+  │                │           ├──1:N──> checklist_items
   │                │           ├── FK ──> members (assignee_id, ON DELETE SET NULL)
   │                │           └── M:N ──> labels (via ticket_labels)
   │                │
@@ -222,3 +210,8 @@ users ──1:N──> workspaces
 | `0000_curvy_nocturne.sql` | 초기 스키마 (8개 테이블 전체 생성) |
 | `0001_productive_iron_man.sql` | `start_date` 칼럼 추가 (tickets) |
 | `0002_dry_raider.sql` | `description` 추가 (workspaces), `role` 추가 (members), `notification_channels` 테이블 신규 생성 |
+| `0003_*.sql` | members role 확장, `invited_by`/`joined_at` 추가, workspaces `type`/`is_searchable` 추가 |
+| `0004_*.sql` | `sprints` 테이블 신규 생성, tickets `sprint_id`/`story_points` 추가 |
+| `0005_*.sql` | `comments`, `notification_logs`, `workspace_invites`, `ticket_assignees` 테이블 신규 생성 |
+| `0006_talented_stryfe.sql` | `workspace_join_requests` 테이블 신규 생성, users `user_type` 추가 |
+| `0010_issues_to_tickets.sql` | `issues` 테이블 폐기, tickets에 `parent_id` 자기참조 추가 (GOAL/STORY/FEATURE → tickets 통합) |

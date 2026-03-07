@@ -13,6 +13,7 @@ jest.mock('@/db/queries/tickets', () => ({
   getBoardData: jest.fn(),
   createTicket: jest.fn(),
   getTicketCount: jest.fn(),
+  getWbsTickets: jest.fn(),
 }));
 
 import { NextRequest } from 'next/server';
@@ -71,7 +72,8 @@ describe('GET /api/tickets', () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedGetBoardData.mockResolvedValueOnce(mockBoardData);
 
-    const response = await GET();
+    const request = new NextRequest('http://localhost/api/tickets');
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);

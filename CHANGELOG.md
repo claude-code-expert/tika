@@ -3,6 +3,74 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [feature/wbs] - 2026-03-07 (issues 테이블 → tickets.parent_id 통합 + 문서 현행화)
+
+### 🎯 Prompts
+1. "통합해. 먼저 플랜과 수정 대상 파일, 마이그레이션 계획을 세우고 단계별로 진행해" — issues 테이블 폐기 및 tickets 자기참조 통합 플랜 기반 전체 구현
+2. `/simplify` — "이번 작업으로 필요없게 된 issue 관련 소스나 화면, 데드코드들 검출해서 정리해"
+3. "현재 접속 디비의 스키마 정보, 인덱스 정보를 조회하는 shell 스크립트를 만들고, 이걸 실행해서 @docs/TABLE_DEFINITION.md 과 @docs/ERD.md @docs/DATA_MODEL.md @docs/DATABASE-ERD.puml 정보 현행화해"
+
+### ✅ Changes
+
+#### DB Schema & Migration
+- **Modified**: `src/db/schema.ts` — `issues` pgTable 제거, `tickets`에 `parentId` 자기참조 추가 (`issueId` 제거, `idx_tickets_parent_id` 인덱스 추가)
+- **Added**: `migrations/0010_issues_to_tickets.sql` — issues 행 → tickets 이전, parent_id 연결, issue_id 칼럼 및 issues 테이블 DROP
+- **Added**: `migrations/meta/0010_snapshot.json` — 마이그레이션 스냅샷
+- **Modified**: `migrations/meta/_journal.json` — 0010 엔트리 추가
+
+#### Types & Validation
+- **Modified**: `src/types/index.ts` — `ISSUE_TYPE`, `IssueType`, `Issue` 인터페이스 제거; `Ticket.issueId` → `parentId`; `TicketWithMeta.issue` → `parent: Ticket | null`; `GanttItem.type` 범위 축소
+- **Modified**: `src/lib/validations.ts` — issue 스키마 전체 제거; `createTicketSchema`/`updateTicketSchema`에 `parentId` 추가
+
+#### DB Queries
+- **Modified**: `src/db/queries/tickets.ts` — `toTicket()` issueId→parentId; `getBoardData()` TASK 전용 필터; `getWbsTickets()` 신규 (GOAL/STORY/FEATURE/TASK 전체); `createTicket`/`updateTicket`/`getTicketById`/`getDeletedTickets` 갱신
+- **Removed**: `src/db/queries/issues.ts` — 전체 삭제
+
+#### API Routes
+- **Modified**: `app/api/tickets/route.ts` — GET에 `?types=` 파라미터 지원 추가 (WBS용 `getWbsTickets` 호출)
+- **Removed**: `app/api/issues/route.ts`, `app/api/issues/[id]/route.ts` — 삭제
+
+#### Pages
+- **Modified**: `app/team/[workspaceId]/wbs/page.tsx` — `getWbsTickets()` 단일 쿼리; `buildGanttItems()` parentId 기반 재작성
+- **Modified**: `app/team/[workspaceId]/page.tsx` — `goalTickets`를 `wbsTickets`에서 파생 (버그 수정: boardData는 TASK 전용이라 GOAL 없었음)
+
+#### Components
+- **Added**: `src/components/team/WbsClient.tsx` — 신규 클라이언트 컴포넌트; IssueModal 제거, 모든 항목 클릭 → TicketModal 단일 사용
+- **Modified**: `src/components/ticket/TicketModal.tsx` — `allIssues`→`allParents`, `/api/issues`→`/api/tickets?types=...`, `issue.name`→`parent.title`
+- **Modified**: `src/components/ticket/TicketForm.tsx` — `useIssues` 제거, `issueId`→`parentId`, `TICKET_TYPE_META` 상수 활용
+- **Modified**: `src/components/board/TicketCard.tsx` — `ticket.issue`→`ticket.parent`, `issue.name`→`parent.title`
+- **Modified**: `src/components/team/GoalProgressRow.tsx` — `issueId`→`parentId` 비교 수정
+- **Modified**: `src/components/team/WbsMiniCard.tsx` — Issue 타입 → Ticket 타입; `node.name`→`node.title`
+- **Modified**: `src/components/ui/Chips.tsx` — `IssueType` import 제거
+- **Removed**: `src/components/issue/IssueBreadcrumb.tsx` — 데드코드, 임포트 없음
+- **Removed**: `src/hooks/useIssues.ts` — 전체 삭제
+
+#### Seed Files
+- **Modified**: `src/db/seed.ts` — `seedDefaultIssues` → tickets insert로 재작성; `issueId`→`parentId`
+- **Modified**: `src/db/seed-tika-team.ts` — `createIssueHierarchy`→`createTicketHierarchy`; 공용 insert 패턴으로 간소화
+
+#### Tests (7 파일 갱신)
+- **Modified**: `__tests__/api/tickets.test.ts`, `__tests__/api/cron.test.ts`, `__tests__/hooks/useTickets.test.ts`, `__tests__/lib/utils.test.ts`, `__tests__/lib/sprintFlow.test.ts`, `__tests__/components/TicketCard.test.tsx`, `__tests__/components/BoardContainer.test.tsx`, `__tests__/components/TicketModal.test.tsx` — `issueId`→`parentId`, `issue`→`parent` 픽스처 갱신
+- **Modified**: `__tests__/lib/validations.test.ts` — `createIssueSchema` 테스트 수트 제거
+
+#### Documentation
+- **Added**: `scripts/dump-schema.sh` — live PostgreSQL 스키마/인덱스/FK 조회 스크립트
+- **Modified**: `docs/TABLE_DEFINITION.md` — issues 섹션 제거, tickets parent_id 반영, 마이그레이션 이력 0010 추가
+- **Modified**: `docs/ERD.md` — issues 엔티티 제거, tickets 자기참조 추가, 관계도/FK 정책 갱신, 테이블 수 15→14
+- **Modified**: `docs/DATA_MODEL.md` — ISSUE_TYPE/Issue 타입 제거, Ticket/TicketWithMeta 갱신, Drizzle 스키마 코드 갱신, 비즈니스 규칙 5.6 갱신
+- **Modified**: `docs/DATABASE-ERD.puml` — issues 엔티티 완전 제거, tickets self-ref 추가
+
+### 📊 검사 결과
+- TypeScript: `npx tsc --noEmit` 통과
+- 테스트: 기존 실패 6개 유지 (리팩터링으로 인한 신규 실패 없음)
+
+### 📁 Files Summary
+- 38 files changed, +1091 / -1750 lines
+- Deleted: 5 files (`issues` 관련 API/쿼리/훅/컴포넌트)
+- Added: 4 files (WbsClient, migration 0010, snapshot, dump-schema.sh)
+
+---
+
 ## [feature/ui] - 2026-03-07 (성능 최적화 + ERD 현행화 + TS 에러 수정)
 
 ### 🎯 Prompts

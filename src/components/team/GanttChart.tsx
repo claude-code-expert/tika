@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import type { Member } from '@/types/index';
 
 export interface GanttItem {
@@ -19,207 +19,290 @@ export interface GanttItem {
 interface GanttChartProps {
   items: GanttItem[];
   dateRange: { start: string; end: string };
+  onItemClick?: (item: GanttItem) => void;
 }
 
-const TYPE_COLORS: Record<string, { bg: string; abbr: string }> = {
-  GOAL: { bg: '#8B5CF6', abbr: 'G' },
-  STORY: { bg: '#3B82F6', abbr: 'S' },
-  FEATURE: { bg: '#10B981', abbr: 'F' },
-  TASK: { bg: '#F59E0B', abbr: 'T' },
-};
-
-const STATUS_BAR_COLORS: Record<string, string> = {
-  BACKLOG: '#D1D5DB',
-  TODO: '#93C5FD',
-  IN_PROGRESS: '#FCD34D',
-  DONE: '#6EE7B7',
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#DC2626',
-  HIGH: '#C2410C',
-  MEDIUM: '#A16207',
-  LOW: '#6B7280',
-};
-
+const DAY_W = 28;
 const ROW_H = 36;
-const TREE_W = 220;
-const RIGHT_W = 200;
-const HEADER_H = 40;
-const MIN_BAR_W = 8;
+const LEFT_W = 220;
+const RIGHT_W = 260;
+const HEADER_H = 52; // 22 (month) + 30 (day)
+const BAR_H = 22;
+const MONTHS_KO = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+const TYPE_BADGE: Record<string, { bg: string; color: string; abbr: string }> = {
+  GOAL:    { bg: '#E0E7FF', color: '#4338CA', abbr: 'G' },
+  STORY:   { bg: '#DBEAFE', color: '#1D4ED8', abbr: 'S' },
+  FEATURE: { bg: '#D1FAE5', color: '#065F46', abbr: 'F' },
+  TASK:    { bg: '#F3F4F6', color: '#6B7280', abbr: 'T' },
+};
+
+const PRIORITY_CHIP: Record<string, { bg: string; color: string; label: string }> = {
+  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'CRITICAL' },
+  HIGH:     { bg: '#FEF3C7', color: '#D97706', label: 'HIGH' },
+  MEDIUM:   { bg: '#DBEAFE', color: '#2563EB', label: 'MEDIUM' },
+  LOW:      { bg: '#F3F4F6', color: '#6B7280', label: 'LOW' },
+};
+
+const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> = {
+  DONE:        { bg: '#D1FAE5', color: '#065F46', label: 'Done' },
+  IN_PROGRESS: { bg: '#FEF3C7', color: '#92400E', label: 'In Progress' },
+  TODO:        { bg: '#DBEAFE', color: '#1E40AF', label: 'TODO' },
+  BACKLOG:     { bg: '#F3F4F6', color: '#6B7280', label: 'Backlog' },
+};
+
+function parseDateStr(s: string | null): Date | null {
+  if (!s) return null;
+  const parts = s.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getWeekdays(start: Date, end: Date): Date[] {
+  const days: Date[] = [];
+  const d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  const e = new Date(end);
+  e.setHours(23, 59, 59, 999);
+  while (d <= e) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
 
 function flattenItems(items: GanttItem[], depth = 0): GanttItem[] {
   const result: GanttItem[] = [];
   for (const item of items) {
     result.push({ ...item, depth });
-    if (item.children && item.children.length > 0) {
-      result.push(...flattenItems(item.children, depth + 1));
-    }
+    if (item.children?.length) result.push(...flattenItems(item.children, depth + 1));
   }
   return result;
 }
 
-function parseDateStr(s: string | null): Date | null {
-  if (!s) return null;
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+function buildMonthGroups(weekdays: Date[]): { label: string; count: number }[] {
+  const groups: { label: string; count: number }[] = [];
+  let curKey = '';
+  for (const d of weekdays) {
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (key !== curKey) {
+      groups.push({ label: `${d.getFullYear()}년 ${MONTHS_KO[d.getMonth()]}`, count: 1 });
+      curKey = key;
+    } else {
+      groups[groups.length - 1].count++;
+    }
+  }
+  return groups;
 }
 
-export function GanttChart({ items, dateRange }: GanttChartProps) {
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const treeScrollRef = useRef<HTMLDivElement>(null);
-  const rightScrollRef = useRef<HTMLDivElement>(null);
-  const syncingRef = useRef(false);
+function getBarColor(item: GanttItem, todayStr: string) {
+  if (item.status === 'DONE') return { bg: '#86EFAC', border: '#22C55E' };
+  if (item.endDate && item.endDate < todayStr) return { bg: '#FCA5A5', border: '#EF4444' };
+  if (item.status === 'IN_PROGRESS') return { bg: '#FCD34D', border: '#F59E0B' };
+  if (item.status === 'TODO')        return { bg: '#93C5FD', border: '#3B82F6' };
+  return { bg: '#E5E7EB', border: '#D1D5DB' };
+}
 
-  const flatItems = flattenItems(items);
-  const totalH = HEADER_H + flatItems.length * ROW_H;
+export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
-  const startDate = parseDateStr(dateRange.start) ?? new Date();
-  const endDate = parseDateStr(dateRange.end) ?? new Date(Date.now() + 30 * 86400000);
-  const totalDays = Math.max(
-    1,
-    Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000),
-  );
+  // Center split: header (horizontal-only, hidden overflow) + body (full scroll)
+  const centerHeaderRef  = useRef<HTMLDivElement>(null);
+  const centerBodyRef    = useRef<HTMLDivElement>(null);
+  const leftBodyRef      = useRef<HTMLDivElement>(null);
+  const rightBodyRef     = useRef<HTMLDivElement>(null);
+  const syncingRef       = useRef(false);
+  const isDraggingRef    = useRef(false);
+  const dragStartXRef    = useRef(0);
+  const dragScrollLeftRef = useRef(0);
+  const todayIdxRef      = useRef(-1);
 
-  // Build day columns — show every 7th day label
-  const dayColW = 28;
-  const timelineW = totalDays * dayColW;
+  const startDate  = parseDateStr(dateRange.start) ?? new Date();
+  const endDate    = parseDateStr(dateRange.end)   ?? new Date();
+  const weekdays   = getWeekdays(startDate, endDate);
+  const flatItems  = flattenItems(items);
 
-  const dayLabels: { label: string; x: number }[] = [];
-  for (let d = 0; d < totalDays; d += 7) {
-    const date = new Date(startDate.getTime() + d * 86400000);
-    dayLabels.push({ label: `${date.getMonth() + 1}/${date.getDate()}`, x: d * dayColW });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr  = dateKey(today);
+  const todayIdx  = weekdays.findIndex((d) => dateKey(d) === todayStr);
+  todayIdxRef.current = todayIdx;
+
+  const timelineW   = Math.max(weekdays.length * DAY_W, 1);
+  const monthGroups = buildMonthGroups(weekdays);
+  const rowsH       = flatItems.length * ROW_H;
+
+  function getBarBounds(item: GanttItem) {
+    if (!item.startDate || !item.endDate) return null;
+    const startD = parseDateStr(item.startDate);
+    const endD   = parseDateStr(item.endDate);
+    if (!startD || !endD) return null;
+
+    let startIdx = -1;
+    for (let i = 0; i < weekdays.length; i++) {
+      if (weekdays[i] >= startD) { startIdx = i; break; }
+    }
+    let endIdx = -1;
+    for (let i = weekdays.length - 1; i >= 0; i--) {
+      if (weekdays[i] <= endD) { endIdx = i; break; }
+    }
+    if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) return null;
+
+    return {
+      x: startIdx * DAY_W + 3,
+      w: (endIdx - startIdx + 1) * DAY_W - 6,
+      startClipped: startD < weekdays[0],
+      endClipped:   endD   > weekdays[weekdays.length - 1],
+    };
   }
 
-  const xForDate = (dateStr: string | null): number | null => {
-    const d = parseDateStr(dateStr);
-    if (!d) return null;
-    const days = Math.ceil((d.getTime() - startDate.getTime()) / 86400000);
-    return Math.max(0, days) * dayColW;
-  };
+  function getBorderRadius(b: NonNullable<ReturnType<typeof getBarBounds>>) {
+    const r = 10;
+    if (!b.startClipped && !b.endClipped) return r;
+    if (!b.startClipped) return `${r}px 0 0 ${r}px`;
+    if (!b.endClipped)   return `0 ${r}px ${r}px 0`;
+    return 0;
+  }
 
-  // Sync scroll between timeline and tree/right panels
-  const handleTimelineScroll = useCallback(() => {
+  // ── Scroll sync ──
+  const handleCenterBodyScroll = useCallback(() => {
+    // Sync header horizontal scroll
+    if (centerHeaderRef.current) {
+      centerHeaderRef.current.scrollLeft = centerBodyRef.current?.scrollLeft ?? 0;
+    }
+    // Sync vertical with left/right panels
     if (syncingRef.current) return;
     syncingRef.current = true;
-    const scrollTop = timelineRef.current?.scrollTop ?? 0;
-    if (treeScrollRef.current) treeScrollRef.current.scrollTop = scrollTop;
-    if (rightScrollRef.current) rightScrollRef.current.scrollTop = scrollTop;
-    syncingRef.current = false;
+    const t = centerBodyRef.current?.scrollTop ?? 0;
+    if (leftBodyRef.current)  leftBodyRef.current.scrollTop  = t;
+    if (rightBodyRef.current) rightBodyRef.current.scrollTop = t;
+    requestAnimationFrame(() => { syncingRef.current = false; });
   }, []);
 
-  const handleTreeScroll = useCallback(() => {
+  const handleLeftScroll = useCallback(() => {
     if (syncingRef.current) return;
     syncingRef.current = true;
-    const scrollTop = treeScrollRef.current?.scrollTop ?? 0;
-    if (timelineRef.current) timelineRef.current.scrollTop = scrollTop;
-    if (rightScrollRef.current) rightScrollRef.current.scrollTop = scrollTop;
-    syncingRef.current = false;
+    const t = leftBodyRef.current?.scrollTop ?? 0;
+    if (centerBodyRef.current) centerBodyRef.current.scrollTop = t;
+    if (rightBodyRef.current)  rightBodyRef.current.scrollTop  = t;
+    requestAnimationFrame(() => { syncingRef.current = false; });
+  }, []);
+
+  const handleRightScroll = useCallback(() => {
+    if (syncingRef.current) return;
+    syncingRef.current = true;
+    const t = rightBodyRef.current?.scrollTop ?? 0;
+    if (centerBodyRef.current) centerBodyRef.current.scrollTop = t;
+    if (leftBodyRef.current)   leftBodyRef.current.scrollTop   = t;
+    requestAnimationFrame(() => { syncingRef.current = false; });
   }, []);
 
   useEffect(() => {
-    const tlEl = timelineRef.current;
-    const treeEl = treeScrollRef.current;
-    if (tlEl) tlEl.addEventListener('scroll', handleTimelineScroll);
-    if (treeEl) treeEl.addEventListener('scroll', handleTreeScroll);
+    const c = centerBodyRef.current;
+    const l = leftBodyRef.current;
+    const r = rightBodyRef.current;
+    if (c) c.addEventListener('scroll', handleCenterBodyScroll);
+    if (l) l.addEventListener('scroll', handleLeftScroll);
+    if (r) r.addEventListener('scroll', handleRightScroll);
     return () => {
-      if (tlEl) tlEl.removeEventListener('scroll', handleTimelineScroll);
-      if (treeEl) treeEl.removeEventListener('scroll', handleTreeScroll);
+      if (c) c.removeEventListener('scroll', handleCenterBodyScroll);
+      if (l) l.removeEventListener('scroll', handleLeftScroll);
+      if (r) r.removeEventListener('scroll', handleRightScroll);
     };
-  }, [handleTimelineScroll, handleTreeScroll]);
+  }, [handleCenterBodyScroll, handleLeftScroll, handleRightScroll]);
+
+  // ── Drag-to-scroll ──
+  useEffect(() => {
+    const el = centerBodyRef.current;
+    if (!el) return;
+    const onDown = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('select,button,a,input')) return;
+      isDraggingRef.current    = true;
+      el.style.cursor          = 'grabbing';
+      dragStartXRef.current    = e.pageX - el.offsetLeft;
+      dragScrollLeftRef.current = el.scrollLeft;
+      e.preventDefault();
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      el.scrollLeft = dragScrollLeftRef.current - (e.pageX - el.offsetLeft - dragStartXRef.current) * 1.5;
+    };
+    const onUp = () => {
+      if (isDraggingRef.current) { isDraggingRef.current = false; el.style.cursor = 'grab'; }
+    };
+    el.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      el.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  // ── Auto-scroll to today ──
+  useEffect(() => {
+    setTimeout(() => {
+      const el = centerBodyRef.current;
+      if (!el || todayIdxRef.current === -1) return;
+      el.scrollLeft = Math.max(0, todayIdxRef.current * DAY_W - el.clientWidth / 2);
+    }, 60);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (flatItems.length === 0) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: 200,
-          color: 'var(--color-text-muted)',
-          fontSize: 14,
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: '#9CA3AF', fontSize: 14 }}>
         이슈 또는 티켓 데이터 없음
       </div>
     );
   }
 
-  const containerH = Math.min(600, HEADER_H + flatItems.length * ROW_H + 20);
+  const containerH = Math.min(612, HEADER_H + rowsH + 12);
+  const hRow = (i: number): React.CSSProperties =>
+    hoveredRow === i ? { background: '#F1F3F6' } : {};
 
   return (
     <div
       style={{
         display: 'flex',
-        border: '1px solid var(--color-border)',
+        border: '1px solid #DFE1E6',
         borderRadius: 8,
         overflow: 'hidden',
         height: containerH,
-        background: 'var(--color-card-bg)',
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        background: '#fff',
+        fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
       }}
     >
-      {/* Left: Tree panel */}
-      <div style={{ width: TREE_W, flexShrink: 0, borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column' }}>
+      {/* ══ LEFT PANEL ══ */}
+      <div style={{ width: LEFT_W, flexShrink: 0, borderRight: '2px solid #DFE1E6', display: 'flex', flexDirection: 'column', zIndex: 10, background: '#fff' }}>
         {/* Header */}
-        <div
-          style={{
-            height: HEADER_H,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            borderBottom: '1px solid #E5E7EB',
-            background: '#F9FAFB',
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#6B7280',
-            flexShrink: 0,
-          }}
-        >
-          이슈 / 티켓
+        <div style={{ height: HEADER_H, display: 'flex', alignItems: 'center', padding: '0 12px', background: '#F8F9FB', borderBottom: '1px solid #DFE1E6', fontSize: 12, fontWeight: 600, color: '#5A6B7F', flexShrink: 0 }}>
+          작업 항목
         </div>
-        {/* Rows */}
-        <div ref={treeScrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        {/* Body */}
+        <div ref={leftBodyRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
           {flatItems.map((item, i) => {
-            const typeStyle = TYPE_COLORS[item.type] ?? TYPE_COLORS.TASK;
+            const badge     = TYPE_BADGE[item.type] ?? TYPE_BADGE.TASK;
+            const pl        = 12 + (item.depth ?? 0) * 16;
+            const clickable = !!onItemClick;
             return (
               <div
-                key={`tree-${item.id}-${i}`}
-                style={{
-                  height: ROW_H,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: `0 8px 0 ${8 + (item.depth ?? 0) * 14}px`,
-                  borderBottom: '1px solid #F9FAFB',
-                  gap: 6,
-                }}
+                key={`left-${item.id}-${i}`}
+                style={{ height: ROW_H, display: 'flex', alignItems: 'center', gap: 6, paddingLeft: pl, paddingRight: 8, borderBottom: '1px solid #F1F3F6', cursor: clickable ? 'pointer' : 'default', ...hRow(i) }}
+                onMouseEnter={() => setHoveredRow(i)}
+                onMouseLeave={() => setHoveredRow(null)}
+                onClick={() => clickable && onItemClick(item)}
               >
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 14,
-                    height: 14,
-                    borderRadius: 3,
-                    fontSize: 8,
-                    fontWeight: 700,
-                    color: '#fff',
-                    background: typeStyle.bg,
-                    flexShrink: 0,
-                  }}
-                >
-                  {typeStyle.abbr}
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: 3, fontSize: 9, fontWeight: 700, color: badge.color, background: badge.bg, flexShrink: 0, letterSpacing: '0.3px' }}>
+                  {badge.abbr}
                 </span>
                 <span
-                  style={{
-                    fontSize: 11,
-                    color: '#374151',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1,
-                  }}
+                  style={{ fontSize: 11, color: clickable ? '#629584' : '#2C3E50', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, textDecoration: clickable ? 'underline' : 'none', textDecorationColor: 'rgba(98,149,132,.4)' }}
                   title={item.name}
                 >
                   {item.name}
@@ -230,115 +313,70 @@ export function GanttChart({ items, dateRange }: GanttChartProps) {
         </div>
       </div>
 
-      {/* Center: Timeline */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Header with date labels */}
+      {/* ══ CENTER PANEL — header + body split ══ */}
+      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Date header — overflow hidden, horizontally synced with body */}
         <div
-          style={{
-            height: HEADER_H,
-            overflowX: 'hidden',
-            borderBottom: '1px solid #E5E7EB',
-            background: '#F9FAFB',
-            flexShrink: 0,
-            position: 'relative',
-          }}
+          ref={centerHeaderRef}
+          style={{ height: HEADER_H, overflowX: 'hidden', overflowY: 'hidden', flexShrink: 0, borderBottom: '1px solid #DFE1E6', background: '#F8F9FB' }}
         >
-          <div style={{ width: timelineW, height: '100%', position: 'relative' }}>
-            {dayLabels.map((dl) => (
-              <div
-                key={dl.x}
-                style={{
-                  position: 'absolute',
-                  left: dl.x,
-                  top: 0,
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: 9,
-                  color: '#9CA3AF',
-                  paddingLeft: 3,
-                  borderLeft: '1px solid #F3F4F6',
-                }}
-              >
-                {dl.label}
-              </div>
-            ))}
+          <div style={{ width: timelineW }}>
+            {/* Month row */}
+            <div style={{ display: 'flex', height: 22, borderBottom: '1px solid #DFE1E6' }}>
+              {monthGroups.map((mg, i) => (
+                <div key={i} style={{ width: mg.count * DAY_W, minWidth: mg.count * DAY_W, display: 'flex', alignItems: 'center', paddingLeft: 4, fontSize: 12, fontWeight: 600, color: '#5A6B7F', borderRight: '1px solid #DFE1E6', flexShrink: 0 }}>
+                  {mg.label}
+                </div>
+              ))}
+            </div>
+            {/* Day row */}
+            <div style={{ display: 'flex', height: 30 }}>
+              {weekdays.map((d, i) => {
+                const isToday  = dateKey(d) === todayStr;
+                const isMonday = d.getDay() === 1;
+                return (
+                  <div key={i} style={{ width: DAY_W, minWidth: DAY_W, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? '#629584' : '#9CA3AF', borderRight: isToday ? '2px solid #629584' : '1px solid rgba(223,225,230,.5)', borderLeft: isToday ? '2px solid #629584' : (isMonday ? '1px solid #DFE1E6' : undefined), borderTop: isToday ? '2px solid #629584' : undefined, background: isToday ? 'rgba(98,149,132,.15)' : undefined, position: 'relative', flexShrink: 0, boxSizing: 'border-box' }}>
+                    {d.getDate()}
+                    {isToday && <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#629584' }} />}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Scrollable timeline rows */}
+        {/* Gantt body — full scroll (x + y) */}
         <div
-          ref={timelineRef}
-          style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}
+          ref={centerBodyRef}
+          style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', cursor: 'grab', minHeight: 0 }}
         >
-          <div style={{ width: timelineW, minHeight: totalH - HEADER_H }}>
-
+          <div style={{ position: 'relative', width: timelineW, height: rowsH }}>
+            {/* Today column highlight */}
+            {todayIdx !== -1 && (
+              <div style={{ position: 'absolute', left: todayIdx * DAY_W, top: 0, width: DAY_W, height: rowsH, background: 'rgba(98,149,132,.04)', zIndex: 0, pointerEvents: 'none' }} />
+            )}
+            {/* Monday grid lines */}
+            {weekdays.map((d, i) =>
+              d.getDay() === 1 ? (
+                <div key={`gl-${i}`} style={{ position: 'absolute', left: i * DAY_W, top: 0, width: 1, height: rowsH, background: 'rgba(223,225,230,.6)', zIndex: 0, pointerEvents: 'none' }} />
+              ) : null,
+            )}
+            {/* Rows */}
             {flatItems.map((item, i) => {
-              const x1 = xForDate(item.startDate);
-              const x2 = xForDate(item.endDate);
-              const barColor = STATUS_BAR_COLORS[item.status] ?? '#D1D5DB';
-              const hasBar = x1 !== null && x2 !== null;
-              const barX = x1 ?? 0;
-              const barW = hasBar ? Math.max(MIN_BAR_W, (x2 ?? barX) - barX) : 0;
-
+              const bounds   = getBarBounds(item);
+              const barColor = getBarColor(item, todayStr);
               return (
                 <div
-                  key={`tl-${item.id}-${i}`}
-                  style={{
-                    height: ROW_H,
-                    borderBottom: '1px solid #F9FAFB',
-                    position: 'relative',
-                    background: i % 2 === 0 ? 'transparent' : '#FAFBFC',
-                  }}
+                  key={`cr-${item.id}-${i}`}
+                  style={{ height: ROW_H, borderBottom: '1px solid #F1F3F6', position: 'relative', zIndex: 1, ...hRow(i) }}
+                  onMouseEnter={() => setHoveredRow(i)}
+                  onMouseLeave={() => setHoveredRow(null)}
                 >
-                  {/* Vertical grid lines */}
-                  {dayLabels.map((dl) => (
+                  {bounds && (
                     <div
-                      key={dl.x}
-                      style={{
-                        position: 'absolute',
-                        left: dl.x,
-                        top: 0,
-                        bottom: 0,
-                        width: 1,
-                        background: '#F3F4F6',
-                      }}
-                    />
-                  ))}
-
-                  {/* Bar */}
-                  {hasBar && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: barX,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        height: 16,
-                        width: barW,
-                        borderRadius: 4,
-                        background: barColor,
-                        border: `1px solid ${barColor}`,
-                        opacity: 0.9,
-                        zIndex: 1,
-                      }}
+                      style={{ position: 'absolute', left: bounds.x, width: bounds.w, top: (ROW_H - BAR_H) / 2, height: BAR_H, background: barColor.bg, border: `1px solid ${barColor.border}`, borderRadius: getBorderRadius(bounds), zIndex: 2 }}
                       title={`${item.name}: ${item.startDate} ~ ${item.endDate}`}
-                    />
-                  )}
-
-                  {/* If no date range, show a dot at center */}
-                  {!hasBar && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: '#E5E7EB',
-                      }}
                     />
                   )}
                 </div>
@@ -348,116 +386,64 @@ export function GanttChart({ items, dateRange }: GanttChartProps) {
         </div>
       </div>
 
-      {/* Right: Details panel */}
-      <div style={{ width: RIGHT_W, flexShrink: 0, borderLeft: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column' }}>
+      {/* ══ RIGHT PANEL ══ */}
+      <div style={{ width: RIGHT_W, flexShrink: 0, borderLeft: '2px solid #DFE1E6', display: 'flex', flexDirection: 'column', zIndex: 10, background: '#fff' }}>
         {/* Header */}
-        <div
-          style={{
-            height: HEADER_H,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            borderBottom: '1px solid #E5E7EB',
-            background: '#F9FAFB',
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#6B7280',
-            flexShrink: 0,
-          }}
-        >
-          담당자 · 우선순위 · 상태
+        <div style={{ height: HEADER_H, display: 'flex', alignItems: 'center', background: '#F8F9FB', borderBottom: '1px solid #DFE1E6', flexShrink: 0 }}>
+          {[{ label: '담당자', w: 90 }, { label: '우선순위', w: 82 }, { label: '상태', w: 88 }].map((col) => (
+            <div key={col.label} style={{ width: col.w, minWidth: col.w, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#5A6B7F' }}>
+              {col.label}
+            </div>
+          ))}
         </div>
-        {/* Rows */}
-        <div ref={rightScrollRef} style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Body */}
+        <div ref={rightBodyRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
           {flatItems.map((item, i) => {
-            const priorityColor = PRIORITY_COLORS[item.priority] ?? '#9CA3AF';
-            const visible = item.assignees.slice(0, 3);
-            const extra = item.assignees.length - 3;
-
+            const pChip = PRIORITY_CHIP[item.priority] ?? PRIORITY_CHIP.MEDIUM;
+            const sChip = STATUS_CHIP[item.status]    ?? STATUS_CHIP.BACKLOG;
+            const first = item.assignees[0];
+            const extra = item.assignees.length - 1;
             return (
               <div
-                key={`right-${item.id}-${i}`}
-                style={{
-                  height: ROW_H,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0 10px',
-                  borderBottom: '1px solid #F9FAFB',
-                  gap: 6,
-                }}
+                key={`rr-${item.id}-${i}`}
+                style={{ height: ROW_H, display: 'flex', alignItems: 'center', borderBottom: '1px solid #F1F3F6', ...hRow(i) }}
+                onMouseEnter={() => setHoveredRow(i)}
+                onMouseLeave={() => setHoveredRow(null)}
               >
-                {/* Assignee avatars */}
-                <div style={{ display: 'flex', flexDirection: 'row-reverse', marginRight: 4 }}>
-                  {extra > 0 && (
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        fontSize: 8,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        background: '#8993A4',
-                        border: '1.5px solid #fff',
-                      }}
-                    >
-                      +{extra}
-                    </div>
+                {/* Assignee */}
+                <div style={{ width: 90, minWidth: 90, display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 8, overflow: 'hidden' }}>
+                  {!first ? (
+                    <span style={{ fontSize: 10, color: '#C4C9D4' }}>—</span>
+                  ) : (
+                    <>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: first.color }}>
+                          {first.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        {extra > 0 && (
+                          <div style={{ position: 'absolute', top: -4, right: -8, width: 14, height: 14, borderRadius: '50%', fontSize: 7, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#8993A4', border: '1px solid #fff' }}>
+                            +{extra}
+                          </div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 10, color: '#5A6B7F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {first.displayName}
+                      </span>
+                    </>
                   )}
-                  {[...visible].reverse().map((a) => (
-                    <div
-                      key={a.id}
-                      title={a.displayName}
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        fontSize: 8,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        background: a.color,
-                        border: '1.5px solid #fff',
-                        marginRight: -4,
-                      }}
-                    >
-                      {a.displayName.charAt(0).toUpperCase()}
-                    </div>
-                  ))}
                 </div>
-
                 {/* Priority */}
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: priorityColor,
-                    minWidth: 24,
-                  }}
-                >
-                  {item.priority.slice(0, 4)}
-                </span>
-
+                <div style={{ width: 82, minWidth: 82, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 3, background: pChip.bg, color: pChip.color, letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>
+                    {pChip.label}
+                  </span>
+                </div>
                 {/* Status */}
-                <span
-                  style={{
-                    fontSize: 9,
-                    padding: '2px 5px',
-                    borderRadius: 3,
-                    background: STATUS_BAR_COLORS[item.status] ?? '#E5E7EB',
-                    color: '#374151',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {item.status.replace('_', ' ')}
-                </span>
+                <div style={{ width: 88, minWidth: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 7px', borderRadius: 3, background: sChip.bg, color: sChip.color, whiteSpace: 'nowrap' }}>
+                    {sChip.label}
+                  </span>
+                </div>
               </div>
             );
           })}

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import useSWR from 'swr';
-import type { TicketWithMeta, Issue, Label, Member, Sprint } from '@/types/index';
+import type { TicketWithMeta, Ticket, Label, Member, Sprint } from '@/types/index';
 import { TICKET_TYPE, TICKET_PRIORITY, TICKET_STATUS } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
-import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS } from '@/lib/constants';
+import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS, TICKET_TYPE_META } from '@/lib/constants';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
 import { labelTextColor } from '@/components/label/LabelBadge';
 import { FileText, Users, Tag, CheckSquare } from 'lucide-react';
@@ -88,7 +88,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const [priority, setPriority] = useState<string>(initialData?.priority ?? 'MEDIUM');
   const [startDate, setStartDate] = useState(initialData?.startDate ?? '');
   const [dueDate, setDueDate] = useState(initialData?.dueDate ?? '');
-  const [issueId, setIssueId] = useState<number | null>(initialData?.issueId ?? null);
+  const [parentId, setParentId] = useState<number | null>(initialData?.parentId ?? null);
   const [titleError, setTitleError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -103,11 +103,11 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const [newChecklistText, setNewChecklistText] = useState('');
   const checklistInputRef = useRef<HTMLInputElement>(null);
 
-  /* ── Issues for parent selection ── */
-  const [allIssues, setAllIssues] = useState<Issue[]>([]);
-  const [issueSearch, setIssueSearch] = useState('');
-  const [showIssueDropdown, setShowIssueDropdown] = useState(false);
-  const issueDropdownRef = useRef<HTMLDivElement>(null);
+  /* ── Parent tickets for parent selection ── */
+  const [allParents, setAllParents] = useState<Ticket[]>([]);
+  const [parentSearch, setParentSearch] = useState('');
+  const [showParentDropdown, setShowParentDropdown] = useState(false);
+  const parentDropdownRef = useRef<HTMLDivElement>(null);
 
   /* ── Multi-assignee ── */
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -124,9 +124,9 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const [sprintId, setSprintId] = useState<number | null>(initialData?.sprintId ?? null);
   const [activeSprints, setActiveSprints] = useState<Sprint[]>([]);
 
-  /* ── Load labels, issues, members, sprints via SWR ── */
+  /* ── Load labels, parents, members, sprints via SWR ── */
   const { data: labelsData } = useSWR<{ labels: Label[] }>('/api/labels', fetcher);
-  const { data: issuesData } = useSWR<{ issues: Issue[] }>('/api/issues', fetcher);
+  const { data: parentsData } = useSWR<{ tickets: TicketWithMeta[] }>('/api/tickets?types=GOAL,STORY,FEATURE', fetcher);
   const { data: membersData } = useSWR<{ members: Member[] }>('/api/members', fetcher);
   const { data: sprintsData } = useSWR<{ sprints: Sprint[] }>(
     workspaceId ? `/api/workspaces/${workspaceId}/sprints` : null,
@@ -138,8 +138,8 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   }, [labelsData]);
 
   useEffect(() => {
-    if (issuesData?.issues) setAllIssues(issuesData.issues);
-  }, [issuesData]);
+    if (parentsData?.tickets) setAllParents(parentsData.tickets);
+  }, [parentsData]);
 
   useEffect(() => {
     const members = membersData?.members;
@@ -161,17 +161,17 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     setActiveSprints(active);
   }, [sprintsData]);
 
-  /* ── Close issue dropdown on outside click ── */
+  /* ── Close parent dropdown on outside click ── */
   useEffect(() => {
-    if (!showIssueDropdown) return;
+    if (!showParentDropdown) return;
     const handleClick = (e: MouseEvent) => {
-      if (issueDropdownRef.current && !issueDropdownRef.current.contains(e.target as Node)) {
-        setShowIssueDropdown(false);
+      if (parentDropdownRef.current && !parentDropdownRef.current.contains(e.target as Node)) {
+        setShowParentDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [showIssueDropdown]);
+  }, [showParentDropdown]);
 
   /* ── Close assignee dropdown on outside click ── */
   useEffect(() => {
@@ -192,32 +192,32 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   }, [showAssigneeDropdown, allMembers, selectedAssigneeIds]);
 
 
-  /* ── Reset issueId when type changes (may invalidate parent) ── */
+  /* ── Reset parentId when type changes (may invalidate parent) ── */
   useEffect(() => {
     const validTypes = getParentIssueTypes(type);
     if (validTypes.length === 0) {
-      setIssueId(null);
+      setParentId(null);
       return;
     }
-    if (issueId) {
-      const parentIssue = allIssues.find((i) => i.id === issueId);
-      if (parentIssue && !validTypes.includes(parentIssue.type)) {
-        setIssueId(null);
+    if (parentId) {
+      const parentTicket = allParents.find((t) => t.id === parentId);
+      if (parentTicket && !validTypes.includes(parentTicket.type)) {
+        setParentId(null);
       }
     }
-  }, [type, allIssues, issueId]);
+  }, [type, allParents, parentId]);
 
-  /* ── Filtered issues for parent selection ── */
+  /* ── Filtered parents for parent selection ── */
   const parentIssueTypes = getParentIssueTypes(type);
-  const filteredIssues = allIssues
-    .filter((i) => parentIssueTypes.includes(i.type))
-    .filter((i) => {
-      if (!issueSearch.trim()) return true;
-      const q = issueSearch.toLowerCase();
-      return i.name.toLowerCase().includes(q) || String(i.id).includes(q);
+  const filteredParents = allParents
+    .filter((t) => parentIssueTypes.includes(t.type))
+    .filter((t) => {
+      if (!parentSearch.trim()) return true;
+      const q = parentSearch.toLowerCase();
+      return t.title.toLowerCase().includes(q) || String(t.id).includes(q);
     });
 
-  const selectedIssue = issueId ? allIssues.find((i) => i.id === issueId) : null;
+  const selectedParent = parentId ? allParents.find((t) => t.id === parentId) : null;
 
   /* ── Label toggle ── */
   const handleLabelToggle = useCallback((labelId: number) => {
@@ -261,7 +261,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         startDate: startDate || null,
         dueDate: dueDate || null,
         description: description || null,
-        issueId: issueId ?? null,
+        parentId: parentId ?? null,
         assigneeId: selectedAssigneeIds[0] ?? null,
         assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
         storyPoints: null,
@@ -274,17 +274,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const issueBadgeColor: Record<string, string> = {
-    GOAL: '#8B5CF6',
-    STORY: '#3B82F6',
-    FEATURE: '#10B981',
-  };
-  const issueBadgeAbbr: Record<string, string> = {
-    GOAL: 'G',
-    STORY: 'S',
-    FEATURE: 'F',
   };
 
   /* ── Meta panel styles (mirrors TicketModal) ── */
@@ -379,43 +368,43 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
             </div>
           )}
 
-          {/* Parent Issue */}
+          {/* Parent Ticket */}
           {parentIssueTypes.length > 0 && (
-            <div ref={issueDropdownRef} style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
+            <div ref={parentDropdownRef} style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
               <div style={sectionHeaderStyle}>상위 이슈</div>
-              {selectedIssue ? (
+              {selectedParent ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 6, background: '#fff' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: issueBadgeColor[selectedIssue.type] ?? '#6B7280' }}>
-                    {issueBadgeAbbr[selectedIssue.type] ?? '?'}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: TICKET_TYPE_META[selectedParent.type as keyof typeof TICKET_TYPE_META]?.bg ?? '#6B7280' }}>
+                    {TICKET_TYPE_META[selectedParent.type as keyof typeof TICKET_TYPE_META]?.abbr ?? '?'}
                   </span>
-                  <span style={{ flex: 1, fontSize: 13, color: 'var(--color-text-primary)' }}>{selectedIssue.name}</span>
-                  <button type="button" onClick={() => setIssueId(null)} aria-label="상위 이슈 해제"
+                  <span style={{ flex: 1, fontSize: 13, color: 'var(--color-text-primary)' }}>{selectedParent.title}</span>
+                  <button type="button" onClick={() => setParentId(null)} aria-label="상위 이슈 해제"
                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 14, color: 'var(--color-text-muted)', padding: 0, lineHeight: 1 }}>✕</button>
                 </div>
               ) : (
-                <input type="text" value={issueSearch}
-                  onChange={(e) => { setIssueSearch(e.target.value); setShowIssueDropdown(true); }}
-                  onFocus={() => setShowIssueDropdown(true)}
+                <input type="text" value={parentSearch}
+                  onChange={(e) => { setParentSearch(e.target.value); setShowParentDropdown(true); }}
+                  onFocus={() => setShowParentDropdown(true)}
                   placeholder="이슈 이름 또는 번호로 검색..."
                   style={inputStyle}
                 />
               )}
-              {showIssueDropdown && !selectedIssue && (
+              {showParentDropdown && !selectedParent && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto', zIndex: 100, marginTop: 4 }}>
-                  {filteredIssues.length === 0 ? (
+                  {filteredParents.length === 0 ? (
                     <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--color-text-muted)' }}>검색 결과가 없습니다</div>
-                  ) : filteredIssues.map((issue) => (
-                    <button key={issue.id} type="button"
-                      onClick={() => { setIssueId(issue.id); setIssueSearch(''); setShowIssueDropdown(false); }}
+                  ) : filteredParents.map((parent) => (
+                    <button key={parent.id} type="button"
+                      onClick={() => { setParentId(parent.id); setParentSearch(''); setShowParentDropdown(false); }}
                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', color: 'var(--color-text-primary)', textAlign: 'left', transition: 'background 0.1s' }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: issueBadgeColor[issue.type] ?? '#6B7280', flexShrink: 0 }}>
-                        {issueBadgeAbbr[issue.type] ?? '?'}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: TICKET_TYPE_META[parent.type as keyof typeof TICKET_TYPE_META]?.bg ?? '#6B7280', flexShrink: 0 }}>
+                        {TICKET_TYPE_META[parent.type as keyof typeof TICKET_TYPE_META]?.abbr ?? '?'}
                       </span>
-                      <span style={{ flex: 1 }}>{issue.name}</span>
-                      <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>#{issue.id}</span>
+                      <span style={{ flex: 1 }}>{parent.title}</span>
+                      <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>#{parent.id}</span>
                     </button>
                   ))}
                 </div>

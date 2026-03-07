@@ -123,10 +123,23 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Handle startDate (auto-set when moving out of BACKLOG)
+    let startDate: string | null | undefined = undefined;
+    if (
+      targetStatus !== 'BACKLOG' &&
+      ticket.status === 'BACKLOG' &&
+      !ticket.startDate
+    ) {
+      startDate = new Date().toISOString().slice(0, 10);
+    }
+
     // Handle completedAt
     let completedAt: Date | null = ticket.completedAt;
     if (targetStatus === 'DONE' && ticket.status !== 'DONE') {
       completedAt = new Date();
+      if (!ticket.startDate && startDate === undefined) {
+        startDate = new Date().toISOString().slice(0, 10);
+      }
     } else if (targetStatus !== 'DONE' && ticket.status === 'DONE') {
       completedAt = null;
     }
@@ -137,6 +150,7 @@ export async function PATCH(request: NextRequest) {
         status: targetStatus,
         position: newPosition,
         completedAt,
+        ...(startDate !== undefined ? { startDate } : {}),
       })
       .where(eq(tickets.id, ticketId))
       .returning();

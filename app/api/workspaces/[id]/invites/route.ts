@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import {
-  getInvitesByWorkspace,
-  createInvite,
-  getPendingInviteByEmail,
-} from '@/db/queries/invites';
-import { getMembersWithEmailByWorkspace } from '@/db/queries/members';
+import { getInvitesByWorkspace, createInvite } from '@/db/queries/invites';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { createInviteSchema } from '@/lib/validations';
 import { TEAM_ROLE } from '@/types/index';
@@ -84,39 +79,20 @@ export async function POST(
       );
     }
 
-    const { email, role } = result.data;
-
-    // Check for existing pending invite for this email
-    const existing = await getPendingInviteByEmail(workspaceId, email);
-    if (existing) {
-      return NextResponse.json(
-        { error: { code: 'PENDING_INVITE_EXISTS', message: '이미 해당 이메일로 대기 중인 초대가 있습니다' } },
-        { status: 409 },
-      );
-    }
-
-    // Check if email is already a member
-    const allMembers = await getMembersWithEmailByWorkspace(workspaceId);
-    const alreadyMember = allMembers.some((m) => m.email === email);
-    if (alreadyMember) {
-      return NextResponse.json(
-        { error: { code: 'ALREADY_MEMBER', message: '이미 워크스페이스 멤버입니다' } },
-        { status: 409 },
-      );
-    }
+    const { role } = result.data;
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiry
+    expiresAt.setHours(expiresAt.getHours() + 24); // 24-hour expiry
 
     const invite = await createInvite({
       workspaceId,
       invitedBy: check.member.id,
-      email,
       role,
       expiresAt,
     });
 
-    const inviteUrl = `/invite/${invite.token}`;
+    const inviteUrl = `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/invite/${invite.token}`;
+
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });
   } catch (error) {
     console.error('POST /api/workspaces/:id/invites error:', error);

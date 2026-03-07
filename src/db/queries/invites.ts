@@ -27,7 +27,7 @@ export async function getInvitesByWorkspace(workspaceId: number): Promise<Worksp
   const rows = await db
     .select()
     .from(workspaceInvites)
-    .where(eq(workspaceInvites.workspaceId, workspaceId))
+    .where(and(eq(workspaceInvites.workspaceId, workspaceId), eq(workspaceInvites.status, 'PENDING')))
     .orderBy(workspaceInvites.createdAt);
   return rows.map(toInvite);
 }
@@ -74,7 +74,7 @@ export async function getPendingInviteByEmail(
 export async function createInvite(data: {
   workspaceId: number;
   invitedBy: number;
-  email: string;
+  email?: string;
   role: 'MEMBER' | 'VIEWER';
   expiresAt: Date;
 }): Promise<WorkspaceInvite> {
@@ -83,7 +83,7 @@ export async function createInvite(data: {
     .values({
       workspaceId: data.workspaceId,
       invitedBy: data.invitedBy,
-      email: data.email,
+      email: data.email ?? null,
       role: data.role,
       status: 'PENDING',
       expiresAt: data.expiresAt,

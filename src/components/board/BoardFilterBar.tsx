@@ -26,8 +26,9 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
     setDueDateTo,
     hasActiveFilters,
     clearAllFilters,
-    thisWeekCount,
+    todayDueCount,
     overdueCount,
+    weekDoneCount,
     total,
   } = filter;
 
@@ -48,19 +49,27 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
         </button>
         <button
           className="chip"
-          data-active={activeFilter === 'this_week' ? 'true' : undefined}
-          onClick={() => setActiveFilter('this_week')}
+          data-active={activeFilter === 'today_due' ? 'true' : undefined}
+          onClick={() => setActiveFilter('today_due')}
         >
-          이번 주 업무
-          <span className="chip-count">{thisWeekCount}</span>
+          오늘 마감
+          <span className="chip-count">{todayDueCount}</span>
         </button>
         <button
           className="chip"
           data-active={activeFilter === 'overdue' ? 'true' : undefined}
           onClick={() => setActiveFilter('overdue')}
         >
-          일정 초과
+          오버듀
           <span className="chip-count">{overdueCount}</span>
+        </button>
+        <button
+          className="chip"
+          data-active={activeFilter === 'week_done' ? 'true' : undefined}
+          onClick={() => setActiveFilter('week_done')}
+        >
+          이번 주 완료
+          <span className="chip-count">{weekDoneCount}</span>
         </button>
 
         <button

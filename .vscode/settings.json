@@ -21,5 +21,8 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "terminal.integrated.env.osx": {
+    "ENABLE_LSP_TOOL": "1"
+  }
 }

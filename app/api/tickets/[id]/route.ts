@@ -89,10 +89,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Handle status → completedAt side effect
+    // Handle status change side effects (startDate, completedAt)
     let completedAt: Date | null | undefined = undefined;
-    if (result.data.status === 'DONE') completedAt = new Date();
-    else if (result.data.status !== undefined) completedAt = null;
+    let startDate: string | null | undefined = undefined;
+
+    if (result.data.status !== undefined) {
+      const existing = await getTicketById(ticketId, workspaceId);
+      if (existing) {
+        // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
+        if (
+          result.data.status !== 'BACKLOG' &&
+          existing.status === 'BACKLOG' &&
+          !existing.startDate
+        ) {
+          startDate = new Date().toISOString().slice(0, 10);
+        }
+      }
+
+      if (result.data.status === 'DONE') completedAt = new Date();
+      else completedAt = null;
+    }
 
     const { assigneeIds, ...restData } = result.data;
 
@@ -107,6 +123,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const ticket = await updateTicket(ticketId, workspaceId, {
       ...restData,
       completedAt,
+      ...(startDate !== undefined ? { startDate } : {}),
     });
 
     if (!ticket) {

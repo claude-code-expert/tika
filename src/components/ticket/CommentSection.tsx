@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Comment } from '@/types/index';
 import { MessageCircle } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CommentSectionProps {
   ticketId: number;
@@ -31,6 +32,7 @@ export function CommentSection({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleAdd = async () => {
     const text = newText.trim();
@@ -93,7 +95,7 @@ export function CommentSection({
   };
 
   return (
-    <div style={{ padding: '16px 0' }}>
+    <div style={{ padding: '16px 0 0' }}>
       {/* Section header */}
       <div
         style={{
@@ -228,7 +230,7 @@ export function CommentSection({
                       수정
                     </button>
                     <button
-                      onClick={() => handleDelete(comment.id)}
+                      onClick={() => setDeletingId(comment.id)}
                       style={{
                         fontSize: 11,
                         color: '#DC2626',
@@ -305,6 +307,19 @@ export function CommentSection({
           ))}
         </div>
       )}
+      <ConfirmDialog
+        isOpen={deletingId !== null}
+        message="댓글을 삭제하시겠습니까?"
+        confirmLabel="삭제"
+        confirmVariant="danger"
+        onConfirm={async () => {
+          if (deletingId === null) return;
+          const id = deletingId;
+          setDeletingId(null);
+          await handleDelete(id);
+        }}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 }

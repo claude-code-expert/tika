@@ -3,13 +3,6 @@ import { getInviteByToken } from '@/db/queries/invites';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberById } from '@/db/queries/members';
 
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!local || !domain) return '***@***';
-  const hint = local.length <= 2 ? local[0] + '*' : local[0] + '***';
-  return `${hint}@${domain}`;
-}
-
 // GET /api/invites/[token] — no auth required, returns invite preview info
 export async function GET(
   _request: NextRequest,
@@ -60,7 +53,6 @@ export async function GET(
       role: invite.role,
       status: invite.status,
       expiresAt: invite.expiresAt,
-      emailHint: maskEmail(invite.email),
     });
   } catch (error) {
     console.error('GET /api/invites/[token] error:', error);

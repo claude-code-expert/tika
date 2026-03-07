@@ -5,11 +5,12 @@ import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
 import { getMemberWorkload } from '@/db/queries/analytics';
 import { getBoardData } from '@/db/queries/tickets';
 import { getJoinRequests } from '@/db/queries/joinRequests';
+import { getInvitesByWorkspace } from '@/db/queries/invites';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { MemberDetailCard } from '@/components/team/MemberDetailCard';
 import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
-import { RoleBadge } from '@/components/ui/RoleBadge';
+import { MemberList } from '@/components/team/MemberList';
 import { JoinRequestList } from '@/components/workspace/JoinRequestList';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
 
@@ -26,13 +27,14 @@ export default async function TeamMembersPage({
 
   const userId = session.user.id as string;
 
-  const [workspace, currentMember, workload, boardData, allMembers, joinRequests] = await Promise.all([
+  const [workspace, currentMember, workload, boardData, allMembers, joinRequests, pendingInvites] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
     getMemberWorkload(workspaceId),
     getBoardData(workspaceId),
     getMembersByWorkspace(workspaceId),
     getJoinRequests(workspaceId, 'PENDING'),
+    getInvitesByWorkspace(workspaceId),
   ]);
 
   if (!workspace || !currentMember) redirect('/');
@@ -42,6 +44,19 @@ export default async function TeamMembersPage({
   const pendingRequests = isOwner ? joinRequests : [];
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
+
+  const totalAssigned = workload.reduce((s, m) => s + m.assigned, 0);
+  const totalDone     = workload.reduce((s, m) => s + m.completed, 0);
+  const completionPct = totalAssigned > 0 ? Math.round(totalDone / totalAssigned * 100) : 0;
+  const totalWorkday  = totalAssigned * 2;
+
+  const summaryStats = [
+    { value: String(workload.length),    label: '팀 멤버',     color: '#2C3E50' },
+    { value: String(totalAssigned),      label: '총 할당 티켓', color: '#2C3E50' },
+    { value: String(totalDone),          label: '완료 티켓',   color: '#629584' },
+    { value: `${totalWorkday}d`,         label: '총 Workday',  color: '#F59E0B' },
+    { value: `${completionPct}%`,        label: '팀 완료율',   color: '#629584' },
+  ];
 
   return (
     <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
@@ -57,6 +72,19 @@ export default async function TeamMembersPage({
             </p>
           </div>
           {isOwner && <InviteModalTrigger workspaceId={workspaceId} />}
+        </div>
+
+        {/* Summary Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
+          {summaryStats.map((s) => (
+            <div
+              key={s.label}
+              style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
+            >
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: '#8993A4', marginTop: 4 }}>{s.label}</div>
+            </div>
+          ))}
         </div>
 
         {/* Workload heatmap */}
@@ -79,7 +107,7 @@ export default async function TeamMembersPage({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(2, 1fr)',
             gap: 16,
           }}
         >
@@ -101,48 +129,13 @@ export default async function TeamMembersPage({
           <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             멤버 목록
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {allMembers.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '8px 10px',
-                  borderRadius: 7,
-                  background: '#F9FAFB',
-                }}
-              >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: m.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: '#fff',
-                    flexShrink: 0,
-                  }}
-                >
-                  {m.displayName.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{m.displayName}</div>
-                  {m.joinedAt && (
-                    <div style={{ fontSize: 10, color: '#9CA3AF' }}>
-                      {new Date(m.joinedAt).toLocaleDateString('ko-KR')} 가입
-                    </div>
-                  )}
-                </div>
-                <RoleBadge role={m.role as TeamRole} size="sm" />
-              </div>
-            ))}
-          </div>
+          <MemberList
+            members={allMembers}
+            currentMemberId={currentMember.id}
+            isOwner={isOwner}
+            workspaceName={workspace.name}
+            pendingInvites={isOwner ? pendingInvites : []}
+          />
         </section>
 
         {/* Join requests section (OWNER only) */}

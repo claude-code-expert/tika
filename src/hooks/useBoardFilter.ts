@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { BoardData, TicketWithMeta, TicketPriority, TicketType } from '@/types/index';
 
-export type ActiveFilter = 'all' | 'this_week' | 'overdue';
+export type ActiveFilter = 'all' | 'today_due' | 'overdue' | 'week_done';
 
 export interface BoardFilterState {
   activeFilter: ActiveFilter;
@@ -20,9 +20,17 @@ export interface BoardFilterState {
   setDueDateTo: (v: string) => void;
   hasActiveFilters: boolean;
   clearAllFilters: () => void;
-  thisWeekCount: number;
+  todayDueCount: number;
   overdueCount: number;
+  weekDoneCount: number;
   total: number;
+}
+
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function applyFilter(board: BoardData, filterFn: (t: TicketWithMeta) => boolean): BoardData {
@@ -50,21 +58,33 @@ export function useBoardFilter(
 
   const allTickets = useMemo(() => Object.values(board.board).flat(), [board]);
 
-  const thisWeekCount = useMemo(() => {
-    const now = new Date();
-    const weekEnd = new Date(now);
-    weekEnd.setDate(now.getDate() + (6 - now.getDay()));
-    return allTickets.filter((t) => {
-      if (!t.dueDate) return false;
-      const due = new Date(t.dueDate);
-      return due >= now && due <= weekEnd;
-    }).length;
-  }, [allTickets]);
+  const todayStr = useMemo(() => localDateStr(new Date()), []);
+
+  const todayDueCount = useMemo(
+    () => allTickets.filter((t) => t.plannedEndDate === todayStr && t.status !== 'DONE').length,
+    [allTickets, todayStr],
+  );
 
   const overdueCount = useMemo(
     () => allTickets.filter((t) => t.isOverdue).length,
     [allTickets],
   );
+
+  const weekStartStr = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1)); // Monday
+    return localDateStr(weekStart);
+  }, []);
+
+  const weekDoneCount = useMemo(() => {
+    return allTickets.filter((t) => {
+      if (t.status !== 'DONE' || !t.completedAt) return false;
+      const completedDate = t.completedAt.slice(0, 10);
+      return completedDate >= weekStartStr;
+    }).length;
+  }, [allTickets, weekStartStr]);
 
   const hasActiveFilters =
     activeFilter !== 'all' ||
@@ -104,17 +124,15 @@ export function useBoardFilter(
     }
 
     if (activeFilter !== 'all') {
-      const now = new Date();
-      const df =
-        activeFilter === 'this_week'
-          ? (t: TicketWithMeta) => {
-              if (!t.dueDate) return false;
-              const due = new Date(t.dueDate);
-              const weekEnd = new Date(now);
-              weekEnd.setDate(now.getDate() + (6 - now.getDay()));
-              return due >= now && due <= weekEnd;
-            }
-          : (t: TicketWithMeta) => t.isOverdue;
+      let df: (t: TicketWithMeta) => boolean;
+      if (activeFilter === 'today_due') {
+        df = (t) => t.plannedEndDate === todayStr && t.status !== 'DONE';
+      } else if (activeFilter === 'overdue') {
+        df = (t) => t.isOverdue;
+      } else {
+        // week_done
+        df = (t) => t.status === 'DONE' && !!t.completedAt && t.completedAt.slice(0, 10) >= weekStartStr;
+      }
       base = applyFilter(base, df);
     }
 
@@ -128,16 +146,16 @@ export function useBoardFilter(
 
     if (dueDateFrom || dueDateTo) {
       base = applyFilter(base, (t) => {
-        if (!t.dueDate) return false;
-        if (dueDateFrom && t.dueDate < dueDateFrom) return false;
-        if (dueDateTo && t.dueDate > dueDateTo) return false;
+        if (!t.plannedEndDate) return false;
+        if (dueDateFrom && t.plannedEndDate < dueDateFrom) return false;
+        if (dueDateTo && t.plannedEndDate > dueDateTo) return false;
         return true;
       });
     }
 
     const total = Object.values(base.board).reduce((s, arr) => s + arr.length, 0);
     return { ...base, total };
-  }, [board, searchQuery, activeFilter, activePriorities, activeTypes, dueDateFrom, dueDateTo]);
+  }, [board, searchQuery, activeFilter, activePriorities, activeTypes, dueDateFrom, dueDateTo, todayStr, weekStartStr]);
 
   return {
     displayBoard,
@@ -156,8 +174,9 @@ export function useBoardFilter(
       setDueDateTo,
       hasActiveFilters,
       clearAllFilters,
-      thisWeekCount,
+      todayDueCount,
       overdueCount,
+      weekDoneCount,
       total: board.total,
     },
   };

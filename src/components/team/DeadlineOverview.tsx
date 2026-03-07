@@ -81,12 +81,12 @@ export function DeadlineOverview({ overdueTickets, upcomingTickets }: DeadlineOv
               {t.title}
             </span>
             <span style={{ fontSize: 10, color: '#DC2626', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {t.dueDate}
+              {t.plannedEndDate}
             </span>
           </div>
         ))}
         {upcomingTickets.slice(0, 5).map((t) => {
-          const diff = t.dueDate ? daysDiff(t.dueDate) : null;
+          const diff = t.plannedEndDate ? daysDiff(t.plannedEndDate) : null;
           return (
             <div
               key={t.id}
@@ -105,7 +105,7 @@ export function DeadlineOverview({ overdueTickets, upcomingTickets }: DeadlineOv
                 {t.title}
               </span>
               <span style={{ fontSize: 10, color: '#B45309', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {diff !== null && diff === 0 ? '오늘' : diff !== null ? `D-${diff}` : t.dueDate}
+                {diff !== null && diff === 0 ? '오늘' : diff !== null ? `D-${diff}` : t.plannedEndDate}
               </span>
             </div>
           );

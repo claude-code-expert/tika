@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpNarrowWide, ClockArrowDown } from 'lucide-react';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { BoardFilterBar } from '@/components/board/BoardFilterBar';
 import { TicketCard } from '@/components/board/TicketCard';
@@ -34,18 +34,13 @@ const BACKLOG_MAX = 380;
 const BACKLOG_DEFAULT = 270;
 
 // ─── BacklogItem ──────────────────────────────────────────────────────────────
-function BacklogItem({
-  ticket,
-  onClick,
-}: {
-  ticket: TicketWithMeta;
-  onClick: () => void;
-}) {
+function BacklogItem({ ticket, onClick }: { ticket: TicketWithMeta; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
 
-  const type = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
+  const type =
+    TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
 
   return (
     <div
@@ -63,12 +58,20 @@ function BacklogItem({
       }}
       {...attributes}
       {...listeners}
-      onClick={() => { if (!isDragging) onClick(); }}
-      onKeyDown={(e) => { if (e.key === 'Enter' && !isDragging) onClick(); }}
+      onClick={() => {
+        if (!isDragging) onClick();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !isDragging) onClick();
+      }}
       role="button"
       tabIndex={0}
-      onMouseEnter={(e) => { if (!isDragging) (e.currentTarget as HTMLElement).style.background = '#F8F9FB'; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#fff'; }}
+      onMouseEnter={(e) => {
+        if (!isDragging) (e.currentTarget as HTMLElement).style.background = '#F8F9FB';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = '#fff';
+      }}
       aria-label={`티켓: ${ticket.title}`}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -118,15 +121,18 @@ function BacklogItem({
         {ticket.isOverdue && (
           <span style={{ fontSize: 9, fontWeight: 600, color: '#DC2626' }}>마감 초과</span>
         )}
-        {ticket.dueDate && !ticket.isOverdue && (
-          <span style={{ fontSize: 9, color: '#8993A4' }}>{ticket.dueDate}</span>
+        {ticket.plannedEndDate && !ticket.isOverdue && (
+          <span style={{ fontSize: 9, color: '#8993A4' }}>{ticket.plannedEndDate}</span>
         )}
 
         {/* Assignee avatars */}
         {(() => {
-          const assignees = (ticket.assignees && ticket.assignees.length > 0)
-            ? ticket.assignees
-            : ticket.assignee ? [ticket.assignee] : [];
+          const assignees =
+            ticket.assignees && ticket.assignees.length > 0
+              ? ticket.assignees
+              : ticket.assignee
+                ? [ticket.assignee]
+                : [];
           if (assignees.length === 0) return null;
           const visible = assignees.slice(0, 3);
           return (
@@ -162,19 +168,65 @@ function BacklogItem({
   );
 }
 
+// ─── WBS sort helpers ────────────────────────────────────────────────────────
+const TYPE_ORDER: Record<string, number> = { GOAL: 0, STORY: 1, FEATURE: 2, TASK: 3 };
+
+function sortByWbs(tickets: TicketWithMeta[]): TicketWithMeta[] {
+  const ticketMap = new Map(tickets.map((t) => [t.id, t]));
+  const childrenMap = new Map<number | null, TicketWithMeta[]>();
+
+  for (const t of tickets) {
+    const parentKey = t.parentId && ticketMap.has(t.parentId) ? t.parentId : null;
+    if (!childrenMap.has(parentKey)) childrenMap.set(parentKey, []);
+    childrenMap.get(parentKey)!.push(t);
+  }
+
+  for (const [, children] of childrenMap) {
+    children.sort((a, b) => {
+      const ta = TYPE_ORDER[a.type] ?? 3;
+      const tb = TYPE_ORDER[b.type] ?? 3;
+      return ta !== tb ? ta - tb : a.title.localeCompare(b.title);
+    });
+  }
+
+  const result: TicketWithMeta[] = [];
+  function dfs(parentId: number | null) {
+    for (const child of childrenMap.get(parentId) ?? []) {
+      result.push(child);
+      dfs(child.id);
+    }
+  }
+  dfs(null);
+  return result;
+}
+
+function sortByCreatedAt(tickets: TicketWithMeta[]): TicketWithMeta[] {
+  return [...tickets].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+}
+
+type BacklogSortMode = 'created' | 'wbs';
+
 // ─── BacklogPanel ─────────────────────────────────────────────────────────────
 function BacklogPanel({
   tickets,
   onTicketClick,
-  onAddTicket,
 }: {
   tickets: TicketWithMeta[];
   onTicketClick: (ticket: TicketWithMeta) => void;
-  onAddTicket: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
   const [collapsed, setCollapsed] = useState(false);
-  const { width, handleResizeStart, isResizing } = useResizable(BACKLOG_DEFAULT, BACKLOG_MIN, BACKLOG_MAX);
+  const [sortMode, setSortMode] = useState<BacklogSortMode>('created');
+  const [hoverSort, setHoverSort] = useState<BacklogSortMode | null>(null);
+  const { width, handleResizeStart, isResizing } = useResizable(
+    BACKLOG_DEFAULT,
+    BACKLOG_MIN,
+    BACKLOG_MAX,
+  );
+
+  const sortedTickets = sortMode === 'wbs' ? sortByWbs(tickets) : sortByCreatedAt(tickets);
 
   return (
     <div
@@ -208,8 +260,12 @@ function BacklogPanel({
           boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
           transition: 'background 0.15s',
         }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#E2E5EA'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#fff'; }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = '#E2E5EA';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background = '#fff';
+        }}
         aria-label={collapsed ? '백로그 펼치기' : '백로그 접기'}
         title={collapsed ? '백로그 펼치기' : '백로그 접기'}
       >
@@ -254,24 +310,98 @@ function BacklogPanel({
           >
             Backlog
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: '#8993A4' }}>{tickets.length}건</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {/* WBS sort */}
             <button
-              onClick={onAddTicket}
+              onClick={() => setSortMode('wbs')}
               style={{
-                fontSize: 16,
-                fontWeight: 500,
-                color: '#629584',
-                background: 'none',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 24,
+                height: 24,
+                borderRadius: 4,
                 border: 'none',
                 cursor: 'pointer',
                 padding: 0,
-                lineHeight: 1,
+                background: 'transparent',
+                color: sortMode === 'wbs' ? '#629584' : '#8993A4',
+                transition: 'color 0.12s',
               }}
-              aria-label="새 업무 추가"
+              onMouseEnter={() => setHoverSort('wbs')}
+              onMouseLeave={() => setHoverSort(null)}
+              aria-label="연관 티켓 정렬"
             >
-              +
+              <ArrowUpNarrowWide size={14} />
+              {hoverSort === 'wbs' && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#1F2937',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    padding: '3px 8px',
+                    borderRadius: 4,
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                    zIndex: 50,
+                  }}
+                >
+                  연관 티켓 정렬
+                </span>
+              )}
             </button>
+            {/* Created sort */}
+            <button
+              onClick={() => setSortMode('created')}
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 24,
+                height: 24,
+                borderRadius: 4,
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                background: 'transparent',
+                color: sortMode === 'created' ? '#629584' : '#8993A4',
+                transition: 'color 0.12s',
+              }}
+              onMouseEnter={() => setHoverSort('created')}
+              onMouseLeave={() => setHoverSort(null)}
+              aria-label="생성일 정렬"
+            >
+              <ClockArrowDown size={14} />
+              {hoverSort === 'created' && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#1F2937',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    padding: '3px 8px',
+                    borderRadius: 4,
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                    zIndex: 50,
+                  }}
+                >
+                  생성일 정렬
+                </span>
+              )}
+            </button>
+            <span style={{ fontSize: 11, color: '#8993A4' }}>{tickets.length}건</span>
           </div>
         </div>
 
@@ -286,7 +416,7 @@ function BacklogPanel({
             transition: 'background 0.15s',
           }}
         >
-          {tickets.length === 0 ? (
+          {sortedTickets.length === 0 ? (
             <div
               style={{
                 padding: '24px 8px',
@@ -295,28 +425,14 @@ function BacklogPanel({
                 color: '#8993A4',
               }}
             >
-              <p style={{ marginBottom: 8 }}>백로그가 비어 있습니다</p>
-              <button
-                onClick={onAddTicket}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: '#629584',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
-              >
-                새 업무 추가 +
-              </button>
+              백로그가 비어 있습니다
             </div>
           ) : (
             <SortableContext
-              items={tickets.map((t) => t.id)}
+              items={sortedTickets.map((t) => t.id)}
               strategy={verticalListSortingStrategy}
             >
-              {tickets.map((ticket) => (
+              {sortedTickets.map((ticket) => (
                 <BacklogItem
                   key={ticket.id}
                   ticket={ticket}
@@ -371,7 +487,9 @@ export function TeamBoardClient({ initialData, currentMemberId }: TeamBoardClien
     useTickets(initialData);
 
   const { register } = useBoardRefreshRegistry();
-  useEffect(() => { register(fetchBoard); }, [register, fetchBoard]);
+  useEffect(() => {
+    register(fetchBoard);
+  }, [register, fetchBoard]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<TicketWithMeta | null>(null);
@@ -409,14 +527,15 @@ export function TeamBoardClient({ initialData, currentMemberId }: TeamBoardClien
   const { displayBoard, filter } = useBoardFilter(board);
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}
+    >
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Backlog panel */}
-        <BacklogPanel
-          tickets={displayBoard.board.BACKLOG}
-          onTicketClick={setSelectedTicket}
-          onAddTicket={() => setIsCreating(true)}
-        />
+        <BacklogPanel tickets={displayBoard.board.BACKLOG} onTicketClick={setSelectedTicket} />
 
         {/* Kanban columns (TODO / IN_PROGRESS / DONE) + Filter bar */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>

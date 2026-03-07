@@ -3,6 +3,27 @@ import { TICKET_STATUS } from '@/types/index';
 import { POSITION_GAP } from './constants';
 import type { CreateTicketInput } from './validations';
 
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+/** Returns "yyyy-mm-dd HH:mm" in 24-hour local time. */
+export function formatDateTime(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const HH = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${HH}:${min}`;
+}
+
+/** Returns "yyyy-mm-dd" */
+export function formatDate(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // ─── String helpers ───────────────────────────────────────────────────────────
 export function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max) + '…' : text;
@@ -40,7 +61,7 @@ export async function duplicateTicket(
     title: `${ticket.title} (복사)`,
     type: ticket.type,
     priority: ticket.priority,
-    dueDate: ticket.dueDate ?? undefined,
+    plannedEndDate: ticket.plannedEndDate ?? undefined,
     labelIds: ticket.labels.map((l) => l.id),
     parentId: ticket.parentId ?? undefined,
     assigneeId: ticket.assigneeId ?? undefined,

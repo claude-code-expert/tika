@@ -46,7 +46,10 @@ labels: UNIQUE(workspace_id, name)
          │          │ status        VARCHAR(20)   NOT NULL  'BACKLOG'  │
          │          │ priority      VARCHAR(10)   NOT NULL  'MEDIUM'   │
          │          │ position      INTEGER       NOT NULL  0          │
+         │          │ start_date    DATE          NULLABLE  auto        │
          │          │ due_date      DATE          NULLABLE             │
+         │          │ planned_start_date DATE     NULLABLE             │
+         │          │ planned_end_date   DATE     NULLABLE             │
          │          │ completed_at  TIMESTAMPTZ   NULLABLE             │
          │          │ parent_id     INTEGER       NULLABLE  self-ref   │
          │          │ assignee_id   INTEGER       NULLABLE  FK→members │
@@ -106,7 +109,10 @@ labels: UNIQUE(workspace_id, name)
 | status | VARCHAR(20) | NOT NULL | 'BACKLOG' | 현재 상태 (칸반 칼럼) |
 | priority | VARCHAR(10) | NOT NULL | 'MEDIUM' | 우선순위 |
 | position | INTEGER | NOT NULL | 0 | 칼럼 내 표시 순서 (gap-based) |
-| due_date | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
+| start_date | DATE | NULLABLE | NULL | 실제 시작일 — IN_PROGRESS 전환 시 자동 설정 (YYYY-MM-DD) |
+| due_date | DATE | NULLABLE | NULL | 실제 마감일 (YYYY-MM-DD) |
+| planned_start_date | DATE | NULLABLE | NULL | 계획 시작일 (YYYY-MM-DD) |
+| planned_end_date | DATE | NULLABLE | NULL | 계획 종료일 (YYYY-MM-DD) |
 | completed_at | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 (DONE 이동 시 자동 기록) |
 | parent_id | INTEGER | NULLABLE (self-ref) | NULL | 상위 티켓 (GOAL/STORY/FEATURE 계층용) |
 | assignee_id | INTEGER | NULLABLE, FK→members(id) ON DELETE SET NULL | NULL | 담당 멤버 |
@@ -296,6 +302,8 @@ export const tickets = pgTable('tickets', {
   position: integer('position').notNull().default(0),
   startDate: date('start_date', { mode: 'string' }),
   dueDate: date('due_date', { mode: 'string' }),
+  plannedStartDate: date('planned_start_date', { mode: 'string' }),
+  plannedEndDate: date('planned_end_date', { mode: 'string' }),
   parentId: integer('parent_id'),  // self-ref (no FK constraint at DB level)
   assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
   completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),

@@ -113,8 +113,10 @@ entity "**tickets**" as tickets {
   * priority       : VARCHAR(10)  DEFAULT 'MEDIUM'
   .. LOW | MEDIUM | HIGH | CRITICAL ..
   * position       : INT          DEFAULT 0
-    start_date     : DATE
+    start_date     : DATE         <<auto: IN_PROGRESS 전환 시>>
     due_date       : DATE
+    planned_start_date : DATE    <<계획 시작일>>
+    planned_end_date   : DATE    <<계획 종료일>>
     parent_id      : INT          <<self-ref: GOAL>STORY>FEATURE>TASK>>
     assignee_id    : INT          <<FK → members.id, ON DELETE SET NULL>>
     sprint_id      : INT          <<FK → sprints.id, ON DELETE SET NULL>>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChecklistSection } from './ChecklistSection';
+import { CommentSection } from './CommentSection';
 import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
@@ -18,6 +20,7 @@ import {
   CopyPlus,
   X,
   Trash2,
+  Copy,
 } from 'lucide-react';
 
 // ─── style helpers ────────────────────────────────────────────────────────────
@@ -40,6 +43,172 @@ const TYPE_BADGE_STYLES: Record<string, { bg: string; color: string }> = {
 
 const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
 
+
+// ─── UrlCopyBadge ────────────────────────────────────────────────────────────
+
+function UrlCopyBadge({ ticket, workspaceName }: { ticket: TicketWithMeta; workspaceName?: string }) {
+  const router = useRouter();
+  const [copied, setCopied] = useState(false);
+  const [hover, setHover] = useState(false);
+  const prefix = (workspaceName ?? 'tkt').toLowerCase();
+  const path = `/team/${ticket.workspaceId}/${prefix}-${ticket.id}`;
+  const fullUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${path}`
+    : path;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <span
+        onClick={() => router.push(path)}
+        style={{
+          fontSize: 10,
+          color: '#8993A4',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: 260,
+          direction: 'rtl',
+          textAlign: 'left',
+          cursor: 'pointer',
+          transition: 'color 0.12s',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-accent)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8993A4'; }}
+      >
+        {fullUrl}
+      </span>
+      <button
+        onClick={handleCopy}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 22,
+          height: 22,
+          borderRadius: 4,
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          background: 'transparent',
+          color: copied ? '#629584' : '#8993A4',
+          transition: 'color 0.12s',
+        }}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        aria-label="URL 복사"
+      >
+        <Copy size={12} />
+        {(hover || copied) && (
+          <span
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1F2937',
+              color: '#fff',
+              fontSize: 10,
+              fontWeight: 500,
+              padding: '3px 8px',
+              borderRadius: 4,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 50,
+            }}
+          >
+            {copied ? '복사됨' : 'URL 복사'}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ─── IconBtnWithTooltip ──────────────────────────────────────────────────────
+
+function IconBtnWithTooltip({
+  label,
+  icon,
+  onClick,
+  hoverBg = 'var(--color-board-bg)',
+  hoverColor = 'var(--color-text-primary)',
+  style,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
+  hoverBg?: string;
+  hoverColor?: string;
+  style?: React.CSSProperties;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        position: 'relative',
+        width: 28,
+        height: 28,
+        border: 'none',
+        borderRadius: 6,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 0,
+        fontFamily: 'inherit',
+        fontSize: 12,
+        color: 'var(--color-text-muted)',
+        background: 'transparent',
+        outline: 'none',
+        transition: 'background 0.1s, color 0.1s',
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.background = hoverBg;
+        (e.currentTarget as HTMLElement).style.color = hoverColor;
+        setHover(true);
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = 'transparent';
+        (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
+        setHover(false);
+      }}
+    >
+      {icon}
+      {hover && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#1F2937',
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 500,
+            padding: '3px 8px',
+            borderRadius: 4,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            zIndex: 50,
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </button>
+  );
+}
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +233,7 @@ export function TicketModal({
   onDelete,
   onDuplicate,
   workspaceName,
+  currentMemberId = null,
 }: TicketModalProps) {
   // ── editable state ──
   const [title, setTitle] = useState(ticket.title);
@@ -71,8 +241,8 @@ export function TicketModal({
   const [status, setStatus] = useState(ticket.status);
   const [priority, setPriority] = useState(ticket.priority);
   const [type, setType] = useState(ticket.type);
-  const [startDate, setStartDate] = useState(ticket.startDate ?? '');
-  const [dueDate, setDueDate] = useState(ticket.dueDate ?? '');
+  const [startDate, setStartDate] = useState(ticket.plannedStartDate ?? '');
+  const [dueDate, setDueDate] = useState(ticket.plannedEndDate ?? '');
   const [selectedParentId, setSelectedParentId] = useState<number | null>(ticket.parentId ?? null);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(() => {
     const ids = new Set(ticket.assignees.map((a) => a.id));
@@ -181,8 +351,8 @@ export function TicketModal({
     status !== ticket.status ||
     priority !== ticket.priority ||
     type !== ticket.type ||
-    startDate !== (ticket.startDate ?? '') ||
-    dueDate !== (ticket.dueDate ?? '') ||
+    startDate !== (ticket.plannedStartDate ?? '') ||
+    dueDate !== (ticket.plannedEndDate ?? '') ||
     selectedParentId !== (ticket.parentId ?? null) ||
     JSON.stringify([...selectedAssigneeIds].sort()) !==
       JSON.stringify([...ticket.assignees.map((a) => a.id)].sort());
@@ -198,8 +368,8 @@ export function TicketModal({
       if (status !== ticket.status) patch.status = status;
       if (priority !== ticket.priority) patch.priority = priority;
       if (type !== ticket.type) patch.type = type;
-      if (startDate !== (ticket.startDate ?? '')) patch.startDate = startDate || null;
-      if (dueDate !== (ticket.dueDate ?? '')) patch.dueDate = dueDate || null;
+      if (startDate !== (ticket.plannedStartDate ?? '')) patch.plannedStartDate = startDate || null;
+      if (dueDate !== (ticket.plannedEndDate ?? '')) patch.plannedEndDate = dueDate || null;
       if (selectedParentId !== (ticket.parentId ?? null)) patch.parentId = selectedParentId;
       const origIds = [...ticket.assignees.map((a) => a.id)].sort().join(',');
       const newIds = [...selectedAssigneeIds].sort().join(',');
@@ -350,8 +520,7 @@ export function TicketModal({
         isOpen={isOpen}
         onClose={onClose}
         maxWidth={800}
-        height="800px"
-        maxHeight="800px"
+        maxHeight="90vh"
         headerPadding="6px 20px"
         hideCloseButton
         headerContent={
@@ -363,7 +532,7 @@ export function TicketModal({
               width: '100%',
             }}
           >
-            {/* Left: ticket ID + type badge */}
+            {/* Left: ticket ID + URL copy + type badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span
                 style={{
@@ -417,61 +586,26 @@ export function TicketModal({
               </span>
             </div>
 
-            {/* Right: icon action buttons */}
+            {/* Right: URL + icon action buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {/* Duplicate */}
-              <button
-                style={iconBtnBase}
-                title="복제"
-                aria-label="복제"
+              <UrlCopyBadge ticket={ticket} workspaceName={workspaceName} />
+              <IconBtnWithTooltip
+                label="복제"
+                icon={<CopyPlus size={15} />}
                 onClick={onDuplicate ? () => setShowDuplicateConfirm(true) : undefined}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-board-bg)';
-                  e.currentTarget.style.color = 'var(--color-text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-muted)';
-                }}
-              >
-                <CopyPlus size={15} />
-              </button>
-
-              {/* Delete */}
-              <button
-                style={iconBtnBase}
-                title="삭제"
-                aria-label="삭제"
+              />
+              <IconBtnWithTooltip
+                label="삭제"
+                icon={<Trash2 size={15} />}
                 onClick={() => setShowDelete(true)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#FEF2F2';
-                  e.currentTarget.style.color = '#DC2626';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-muted)';
-                }}
-              >
-                <Trash2 size={15} />
-              </button>
-
-              {/* Close */}
-              <button
-                style={iconBtnBase}
-                title="닫기"
-                aria-label="닫기"
+                hoverBg="#FEF2F2"
+                hoverColor="#DC2626"
+              />
+              <IconBtnWithTooltip
+                label="닫기"
+                icon={<X size={16} />}
                 onClick={onClose}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-board-bg)';
-                  e.currentTarget.style.color = 'var(--color-text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-muted)';
-                }}
-              >
-                <X size={16} />
-              </button>
+              />
             </div>
           </div>
         }
@@ -485,8 +619,13 @@ export function TicketModal({
             {/* ── TITLE SECTION ── */}
             <div
               style={{
-                padding: '10px 24px 10px',
+                height: 40,
+                padding: '0 24px',
                 borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexShrink: 0,
               }}
             >
               {/* Auto-resize title textarea */}
@@ -501,22 +640,21 @@ export function TicketModal({
                 rows={1}
                 aria-label="제목"
                 style={{
-                  width: 'calc(100% + 16px)',
+                  flex: 1,
+                  minWidth: 0,
                   border: 'none',
                   outline: 'none',
                   background: 'transparent',
                   fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: 19,
+                  fontSize: 16,
                   fontWeight: 700,
                   color: 'var(--color-text-primary)',
-                  lineHeight: 1.45,
+                  lineHeight: 1.3,
                   resize: 'none',
                   overflow: 'hidden',
                   cursor: 'text',
-                  padding: '6px 8px',
-                  margin: '0 -8px',
-                  borderRadius: 6,
-                  display: 'block',
+                  padding: '4px 6px',
+                  borderRadius: 4,
                 }}
                 onFocus={(e) => {
                   e.target.style.background = 'var(--color-board-bg)';
@@ -526,195 +664,186 @@ export function TicketModal({
                 }}
               />
 
-              {/* Breadcrumb line: issue select (left) + type select (right) */}
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                {ticket.type !== 'GOAL' ? (() => {
-                  const filteredParents = allParents.filter((p) => {
-                    if (ticket.type === 'STORY') return p.type === 'GOAL';
-                    if (ticket.type === 'FEATURE') return p.type === 'STORY';
-                    if (ticket.type === 'TASK') return p.type === 'FEATURE';
-                    return false;
-                  });
-                  const selectedParent = filteredParents.find((p) => p.id === selectedParentId) ?? null;
-                  return (
-                    <div ref={parentAreaRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                      {/* Breadcrumb trigger */}
-                      <button
-                        onClick={() => setShowParentPicker((p) => !p)}
-                        aria-label="상위 이슈 선택"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          background: 'none',
-                          border: 'none',
-                          padding: '2px 4px',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          fontSize: 12,
-                          color: selectedParent ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
-                          maxWidth: '100%',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          transition: 'background 0.12s',
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
-                      >
-                        {selectedParent ? (
-                          <>
-                            <span style={{
-                              fontSize: 10, fontWeight: 700,
-                              padding: '1px 5px', borderRadius: 3,
-                              background: selectedParent.type === 'GOAL' ? '#EDE9FE' : selectedParent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                              color: selectedParent.type === 'GOAL' ? '#6D28D9' : selectedParent.type === 'STORY' ? '#1D4ED8' : '#065F46',
-                              flexShrink: 0,
-                            }}>
-                              {selectedParent.type.charAt(0)}
-                            </span>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {selectedParent.title}
-                            </span>
-                          </>
-                        ) : (
-                          <span style={{ fontStyle: 'italic' }}>상위 이슈 없음</span>
-                        )}
-                        <span style={{ fontSize: 9, opacity: 0.5, flexShrink: 0 }}>▾</span>
-                      </button>
+              {/* Type select */}
+              <select
+                value={type}
+                onChange={(e) =>
+                  setType(e.target.value as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE])
+                }
+                aria-label="유형"
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: 'var(--color-board-bg)',
+                  color: 'var(--color-text-primary)',
+                  border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  flexShrink: 0,
+                }}
+              >
+                {Object.values(TICKET_TYPE).map((t) => (
+                  <option key={t} value={t}>
+                    {t === 'GOAL' ? 'Goal' :
+                     t === 'STORY' ? 'Story' :
+                     t === 'FEATURE' ? 'Feature' : 'Task'}
+                  </option>
+                ))}
+              </select>
 
-                      {/* Dropdown */}
-                      {showParentPicker && (() => {
-                        const searched = parentSearch.length >= 2
-                          ? filteredParents.filter((p) => p.title.toLowerCase().includes(parentSearch.toLowerCase()))
-                          : filteredParents;
-                        return (
-                        <div style={{
-                          position: 'absolute',
-                          top: 'calc(100% + 4px)',
-                          left: 0,
-                          zIndex: 500,
-                          background: '#fff',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: 8,
-                          boxShadow: 'var(--shadow-dropdown)',
-                          minWidth: 220,
-                          maxWidth: 320,
-                          maxHeight: 260,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          overflow: 'hidden',
-                        }}>
-                          {/* Search input */}
-                          <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-                            <input
-                              autoFocus
-                              type="text"
-                              placeholder="이슈 검색..."
-                              value={parentSearch}
-                              onChange={(e) => setParentSearch(e.target.value)}
-                              style={{
-                                width: '100%',
-                                padding: '5px 8px',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: 5,
-                                fontSize: 12,
-                                fontFamily: 'inherit',
-                                color: 'var(--color-text-primary)',
-                                background: 'var(--color-board-bg)',
-                                outline: 'none',
-                              }}
-                            />
-                          </div>
+              {/* Parent breadcrumb */}
+              {ticket.type !== 'GOAL' && (() => {
+                const filteredParents = allParents.filter((p) => {
+                  if (ticket.type === 'STORY') return p.type === 'GOAL';
+                  if (ticket.type === 'FEATURE') return p.type === 'STORY';
+                  if (ticket.type === 'TASK') return p.type === 'FEATURE';
+                  return false;
+                });
+                const selectedParent = filteredParents.find((p) => p.id === selectedParentId) ?? null;
+                return (
+                  <div ref={parentAreaRef} style={{ position: 'relative', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setShowParentPicker((p) => !p)}
+                      aria-label="상위 이슈 선택"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: 'none',
+                        border: 'none',
+                        padding: '2px 4px',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: 11,
+                        color: selectedParent ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
+                        maxWidth: 160,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        transition: 'background 0.12s',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-board-bg)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+                    >
+                      {selectedParent ? (
+                        <>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700,
+                            padding: '1px 5px', borderRadius: 3,
+                            background: selectedParent.type === 'GOAL' ? '#EDE9FE' : selectedParent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                            color: selectedParent.type === 'GOAL' ? '#6D28D9' : selectedParent.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                            flexShrink: 0,
+                          }}>
+                            {selectedParent.type.charAt(0)}
+                          </span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {selectedParent.title}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ fontStyle: 'italic' }}>상위 이슈</span>
+                      )}
+                      <span style={{ fontSize: 9, opacity: 0.5, flexShrink: 0 }}>▾</span>
+                    </button>
 
-                          {/* List */}
-                          <div style={{ overflowY: 'auto', padding: '4px 0' }}>
-                          {/* 상위 이슈 없음 */}
-                          <button
-                            onClick={() => { setSelectedParentId(null); setShowParentPicker(false); setParentSearch(''); }}
+                    {showParentPicker && (() => {
+                      const searched = parentSearch.length >= 2
+                        ? filteredParents.filter((p) => p.title.toLowerCase().includes(parentSearch.toLowerCase()))
+                        : filteredParents;
+                      return (
+                      <div style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        left: 0,
+                        zIndex: 500,
+                        background: '#fff',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 8,
+                        boxShadow: 'var(--shadow-dropdown)',
+                        minWidth: 220,
+                        maxWidth: 320,
+                        maxHeight: 260,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="이슈 검색..."
+                            value={parentSearch}
+                            onChange={(e) => setParentSearch(e.target.value)}
                             style={{
-                              display: 'block', width: '100%', textAlign: 'left',
+                              width: '100%',
+                              padding: '5px 8px',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 5,
+                              fontSize: 12,
+                              fontFamily: 'inherit',
+                              color: 'var(--color-text-primary)',
+                              background: 'var(--color-board-bg)',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                        <div style={{ overflowY: 'auto', padding: '4px 0' }}>
+                        <button
+                          onClick={() => { setSelectedParentId(null); setShowParentPicker(false); setParentSearch(''); }}
+                          style={{
+                            display: 'block', width: '100%', textAlign: 'left',
+                            padding: '7px 12px', border: 'none', background: 'none',
+                            fontSize: 12, color: 'var(--color-text-muted)', fontStyle: 'italic',
+                            cursor: 'pointer', fontFamily: 'inherit',
+                            backgroundColor: selectedParentId === null ? 'var(--color-board-bg)' : 'transparent',
+                          }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === null ? 'var(--color-board-bg)' : 'transparent'; }}
+                        >
+                          상위 이슈 없음
+                        </button>
+                        {searched.length > 0 && (
+                          <div style={{ height: 1, background: 'var(--color-border)', margin: '2px 0' }} />
+                        )}
+                        {searched.map((parent) => (
+                          <button
+                            key={parent.id}
+                            onClick={() => { setSelectedParentId(parent.id); setShowParentPicker(false); setParentSearch(''); }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 7,
+                              width: '100%', textAlign: 'left',
                               padding: '7px 12px', border: 'none', background: 'none',
-                              fontSize: 12, color: 'var(--color-text-muted)', fontStyle: 'italic',
+                              fontSize: 12, color: 'var(--color-text-primary)',
                               cursor: 'pointer', fontFamily: 'inherit',
-                              backgroundColor: selectedParentId === null ? 'var(--color-board-bg)' : 'transparent',
+                              backgroundColor: selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent',
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === null ? 'var(--color-board-bg)' : 'transparent'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent'; }}
                           >
-                            상위 이슈 없음
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, flexShrink: 0,
+                              padding: '1px 5px', borderRadius: 3,
+                              background: parent.type === 'GOAL' ? '#EDE9FE' : parent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
+                              color: parent.type === 'GOAL' ? '#6D28D9' : parent.type === 'STORY' ? '#1D4ED8' : '#065F46',
+                            }}>
+                              {parent.type.charAt(0)}
+                            </span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {parent.title}
+                            </span>
                           </button>
-                          {searched.length > 0 && (
-                            <div style={{ height: 1, background: 'var(--color-border)', margin: '2px 0' }} />
-                          )}
-                          {searched.map((parent) => (
-                            <button
-                              key={parent.id}
-                              onClick={() => { setSelectedParentId(parent.id); setShowParentPicker(false); setParentSearch(''); }}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 7,
-                                width: '100%', textAlign: 'left',
-                                padding: '7px 12px', border: 'none', background: 'none',
-                                fontSize: 12, color: 'var(--color-text-primary)',
-                                cursor: 'pointer', fontFamily: 'inherit',
-                                backgroundColor: selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent',
-                              }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-board-bg)'; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = selectedParentId === parent.id ? 'var(--color-board-bg)' : 'transparent'; }}
-                            >
-                              <span style={{
-                                fontSize: 10, fontWeight: 700, flexShrink: 0,
-                                padding: '1px 5px', borderRadius: 3,
-                                background: parent.type === 'GOAL' ? '#EDE9FE' : parent.type === 'STORY' ? '#DBEAFE' : '#D1FAE5',
-                                color: parent.type === 'GOAL' ? '#6D28D9' : parent.type === 'STORY' ? '#1D4ED8' : '#065F46',
-                              }}>
-                                {parent.type.charAt(0)}
-                              </span>
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {parent.title}
-                              </span>
-                            </button>
-                          ))}
-                          </div>
-                          {/* end List */}
+                        ))}
                         </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })() : <div />}
-
-                {/* Type select — right side */}
-                <select
-                  value={type}
-                  onChange={(e) =>
-                    setType(e.target.value as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE])
-                  }
-                  aria-label="유형"
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background: 'var(--color-board-bg)',
-                    color: 'var(--color-text-primary)',
-                    border: '1px solid var(--color-border)',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    flexShrink: 0,
-                  }}
-                >
-                  {Object.values(TICKET_TYPE).map((t) => (
-                    <option key={t} value={t}>
-                      {t === 'GOAL' ? 'Goal' :
-                       t === 'STORY' ? 'Story' :
-                       t === 'FEATURE' ? 'Feature' : 'Task'}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                      </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })()}
             </div>
             {/* ── end TITLE SECTION ── */}
 
@@ -723,18 +852,16 @@ export function TicketModal({
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 180px',
-                flex: 1,
               }}
             >
               {/* ── LEFT: content area ── */}
               <div
                 style={{
-                  padding: '20px 24px',
+                  padding: '16px 24px',
                   borderRight: '1px solid var(--color-border)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 24,
-                  minHeight: 380,
+                  gap: 16,
                 }}
               >
                 {/* 설명 section */}
@@ -944,17 +1071,14 @@ export function TicketModal({
                   />
                 </div>
 
-                {/* Created / Updated at */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>수정일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.updatedAt.slice(0, 10)}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>생성일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.createdAt.slice(0, 10)}</span>
-                  </div>
-                </div>
+                {/* 댓글 section */}
+                <CommentSection
+                  ticketId={ticket.id}
+                  comments={commentList}
+                  currentMemberId={currentMemberId}
+                  onCommentsChange={setCommentList}
+                />
+
               </div>
               {/* ── end LEFT ── */}
 
@@ -1249,6 +1373,18 @@ export function TicketModal({
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Created / Updated at */}
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>수정일</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.updatedAt.slice(0, 10)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>생성일</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.createdAt.slice(0, 10)}</span>
+                  </div>
                 </div>
               </div>
               {/* ── end RIGHT ── */}

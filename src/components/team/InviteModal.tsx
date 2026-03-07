@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { TeamRole } from '@/types/index';
+import { formatDateTime } from '@/lib/utils';
 
 interface PendingInvite {
   id: number;
-  email: string;
   role: TeamRole;
   expiresAt: string;
+  createdAt: string;
 }
 
 interface InviteModalProps {
@@ -16,19 +17,15 @@ interface InviteModalProps {
 }
 
 export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
-  const [email, setEmail] = useState('');
   const [role, setRole] = useState<'MEMBER' | 'VIEWER'>('MEMBER');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
-  const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    emailRef.current?.focus();
     loadInvites();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadInvites() {
@@ -46,7 +43,6 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
     setSubmitting(true);
     setError('');
     setInviteLink('');
@@ -55,18 +51,16 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
       const res = await fetch(`/api/workspaces/${workspaceId}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), role }),
+        body: JSON.stringify({ role }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error?.message ?? '초대 생성에 실패했습니다');
         return;
       }
-      const token = data.invite?.token;
-      if (token) {
-        setInviteLink(`${window.location.origin}/invite/${token}`);
+      if (data.inviteUrl) {
+        setInviteLink(data.inviteUrl);
       }
-      setEmail('');
       loadInvites();
     } catch {
       setError('네트워크 오류가 발생했습니다');
@@ -111,7 +105,7 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#2C3E50', margin: 0 }}>팀원 초대</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#2C3E50', margin: 0 }}>초대 링크 생성</h2>
           <button
             onClick={onClose}
             style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#9CA3AF', padding: 4 }}
@@ -124,28 +118,6 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
-              이메일 주소
-            </label>
-            <input
-              ref={emailRef}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@company.com"
-              required
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: 7,
-                border: '1px solid #E5E7EB',
-                fontSize: 13,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
               역할
             </label>
             <select
@@ -153,7 +125,7 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
               onChange={(e) => setRole(e.target.value as 'MEMBER' | 'VIEWER')}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: '8px 12px 8px 17px',
                 borderRadius: 7,
                 border: '1px solid #E5E7EB',
                 fontSize: 13,
@@ -181,7 +153,7 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {submitting ? '초대 중...' : '초대 링크 생성'}
+            {submitting ? '생성 중...' : '초대 링크 생성'}
           </button>
         </form>
 
@@ -197,7 +169,7 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
             }}
           >
             <div style={{ fontSize: 11, fontWeight: 600, color: '#16A34A', marginBottom: 6 }}>
-              초대 링크가 생성되었습니다
+              초대 링크가 생성되었습니다 (24시간 유효)
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
@@ -253,11 +225,11 @@ export function InviteModal({ workspaceId, onClose }: InviteModalProps) {
                     gap: 8,
                   }}
                 >
-                  <span style={{ flex: 1, fontSize: 12, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {inv.email}
+                  <span style={{ flex: 1, fontSize: 12, color: '#374151' }}>
+                    {inv.role === 'MEMBER' ? '멤버' : '뷰어'}
                   </span>
                   <span style={{ fontSize: 10, color: '#9CA3AF', whiteSpace: 'nowrap' }}>
-                    {inv.role === 'MEMBER' ? '멤버' : '뷰어'}
+                    ~{formatDateTime(inv.expiresAt)}
                   </span>
                   <button
                     onClick={() => revokeInvite(inv.id)}

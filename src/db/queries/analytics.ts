@@ -1,6 +1,6 @@
-import { eq, and, count, gte, isNotNull, inArray, sql } from 'drizzle-orm';
+import { eq, and, count, gte, isNotNull, inArray, sql, lt, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { tickets, sprints, labels, ticketLabels, members, ticketAssignees } from '@/db/schema';
+import { tickets, sprints, labels, ticketLabels, members, ticketAssignees, users } from '@/db/schema';
 import type {
   BurndownDataPoint,
   CfdDataPoint,
@@ -234,30 +234,67 @@ export async function getLabelAnalytics(workspaceId: number): Promise<LabelAnaly
 
 export async function getMemberWorkload(workspaceId: number): Promise<MemberWorkload[]> {
   const workspaceMembers = await db
-    .select()
+    .select({
+      id: members.id,
+      userId: members.userId,
+      displayName: members.displayName,
+      color: members.color,
+      role: members.role,
+      email: users.email,
+    })
     .from(members)
+    .leftJoin(users, eq(users.id, members.userId))
     .where(eq(members.workspaceId, workspaceId));
 
   if (workspaceMembers.length === 0) return [];
 
   const memberIds = workspaceMembers.map((m) => m.id);
 
-  const assignmentRows = await db
-    .select({
-      memberId: ticketAssignees.memberId,
-      status: tickets.status,
-      cnt: count(),
-    })
-    .from(ticketAssignees)
-    .innerJoin(tickets, eq(tickets.id, ticketAssignees.ticketId))
-    .where(and(inArray(ticketAssignees.memberId, memberIds), eq(tickets.deleted, false)))
-    .groupBy(ticketAssignees.memberId, tickets.status);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [assignmentRows, overdueRows] = await Promise.all([
+    db
+      .select({
+        memberId: ticketAssignees.memberId,
+        status: tickets.status,
+        cnt: count(),
+      })
+      .from(ticketAssignees)
+      .innerJoin(tickets, eq(tickets.id, ticketAssignees.ticketId))
+      .where(and(inArray(ticketAssignees.memberId, memberIds), eq(tickets.deleted, false)))
+      .groupBy(ticketAssignees.memberId, tickets.status),
+
+    db
+      .select({
+        memberId: ticketAssignees.memberId,
+        cnt: count(),
+      })
+      .from(ticketAssignees)
+      .innerJoin(tickets, eq(tickets.id, ticketAssignees.ticketId))
+      .where(
+        and(
+          inArray(ticketAssignees.memberId, memberIds),
+          eq(tickets.deleted, false),
+          ne(tickets.status, TICKET_STATUS.DONE),
+          isNotNull(tickets.plannedEndDate),
+          lt(tickets.plannedEndDate, today.toISOString().slice(0, 10)),
+        ),
+      )
+      .groupBy(ticketAssignees.memberId),
+  ]);
 
   // Build lookup: memberId → status → count
   const lookup: Record<number, Record<string, number>> = {};
   for (const row of assignmentRows) {
     if (!lookup[row.memberId]) lookup[row.memberId] = {};
     lookup[row.memberId][row.status] = Number(row.cnt);
+  }
+
+  // Build overdue lookup: memberId → count
+  const overdueLookup: Record<number, number> = {};
+  for (const row of overdueRows) {
+    overdueLookup[row.memberId] = Number(row.cnt);
   }
 
   return workspaceMembers.map((m) => {
@@ -274,11 +311,13 @@ export async function getMemberWorkload(workspaceId: number): Promise<MemberWork
     return {
       memberId: m.id,
       displayName: m.displayName,
+      email: m.email ?? null,
       color: m.color,
       role: m.role as TeamRole,
       assigned,
       inProgress: byStatus[TICKET_STATUS.IN_PROGRESS],
       completed: byStatus[TICKET_STATUS.DONE],
+      overdue: overdueLookup[m.id] ?? 0,
       byStatus,
     };
   });

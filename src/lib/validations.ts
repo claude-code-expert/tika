@@ -34,6 +34,16 @@ export const createTicketSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
     .nullable()
     .optional(),
+  plannedStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
+  plannedEndDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)')
+    .nullable()
+    .optional(),
   parentId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
   assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
@@ -59,6 +69,16 @@ export const updateTicketSchema = z.object({
     .nullable()
     .optional(),
   dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+    .nullable()
+    .optional(),
+  plannedStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+    .nullable()
+    .optional(),
+  plannedEndDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
     .nullable()
@@ -162,7 +182,6 @@ export const updateMemberRoleSchema = z.object({
 
 // Invite schemas
 export const createInviteSchema = z.object({
-  email: z.string().email('이메일 형식이 올바르지 않습니다'),
   role: z.enum([TEAM_ROLE.MEMBER, TEAM_ROLE.VIEWER]),
 });
 

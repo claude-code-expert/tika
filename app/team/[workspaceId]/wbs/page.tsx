@@ -62,8 +62,8 @@ function buildGanttItems(wbsTickets: TicketWithMeta[]): GanttItem[] {
       status: t.status,
       priority: t.priority,
       assignees: t.assignees,
-      startDate: t.startDate ?? null,
-      endDate: t.dueDate ?? null,
+      startDate: t.plannedStartDate ?? null,
+      endDate: t.plannedEndDate ?? null,
       children: [],
     });
   }

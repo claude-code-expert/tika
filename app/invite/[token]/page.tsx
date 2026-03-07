@@ -9,7 +9,6 @@ interface InvitePreview {
   role: 'MEMBER' | 'VIEWER';
   status: string;
   expiresAt: string;
-  emailHint: string;
 }
 
 interface ErrorResponse {
@@ -124,7 +123,6 @@ export default async function InvitePage({
               <InfoRow label="워크스페이스" value={(data as InvitePreview).workspaceName} />
               <InfoRow label="초대자" value={(data as InvitePreview).inviterName} />
               <InfoRow label="역할" value={roleLabel} />
-              <InfoRow label="초대 이메일" value={(data as InvitePreview).emailHint} />
               <InfoRow
                 label="만료일"
                 value={new Date((data as InvitePreview).expiresAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}

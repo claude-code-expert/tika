@@ -108,12 +108,14 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | issueId | `issue_id` | INT | NULLABLE, **FK** → issues(id) ON DELETE SET NULL | NULL | 상위 이슈 |
 | assigneeId | `assignee_id` | INT | NULLABLE, **FK** → members(id) ON DELETE SET NULL | NULL | 담당자 |
 | completedAt | `completed_at` | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 (DONE 전환 시 자동 설정) |
+| deleted | `deleted` | BOOLEAN | NOT NULL | `false` | 논리 삭제 여부 (soft delete) |
 | createdAt | `created_at` | TIMESTAMPTZ | NOT NULL | `now()` | 생성 시각 |
 | updatedAt | `updated_at` | TIMESTAMPTZ | NOT NULL | `now()` | 수정 시각 ($onUpdate) |
 
 **인덱스**:
 - `idx_tickets_workspace_status_position` → (workspace_id, status, position)
 - `idx_tickets_due_date` → (due_date)
+- `idx_tickets_workspace_deleted` → (workspace_id, deleted)
 
 ---
 

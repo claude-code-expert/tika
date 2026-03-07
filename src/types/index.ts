@@ -121,6 +121,7 @@ export interface Ticket {
   sprintId: number | null; // Phase 4
   storyPoints: number | null; // Phase 4
   completedAt: string | null; // ISO 8601
+  deleted: boolean;
   createdAt: string;
   updatedAt: string;
 }

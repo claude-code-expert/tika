@@ -267,7 +267,7 @@ GET /api/tickets 응답의 개별 티켓 객체와 동일한 구조. `{ "ticket"
 
 ## DELETE /api/tickets/:id
 
-**설명**: 티켓 삭제 (하드 삭제). 관련 checklist_items, ticket_labels CASCADE 삭제.
+**설명**: 티켓 논리 삭제 (soft delete). `deleted = true` 로 마킹. 보드에서 숨겨지며 휴지통에서 확인 가능.
 
 ### Response 204 No Content
 
@@ -278,6 +278,36 @@ GET /api/tickets 응답의 개별 티켓 객체와 동일한 구조. `{ "ticket"
 | 상태 코드 | 코드 | 조건 |
 |----------|------|------|
 | 404 | TICKET_NOT_FOUND | 존재하지 않는 ID |
+
+---
+
+## GET /api/tickets/trash
+
+**설명**: 논리 삭제된 티켓 목록 조회 (updatedAt DESC 정렬).
+
+### Response 200
+
+```json
+{
+  "tickets": [TicketWithMeta]
+}
+```
+
+---
+
+## DELETE /api/tickets/trash/:id
+
+**설명**: 휴지통 티켓 영구 삭제. `deleted = true` 인 티켓만 삭제 가능. CASCADE로 checklist_items, ticket_labels, comments 삭제.
+
+### Response 204 No Content
+
+본문 없음
+
+### 에러 응답
+
+| 상태 코드 | 코드 | 조건 |
+|----------|------|------|
+| 404 | TICKET_NOT_FOUND | 존재하지 않거나 `deleted = false` 인 티켓 |
 
 ---
 

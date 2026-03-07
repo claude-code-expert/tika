@@ -27,7 +27,7 @@ export function InviteAcceptClient({ token, isLoggedIn, userEmail }: InviteAccep
         return;
       }
       setState('done');
-      router.push(`/team/${data.workspaceId}`);
+      router.push(`/workspace/${data.workspaceId}`);
     } catch {
       setError('오류가 발생했습니다. 다시 시도해주세요.');
       setState('idle');

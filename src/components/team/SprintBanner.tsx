@@ -152,7 +152,7 @@ export function SprintBanner({
 
       {/* Burndown link */}
       <Link
-        href={`/team/${workspaceId}/burndown?sprintId=${sprint.id}`}
+        href={`/workspace/${workspaceId}/burndown?sprintId=${sprint.id}`}
         style={{
           padding: '6px 12px',
           borderRadius: 6,

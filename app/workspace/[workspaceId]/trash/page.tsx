@@ -35,7 +35,7 @@ export default async function TrashPage({
   const deletedTickets = await getDeletedTickets(workspaceId);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <TrashClient initialTickets={deletedTickets} />
     </TeamShell>
   );

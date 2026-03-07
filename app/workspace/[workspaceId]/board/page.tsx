@@ -31,11 +31,15 @@ export default async function TeamBoardPage({
     redirect('/');
   }
 
+  if (workspace.type === 'PERSONAL') {
+    redirect('/');
+  }
+
   const role = member.role as TeamRole;
   const boardData = await getBoardData(workspaceId);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <TeamBoardClient
         initialData={boardData}
         workspaceId={workspaceId}

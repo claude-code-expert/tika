@@ -39,7 +39,7 @@ export default async function TeamWbsPage({
   const ganttItems = buildGanttItems(wbsTickets);
 
   return (
-    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name}>
+    <TeamShell workspaceId={workspaceId} role={role} workspaceName={workspace.name} iconColor={workspace.iconColor}>
       <WbsClient
         allItems={ganttItems}
         allTickets={wbsTickets}

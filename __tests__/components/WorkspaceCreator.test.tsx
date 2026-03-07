@@ -3,7 +3,7 @@
  * - Renders name input and description textarea
  * - Shows validation error when name is empty
  * - Calls POST /api/workspaces on submit
- * - Navigates to /team/[id] on success
+ * - Navigates to /workspace/[id] on success
  * - Shows error on API failure
  */
 
@@ -69,7 +69,7 @@ describe('WorkspaceCreator — validation', () => {
 // ─── Successful submit ──────────────────────────────────────────────────────
 
 describe('WorkspaceCreator — successful submit', () => {
-  it('calls POST /api/workspaces and navigates to /team/[id]', async () => {
+  it('calls POST /api/workspaces and navigates to /workspace/[id]', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ workspace: { id: 7, name: '마케팅팀' } }),
@@ -87,7 +87,7 @@ describe('WorkspaceCreator — successful submit', () => {
       }));
     });
 
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/team/7'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/workspace/7'));
   });
 
   it('submits with trimmed name', async () => {

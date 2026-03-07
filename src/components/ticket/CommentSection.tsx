@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { Comment } from '@/types/index';
+import { MessageCircle } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface CommentSectionProps {
   ticketId: number;
@@ -30,6 +32,7 @@ export function CommentSection({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleAdd = async () => {
     const text = newText.trim();
@@ -79,7 +82,7 @@ export function CommentSection({
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '8px 12px',
-    border: '1px solid var(--color-border)',
+    border: '1.5px solid #CBD5E1',
     borderRadius: 6,
     fontSize: 13,
     fontFamily: 'inherit',
@@ -92,7 +95,7 @@ export function CommentSection({
   };
 
   return (
-    <div style={{ padding: '16px 0' }}>
+    <div style={{ padding: '16px 0 0' }}>
       {/* Section header */}
       <div
         style={{
@@ -105,7 +108,7 @@ export function CommentSection({
           gap: 6,
         }}
       >
-        💬 댓글 {comments.length > 0 && <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>({comments.length})</span>}
+        <MessageCircle size={13} /> 댓글 {comments.length > 0 && <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>({comments.length})</span>}
       </div>
 
       {/* New comment input */}
@@ -118,7 +121,7 @@ export function CommentSection({
           maxLength={500}
           style={inputStyle}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();
@@ -227,7 +230,7 @@ export function CommentSection({
                       수정
                     </button>
                     <button
-                      onClick={() => handleDelete(comment.id)}
+                      onClick={() => setDeletingId(comment.id)}
                       style={{
                         fontSize: 11,
                         color: '#DC2626',
@@ -304,6 +307,19 @@ export function CommentSection({
           ))}
         </div>
       )}
+      <ConfirmDialog
+        isOpen={deletingId !== null}
+        message="댓글을 삭제하시겠습니까?"
+        confirmLabel="삭제"
+        confirmVariant="danger"
+        onConfirm={async () => {
+          if (deletingId === null) return;
+          const id = deletingId;
+          setDeletingId(null);
+          await handleDelete(id);
+        }}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 }

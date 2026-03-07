@@ -3,6 +3,7 @@ import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { updateTicketSchema } from '@/lib/validations';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
+import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -88,14 +89,41 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Handle status → completedAt side effect
+    // Handle status change side effects (startDate, completedAt)
     let completedAt: Date | null | undefined = undefined;
-    if (result.data.status === 'DONE') completedAt = new Date();
-    else if (result.data.status !== undefined) completedAt = null;
+    let startDate: string | null | undefined = undefined;
+
+    if (result.data.status !== undefined) {
+      const existing = await getTicketById(ticketId, workspaceId);
+      if (existing) {
+        // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
+        if (
+          result.data.status !== 'BACKLOG' &&
+          existing.status === 'BACKLOG' &&
+          !existing.startDate
+        ) {
+          startDate = new Date().toISOString().slice(0, 10);
+        }
+      }
+
+      if (result.data.status === 'DONE') completedAt = new Date();
+      else completedAt = null;
+    }
+
+    const { assigneeIds, ...restData } = result.data;
+
+    // Validate multi-assignees before update
+    if (assigneeIds !== undefined && assigneeIds.length > 5) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: '담당자는 최대 5명까지 지정할 수 있습니다' } },
+        { status: 400 },
+      );
+    }
 
     const ticket = await updateTicket(ticketId, workspaceId, {
-      ...result.data,
+      ...restData,
       completedAt,
+      ...(startDate !== undefined ? { startDate } : {}),
     });
 
     if (!ticket) {
@@ -104,7 +132,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { status: 404 },
       );
     }
-    return NextResponse.json({ ticket });
+
+    // Update multi-assignees if provided
+    if (assigneeIds !== undefined) {
+      await setAssignees(ticketId, assigneeIds);
+    }
+
+    const assignees = await getAssigneesByTicket(ticketId);
+    return NextResponse.json({ ticket: { ...ticket, assignees } });
   } catch (error) {
     console.error('PATCH /api/tickets/:id error:', error);
     return NextResponse.json(

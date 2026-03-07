@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Board } from './Board';
 import { Modal } from '@/components/ui/Modal';
 import { TicketForm } from '@/components/ticket/TicketForm';
@@ -34,6 +35,13 @@ export function BoardContainer({
   onSelectTicket,
   currentMemberId = null,
 }: BoardContainerProps) {
+  const [createTitle, setCreateTitle] = useState('');
+
+  const handleCreateClose = () => {
+    setCreateTitle('');
+    onCreateClose();
+  };
+
   const handleCreate = async (
     data: CreateTicketInput | UpdateTicketInput,
     extra?: { checklistTexts?: string[] },
@@ -51,7 +59,7 @@ export function BoardContainer({
       }
     }
 
-    onCreateClose();
+    handleCreateClose();
   };
 
   if (isLoading) {
@@ -74,13 +82,53 @@ export function BoardContainer({
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
         <Board board={board} onTicketClick={onSelectTicket} />
       </div>
 
       {/* Create modal */}
-      <Modal isOpen={isCreating} onClose={onCreateClose} title="새 업무 생성">
-        <TicketForm mode="create" onSubmit={handleCreate} onCancel={onCreateClose} />
+      <Modal
+        isOpen={isCreating}
+        onClose={handleCreateClose}
+        resizable
+        maxWidth={800}
+        headerContent={
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <label
+              htmlFor="modal-ticket-title"
+              style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', flexShrink: 0 }}
+            >
+              제목 <span style={{ color: '#DC2626' }}>*</span>
+            </label>
+            <input
+              id="modal-ticket-title"
+              type="text"
+              value={createTitle}
+              onChange={(e) => setCreateTitle(e.target.value)}
+              placeholder="업무 제목을 입력하세요"
+              autoFocus
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 6,
+                fontSize: 14,
+                fontFamily: 'inherit',
+                color: 'var(--color-text-primary)',
+                background: '#ffffff',
+                outline: 'none',
+              }}
+            />
+          </div>
+        }
+      >
+        <TicketForm
+          mode="create"
+          externalTitle={createTitle}
+          onTitleChange={setCreateTitle}
+          onSubmit={handleCreate}
+          onCancel={handleCreateClose}
+        />
       </Modal>
 
       {/* Detail modal */}
@@ -101,6 +149,7 @@ export function BoardContainer({
             onDuplicate ? async () => onDuplicate(selectedTicket) : undefined
           }
           currentMemberId={currentMemberId}
+          workspaceName={board.workspaceName}
         />
       )}
     </>

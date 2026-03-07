@@ -1,3 +1,42 @@
+// Onboarding: user type
+export const USER_TYPE = {
+  USER: 'USER',
+  WORKSPACE: 'WORKSPACE',
+} as const;
+export type UserType = (typeof USER_TYPE)[keyof typeof USER_TYPE] | null;
+
+// Onboarding: join request status
+export const JOIN_REQUEST_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type JoinRequestStatus = (typeof JOIN_REQUEST_STATUS)[keyof typeof JOIN_REQUEST_STATUS];
+
+export interface JoinRequest {
+  id: number;
+  workspaceId: number;
+  userId: string;
+  message: string | null;
+  status: JoinRequestStatus;
+  reviewedBy: number | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface JoinRequestWithUser extends JoinRequest {
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+}
+
+export interface WorkspaceSearchResult {
+  id: number;
+  name: string;
+  description: string | null;
+  memberCount: number;
+}
+
 export const TICKET_STATUS = {
   BACKLOG: 'BACKLOG',
   TODO: 'TODO',
@@ -22,12 +61,42 @@ export const TICKET_TYPE = {
 } as const;
 export type TicketType = (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE];
 
-export const ISSUE_TYPE = {
-  GOAL: 'GOAL',
-  STORY: 'STORY',
-  FEATURE: 'FEATURE',
+// Phase 4: Team roles
+export const TEAM_ROLE = {
+  OWNER: 'OWNER',
+  MEMBER: 'MEMBER',
+  VIEWER: 'VIEWER',
 } as const;
-export type IssueType = (typeof ISSUE_TYPE)[keyof typeof ISSUE_TYPE];
+export type TeamRole = (typeof TEAM_ROLE)[keyof typeof TEAM_ROLE];
+
+// Backward compat alias
+export const MEMBER_ROLE = TEAM_ROLE;
+export type MemberRole = TeamRole;
+
+// Phase 4: Workspace type
+export const WORKSPACE_TYPE = {
+  PERSONAL: 'PERSONAL',
+  TEAM: 'TEAM',
+} as const;
+export type WorkspaceType = (typeof WORKSPACE_TYPE)[keyof typeof WORKSPACE_TYPE];
+
+// Phase 4: Sprint status
+export const SPRINT_STATUS = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type SprintStatus = (typeof SPRINT_STATUS)[keyof typeof SPRINT_STATUS];
+
+// Phase 4: Invite status
+export const INVITE_STATUS = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type InviteStatus = (typeof INVITE_STATUS)[keyof typeof INVITE_STATUS];
 
 export interface Ticket {
   id: number;
@@ -40,9 +109,14 @@ export interface Ticket {
   position: number;
   startDate: string | null; // YYYY-MM-DD
   dueDate: string | null; // YYYY-MM-DD
-  issueId: number | null;
+  plannedStartDate: string | null; // YYYY-MM-DD
+  plannedEndDate: string | null; // YYYY-MM-DD
+  parentId: number | null;
   assigneeId: number | null;
+  sprintId: number | null; // Phase 4
+  storyPoints: number | null; // Phase 4
   completedAt: string | null; // ISO 8601
+  deleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,8 +125,9 @@ export interface TicketWithMeta extends Ticket {
   isOverdue: boolean;
   labels: Label[];
   checklistItems: ChecklistItem[];
-  issue: Issue | null;
+  parent: Ticket | null;
   assignee: Member | null;
+  assignees: Member[]; // Phase 4: multi-assignee
 }
 
 export interface ChecklistItem {
@@ -72,21 +147,6 @@ export interface Label {
   createdAt: string;
 }
 
-export interface Issue {
-  id: number;
-  workspaceId: number;
-  name: string;
-  type: IssueType;
-  parentId: number | null;
-  createdAt: string;
-}
-
-export const MEMBER_ROLE = {
-  ADMIN: 'admin',
-  MEMBER: 'member',
-} as const;
-export type MemberRole = (typeof MEMBER_ROLE)[keyof typeof MEMBER_ROLE];
-
 export interface Member {
   id: number;
   userId: string;
@@ -94,6 +154,8 @@ export interface Member {
   displayName: string;
   color: string;
   role: MemberRole;
+  invitedBy: number | null; // Phase 4
+  joinedAt: string | null; // Phase 4
   createdAt: string;
 }
 
@@ -106,7 +168,48 @@ export interface Workspace {
   name: string;
   description: string | null;
   ownerId: string;
+  type: WorkspaceType; // Phase 4
   createdAt: string;
+}
+
+export interface WorkspaceWithRole extends Workspace {
+  role: TeamRole; // current user's role in this workspace
+}
+
+// Phase 4: Sprint
+export interface Sprint {
+  id: number;
+  workspaceId: number;
+  name: string;
+  goal: string | null;
+  status: SprintStatus;
+  startDate: string | null;
+  endDate: string | null;
+  storyPointsTotal: number | null;
+  createdAt: string;
+}
+
+export interface SprintWithTicketCount extends Sprint {
+  ticketCount: number;
+}
+
+// Phase 4: WorkspaceInvite
+export interface WorkspaceInvite {
+  id: number;
+  workspaceId: number;
+  invitedBy: number;
+  token: string;
+  email: string | null;
+  role: 'MEMBER' | 'VIEWER';
+  status: InviteStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+// Phase 4: TicketAssignee
+export interface TicketAssignee {
+  ticketId: number;
+  memberId: number;
 }
 
 export interface LabelWithCount extends Label {
@@ -142,6 +245,7 @@ export interface NotificationChannel {
 export interface BoardData {
   board: Record<TicketStatus, TicketWithMeta[]>;
   total: number;
+  workspaceName?: string;
 }
 
 export interface Comment {
@@ -171,4 +275,66 @@ export interface NotificationLog {
   sentAt: string; // ISO 8601
   errorMessage: string | null;
   isRead: boolean;
+}
+
+// Phase 4: Analytics types
+export interface BurndownDataPoint {
+  date: string;
+  remainingTickets: number;
+  remainingPoints: number;
+  idealTickets: number;
+}
+
+export interface CfdDataPoint {
+  date: string;
+  backlog: number;
+  todo: number;
+  inProgress: number;
+  done: number;
+}
+
+export interface VelocitySprint {
+  sprintId: number;
+  name: string;
+  completedPoints: number;
+  plannedPoints: number;
+}
+
+export interface CycleTimeDistribution {
+  days: number;
+  count: number;
+}
+
+export interface LabelAnalytic {
+  name: string;
+  color: string;
+  count: number;
+  percentage: number;
+}
+
+export interface MemberWorkload {
+  memberId: number;
+  displayName: string;
+  email: string | null;
+  color: string;
+  role: TeamRole;
+  assigned: number;
+  inProgress: number;
+  completed: number;
+  overdue: number;
+  byStatus: Record<TicketStatus, number>;
+}
+
+// Phase 4: Gantt chart item
+export interface GanttItem {
+  id: number;
+  type: TicketType;
+  name: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assignees: Member[];
+  startDate: string | null;
+  endDate: string | null;
+  children: GanttItem[];
+  completionPct: number;
 }

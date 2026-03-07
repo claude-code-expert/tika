@@ -1,25 +1,18 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
 import type { TicketWithMeta } from '@/types/index';
-
-const TYPE_INDICATOR: Record<string, { bg: string; abbr: string }> = {
-  GOAL: { bg: '#8B5CF6', abbr: 'G' },
-  STORY: { bg: '#3B82F6', abbr: 'S' },
-  FEATURE: { bg: '#10B981', abbr: 'F' },
-  TASK: { bg: '#F59E0B', abbr: 'T' },
-};
-
-const PRIORITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'Crit' },
-  HIGH: { bg: '#FFEDD5', color: '#C2410C', label: 'High' },
-  MEDIUM: { bg: '#FEF9C3', color: '#A16207', label: 'Med' },
-  LOW: { bg: '#F3F4F6', color: '#6B7280', label: 'Low' },
-};
+import { ChevronRight, ChevronLeft, X } from 'lucide-react';
+import { useResizable } from '@/hooks/useResizable';
+import { truncate } from '@/lib/utils';
+import { TICKET_TYPE_META } from '@/lib/constants';
+import { PriorityBadge } from '@/components/ui/Chips';
+import { LabelBadge } from '@/components/label/LabelBadge';
+import { Toast } from '@/components/ui/Toast';
 
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 400;
@@ -38,11 +31,8 @@ function formatDeadline(dueDate: string | null, isOverdue: boolean): string | nu
   return dueDate;
 }
 
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text;
-}
 
-function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: () => void }) {
+function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: () => void; workspaceName?: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
@@ -53,9 +43,8 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const type = TYPE_INDICATOR[ticket.type] ?? TYPE_INDICATOR.TASK;
-  const priority = PRIORITY_STYLES[ticket.priority] ?? PRIORITY_STYLES.MEDIUM;
-  const deadline = formatDeadline(ticket.dueDate, ticket.isOverdue);
+  const type = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
+  const deadline = formatDeadline(ticket.plannedEndDate, ticket.isOverdue);
 
   return (
     <div
@@ -116,6 +105,8 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {truncate(ticket.title, 20)}
@@ -127,69 +118,33 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          paddingLeft: 22,
         }}
       >
-        <span
+        {/* Left: Priority */}
+        <PriorityBadge priority={ticket.priority} size="sm" />
+        {/* Center: Labels */}
+        <div
           style={{
-            fontSize: 9,
-            fontWeight: 600,
-            padding: '1px 5px',
-            borderRadius: 3,
-            background: priority.bg,
-            color: priority.color,
-            flexShrink: 0,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 3,
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          {priority.label}
-        </span>
-        {/* Labels */}
-        {ticket.labels.length > 0 && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              minWidth: 0,
-              overflow: 'hidden',
-            }}
-          >
-            {ticket.labels.slice(0, 2).map((label) => (
-              <span
-                key={label.id}
-                style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  padding: '1px 5px',
-                  borderRadius: 3,
-                  background: label.color,
-                  color: '#fff',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: 60,
-                }}
-              >
-                {label.name}
-              </span>
-            ))}
-            {ticket.labels.length > 2 && (
-              <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
-                +{ticket.labels.length - 2}
-              </span>
-            )}
-          </div>
-        )}
-        {/* Spacer when no labels */}
-        {ticket.labels.length === 0 && <div style={{ flex: 1 }} />}
-        {/* Deadline */}
+          {ticket.labels.map((label) => (
+            <LabelBadge key={label.id} label={label} size="sm" />
+          ))}
+        </div>
+        {/* Right: Deadline */}
         {deadline && (
           <span
             style={{
               fontSize: 10,
               color: ticket.isOverdue ? '#DC2626' : 'var(--color-text-muted)',
-              fontWeight: ticket.isOverdue ? 600 : 400,
+              fontWeight: 600,
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}
@@ -205,6 +160,7 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
 interface SidebarProps {
   backlogTickets: TicketWithMeta[];
   isLoading: boolean;
+  workspaceName?: string;
   onTicketClick?: (ticket: TicketWithMeta) => void;
   onAddTicket?: () => void;
   isMobileOpen?: boolean;
@@ -214,6 +170,7 @@ interface SidebarProps {
 export function Sidebar({
   backlogTickets,
   isLoading,
+  workspaceName,
   onTicketClick,
   onAddTicket,
   isMobileOpen = false,
@@ -221,8 +178,14 @@ export function Sidebar({
 }: SidebarProps) {
   const { setNodeRef, isOver } = useDroppable({ id: 'BACKLOG' });
   const [collapsed, setCollapsed] = useState(false);
-  const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [isMobile, setIsMobile] = useState(false);
+  const { width, handleResizeStart, isResizing } = useResizable(SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX);
+  const [toast, setToast] = useState(false);
+
+  const showToast = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 2000);
+  };
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -231,36 +194,6 @@ export function Sidebar({
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-  const isResizing = useRef(false);
-  const startX = useRef(0);
-  const startWidth = useRef(SIDEBAR_DEFAULT);
-
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    startX.current = e.clientX;
-    startWidth.current = width;
-
-    const onMove = (ev: MouseEvent) => {
-      if (!isResizing.current) return;
-      const delta = ev.clientX - startX.current;
-      const next = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startWidth.current + delta));
-      setWidth(next);
-    };
-
-    const onUp = () => {
-      isResizing.current = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [width]);
 
   return (
     <>
@@ -284,7 +217,9 @@ export function Sidebar({
         flexShrink: 0,
         display: 'flex',
         // On mobile, take no flex space — aside is rendered as fixed overlay
-        ...(isMobile ? { width: 0, overflow: 'visible', minWidth: 0 } : {}),
+        ...(isMobile
+          ? { width: 0, overflow: 'visible', minWidth: 0 }
+          : { width: collapsed ? 14 : undefined, overflow: 'visible' }),
       }}
     >
       {/* Floating toggle button — desktop only */}
@@ -320,7 +255,7 @@ export function Sidebar({
           aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
           title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}
         >
-          {collapsed ? '▶' : '◀'}
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       )}
 
@@ -410,14 +345,41 @@ export function Sidebar({
                 border: 'none',
                 cursor: 'pointer',
                 color: 'var(--color-text-muted)',
-                fontSize: 18,
                 flexShrink: 0,
               }}
             >
-              ✕
+              <X size={18} />
             </button>
           ) : (
-            <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>▾</span>
+            <button
+              onClick={showToast}
+              aria-label="설정"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg
+                width={15}
+                height={15}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                <rect width={18} height={18} x={3} y={3} rx={2} />
+                <path d="M12 8v8" />
+                <path d="m8 12 4 4 4-4" />
+              </svg>
+            </button>
           )}
         </div>
       </div>
@@ -528,6 +490,7 @@ export function Sidebar({
                 key={ticket.id}
                 ticket={ticket}
                 onClick={() => onTicketClick?.(ticket)}
+                workspaceName={workspaceName}
               />
             ))}
           </SortableContext>
@@ -563,6 +526,8 @@ export function Sidebar({
       )}
       </aside>
     </div>
+
+    {toast && <Toast message="준비중입니다" />}
     </>
   );
 }

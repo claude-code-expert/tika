@@ -38,6 +38,11 @@ export function useTickets(initialData?: BoardData) {
     }
   }, [initialData, fetchBoard]);
 
+  // Sync when server re-renders with new initialData (e.g. after router.refresh())
+  useEffect(() => {
+    if (initialData) setBoard(initialData);
+  }, [initialData]);
+
   const createTicket = useCallback(
     async (data: CreateTicketInput) => {
       const res = await fetch('/api/tickets', {
@@ -56,7 +61,7 @@ export function useTickets(initialData?: BoardData) {
         board: {
           ...prev.board,
           BACKLOG: [
-            { ...ticket, isOverdue: false, labels: [], checklistItems: [], issue: null, assignee: null },
+            { ...ticket, isOverdue: false, labels: [], checklistItems: [], parent: null, assignee: null },
             ...prev.board.BACKLOG,
           ],
         },
@@ -126,14 +131,13 @@ export function useTickets(initialData?: BoardData) {
           const err = await res.json();
           throw new Error(err.error?.message ?? '순서 변경에 실패했습니다');
         }
-        // Refresh board to reflect actual DB positions
-        await fetchBoard();
+        // Optimistic UI already reflects the move; no re-fetch needed
       } catch (err) {
         setBoard(snapshot);
         throw err;
       }
     },
-    [board, fetchBoard],
+    [board],
   );
 
   // T057: filteredBoard — only show tickets that include ALL activeLabels

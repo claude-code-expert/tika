@@ -15,7 +15,7 @@ async function rebalanceColumn(workspaceId: number, status: string): Promise<voi
   const columnTickets = await db
     .select({ id: tickets.id, position: tickets.position })
     .from(tickets)
-    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, status)))
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, status), eq(tickets.deleted, false)))
     .orderBy(asc(tickets.position));
 
   await Promise.all(
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest) {
     const [ticket] = await db
       .select()
       .from(tickets)
-      .where(and(eq(tickets.id, ticketId), eq(tickets.workspaceId, workspaceId)))
+      .where(and(eq(tickets.id, ticketId), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
       .limit(1);
 
     if (!ticket) {
@@ -78,6 +78,7 @@ export async function PATCH(request: NextRequest) {
         and(
           eq(tickets.workspaceId, workspaceId),
           eq(tickets.status, targetStatus),
+          eq(tickets.deleted, false),
           // Exclude the moving ticket itself
         ),
       )
@@ -106,7 +107,7 @@ export async function PATCH(request: NextRequest) {
           .select({ id: tickets.id, position: tickets.position })
           .from(tickets)
           .where(
-            and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, targetStatus)),
+            and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, targetStatus), eq(tickets.deleted, false)),
           )
           .orderBy(asc(tickets.position));
         const rebalancedFiltered = rebalanced.filter((t) => t.id !== ticketId);
@@ -122,10 +123,23 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Handle startDate (auto-set when moving out of BACKLOG)
+    let startDate: string | null | undefined = undefined;
+    if (
+      targetStatus !== 'BACKLOG' &&
+      ticket.status === 'BACKLOG' &&
+      !ticket.startDate
+    ) {
+      startDate = new Date().toISOString().slice(0, 10);
+    }
+
     // Handle completedAt
     let completedAt: Date | null = ticket.completedAt;
     if (targetStatus === 'DONE' && ticket.status !== 'DONE') {
       completedAt = new Date();
+      if (!ticket.startDate && startDate === undefined) {
+        startDate = new Date().toISOString().slice(0, 10);
+      }
     } else if (targetStatus !== 'DONE' && ticket.status === 'DONE') {
       completedAt = null;
     }
@@ -136,6 +150,7 @@ export async function PATCH(request: NextRequest) {
         status: targetStatus,
         position: newPosition,
         completedAt,
+        ...(startDate !== undefined ? { startDate } : {}),
       })
       .where(eq(tickets.id, ticketId))
       .returning();

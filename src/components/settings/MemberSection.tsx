@@ -44,8 +44,8 @@ export function MemberSection({ showToast }: SectionProps) {
   }
 
   async function handleRoleChange(member: MemberWithEmail, newRole: MemberRole) {
-    const adminCount = members.filter((m) => m.role === 'admin').length;
-    if (member.role === 'admin' && newRole === 'member' && adminCount <= 1) {
+    const adminCount = members.filter((m) => m.role === 'OWNER').length;
+    if (member.role === 'OWNER' && newRole === 'MEMBER' && adminCount <= 1) {
       showToast('관리자가 최소 1명 이상이어야 합니다', 'fail');
       return;
     }
@@ -68,7 +68,7 @@ export function MemberSection({ showToast }: SectionProps) {
         return;
       }
       await fetchMembers();
-      showToast(`${member.displayName}의 역할이 ${newRole === 'admin' ? '관리자' : '멤버'}로 변경되었습니다`, 'success');
+      showToast(`${member.displayName}의 역할이 ${newRole === 'OWNER' ? '관리자' : '멤버'}로 변경되었습니다`, 'success');
     } catch {
       showToast('역할 변경 중 오류가 발생했습니다', 'fail');
     }
@@ -92,7 +92,7 @@ export function MemberSection({ showToast }: SectionProps) {
     }
   }
 
-  const adminCount = members.filter((m) => m.role === 'admin').length;
+  const adminCount = members.filter((m) => m.role === 'OWNER').length;
 
   return (
     <div>
@@ -137,9 +137,9 @@ export function MemberSection({ showToast }: SectionProps) {
       {/* Member List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {members.map((member) => {
-          const isAdmin = member.role === 'admin';
+          const isAdmin = member.role === 'OWNER';
           const canRemove = !(isAdmin && adminCount <= 1);
-          const newRole: MemberRole = isAdmin ? 'member' : 'admin';
+          const newRole: MemberRole = isAdmin ? 'MEMBER' : 'OWNER';
           const initial = member.displayName.slice(0, 1).toUpperCase();
 
           return (
@@ -193,7 +193,7 @@ export function MemberSection({ showToast }: SectionProps) {
       {confirmRole && (
         <ConfirmDialog
           title="역할 변경"
-          message={`"${confirmRole.member.displayName}"의 역할을 ${confirmRole.newRole === 'admin' ? '관리자' : '멤버'}(으)로 변경하시겠습니까?`}
+          message={`"${confirmRole.member.displayName}"의 역할을 ${confirmRole.newRole === 'OWNER' ? '관리자' : '멤버'}(으)로 변경하시겠습니까?`}
           confirmLabel="변경"
           onConfirm={doRoleChange}
           onCancel={() => setConfirmRole(null)}

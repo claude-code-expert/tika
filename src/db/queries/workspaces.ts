@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { workspaces } from '@/db/schema';
-import type { Workspace } from '@/types/index';
+import { workspaces, members } from '@/db/schema';
+import type { Workspace, WorkspaceWithRole, WorkspaceType, TeamRole } from '@/types/index';
 
 function toWorkspace(row: typeof workspaces.$inferSelect): Workspace {
   return {
@@ -9,6 +9,7 @@ function toWorkspace(row: typeof workspaces.$inferSelect): Workspace {
     name: row.name,
     description: row.description,
     ownerId: row.ownerId,
+    type: row.type as WorkspaceType,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -21,6 +22,58 @@ export async function getWorkspaceById(id: number): Promise<Workspace | null> {
 export async function getAllWorkspaces(): Promise<Workspace[]> {
   const rows = await db.select().from(workspaces);
   return rows.map(toWorkspace);
+}
+
+export async function getWorkspacesByMemberId(userId: string): Promise<WorkspaceWithRole[]> {
+  const rows = await db
+    .select({
+      id: workspaces.id,
+      name: workspaces.name,
+      description: workspaces.description,
+      ownerId: workspaces.ownerId,
+      type: workspaces.type,
+      createdAt: workspaces.createdAt,
+      role: members.role,
+    })
+    .from(members)
+    .innerJoin(workspaces, eq(workspaces.id, members.workspaceId))
+    .where(eq(members.userId, userId));
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    ownerId: row.ownerId,
+    type: row.type as WorkspaceType,
+    createdAt: row.createdAt.toISOString(),
+    role: row.role as TeamRole,
+  }));
+}
+
+export async function getTeamWorkspaceCountByOwner(userId: string): Promise<number> {
+  const [{ cnt }] = await db
+    .select({ cnt: count() })
+    .from(workspaces)
+    .where(and(eq(workspaces.ownerId, userId), eq(workspaces.type, 'TEAM')));
+  return Number(cnt);
+}
+
+export async function createWorkspace(data: {
+  name: string;
+  description?: string | null;
+  ownerId: string;
+  type?: string;
+}): Promise<Workspace> {
+  const [row] = await db
+    .insert(workspaces)
+    .values({
+      name: data.name,
+      description: data.description ?? null,
+      ownerId: data.ownerId,
+      type: data.type ?? 'TEAM',
+    })
+    .returning();
+  return toWorkspace(row);
 }
 
 export async function updateWorkspace(
@@ -39,4 +92,12 @@ export async function updateWorkspace(
     .where(eq(workspaces.id, id))
     .returning();
   return updated ? toWorkspace(updated) : null;
+}
+
+export async function deleteWorkspace(id: number): Promise<boolean> {
+  const result = await db
+    .delete(workspaces)
+    .where(eq(workspaces.id, id))
+    .returning({ id: workspaces.id });
+  return result.length > 0;
 }

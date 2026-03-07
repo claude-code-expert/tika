@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { TicketStatus, TicketWithMeta } from '@/types/index';
@@ -16,20 +17,20 @@ interface ColumnProps {
   label: string;
   tickets: TicketWithMeta[];
   onTicketClick: (ticket: TicketWithMeta) => void;
+  workspaceName?: string;
 }
 
-export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
+function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const sortableItems = useMemo(() => tickets.map((t) => t.id), [tickets]);
 
   return (
     <div
       style={{
+        flex: 1,
         minWidth: 'var(--column-width)',
-        width: 'var(--column-width)',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: '100%',
-        flexShrink: 0,
         background: 'var(--color-col-bg)',
         borderRadius: 'var(--radius-column)',
       }}
@@ -50,7 +51,7 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
           style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 700,
             color: 'var(--color-text-primary)',
           }}
         >
@@ -73,22 +74,22 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
       {/* Drop zone + cards */}
       <div
         ref={setNodeRef}
+        className="[&::-webkit-scrollbar]:hidden"
         style={{
           flex: 1,
-          overflowY: 'auto',
           padding: 8,
+          paddingBottom: 38,
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
-          minHeight: 100,
           background: isOver ? 'rgba(98, 149, 132, 0.08)' : 'rgba(0, 0, 0, 0.02)',
           borderRadius: '0 0 var(--radius-column) var(--radius-column)',
           transition: 'background 0.15s',
         }}
       >
-        <SortableContext items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
           {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} />
+            <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
           ))}
         </SortableContext>
 
@@ -111,3 +112,5 @@ export function Column({ status, label, tickets, onTicketClick }: ColumnProps) {
     </div>
   );
 }
+
+export const Column = memo(ColumnInner);

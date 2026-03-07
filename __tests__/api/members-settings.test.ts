@@ -10,7 +10,8 @@ jest.mock('@/db/queries/members', () => ({
   updateMember: jest.fn(),
   updateMemberRole: jest.fn(),
   removeMember: jest.fn(),
-  getAdminCount: jest.fn(),
+  getOwnerCount: jest.fn(),
+  getAdminCount: jest.fn(), // deprecated alias, kept for backward compat
   getMembersWithEmailByWorkspace: jest.fn(),
 }));
 
@@ -21,7 +22,7 @@ import {
   updateMember,
   updateMemberRole,
   removeMember,
-  getAdminCount,
+  getOwnerCount,
   getMembersWithEmailByWorkspace,
 } from '@/db/queries/members';
 import type { MemberWithEmail } from '@/types/index';
@@ -30,7 +31,7 @@ const mockedAuth = auth as jest.Mock;
 const mockedUpdateMember = updateMember as jest.Mock;
 const mockedUpdateMemberRole = updateMemberRole as jest.Mock;
 const mockedRemoveMember = removeMember as jest.Mock;
-const mockedGetAdminCount = getAdminCount as jest.Mock;
+const mockedGetOwnerCount = getOwnerCount as jest.Mock;
 const mockedGetMembersWithEmail = getMembersWithEmailByWorkspace as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1, memberId: 1 } };
@@ -41,7 +42,7 @@ const mockMemberWithEmail: MemberWithEmail = {
   workspaceId: 1,
   displayName: '홍길동',
   color: '#629584',
-  role: 'admin',
+  role: 'OWNER',
   createdAt: '2026-01-01T00:00:00.000Z',
   email: 'hong@example.com',
 };
@@ -52,7 +53,7 @@ const mockMember2: MemberWithEmail = {
   workspaceId: 1,
   displayName: '김민수',
   color: '#60A5FA',
-  role: 'member',
+  role: 'MEMBER',
   createdAt: '2026-01-05T00:00:00.000Z',
   email: 'kim@example.com',
 };
@@ -81,7 +82,7 @@ beforeEach(() => {
 describe('PATCH /api/members/[id] - 역할 변경', () => {
   it('미인증 요청은 401을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(null);
-    const [req, ctx] = makePatchRequest('2', { role: 'admin' });
+    const [req, ctx] = makePatchRequest('2', { role: 'OWNER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(401);
@@ -90,7 +91,7 @@ describe('PATCH /api/members/[id] - 역할 변경', () => {
 
   it('잘못된 id 형식은 400을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
-    const [req, ctx] = makePatchRequest('abc', { role: 'admin' });
+    const [req, ctx] = makePatchRequest('abc', { role: 'OWNER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(400);
@@ -109,44 +110,44 @@ describe('PATCH /api/members/[id] - 역할 변경', () => {
   it('admin을 member로 변경 시 마지막 관리자면 409를 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedGetMembersWithEmail.mockResolvedValueOnce([mockMemberWithEmail]);
-    mockedGetAdminCount.mockResolvedValueOnce(1);
-    const [req, ctx] = makePatchRequest('1', { role: 'member' });
+    mockedGetOwnerCount.mockResolvedValueOnce(1);
+    const [req, ctx] = makePatchRequest('1', { role: 'MEMBER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(409);
-    expect(body.error.code).toBe('LAST_ADMIN');
+    expect(body.error.code).toBe('LAST_OWNER');
   });
 
   it('member를 admin으로 변경하면 200을 반환한다', async () => {
-    const updatedMember = { ...mockMember2, role: 'admin' as const };
+    const updatedMember = { ...mockMember2, role: 'OWNER' as const };
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedUpdateMemberRole.mockResolvedValueOnce(updatedMember);
     mockedGetMembersWithEmail.mockResolvedValueOnce([updatedMember]);
-    const [req, ctx] = makePatchRequest('2', { role: 'admin' });
+    const [req, ctx] = makePatchRequest('2', { role: 'OWNER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.member.role).toBe('admin');
+    expect(body.member.role).toBe('OWNER');
   });
 
   it('admin이 2명 이상일 때 member로 다운그레이드 가능하다', async () => {
-    const updatedMember = { ...mockMemberWithEmail, role: 'member' as const };
+    const updatedMember = { ...mockMemberWithEmail, role: 'MEMBER' as const };
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedGetMembersWithEmail.mockResolvedValueOnce([mockMemberWithEmail, mockMember2]);
-    mockedGetAdminCount.mockResolvedValueOnce(2);
+    mockedGetOwnerCount.mockResolvedValueOnce(2);
     mockedUpdateMemberRole.mockResolvedValueOnce(updatedMember);
     mockedGetMembersWithEmail.mockResolvedValueOnce([updatedMember, mockMember2]);
-    const [req, ctx] = makePatchRequest('1', { role: 'member' });
+    const [req, ctx] = makePatchRequest('1', { role: 'MEMBER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.member.role).toBe('member');
+    expect(body.member.role).toBe('MEMBER');
   });
 
   it('존재하지 않는 멤버 역할 변경은 404를 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedUpdateMemberRole.mockResolvedValueOnce(null);
-    const [req, ctx] = makePatchRequest('999', { role: 'admin' });
+    const [req, ctx] = makePatchRequest('999', { role: 'OWNER' });
     const res = await PATCH(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(404);
@@ -234,12 +235,12 @@ describe('DELETE /api/members/[id]', () => {
   it('마지막 관리자는 제거할 수 없다 (409)', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
     mockedGetMembersWithEmail.mockResolvedValueOnce([mockMemberWithEmail]);
-    mockedGetAdminCount.mockResolvedValueOnce(1);
+    mockedGetOwnerCount.mockResolvedValueOnce(1);
     const [req, ctx] = makeDeleteRequest('1');
     const res = await DELETE(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(409);
-    expect(body.error.code).toBe('LAST_ADMIN');
+    expect(body.error.code).toBe('LAST_OWNER');
   });
 
   it('일반 멤버는 204로 성공적으로 제거된다', async () => {
@@ -253,8 +254,8 @@ describe('DELETE /api/members/[id]', () => {
 
   it('관리자가 2명 이상이면 관리자도 제거 가능하다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
-    mockedGetMembersWithEmail.mockResolvedValueOnce([mockMemberWithEmail, { ...mockMember2, role: 'admin' as const }]);
-    mockedGetAdminCount.mockResolvedValueOnce(2);
+    mockedGetMembersWithEmail.mockResolvedValueOnce([mockMemberWithEmail, { ...mockMember2, role: 'OWNER' as const }]);
+    mockedGetOwnerCount.mockResolvedValueOnce(2);
     mockedRemoveMember.mockResolvedValueOnce(true);
     const [req, ctx] = makeDeleteRequest('1');
     const res = await DELETE(req, ctx);

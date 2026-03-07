@@ -1,27 +1,25 @@
 # Tika - 데이터 모델 명세 (DATA_MODEL.md)
 
-> 버전: 2.0 (Phase 1 Full)
+> 버전: 2.1 (migration 0010: issues → tickets.parent_id)
 > ORM: Drizzle ORM + Vercel Postgres
-> 최종 수정일: 2026-02-22
+> 최종 수정일: 2026-03-07
 
 ---
 
 ## 1. ERD (Entity Relationship Diagram)
 
-### Phase 1: 8개 테이블
+### Phase 1: 핵심 테이블
 
 ```
 users ──< workspaces         (1:N, owner_id FK)
 users ──< members            (1:N, user_id FK)
 workspaces ──< tickets       (1:N, workspace_id FK)
 workspaces ──< labels        (1:N, workspace_id FK)
-workspaces ──< issues        (1:N, workspace_id FK)
 workspaces ──< members       (1:N, workspace_id FK)
 tickets ──< checklist_items  (1:N, ticket_id FK CASCADE)
 tickets >──< labels          (M:N, ticket_labels 연결 테이블, 양쪽 CASCADE)
-tickets >── issues           (N:1, issue_id FK SET NULL)
+tickets >── tickets          (self-referencing N:1, parent_id — GOAL>STORY>FEATURE>TASK)
 tickets >── members          (N:1, assignee_id FK SET NULL)
-issues ──< issues            (self-referencing N:1, parent_id FK SET NULL)
 members: UNIQUE(user_id, workspace_id)
 labels: UNIQUE(workspace_id, name)
 ```
@@ -48,28 +46,31 @@ labels: UNIQUE(workspace_id, name)
          │          │ status        VARCHAR(20)   NOT NULL  'BACKLOG'  │
          │          │ priority      VARCHAR(10)   NOT NULL  'MEDIUM'   │
          │          │ position      INTEGER       NOT NULL  0          │
+         │          │ start_date    DATE          NULLABLE  auto        │
          │          │ due_date      DATE          NULLABLE             │
+         │          │ planned_start_date DATE     NULLABLE             │
+         │          │ planned_end_date   DATE     NULLABLE             │
          │          │ completed_at  TIMESTAMPTZ   NULLABLE             │
-         │          │ issue_id      INTEGER       NULLABLE  FK→issues  │
+         │          │ parent_id     INTEGER       NULLABLE  self-ref   │
          │          │ assignee_id   INTEGER       NULLABLE  FK→members │
          │          │ created_at    TIMESTAMPTZ   NOT NULL  now()      │
          │          │ updated_at    TIMESTAMPTZ   NOT NULL  now()      │
          │          └──────────────────────────────────────────────────┘
-         │                  │                   │              │
-         │                  │ 1:N               │ N:1          │ N:1
-         │                  ▼                   ▼              ▼
-         │          ┌───────────────┐   ┌────────────────┐  ┌─────────────────────┐
-         │          │checklist_items│   │    issues       │  │      members        │
-         │          ├───────────────┤   ├────────────────┤  ├─────────────────────┤
-         │          │ id        PK  │   │ id         PK  │  │ id            PK    │
-         │          │ ticket_id FK  │   │ workspace_id FK│  │ user_id       FK→u  │◄── users
-         │          │ text          │   │ name           │  │ workspace_id  FK→ws │
-         │          │ is_completed  │   │ type           │  │ display_name        │
-         │          │ position      │   │ parent_id FK   │  │ color               │
-         │          │ created_at    │   │ created_at     │  │ created_at          │
-         │          └───────────────┘   └────────────────┘  └─────────────────────┘
-         │                                   │ self-ref       UNIQUE(user_id, ws_id)
-         │                                   └─────────┘
+         │                  │                   │
+         │                  │ 1:N               │ N:1 (self-ref)
+         │                  ▼                   ▼
+         │          ┌───────────────┐   ┌─────────────────────┐
+         │          │checklist_items│   │      members        │
+         │          ├───────────────┤   ├─────────────────────┤
+         │          │ id        PK  │   │ id            PK    │
+         │          │ ticket_id FK  │   │ user_id       FK→u  │◄── users
+         │          │ text          │   │ workspace_id  FK→ws │
+         │          │ is_completed  │   │ display_name        │
+         │          │ position      │   │ color               │
+         │          │ created_at    │   │ created_at          │
+         │          └───────────────┘   └─────────────────────┘
+         │                               UNIQUE(user_id, ws_id)
+         │          (tickets.parent_id → tickets.id  self-ref for GOAL>STORY>FEATURE>TASK)
          │
          │          tickets >──< labels (M:N)
          │          ┌────────────────────┐
@@ -108,9 +109,12 @@ labels: UNIQUE(workspace_id, name)
 | status | VARCHAR(20) | NOT NULL | 'BACKLOG' | 현재 상태 (칸반 칼럼) |
 | priority | VARCHAR(10) | NOT NULL | 'MEDIUM' | 우선순위 |
 | position | INTEGER | NOT NULL | 0 | 칼럼 내 표시 순서 (gap-based) |
-| due_date | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
+| start_date | DATE | NULLABLE | NULL | 실제 시작일 — IN_PROGRESS 전환 시 자동 설정 (YYYY-MM-DD) |
+| due_date | DATE | NULLABLE | NULL | 실제 마감일 (YYYY-MM-DD) |
+| planned_start_date | DATE | NULLABLE | NULL | 계획 시작일 (YYYY-MM-DD) |
+| planned_end_date | DATE | NULLABLE | NULL | 계획 종료일 (YYYY-MM-DD) |
 | completed_at | TIMESTAMPTZ | NULLABLE | NULL | 완료 시각 (DONE 이동 시 자동 기록) |
-| issue_id | INTEGER | NULLABLE, FK→issues(id) ON DELETE SET NULL | NULL | 연결된 상위 이슈 |
+| parent_id | INTEGER | NULLABLE (self-ref) | NULL | 상위 티켓 (GOAL/STORY/FEATURE 계층용) |
 | assignee_id | INTEGER | NULLABLE, FK→members(id) ON DELETE SET NULL | NULL | 담당 멤버 |
 | created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
 | updated_at | TIMESTAMPTZ | NOT NULL | now() | 수정 시각 |
@@ -127,8 +131,9 @@ labels: UNIQUE(workspace_id, name)
 |---------|------|------|
 | idx_tickets_workspace_status_position | (workspace_id, status, position) | 워크스페이스+칼럼별 정렬 조회 (보드 렌더링) |
 | idx_tickets_due_date | (due_date) | 마감일 기준 조회 |
-| idx_tickets_issue_id | (issue_id) | 이슈별 티켓 조회 |
+| idx_tickets_parent_id | (parent_id) | 하위 티켓 조회 (WBS 트리) |
 | idx_tickets_assignee_id | (assignee_id) | 담당자별 티켓 조회 |
+| idx_tickets_workspace_deleted | (workspace_id, deleted) | 논리 삭제 필터 조회 |
 
 ---
 
@@ -185,33 +190,7 @@ labels: UNIQUE(workspace_id, name)
 
 ---
 
-### 2.5 issues
-
-| 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
-|------|------|----------|--------|------|
-| id | SERIAL | PK, auto-increment | — | 이슈 고유 식별자 |
-| workspace_id | INTEGER | NOT NULL, FK→workspaces(id) | — | 소속 워크스페이스 |
-| name | VARCHAR(100) | NOT NULL | — | 이슈 이름 (1~100자) |
-| type | VARCHAR(10) | NOT NULL | — | 이슈 타입 (GOAL/STORY/FEATURE/TASK) |
-| parent_id | INTEGER | NULLABLE, FK→issues(id) ON DELETE SET NULL | NULL | 상위 이슈 (self-referencing) |
-| created_at | TIMESTAMPTZ | NOT NULL | now() | 생성 시각 |
-
-**type 계층 규칙**:
-- GOAL: parent_id = null (최상위)
-- STORY: parent_id = GOAL 타입 이슈
-- FEATURE: parent_id = STORY 타입 이슈
-- TASK: parent_id = FEATURE 타입 이슈
-
-**인덱스**:
-
-| 인덱스명 | 칼럼 | 용도 |
-|---------|------|------|
-| idx_issues_parent_id | (parent_id) | 하위 이슈 조회 |
-| idx_issues_type | (type) | 타입별 이슈 조회 |
-
----
-
-### 2.6 members
+### 2.5 members
 
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
@@ -226,7 +205,7 @@ labels: UNIQUE(workspace_id, name)
 
 ---
 
-### 2.7 users
+### 2.6 users
 
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
@@ -238,7 +217,7 @@ labels: UNIQUE(workspace_id, name)
 
 ---
 
-### 2.8 workspaces
+### 2.7 workspaces
 
 | 칼럼 | 타입 | 제약조건 | 기본값 | 설명 |
 |------|------|----------|--------|------|
@@ -307,34 +286,28 @@ export const members = pgTable(
   }),
 );
 
-// --- issues ---
-export const issues = pgTable('issues', {
-  id: serial('id').primaryKey(),
-  workspaceId: integer('workspace_id')
-    .notNull()
-    .references(() => workspaces.id),
-  name: varchar('name', { length: 100 }).notNull(),
-  type: varchar('type', { length: 10 }).notNull(),
-  parentId: integer('parent_id').references(() => issues.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
-
 // --- tickets ---
+// GOAL > STORY > FEATURE > TASK 계층을 parent_id 자기참조로 표현
+// type=TASK 만 칸반 보드에 표시; GOAL/STORY/FEATURE 는 WBS에 표시
 export const tickets = pgTable('tickets', {
   id: serial('id').primaryKey(),
   workspaceId: integer('workspace_id')
     .notNull()
     .references(() => workspaces.id),
   title: varchar('title', { length: 200 }).notNull(),
-  type: varchar('type', { length: 10 }).notNull(),
+  type: varchar('type', { length: 10 }).notNull().default('TASK'),
   description: text('description'),
   status: varchar('status', { length: 20 }).notNull().default('BACKLOG'),
   priority: varchar('priority', { length: 10 }).notNull().default('MEDIUM'),
   position: integer('position').notNull().default(0),
+  startDate: date('start_date', { mode: 'string' }),
   dueDate: date('due_date', { mode: 'string' }),
-  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
-  issueId: integer('issue_id').references(() => issues.id, { onDelete: 'set null' }),
+  plannedStartDate: date('planned_start_date', { mode: 'string' }),
+  plannedEndDate: date('planned_end_date', { mode: 'string' }),
+  parentId: integer('parent_id'),  // self-ref (no FK constraint at DB level)
   assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
+  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+  deleted: boolean('deleted').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
     .notNull()
@@ -427,16 +400,6 @@ export const TICKET_PRIORITY = {
 
 export type TicketPriority = (typeof TICKET_PRIORITY)[keyof typeof TICKET_PRIORITY];
 
-// --- 이슈 타입 ---
-export const ISSUE_TYPE = {
-  GOAL: 'GOAL',
-  STORY: 'STORY',
-  FEATURE: 'FEATURE',
-  TASK: 'TASK',
-} as const;
-
-export type IssueType = (typeof ISSUE_TYPE)[keyof typeof ISSUE_TYPE];
-
 // --- 칼럼 순서 ---
 export const COLUMN_ORDER: TicketStatus[] = [
   TICKET_STATUS.BACKLOG,
@@ -469,26 +432,6 @@ export interface Label {
   name: string;
   color: string;  // #RRGGBB
   createdAt: Date;
-}
-
-// --- 이슈 ---
-export interface Issue {
-  id: number;
-  workspaceId: number;
-  name: string;
-  type: IssueType;
-  parentId: number | null;
-  createdAt: Date;
-}
-
-export interface IssueBreadcrumbItem {
-  id: number;
-  name: string;
-  type: IssueType;
-}
-
-export interface IssueWithBreadcrumb extends Issue {
-  breadcrumb: IssueBreadcrumbItem[];
 }
 
 // --- 사용자 ---
@@ -528,10 +471,12 @@ export interface Ticket {
   status: TicketStatus;
   priority: TicketPriority;
   position: number;
+  startDate: string | null;     // ISO 8601 date (YYYY-MM-DD)
   dueDate: string | null;       // ISO 8601 date (YYYY-MM-DD)
   completedAt: Date | null;
-  issueId: number | null;
+  parentId: number | null;      // 상위 티켓 ID (GOAL/STORY/FEATURE 계층)
   assigneeId: number | null;
+  deleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -539,9 +484,9 @@ export interface Ticket {
 // --- 티켓 + 메타 (파생 필드 + 관계 데이터 포함) ---
 export interface TicketWithMeta extends Ticket {
   isOverdue: boolean;                     // dueDate < today && status !== DONE
-  checklist: ChecklistItem[];             // 체크리스트 항목 목록
+  checklistItems: ChecklistItem[];        // 체크리스트 항목 목록
   labels: Label[];                        // 부착된 라벨 목록 (최대 5개)
-  issue: IssueWithBreadcrumb | null;      // 연결된 상위 이슈 (브레드크럼 포함)
+  parent: Ticket | null;                  // 상위 티켓 (GOAL/STORY/FEATURE)
   assignee: Member | null;               // 담당 멤버
 }
 
@@ -553,9 +498,8 @@ export interface CreateTicketInput {
   description?: string;
   priority?: TicketPriority;
   dueDate?: string;             // YYYY-MM-DD
-  checklist?: { text: string }[];
   labelIds?: number[];          // 최대 5개
-  issueId?: number;
+  parentId?: number;            // 상위 티켓 ID (GOAL/STORY/FEATURE)
   assigneeId?: number;
 }
 
@@ -565,7 +509,7 @@ export interface UpdateTicketInput {
   priority?: TicketPriority;
   dueDate?: string | null;
   labelIds?: number[] | null;   // null 또는 [] = 전체 해제
-  issueId?: number | null;
+  parentId?: number | null;     // 상위 티켓 변경
   assigneeId?: number | null;
 }
 
@@ -576,7 +520,10 @@ export interface ReorderTicketInput {
 }
 
 // --- 보드 데이터 구조 ---
-export type BoardData = Record<TicketStatus, TicketWithMeta[]>;
+export interface BoardData {
+  board: Record<TicketStatus, TicketWithMeta[]>;
+  total: number;
+}
 ```
 
 ---
@@ -620,13 +567,14 @@ function isOverdue(ticket: Ticket): boolean {
 - 티켓당 최대 20개 항목 (애플리케이션 레이어 강제)
 - 티켓 삭제 시 checklist_items CASCADE 삭제
 
-### 5.6 이슈 계층 규칙
+### 5.6 티켓 계층 규칙 (parent_id 자기참조)
 
 - GOAL: parent_id = null 필수 (최상위)
-- STORY: parent_id는 반드시 GOAL 타입 이슈
-- FEATURE: parent_id는 반드시 STORY 타입 이슈
-- TASK: parent_id는 반드시 FEATURE 타입 이슈
-- 이슈 삭제 시: 하위 이슈 parent_id = null, 연결 티켓 issue_id = null (SET NULL)
+- STORY: parent_id = GOAL 타입 티켓
+- FEATURE: parent_id = STORY 타입 티켓
+- TASK: parent_id = FEATURE 타입 티켓 (선택)
+- 칸반 보드에는 TASK 타입만 표시; GOAL/STORY/FEATURE는 WBS에서 관리
+- parent_id는 DB 레벨 FK 없음 (앱 레벨 자기참조); 순환 참조 방지는 앱 레벨 처리
 
 ### 5.7 멤버 삭제 규칙
 
@@ -635,7 +583,7 @@ function isOverdue(ticket: Ticket): boolean {
 ### 5.8 워크스페이스 데이터 격리
 
 - 모든 데이터 조회/생성은 현재 사용자의 워크스페이스로 스코핑
-- tickets, labels, issues, members 쿼리 시 `WHERE workspace_id = ?` 필수
+- tickets, labels, members 쿼리 시 `WHERE workspace_id = ?` 필수
 - 다른 사용자의 워크스페이스 데이터 접근 불가
 
 ### 5.9 자동 멤버 생성 (Phase 1)
@@ -685,99 +633,22 @@ const seedLabels = [
   { workspaceId: 1, name: 'Infra', color: '#615fff' },
 ];
 
-// --- 이슈 시드 ---
-const seedIssues = [
-  { workspaceId: 1, name: 'MVP 출시', type: 'GOAL', parentId: null },
-  { workspaceId: 1, name: '사용자 인증 시스템', type: 'STORY', parentId: 1 },
-  { workspaceId: 1, name: '칸반 보드', type: 'STORY', parentId: 1 },
-  { workspaceId: 1, name: '인증 API', type: 'FEATURE', parentId: 2 },
-  { workspaceId: 1, name: '드래그앤드롭', type: 'FEATURE', parentId: 3 },
-  { workspaceId: 1, name: 'JWT 토큰 구현', type: 'TASK', parentId: 4 },
+// --- 티켓 시드 (GOAL > STORY > FEATURE > TASK 계층, parent_id 자기참조) ---
+// 1단계: GOAL/STORY/FEATURE 계층 먼저 insert → 반환된 ID로 parentId 연결
+const seedGoalTickets = [
+  { workspaceId: 1, title: 'MVP 출시', type: 'GOAL', status: 'BACKLOG', priority: 'MEDIUM', position: 0 },
 ];
-
-// --- 티켓 시드 ---
-const seedTickets = [
-  {
-    workspaceId: 1,
-    title: '프로젝트 요구사항 정리',
-    type: 'TASK',
-    status: 'DONE',
-    priority: 'HIGH',
-    position: 0,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: 'UI 와이어프레임 작성',
-    type: 'TASK',
-    status: 'DONE',
-    priority: 'MEDIUM',
-    position: 1024,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: 'API 설계 문서 작성',
-    type: 'FEATURE',
-    status: 'IN_PROGRESS',
-    priority: 'HIGH',
-    position: 0,
-    issueId: 4,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: 'DB 스키마 설계',
-    type: 'TASK',
-    status: 'IN_PROGRESS',
-    priority: 'MEDIUM',
-    position: 1024,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: '칸반 보드 UI 구현',
-    type: 'FEATURE',
-    status: 'TODO',
-    priority: 'HIGH',
-    position: 0,
-    issueId: 5,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: '드래그앤드롭 기능 구현',
-    type: 'TASK',
-    status: 'TODO',
-    priority: 'MEDIUM',
-    position: 1024,
-    issueId: 5,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: '알림 기능 조사',
-    type: 'STORY',
-    status: 'BACKLOG',
-    priority: 'LOW',
-    position: 0,
-  },
-  {
-    workspaceId: 1,
-    title: '성능 테스트 계획',
-    type: 'TASK',
-    status: 'BACKLOG',
-    priority: 'MEDIUM',
-    position: 1024,
-    assigneeId: 1,
-  },
-  {
-    workspaceId: 1,
-    title: 'CI/CD 파이프라인 구축',
-    type: 'FEATURE',
-    status: 'BACKLOG',
-    priority: 'LOW',
-    position: 2048,
-  },
+const seedStoryTickets = [
+  { workspaceId: 1, title: '사용자 인증 시스템', type: 'STORY', parentId: /* GOAL.id */ 1, status: 'BACKLOG', priority: 'MEDIUM', position: 0 },
+  { workspaceId: 1, title: '칸반 보드', type: 'STORY', parentId: /* GOAL.id */ 1, status: 'BACKLOG', priority: 'MEDIUM', position: 1024 },
+];
+// 2단계: TASK 티켓 (parentId로 FEATURE 연결)
+const seedTaskTickets = [
+  { workspaceId: 1, title: '프로젝트 요구사항 정리', type: 'TASK', status: 'DONE', priority: 'HIGH', position: 0, assigneeId: 1 },
+  { workspaceId: 1, title: 'DB 스키마 설계', type: 'TASK', status: 'IN_PROGRESS', priority: 'MEDIUM', position: 1024, assigneeId: 1 },
+  { workspaceId: 1, title: '칸반 보드 UI 구현', type: 'TASK', status: 'TODO', priority: 'HIGH', position: 0, assigneeId: 1 },
+  { workspaceId: 1, title: '드래그앤드롭 기능 구현', type: 'TASK', status: 'TODO', priority: 'MEDIUM', position: 1024, assigneeId: 1 },
+  { workspaceId: 1, title: '알림 기능 조사', type: 'TASK', status: 'BACKLOG', priority: 'LOW', position: 0 },
+  { workspaceId: 1, title: '성능 테스트 계획', type: 'TASK', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, assigneeId: 1 },
 ];
 ```

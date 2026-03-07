@@ -41,7 +41,7 @@ export async function PATCH(
       );
     }
 
-    const memberId = (session.user as Record<string, unknown>).memberId as number | undefined;
+    const memberId = session.user.memberId as number | undefined;
     if (!memberId) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '멤버 정보가 없습니다' } },
@@ -89,7 +89,7 @@ export async function DELETE(
       );
     }
 
-    const memberId = (session.user as Record<string, unknown>).memberId as number | undefined;
+    const memberId = session.user.memberId as number | undefined;
     if (!memberId) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '멤버 정보가 없습니다' } },

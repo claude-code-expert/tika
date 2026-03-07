@@ -2,7 +2,7 @@
 ' ─────────────────────────────────────────────────────────
 ' Tika — Database ER Diagram (PlantUML)
 ' 소스: docs/TABLE_DEFINITION.md / src/db/schema.ts
-' 최종수정: 2026-02-26
+' 최종수정: 2026-03-07
 ' ─────────────────────────────────────────────────────────
 
 ' ── Skin / Theme ─────────────────────────────────────────
@@ -46,6 +46,9 @@ entity "**users**" as users {
   * email          : VARCHAR(255) <<UK>>
   * name           : VARCHAR(100)
     avatar_url     : TEXT
+    user_type      : VARCHAR(20)
+  .. NULL | 'USER' | 'WORKSPACE' ..
+    bg_color       : VARCHAR(7)
   * created_at     : TIMESTAMPTZ
 }
 
@@ -56,25 +59,13 @@ entity "**workspaces**" as workspaces {
   * name           : VARCHAR(100) DEFAULT '내 워크스페이스'
     description    : TEXT
   * owner_id       : TEXT         <<FK → users.id>>
+  * type           : VARCHAR(10)  DEFAULT 'PERSONAL'
+  .. 'PERSONAL' | 'TEAM' ..
+  * is_searchable  : BOOLEAN      DEFAULT false
   * created_at     : TIMESTAMPTZ
 }
 
-' ── 3. issues ────────────────────────────────────────────
-entity "**issues**" as issues {
-  * id             : SERIAL       <<PK>>
-  --
-  * workspace_id   : INT          <<FK → workspaces.id>>
-  * name           : VARCHAR(100)
-  * type           : VARCHAR(10)
-  .. GOAL | STORY | FEATURE ..
-    parent_id      : INT          <<FK → issues.id (self-ref)>>
-  * created_at     : TIMESTAMPTZ
-  --
-  IDX: (workspace_id, type)
-  IDX: (parent_id)
-}
-
-' ── 4. members ───────────────────────────────────────────
+' ── 3. members ───────────────────────────────────────────
 entity "**members**" as members {
   * id             : SERIAL       <<PK>>
   --
@@ -82,11 +73,30 @@ entity "**members**" as members {
   * workspace_id   : INT          <<FK → workspaces.id>>
   * display_name   : VARCHAR(50)
   * color          : VARCHAR(7)   DEFAULT '#7EB4A2'
-  * role           : VARCHAR(10)  DEFAULT 'member'
-  .. admin | member ..
+  * role           : VARCHAR(10)  DEFAULT 'MEMBER'
+  .. 'OWNER' | 'MEMBER' | 'VIEWER' ..
+    invited_by     : INT          <<FK → members.id (self-ref)>>
+    joined_at      : TIMESTAMPTZ
   * created_at     : TIMESTAMPTZ
   --
   UK: (user_id, workspace_id)
+}
+
+' ── 4. sprints ───────────────────────────────────────────
+entity "**sprints**" as sprints {
+  * id                  : SERIAL      <<PK>>
+  --
+  * workspace_id        : INT         <<FK → workspaces.id, CASCADE>>
+  * name                : VARCHAR(100)
+    goal                : TEXT
+  * status              : VARCHAR(20) DEFAULT 'PLANNED'
+  .. PLANNED | ACTIVE | COMPLETED | CANCELLED ..
+    start_date          : DATE
+    end_date            : DATE
+    story_points_total  : INT
+  * created_at          : TIMESTAMPTZ
+  --
+  IDX: (workspace_id, status)
 }
 
 ' ── 5. tickets ───────────────────────────────────────────
@@ -103,16 +113,25 @@ entity "**tickets**" as tickets {
   * priority       : VARCHAR(10)  DEFAULT 'MEDIUM'
   .. LOW | MEDIUM | HIGH | CRITICAL ..
   * position       : INT          DEFAULT 0
-    start_date     : DATE
+    start_date     : DATE         <<auto: IN_PROGRESS 전환 시>>
     due_date       : DATE
-    issue_id       : INT          <<FK → issues.id, ON DELETE SET NULL>>
+    planned_start_date : DATE    <<계획 시작일>>
+    planned_end_date   : DATE    <<계획 종료일>>
+    parent_id      : INT          <<self-ref: GOAL>STORY>FEATURE>TASK>>
     assignee_id    : INT          <<FK → members.id, ON DELETE SET NULL>>
+    sprint_id      : INT          <<FK → sprints.id, ON DELETE SET NULL>>
+    story_points   : INT
     completed_at   : TIMESTAMPTZ
+  * deleted        : BOOLEAN      DEFAULT false
   * created_at     : TIMESTAMPTZ
   * updated_at     : TIMESTAMPTZ
   --
   IDX: (workspace_id, status, position)
   IDX: (due_date)
+  IDX: (sprint_id)
+  IDX: (assignee_id)
+  IDX: (parent_id)
+  IDX: (workspace_id, deleted)
 }
 
 ' ── 6. checklist_items ───────────────────────────────────
@@ -158,13 +177,91 @@ entity "**notification_channels**" as notification_channels {
   * workspace_id   : INT          <<FK → workspaces.id>>
   * type           : VARCHAR(20)
   .. slack | telegram ..
-  * config         : JSONB
+  * config         : TEXT         DEFAULT '{}'
   ..{webhookUrl} | {botToken, chatId}..
   * enabled        : BOOLEAN      DEFAULT false
   * created_at     : TIMESTAMPTZ
   * updated_at     : TIMESTAMPTZ
   --
   UK: (workspace_id, type)
+}
+
+' ── 10. comments ─────────────────────────────────────────
+entity "**comments**" as comments {
+  * id             : SERIAL       <<PK>>
+  --
+  * ticket_id      : INT          <<FK → tickets.id, ON DELETE CASCADE>>
+    member_id      : INT          <<FK → members.id, ON DELETE SET NULL>>
+  * text           : VARCHAR(500)
+  * created_at     : TIMESTAMPTZ
+  * updated_at     : TIMESTAMPTZ
+  --
+  IDX: (ticket_id)
+  IDX: (member_id)
+}
+
+' ── 11. notification_logs ────────────────────────────────
+entity "**notification_logs**" as notification_logs {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id>>
+    ticket_id      : INT          <<FK → tickets.id, ON DELETE SET NULL>>
+  * channel        : VARCHAR(20)
+  .. slack | telegram ..
+  * message        : TEXT
+  * status         : VARCHAR(10)
+  .. 'SENT' | 'FAILED' ..
+  * sent_at        : TIMESTAMPTZ
+    error_message  : TEXT
+  * is_read        : BOOLEAN      DEFAULT false
+  --
+  IDX: (workspace_id)
+  IDX: (sent_at)
+}
+
+' ── 12. workspace_invites ────────────────────────────────
+entity "**workspace_invites**" as workspace_invites {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id, CASCADE>>
+  * invited_by     : INT          <<FK → members.id, CASCADE>>
+  * token          : UUID         <<UK, DEFAULT random()>>
+  * email          : VARCHAR(255)
+  * role           : VARCHAR(10)
+  .. 'MEMBER' | 'VIEWER' ..
+  * status         : VARCHAR(10)  DEFAULT 'PENDING'
+  .. PENDING | ACCEPTED | REJECTED | EXPIRED ..
+  * expires_at     : TIMESTAMPTZ
+  * created_at     : TIMESTAMPTZ
+  --
+  IDX: (workspace_id, status)
+  IDX: (token)
+}
+
+' ── 13. ticket_assignees (M:N) ───────────────────────────
+entity "**ticket_assignees**" as ticket_assignees #FAFBFF {
+  * ticket_id      : INT          <<PK, FK → tickets.id, CASCADE>>
+  * member_id      : INT          <<PK, FK → members.id, CASCADE>>
+  --
+  PK: (ticket_id, member_id)
+  IDX: (member_id)
+}
+
+' ── 14. workspace_join_requests ──────────────────────────
+entity "**workspace_join_requests**" as workspace_join_requests {
+  * id             : SERIAL       <<PK>>
+  --
+  * workspace_id   : INT          <<FK → workspaces.id, CASCADE>>
+  * user_id        : TEXT         <<FK → users.id, CASCADE>>
+    message        : TEXT
+  * status         : VARCHAR(20)  DEFAULT 'PENDING'
+  .. PENDING | APPROVED | REJECTED ..
+    reviewed_by    : INT          <<FK → members.id, ON DELETE SET NULL>>
+    reviewed_at    : TIMESTAMPTZ
+  * created_at     : TIMESTAMPTZ
+  --
+  UK: (workspace_id, user_id)
+  IDX: (workspace_id, status)
 }
 
 ' ═══════════════════════════════════════════════════════════
@@ -182,11 +279,14 @@ users                ||--o{ workspaces           : "owns\n(owner_id)"
 ' users → members  (1:N via user_id)
 users                ||--o{ members              : "joins as\n(user_id)"
 
-' workspaces → issues  (1:N)
-workspaces           ||--|{ issues               : "contains\n(workspace_id)"
+' users → workspace_join_requests
+users                ||--o{ workspace_join_requests : "requests\n(user_id)"
 
 ' workspaces → members  (1:N)
 workspaces           ||--|{ members              : "has member\n(workspace_id)"
+
+' workspaces → sprints  (1:N)
+workspaces           ||--o{ sprints              : "has sprints\n(workspace_id)"
 
 ' workspaces → tickets  (1:N)
 workspaces           ||--|{ tickets              : "contains\n(workspace_id)"
@@ -197,21 +297,46 @@ workspaces           ||--o{ labels               : "defines\n(workspace_id)"
 ' workspaces → notification_channels  (1:N)
 workspaces           ||--o{ notification_channels : "notifies via\n(workspace_id)"
 
-' issues → issues  (self-referencing 1:N for hierarchy)
-issues               |o--o{ issues               : "parent\n(parent_id)"
+' workspaces → notification_logs  (1:N)
+workspaces           ||--o{ notification_logs    : "logs\n(workspace_id)"
 
-' issues → tickets  (1:N via issue_id, optional)
-issues               ||--o{ tickets              : "groups\n(issue_id)"
+' workspaces → workspace_invites  (1:N)
+workspaces           ||--o{ workspace_invites    : "invites\n(workspace_id)"
+
+' workspaces → workspace_join_requests  (1:N)
+workspaces           ||--o{ workspace_join_requests : "receives\n(workspace_id)"
+
+' tickets → tickets  (self-referencing 1:N for GOAL>STORY>FEATURE>TASK hierarchy)
+tickets              |o--o{ tickets               : "parent\n(parent_id)"
+
+' sprints → tickets  (1:N)
+sprints              ||--o{ tickets              : "includes\n(sprint_id)"
 
 ' members → tickets  (1:N via assignee_id, optional)
 members              ||--o{ tickets              : "assigned to\n(assignee_id)"
 
+' members → comments  (1:N)
+members              ||--o{ comments             : "writes\n(member_id)"
+
+' members → workspace_invites  (1:N via invited_by)
+members              ||--o{ workspace_invites    : "invites\n(invited_by)"
+
 ' tickets → checklist_items  (1:N, CASCADE)
 tickets              ||--o{ checklist_items       : "has checklist\n(ticket_id)"
+
+' tickets → comments  (1:N, CASCADE)
+tickets              ||--o{ comments             : "has comments\n(ticket_id)"
+
+' tickets → notification_logs  (1:N)
+tickets              ||--o{ notification_logs    : "triggers\n(ticket_id)"
 
 ' tickets ↔ labels  (M:N via ticket_labels)
 tickets              ||--o{ ticket_labels         : "tagged\n(ticket_id)"
 labels               ||--o{ ticket_labels         : "applied to\n(label_id)"
+
+' tickets ↔ members  (M:N via ticket_assignees)
+tickets              ||--o{ ticket_assignees      : "assigned\n(ticket_id)"
+members              ||--o{ ticket_assignees      : "handles\n(member_id)"
 
 ' ─────────────────────────────────────────────────────────
 ' NOTES
@@ -223,31 +348,24 @@ note right of tickets
   → IN_PROGRESS → DONE
 
   DONE 전환 시 completed_at 자동 설정
-  position: gap-based 순서 (예: 65536 단위)
-end note
+  position: gap-based 순서
 
-note right of issues
-  **이슈 계층 구조**
+  **WBS 계층 (parent_id 자기참조)**
   GOAL
    └─ STORY
         └─ FEATURE
-
-  tickets.type 에도 TASK 포함하여
-  Goal > Story > Feature > Task
-  4계층 표현
+              └─ TASK
 end note
 
 note bottom of members
   **역할 (RBAC)**
-  admin  → 전체 관리 권한
-  member → 티켓 CRUD 가능
-
-  향후: OWNER / MEMBER / VIEWER
-  3단계로 확장 예정
+  OWNER  → 전체 관리 권한
+  MEMBER → 티켓 CRUD 가능
+  VIEWER → 읽기 전용
 end note
 
 note bottom of notification_channels
-  **config JSONB 예시**
+  **config TEXT 예시**
   Slack: {"webhookUrl": "https://..."}
   Telegram: {"botToken": "...",
              "chatId": "..."}

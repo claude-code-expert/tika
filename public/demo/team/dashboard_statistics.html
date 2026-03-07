@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tika — 통계 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+      --text-h1: 20px; --text-h2: 16px; --text-body1: 14px; --text-body2: 12px; --text-small: 11px;
+      --fw-bold: 700; --fw-semibold: 600; --fw-medium: 500; --fw-regular: 400;
+      --bg-app: #F8F9FB; --bg-header: #FFFFFF; --bg-sidebar: #F1F3F6;
+      --bg-board: #E8EDF2; --bg-footer: #F4F5F7; --bg-card: #FFFFFF; --bg-column: #F4F5F7;
+      --text-primary: #2C3E50; --text-secondary: #5A6B7F; --text-muted: #8993A4;
+      --accent-primary: #629584; --accent-hover: #527D6F; --accent-light: #E8F5F0;
+      --border-light: #DFE1E6; --border-medium: #C4C9D1;
+      --radius-card: 8px; --radius-column: 12px; --radius-button: 6px; --radius-tag: 4px;
+      --shadow-card: 0 1px 2px rgba(9,30,66,0.12); --shadow-card-hover: 0 3px 8px rgba(9,30,66,0.18);
+      --shadow-header: 0 1px 3px rgba(0,0,0,0.08); --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+      --z-header: 50; --z-sidebar: 10; --z-modal: 200;
+      --sp-xs: 4px; --sp-sm: 8px; --sp-md: 12px; --sp-lg: 16px; --sp-xl: 24px;
+      --header-height: 60px; --footer-height: 55px; --sidebar-width: 260px;
+      /* chart palette */
+      --c-backlog: #8993A4; --c-todo: #3B82F6; --c-inprogress: #F59E0B; --c-done: #629584;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: var(--font-body); font-size: var(--text-body1); color: var(--text-primary); background: var(--bg-app); -webkit-font-smoothing: antialiased; }
+
+    /* ─── Layout ─── */
+    .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .main-area { display: flex; flex: 1; overflow: hidden; }
+    .ic { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; }
+    .ic svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+
+    /* ─── Header ─── */
+    .header { height: var(--header-height); background: var(--bg-header); border-bottom: 1px solid var(--border-light); box-shadow: var(--shadow-header); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--sp-lg); z-index: var(--z-header); flex-shrink: 0; }
+    .header-left { display: flex; align-items: center; gap: var(--sp-md); }
+    .logo { display: flex; align-items: center; gap: var(--sp-sm); text-decoration: none; color: var(--text-primary); }
+    .logo-icon { width: 32px; height: 32px; background: var(--accent-primary); border-radius: var(--radius-button); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: var(--fw-bold); font-size: 16px; }
+    .logo-text { font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--text-h1); letter-spacing: -0.5px; }
+    .header-right { display: flex; align-items: center; gap: var(--sp-xs); }
+    .icon-btn { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: var(--radius-button); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; position: relative; }
+    .icon-btn:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+    .badge-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid var(--bg-header); }
+    .divider-v { width: 1px; height: 24px; background: var(--border-light); margin: 0 var(--sp-sm); }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #7EB4A2; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: var(--fw-semibold); font-size: var(--text-body2); cursor: pointer; }
+    .header-center { flex: 1; padding: 0 var(--sp-xl); }
+    .page-title-wrap { display: flex; align-items: center; gap: var(--sp-sm); }
+    .page-title { font-family: var(--font-display); font-size: var(--text-h2); font-weight: var(--fw-semibold); color: var(--text-primary); }
+    .page-badge { font-size: var(--text-small); background: var(--accent-light); color: var(--accent-primary); padding: 3px 10px; border-radius: 20px; font-weight: var(--fw-semibold); }
+
+    /* ─── Sidebar ─── */
+    .sidebar { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+    .sb-header { display: flex; align-items: center; gap: var(--sp-sm); padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--border-light); min-height: 52px; }
+    .ws-ic { width: 28px; height: 28px; border-radius: var(--radius-button); background: var(--accent-primary); color: #fff; font-size: var(--text-body2); font-weight: var(--fw-bold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ws-name { font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-primary); }
+    .ws-type { font-size: var(--text-small); color: var(--text-muted); }
+    .sb-nav { flex: 1; overflow-y: auto; padding: var(--sp-sm) 0; }
+    .nav-sec { padding: var(--sp-sm) var(--sp-lg); font-size: var(--text-small); font-weight: var(--fw-semibold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: var(--sp-sm); padding: 8px var(--sp-lg); font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all 0.1s; white-space: nowrap; border: none; background: none; width: 100%; text-align: left; font-family: var(--font-body); }
+    .nav-item:hover { background: #E2E5EA; color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-light); color: var(--accent-primary); font-weight: var(--fw-medium); }
+    .nav-cnt { margin-left: auto; font-size: var(--text-small); color: var(--text-muted); background: var(--bg-header); padding: 2px 8px; border-radius: 10px; min-width: 24px; text-align: center; line-height: 1.4; }
+    .nav-item.active .nav-cnt { background: var(--accent-primary); color: #fff; }
+
+    /* Stat category nav items */
+    .nav-sub { display: flex; align-items: center; gap: var(--sp-sm); padding: 6px var(--sp-lg) 6px 36px; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.1s; white-space: nowrap; text-decoration: none; display: flex; }
+    .nav-sub:hover { color: var(--accent-primary); }
+    .nav-sub.active { color: var(--accent-primary); font-weight: var(--fw-medium); }
+
+    /* ─── Content ─── */
+    .content { flex: 1; overflow-y: auto; padding: var(--sp-xl); display: flex; flex-direction: column; gap: var(--sp-xl); }
+    .content::-webkit-scrollbar { width: 6px; }
+    .content::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+
+    /* ─── Filter bar ─── */
+    .dash-toolbar { display: flex; align-items: center; gap: var(--sp-sm); flex-wrap: wrap; }
+    .sel { height: 34px; padding: 0 var(--sp-md); border: 1px solid var(--border-light); border-radius: var(--radius-button); background: var(--bg-card); font-size: var(--text-body2); color: var(--text-primary); cursor: pointer; font-family: var(--font-body); outline: none; appearance: none; padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238993A4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    .sel:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-light); }
+    .tb-label { font-size: var(--text-body2); color: var(--text-secondary); font-weight: var(--fw-medium); }
+
+    /* ─── Section header ─── */
+    .section { display: flex; flex-direction: column; gap: var(--sp-lg); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; }
+    .section-title { font-family: var(--font-display); font-size: var(--text-h2); font-weight: var(--fw-semibold); color: var(--text-primary); display: flex; align-items: center; gap: var(--sp-sm); }
+    .section-desc { font-size: var(--text-body2); color: var(--text-muted); margin-top: 2px; }
+
+    /* ─── Card container ─── */
+    .card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border-light); box-shadow: var(--shadow-card); overflow: hidden; }
+    .card-header { padding: var(--sp-lg); border-bottom: 1px solid var(--border-light); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-md); }
+    .card-title { font-size: var(--text-body1); font-weight: var(--fw-semibold); color: var(--text-primary); }
+    .card-subtitle { font-size: var(--text-small); color: var(--text-muted); margin-top: 2px; }
+    .card-body { padding: var(--sp-lg); }
+
+    /* ─── Grid layouts ─── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-lg); }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-lg); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-lg); }
+    .col-span-2 { grid-column: span 2; }
+
+    /* ─── Summary KPI cards ─── */
+    .kpi-card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border-light); box-shadow: var(--shadow-card); padding: var(--sp-lg); display: flex; flex-direction: column; gap: var(--sp-sm); }
+    .kpi-label { font-size: var(--text-body2); color: var(--text-secondary); font-weight: var(--fw-medium); display: flex; align-items: center; gap: 6px; }
+    .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: var(--fw-bold); color: var(--text-primary); line-height: 1; }
+    .kpi-sub { font-size: var(--text-small); color: var(--text-muted); }
+    .kpi-badge { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-small); padding: 2px 8px; border-radius: 10px; font-weight: var(--fw-semibold); }
+    .kpi-badge.up { background: #D1FAE5; color: #065F46; }
+    .kpi-badge.down { background: #FEE2E2; color: #DC2626; }
+    .kpi-badge.warn { background: #FEF3C7; color: #92400E; }
+    .kpi-badge.neutral { background: var(--bg-sidebar); color: var(--text-muted); }
+    .kpi-icon { width: 36px; height: 36px; border-radius: var(--radius-button); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-bottom: 4px; }
+    .kpi-row { display: flex; align-items: center; justify-content: space-between; }
+
+    /* ─── Chart canvas wrapper ─── */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { display: block; }
+
+    /* ─── Legend ─── */
+    .legend { display: flex; flex-wrap: wrap; gap: var(--sp-md); margin-bottom: var(--sp-md); }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--text-body2); color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ─── Goal Progress ─── */
+    .goal-list { display: flex; flex-direction: column; gap: var(--sp-md); }
+    .goal-item { display: flex; flex-direction: column; gap: 6px; }
+    .goal-meta { display: flex; align-items: center; justify-content: space-between; }
+    .goal-name { font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+    .goal-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .goal-type-badge { font-size: 10px; font-weight: var(--fw-semibold); padding: 1px 6px; border-radius: var(--radius-tag); background: #EDE9FE; color: #7C3AED; flex-shrink: 0; }
+    .goal-stats { font-size: var(--text-small); color: var(--text-muted); white-space: nowrap; flex-shrink: 0; margin-left: var(--sp-sm); }
+    .progress-bar { height: 8px; background: var(--bg-sidebar); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .progress-fill.green { background: var(--accent-primary); }
+    .progress-fill.warn { background: #F59E0B; }
+    .progress-fill.danger { background: #EF4444; }
+    .goal-due { font-size: var(--text-small); color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .goal-due.overdue { color: #DC2626; }
+
+    /* ─── Workload members ─── */
+    .member-row { display: flex; align-items: center; gap: var(--sp-md); padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+    .member-row:last-child { border-bottom: none; }
+    .member-av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: var(--text-body2); font-weight: var(--fw-semibold); flex-shrink: 0; }
+    .member-info { flex: 1; min-width: 0; }
+    .member-name { font-size: var(--text-body2); font-weight: var(--fw-medium); color: var(--text-primary); }
+    .member-role { font-size: var(--text-small); color: var(--text-muted); }
+    .member-bars { flex: 2; display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 1px; }
+    .member-bar-seg { height: 100%; transition: width 0.4s ease; }
+    .member-counts { display: flex; gap: var(--sp-sm); flex-shrink: 0; }
+    .mc { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 32px; }
+    .mc-n { font-size: 13px; font-weight: var(--fw-semibold); color: var(--text-primary); }
+    .mc-l { font-size: 10px; color: var(--text-muted); }
+
+    /* ─── Overdue breakdown ─── */
+    .overdue-row { display: flex; align-items: center; gap: var(--sp-md); padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .overdue-row:last-child { border-bottom: none; }
+    .overdue-label { font-size: var(--text-body2); color: var(--text-primary); flex: 1; }
+    .overdue-bar-wrap { flex: 2; height: 8px; background: var(--bg-sidebar); border-radius: 4px; overflow: hidden; }
+    .overdue-bar-fill { height: 100%; background: #EF4444; border-radius: 4px; transition: width 0.4s ease; }
+    .overdue-count { font-size: var(--text-body2); font-weight: var(--fw-semibold); color: #DC2626; min-width: 24px; text-align: right; }
+
+    /* ─── Priority badges ─── */
+    .b { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: var(--radius-tag); font-size: 11px; font-weight: var(--fw-medium); line-height: 1; }
+    .b-crit { background: #FEE2E2; color: #DC2626; }
+    .b-high { background: #FFEDD5; color: #C2410C; }
+    .b-med { background: #FEF9C3; color: #A16207; }
+    .b-low { background: #F3F4F6; color: #6B7280; }
+
+    /* ─── Tag/Label badges ─── */
+    .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: var(--radius-tag); font-size: 10px; font-weight: var(--fw-medium); line-height: 1; }
+    .tag.fe { background: #2b7fff; color: #fff; }
+    .tag.be { background: #00c950; color: #fff; }
+    .tag.ui { background: #ad46ff; color: #fff; }
+    .tag.bug { background: #fb2c36; color: #fff; }
+    .tag.doc { background: #ffac6d; color: #3D2200; }
+    .tag.inf { background: #615fff; color: #fff; }
+
+    /* ─── Stat dividers ─── */
+    .stat-row { display: flex; align-items: center; gap: var(--sp-xl); padding: var(--sp-sm) 0; }
+    .stat-item { display: flex; flex-direction: column; gap: 2px; }
+    .stat-val { font-size: 18px; font-weight: var(--fw-bold); color: var(--text-primary); font-family: var(--font-display); }
+    .stat-lbl { font-size: var(--text-small); color: var(--text-muted); }
+
+    /* ─── Divider ─── */
+    .divider { height: 1px; background: var(--border-light); }
+
+    /* ─── Chip ─── */
+    .chip { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 20px; font-size: var(--text-small); font-weight: var(--fw-medium); cursor: pointer; transition: all 0.15s; border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-secondary); font-family: var(--font-body); }
+    .chip:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .chip.on { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+
+    /* ─── Section anchor ─── */
+    .sec-anchor { scroll-margin-top: 20px; }
+
+    /* ─── Empty state ─── */
+    .empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-sm); padding: var(--sp-xl); color: var(--text-muted); font-size: var(--text-body2); }
+
+    /* ─── Footer ─── */
+    .footer { height: var(--footer-height); background: var(--bg-footer); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .footer span { font-size: var(--text-small); color: var(--text-muted); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header class="header">
+    <div class="header-left">
+      <a class="logo" href="#">
+        <div class="logo-icon">T</div>
+        <span class="logo-text">Tika</span>
+      </a>
+      <div class="divider-v"></div>
+      <div class="page-title-wrap">
+        <span class="ic" style="width:16px;height:16px;color:#629584">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </span>
+        <span class="page-title">통계 대시보드</span>
+        <span class="page-badge">MVP 출시 Goal</span>
+      </div>
+    </div>
+    <div class="header-center"></div>
+    <div class="header-right">
+      <button class="icon-btn">
+        <span class="badge-dot"></span>
+        <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+      </button>
+      <button class="icon-btn">
+        <span class="ic" style="width:18px;height:18px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+      </button>
+      <div class="divider-v"></div>
+      <div class="user-avatar">홍</div>
+    </div>
+  </header>
+
+  <div class="main-area">
+
+    <!-- ════════════ SIDEBAR ════════════ -->
+    <aside class="sidebar">
+      <div class="sb-header">
+        <div class="ws-ic">T</div>
+        <div>
+          <div class="ws-name">Tika 워크스페이스</div>
+          <div class="ws-type">Team · 개발팀</div>
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="nav-sec">메뉴</div>
+        <button class="nav-item">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+          칸반 보드
+        </button>
+        <button class="nav-item active">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          통계 대시보드
+        </button>
+        <button class="nav-item">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+          Goal 관리
+          <span class="nav-cnt">4</span>
+        </button>
+        <button class="nav-item">
+          <span class="ic" style="width:16px;height:16px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          멤버 관리
+          <span class="nav-cnt">6</span>
+        </button>
+
+        <div class="nav-sec" style="margin-top:8px">통계 섹션</div>
+        <a class="nav-sub active" href="#section-summary">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+          내 업무 현황
+        </a>
+        <a class="nav-sub" href="#section-burndown">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+          번다운 차트
+        </a>
+        <a class="nav-sub" href="#section-cfd">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-8"/></svg></span>
+          CFD
+        </a>
+        <a class="nav-sub" href="#section-throughput">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          처리량
+        </a>
+        <a class="nav-sub" href="#section-workload">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+          담당자별 분포
+        </a>
+        <a class="nav-sub" href="#section-goal">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          Goal 진척률
+        </a>
+        <a class="nav-sub" href="#section-overdue">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+          오버듀 분석
+        </a>
+        <a class="nav-sub" href="#section-priority">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg></span>
+          우선순위 분포
+        </a>
+        <a class="nav-sub" href="#section-label">
+          <span class="ic" style="width:14px;height:14px"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+          라벨별 현황
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ════════════ MAIN CONTENT ════════════ -->
+    <main class="content">
+
+      <!-- Toolbar -->
+      <div class="dash-toolbar">
+        <span class="tb-label">Goal</span>
+        <select class="sel">
+          <option>MVP 출시 전체</option>
+          <option>칸반 보드 핵심 기능</option>
+          <option>사용자 인증 시스템</option>
+          <option>알림 시스템</option>
+        </select>
+        <span class="tb-label">기간</span>
+        <select class="sel">
+          <option>최근 4주</option>
+          <option>최근 2주</option>
+          <option>최근 3개월</option>
+          <option>전체</option>
+        </select>
+        <span class="tb-label">담당자</span>
+        <select class="sel">
+          <option>전체 멤버</option>
+          <option>홍길동</option>
+          <option>김민수</option>
+          <option>이수연</option>
+          <option>박지훈</option>
+        </select>
+        <div style="flex:1"></div>
+        <span style="font-size:var(--text-small);color:var(--text-muted)">마지막 갱신: 2025-03-07 09:30</span>
+      </div>
+
+      <!-- ── 1. 내 업무 현황 ── -->
+      <section class="section sec-anchor" id="section-summary">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+              내 업무 현황
+            </div>
+            <div class="section-desc">홍길동 · 오늘 기준 개인 업무 요약</div>
+          </div>
+        </div>
+        <div class="grid-4">
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background:#E8F5F0">
+              <span class="ic" style="width:18px;height:18px;color:#629584"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            </div>
+            <div class="kpi-label">오늘 마감</div>
+            <div class="kpi-row">
+              <div class="kpi-value">3</div>
+              <span class="kpi-badge warn">⚠ 주의</span>
+            </div>
+            <div class="kpi-sub">미완료 티켓 포함</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background:#FEE2E2">
+              <span class="ic" style="width:18px;height:18px;color:#DC2626"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            </div>
+            <div class="kpi-label">오버듀</div>
+            <div class="kpi-row">
+              <div class="kpi-value" style="color:#DC2626">2</div>
+              <span class="kpi-badge down">즉시 처리</span>
+            </div>
+            <div class="kpi-sub">마감 초과 미완료</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background:#FEF3C7">
+              <span class="ic" style="width:18px;height:18px;color:#D97706"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            </div>
+            <div class="kpi-label">진행 중</div>
+            <div class="kpi-row">
+              <div class="kpi-value">5</div>
+              <span class="kpi-badge neutral">In Progress</span>
+            </div>
+            <div class="kpi-sub">WIP 권장: 3개 이하</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon" style="background:#D1FAE5">
+              <span class="ic" style="width:18px;height:18px;color:#065F46"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </div>
+            <div class="kpi-label">이번 주 완료</div>
+            <div class="kpi-row">
+              <div class="kpi-value">11</div>
+              <span class="kpi-badge up">↑ +3</span>
+            </div>
+            <div class="kpi-sub">지난 주 대비</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 2. 번다운 차트 ── -->
+      <section class="section sec-anchor" id="section-burndown">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+              번다운 차트
+            </div>
+            <div class="section-desc">Goal 기준 남은 작업량 추이 — 이상선 대비 실제 소진율 비교</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">MVP 출시 · 번다운 차트</div>
+              <div class="card-subtitle">2025.02.01 – 2025.03.14 · 전체 42일 스코프</div>
+            </div>
+            <div style="display:flex;gap:var(--sp-xl);align-items:flex-start">
+              <div class="stat-item">
+                <div class="stat-val">48</div>
+                <div class="stat-lbl">전체 티켓</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-val">14</div>
+                <div class="stat-lbl">남은 티켓</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-val" style="color:#629584">34</div>
+                <div class="stat-lbl">완료 티켓</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-val" style="color:#D97706">3월 18일</div>
+                <div class="stat-lbl">예상 완료일</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#8993A4;opacity:.5;border:2px dashed #8993A4;background:transparent;width:20px;height:2px;border-radius:0;border-top:2px dashed #8993A4;align-self:center"></div><span>이상선</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#629584"></div><span>실제 소진</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#EF4444;opacity:.3;border-radius:2px"></div><span>스코프 증가</span></div>
+            </div>
+            <div class="chart-wrap" style="height:280px">
+              <canvas id="chartBurndown"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 3. CFD ── -->
+      <section class="section sec-anchor" id="section-cfd">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-8"/></svg></span>
+              CFD (Cumulative Flow Diagram)
+            </div>
+            <div class="section-desc">상태별 티켓 누적 흐름 — 밴드 두께로 병목 구간 파악</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">MVP 출시 · 누적 흐름 다이어그램</div>
+              <div class="card-subtitle">2025.02.01 – 2025.03.07 · 상태 이력 기반</div>
+            </div>
+            <div style="display:flex;gap:var(--sp-xl)">
+              <div class="stat-item">
+                <div class="stat-val">1.2일</div>
+                <div class="stat-lbl">평균 리드타임</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-val" style="color:#629584">1.8일</div>
+                <div class="stat-lbl">평균 사이클타임</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-val" style="color:#D97706">5</div>
+                <div class="stat-lbl">현재 WIP</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#8993A4"></div><span>Backlog</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div><span>TODO</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div><span>In Progress</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#629584"></div><span>Done</span></div>
+            </div>
+            <div class="chart-wrap" style="height:280px">
+              <canvas id="chartCfd"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 4. 처리량 + 사이클타임 ── -->
+      <section class="section sec-anchor" id="section-throughput">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+              처리량 (Throughput)
+            </div>
+            <div class="section-desc">주별 완료 티켓 수 — 팀 생산성 추세</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">주별 완료 티켓</div>
+                <div class="card-subtitle">최근 4주 · 전체 멤버</div>
+              </div>
+              <div>
+                <div class="stat-val" style="font-size:20px">8.5</div>
+                <div class="stat-lbl">주간 평균</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:220px">
+                <canvas id="chartThroughput"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">사이클 타임 분포</div>
+                <div class="card-subtitle">TODO 진입 → Done 완료까지 소요일</div>
+              </div>
+              <div>
+                <div class="stat-val" style="font-size:20px">1.8일</div>
+                <div class="stat-lbl">중앙값</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:220px">
+                <canvas id="chartCycleTime"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 5. 담당자별 분포 ── -->
+      <section class="section sec-anchor" id="section-workload">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+              담당자별 업무 분포
+            </div>
+            <div class="section-desc">멤버별 상태 구성 비율 — 과부하 및 유휴 탐지</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">멤버별 티켓 현황</div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;gap:var(--sp-lg);margin-bottom:var(--sp-md);font-size:var(--text-small);color:var(--text-muted)">
+                <div style="flex:0 0 100px"></div>
+                <div style="flex:2;text-align:center">상태 비율</div>
+                <div style="flex:0 0 120px;display:flex;gap:var(--sp-sm);justify-content:flex-end">
+                  <span style="min-width:32px;text-align:center">TODO</span>
+                  <span style="min-width:32px;text-align:center">진행</span>
+                  <span style="min-width:32px;text-align:center">완료</span>
+                </div>
+              </div>
+              <!-- Member rows -->
+              <div id="memberRows"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">담당자별 티켓 수 (상태별)</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartWorkload"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 6. Goal 진척률 ── -->
+      <section class="section sec-anchor" id="section-goal">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+              Goal 진척률 대시보드
+            </div>
+            <div class="section-desc">진행 중인 Goal의 하위 티켓 완료 현황 — 기한 대비 위험도</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Goal별 진척 현황</div>
+            </div>
+            <div class="card-body">
+              <div class="goal-list" id="goalList"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Goal 완료율 비교</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartGoal"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 7. 오버듀 분석 ── -->
+      <section class="section sec-anchor" id="section-overdue">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#DC2626"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+              오버듀 분석
+            </div>
+            <div class="section-desc">마감 초과 패턴 분석 — 우선순위별 / 담당자별</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">우선순위별 오버듀 비율</div>
+                <div class="card-subtitle">전체 오버듀 7건 기준</div>
+              </div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;gap:var(--sp-xl)">
+              <div class="chart-wrap" style="height:200px;width:200px;flex-shrink:0">
+                <canvas id="chartOverduePie"></canvas>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:var(--text-body2);color:var(--text-secondary);margin-bottom:var(--sp-md);font-weight:var(--fw-medium)">우선순위별 분포</div>
+                <div id="overdueBreakdown"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">담당자별 오버듀 티켓 수</div>
+                <div class="card-subtitle">즉시 조치가 필요한 멤버 파악</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="overdueMembers"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 8. 우선순위 분포 ── -->
+      <section class="section sec-anchor" id="section-priority">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span>
+              우선순위 분포
+            </div>
+            <div class="section-desc">전체 티켓의 우선순위 구성 비율 — CRITICAL 인플레이션 탐지</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">현재 미완료 티켓 우선순위 분포</div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;gap:var(--sp-xl)">
+              <div class="chart-wrap" style="height:200px;width:200px;flex-shrink:0">
+                <canvas id="chartPriorityDoughnut"></canvas>
+              </div>
+              <div style="flex:1">
+                <div id="priorityLegend"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">우선순위 × 상태 매트릭스</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:220px">
+                <canvas id="chartPriorityMatrix"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 9. 라벨별 현황 ── -->
+      <section class="section sec-anchor" id="section-label">
+        <div class="section-head">
+          <div>
+            <div class="section-title">
+              <span class="ic" style="width:16px;height:16px;color:#629584"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+              라벨별 티켓 현황
+            </div>
+            <div class="section-desc">라벨(영역)별 작업 집중도 — Bug 누적 여부 확인</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">라벨별 상태 구성</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartLabel"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">라벨별 오버듀 비율</div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartLabelOverdue"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main><!-- /content -->
+  </div><!-- /main-area -->
+
+  <footer class="footer">
+    <span>Tika © 2025 · 통계 대시보드 v0.1</span>
+  </footer>
+</div><!-- /app -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   Chart.js global defaults — Tika style
+═══════════════════════════════════════════════ */
+Chart.defaults.font.family = "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#8993A4';
+Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.tooltip.backgroundColor = '#2C3E50';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 6;
+Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 12 };
+Chart.defaults.plugins.tooltip.bodyFont = { size: 11 };
+
+const ACCENT = '#629584';
+const C_BACKLOG = '#8993A4';
+const C_TODO = '#3B82F6';
+const C_INPROG = '#F59E0B';
+const C_DONE = '#629584';
+const BORDER = '#DFE1E6';
+
+const labels7w = ['2/3','2/10','2/17','2/24','3/3','3/7'];
+
+/* ─────────────────────────────────────────────
+   1. BURNDOWN
+───────────────────────────────────────────── */
+(function() {
+  const days = ['2/1','2/5','2/10','2/15','2/20','2/25','3/1','3/5','3/7'];
+  const ideal = [48, 41, 34, 27, 20, 14, 8, 3, 0];
+  const actual = [48, 44, 38, 32, 28, 22, 18, 14, null];
+  const ctx = document.getElementById('chartBurndown').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        {
+          label: '이상선',
+          data: ideal,
+          borderColor: '#C4C9D1',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        },
+        {
+          label: '실제 소진',
+          data: actual,
+          borderColor: ACCENT,
+          borderWidth: 2.5,
+          backgroundColor: 'rgba(98,149,132,0.08)',
+          pointBackgroundColor: ACCENT,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.3,
+          spanGaps: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER } },
+        y: {
+          min: 0, max: 52,
+          grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER },
+          ticks: { stepSize: 10 },
+          title: { display: true, text: '남은 티켓 수', font: { size: 11 }, color: '#8993A4' }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}건`
+          }
+        }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   2. CFD
+───────────────────────────────────────────── */
+(function() {
+  const days = ['2/1','2/5','2/10','2/15','2/20','2/25','3/1','3/5','3/7'];
+  const ctx = document.getElementById('chartCfd').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Done',        data: [0, 3, 7, 12, 18, 24, 29, 33, 34], fill: true, backgroundColor: 'rgba(98,149,132,0.65)', borderColor: 'rgba(98,149,132,0.8)', borderWidth: 1, tension: 0.4, pointRadius: 0 },
+        { label: 'In Progress', data: [2, 4, 5, 6, 5, 6, 7, 6, 5],       fill: true, backgroundColor: 'rgba(245,158,11,0.65)', borderColor: 'rgba(245,158,11,0.8)',  borderWidth: 1, tension: 0.4, pointRadius: 0 },
+        { label: 'TODO',        data: [6, 8, 10, 9, 10, 8, 6, 5, 5],      fill: true, backgroundColor: 'rgba(59,130,246,0.65)', borderColor: 'rgba(59,130,246,0.8)',  borderWidth: 1, tension: 0.4, pointRadius: 0 },
+        { label: 'Backlog',     data: [40, 33, 26, 21, 15, 10, 6, 4, 4],  fill: true, backgroundColor: 'rgba(137,147,164,0.65)', borderColor: 'rgba(137,147,164,0.8)', borderWidth: 1, tension: 0.4, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER }, stacked: false },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER }, stacked: false,
+          title: { display: true, text: '누적 티켓 수', font: { size: 11 }, color: '#8993A4' }
+        }
+      },
+      plugins: {
+        tooltip: { mode: 'index', intersect: false }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   3. THROUGHPUT (Weekly)
+───────────────────────────────────────────── */
+(function() {
+  const ctx = document.getElementById('chartThroughput').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['2월 1주','2월 2주','2월 3주','2월 4주','3월 1주'],
+      datasets: [{
+        label: '완료 티켓',
+        data: [6, 9, 8, 11, 8],
+        backgroundColor: 'rgba(98,149,132,0.75)',
+        borderColor: ACCENT,
+        borderWidth: 0,
+        borderRadius: 4,
+        hoverBackgroundColor: ACCENT,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, border: { color: BORDER } },
+        y: { min: 0, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER }, ticks: { stepSize: 3 } }
+      },
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw}건 완료` } }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   4. CYCLE TIME
+───────────────────────────────────────────── */
+(function() {
+  const ctx = document.getElementById('chartCycleTime').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['0.5일 이하','1일','1.5일','2일','3일','4일','5일+'],
+      datasets: [{
+        label: '티켓 수',
+        data: [4, 9, 8, 6, 4, 2, 1],
+        backgroundColor: 'rgba(59,130,246,0.65)',
+        borderColor: '#3B82F6',
+        borderWidth: 0,
+        borderRadius: 4,
+        hoverBackgroundColor: '#3B82F6',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, border: { color: BORDER } },
+        y: { min: 0, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER }, ticks: { stepSize: 2 } }
+      },
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw}건` } }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   5. WORKLOAD — Member rows (HTML) + Chart
+───────────────────────────────────────────── */
+const members = [
+  { name: '홍길동', role: 'Frontend', color: '#7EB4A2', todo: 3, inprog: 5, done: 11, initials: '홍' },
+  { name: '김민수', role: 'Backend',  color: '#60A5FA', todo: 4, inprog: 3, done: 8,  initials: '김' },
+  { name: '이수연', role: 'Design',   color: '#A78BFA', todo: 2, inprog: 2, done: 9,  initials: '이' },
+  { name: '박지훈', role: 'Infra',    color: '#F97316', todo: 1, inprog: 1, done: 6,  initials: '박' },
+  { name: '최예린', role: 'Frontend', color: '#EC4899', todo: 5, inprog: 4, done: 7,  initials: '최' },
+];
+
+(function renderMemberRows() {
+  const container = document.getElementById('memberRows');
+  members.forEach(m => {
+    const total = m.todo + m.inprog + m.done;
+    const tp = p => ((p / total) * 100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'member-row';
+    row.innerHTML = `
+      <div class="member-av" style="background:${m.color}">${m.initials}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}</div>
+        <div class="member-role">${m.role}</div>
+      </div>
+      <div class="member-bars">
+        <div class="member-bar-seg" style="width:${tp(m.todo)}%;background:${C_TODO};opacity:.8"></div>
+        <div class="member-bar-seg" style="width:${tp(m.inprog)}%;background:${C_INPROG};opacity:.8"></div>
+        <div class="member-bar-seg" style="width:${tp(m.done)}%;background:${C_DONE};opacity:.8"></div>
+      </div>
+      <div class="member-counts">
+        <div class="mc"><div class="mc-n" style="color:${C_TODO}">${m.todo}</div><div class="mc-l">TODO</div></div>
+        <div class="mc"><div class="mc-n" style="color:${C_INPROG}">${m.inprog}</div><div class="mc-l">진행</div></div>
+        <div class="mc"><div class="mc-n" style="color:${C_DONE}">${m.done}</div><div class="mc-l">완료</div></div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+})();
+
+(function() {
+  const ctx = document.getElementById('chartWorkload').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: members.map(m => m.name),
+      datasets: [
+        { label: 'TODO',       data: members.map(m => m.todo),   backgroundColor: 'rgba(59,130,246,0.75)',  borderRadius: 0 },
+        { label: 'In Progress',data: members.map(m => m.inprog), backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 0 },
+        { label: 'Done',       data: members.map(m => m.done),   backgroundColor: 'rgba(98,149,132,0.75)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10, padding: 12, font: { size: 11 } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color: BORDER } },
+        y: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER } }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   6. GOAL PROGRESS — HTML bars + Chart
+───────────────────────────────────────────── */
+const goals = [
+  { name: 'MVP 출시',         done: 34, total: 48, due: '3/14', status: 'warn' },
+  { name: '칸반 보드 핵심 기능', done: 18, total: 20, due: '3/07', status: 'green' },
+  { name: '사용자 인증 시스템',  done: 8,  total: 14, due: '3/14', status: 'warn' },
+  { name: '알림 시스템',       done: 3,  total: 10, due: '3/20', status: 'danger' },
+  { name: 'MCP 서버 통합',     done: 2,  total: 8,  due: '3/28', status: 'green' },
+];
+
+(function renderGoalList() {
+  const container = document.getElementById('goalList');
+  goals.forEach(g => {
+    const pct = Math.round((g.done / g.total) * 100);
+    const item = document.createElement('div');
+    item.className = 'goal-item';
+    item.innerHTML = `
+      <div class="goal-meta">
+        <div class="goal-name">
+          <span class="goal-type-badge">G</span>
+          <span class="goal-name-text">${g.name}</span>
+        </div>
+        <div class="goal-stats">${g.done}/${g.total}건 · ${pct}%</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${g.status}" style="width:${pct}%"></div>
+      </div>
+      <div class="goal-due${g.status === 'danger' ? ' overdue' : ''}">
+        <span class="ic" style="width:11px;height:11px"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        마감: 2025.${g.due}${g.status === 'danger' ? ' · 위험' : g.status === 'warn' ? ' · 주의' : ''}
+      </div>
+    `;
+    container.appendChild(item);
+  });
+})();
+
+(function() {
+  const ctx = document.getElementById('chartGoal').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: goals.map(g => g.name.length > 10 ? g.name.slice(0,10)+'…' : g.name),
+      datasets: [
+        { label: '완료',   data: goals.map(g => g.done),            backgroundColor: 'rgba(98,149,132,0.75)', borderRadius: 0 },
+        { label: '미완료', data: goals.map(g => g.total - g.done),  backgroundColor: 'rgba(223,225,230,0.8)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10, padding: 12, font: { size: 11 } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER } },
+        y: { stacked: true, grid: { display: false }, border: { color: BORDER }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   7. OVERDUE ANALYSIS
+───────────────────────────────────────────── */
+(function() {
+  const ctx = document.getElementById('chartOverduePie').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['긴급', '높음', '중간', '낮음'],
+      datasets: [{
+        data: [2, 3, 1, 1],
+        backgroundColor: ['#DC2626','#C2410C','#A16207','#6B7280'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}건` } }
+      }
+    }
+  });
+
+  // Breakdown HTML
+  const items = [
+    { label: '긴급', count: 2, max: 7, cls: 'b-crit', color: '#DC2626' },
+    { label: '높음', count: 3, max: 7, cls: 'b-high', color: '#C2410C' },
+    { label: '중간', count: 1, max: 7, cls: 'b-med',  color: '#A16207' },
+    { label: '낮음', count: 1, max: 7, cls: 'b-low',  color: '#6B7280' },
+  ];
+  const bd = document.getElementById('overdueBreakdown');
+  items.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'overdue-row';
+    row.innerHTML = `
+      <span class="b ${it.cls}">${it.label}</span>
+      <div class="overdue-bar-wrap"><div class="overdue-bar-fill" style="width:${(it.count/it.max*100).toFixed(0)}%;background:${it.color}"></div></div>
+      <span class="overdue-count" style="color:${it.color}">${it.count}</span>
+    `;
+    bd.appendChild(row);
+  });
+
+  // Overdue by member
+  const mOverdue = [
+    { name: '최예린', color: '#EC4899', count: 3, initials: '최' },
+    { name: '홍길동', color: '#7EB4A2', count: 2, initials: '홍' },
+    { name: '김민수', color: '#60A5FA', count: 1, initials: '김' },
+    { name: '박지훈', color: '#F97316', count: 1, initials: '박' },
+  ];
+  const om = document.getElementById('overdueMembers');
+  mOverdue.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'member-row';
+    row.innerHTML = `
+      <div class="member-av" style="background:${m.color}">${m.initials}</div>
+      <div class="member-info"><div class="member-name">${m.name}</div></div>
+      <div class="overdue-bar-wrap" style="flex:3;height:8px">
+        <div class="overdue-bar-fill" style="width:${(m.count/3*100).toFixed(0)}%"></div>
+      </div>
+      <span class="overdue-count">${m.count}건</span>
+    `;
+    om.appendChild(row);
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   8. PRIORITY DISTRIBUTION
+───────────────────────────────────────────── */
+(function() {
+  const ctx = document.getElementById('chartPriorityDoughnut').getContext('2d');
+  const data = { labels: ['긴급', '높음', '중간', '낮음'], values: [4, 9, 16, 5] };
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values,
+        backgroundColor: ['#DC2626','#EA580C','#D97706','#9CA3AF'],
+        borderWidth: 2, borderColor: '#fff', hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}건 (${((ctx.raw/34)*100).toFixed(0)}%)` } } }
+    }
+  });
+
+  const total = data.values.reduce((a, b) => a + b, 0);
+  const colors = ['#DC2626','#EA580C','#D97706','#9CA3AF'];
+  const bgs = ['#FEE2E2','#FFEDD5','#FEF9C3','#F3F4F6'];
+  const container = document.getElementById('priorityLegend');
+  data.labels.forEach((l, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #DFE1E6';
+    if (i === data.labels.length - 1) item.style.borderBottom = 'none';
+    item.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:10px;height:10px;border-radius:2px;background:${colors[i]}"></div>
+        <span style="font-size:12px;color:#2C3E50;font-weight:500">${l}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:${colors[i]}">${data.values[i]}</span>
+        <span style="font-size:11px;color:#8993A4;min-width:32px">${((data.values[i]/total)*100).toFixed(0)}%</span>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+
+  // Priority × Status matrix
+  const ctx2 = document.getElementById('chartPriorityMatrix').getContext('2d');
+  new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: ['긴급', '높음', '중간', '낮음'],
+      datasets: [
+        { label: 'Backlog', data: [0, 1, 4, 2], backgroundColor: 'rgba(137,147,164,0.7)', borderRadius: 0 },
+        { label: 'TODO',    data: [1, 3, 5, 1], backgroundColor: 'rgba(59,130,246,0.7)',   borderRadius: 0 },
+        { label: 'In Progress', data: [2, 4, 3, 0], backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 0 },
+        { label: 'Done',   data: [1, 1, 4, 2], backgroundColor: 'rgba(98,149,132,0.75)',  borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10, padding: 10, font: { size: 11 } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color: BORDER } },
+        y: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER } }
+      }
+    }
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   9. LABEL ANALYSIS
+───────────────────────────────────────────── */
+(function() {
+  const labelNames = ['Frontend','Backend','Design','Bug','Docs','Infra'];
+  const labelColors = ['#2b7fff','#00c950','#ad46ff','#fb2c36','#ffac6d','#615fff'];
+
+  const ctx1 = document.getElementById('chartLabel').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: labelNames,
+      datasets: [
+        { label: 'TODO',        data: [4, 3, 2, 5, 1, 2], backgroundColor: 'rgba(59,130,246,0.7)',   borderRadius: 0 },
+        { label: 'In Progress', data: [3, 2, 2, 2, 0, 1], backgroundColor: 'rgba(245,158,11,0.7)',  borderRadius: 0 },
+        { label: 'Done',        data: [8, 7, 5, 4, 3, 4], backgroundColor: 'rgba(98,149,132,0.75)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10, padding: 10, font: { size: 11 } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color: BORDER } },
+        y: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER } }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('chartLabelOverdue').getContext('2d');
+  new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: labelNames,
+      datasets: [{
+        label: '오버듀 티켓',
+        data: [2, 1, 0, 3, 0, 1],
+        backgroundColor: labelColors.map(c => c + 'BB'),
+        borderColor: labelColors,
+        borderWidth: 1,
+        borderRadius: 4,
+        hoverBackgroundColor: labelColors,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, border: { color: BORDER } },
+        y: { min: 0, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: BORDER }, ticks: { stepSize: 1 } }
+      },
+      plugins: { tooltip: { callbacks: { label: ctx => ` 오버듀: ${ctx.raw}건` } } }
+    }
+  });
+})();
+</script>
+</body>
+</html>

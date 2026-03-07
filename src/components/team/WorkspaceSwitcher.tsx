@@ -35,11 +35,12 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
   const current = workspaces.find((w) => w.id === currentWorkspaceId);
   // Use server-provided name as fallback to avoid flash of '워크스페이스' before API loads
   const currentName = current?.name ?? currentWorkspaceName ?? '워크스페이스';
+  const currentIconColor = current?.iconColor ?? '#629584';
 
   function handleSelect(ws: WorkspaceWithRole) {
     setOpen(false);
     if (ws.type === 'TEAM') {
-      router.push(`/team/${ws.id}`);
+      router.push(`/workspace/${ws.id}`);
     } else {
       router.push('/');
     }
@@ -70,7 +71,7 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
           style={{
             width: 28, height: 28,
             borderRadius: 6,
-            background: '#629584',
+            background: currentIconColor,
             color: '#fff',
             fontSize: 13,
             fontWeight: 700,
@@ -142,7 +143,7 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
                 style={{
                   width: 24, height: 24,
                   borderRadius: 4,
-                  background: ws.type === 'TEAM' ? '#629584' : '#8993A4',
+                  background: ws.iconColor ?? (ws.type === 'TEAM' ? '#629584' : '#8993A4'),
                   color: '#fff',
                   fontSize: 11,
                   fontWeight: 700,

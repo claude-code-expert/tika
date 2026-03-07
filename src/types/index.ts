@@ -169,6 +169,7 @@ export interface Workspace {
   description: string | null;
   ownerId: string;
   type: WorkspaceType; // Phase 4
+  iconColor: string | null;
   createdAt: string;
 }
 

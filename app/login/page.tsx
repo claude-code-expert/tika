@@ -1,71 +1,130 @@
-import { redirect } from 'next/navigation';
-import { auth, signIn } from '@/lib/auth';
+import { signIn } from '@/lib/auth';
+import { getLandingStats } from '@/db/queries/users';
+
+const AVATAR_COLORS = ['#7EB4A2', '#60A5FA', '#A78BFA', '#F97316', '#EC4899', '#14B8A6'];
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  let session = null;
-  try {
-    session = await auth();
-  } catch (err) {
-    console.error('[login] auth() 에러:', err);
-  }
-  if (session?.user) redirect('/');
-
   const { error } = await searchParams;
+  const { totalUsers, recentUsers } = await getLandingStats();
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]" style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif" }}>
       {/* Hero */}
       <section
-        className="relative flex w-full items-end justify-center bg-cover bg-center"
+        className="relative"
         style={{
-          backgroundImage: "url('/images/tika-banner-1920x1080.png')",
-          aspectRatio: '1920 / 1080',
-          maxHeight: '90vh',
+          width: 1200,
+          maxWidth: '100%',
+          margin: '0 auto',
+          padding: '30px 0 50px',
         }}
       >
-        {/* Bottom fade — masks the banner's bottom strip */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[12%] bg-gradient-to-t from-[#F8F9FB] to-transparent" />
+        {/* Hero SVG */}
+        <div style={{ position: 'relative', overflow: 'hidden' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/tika-hero2.svg" alt="Tika - Plan Simply. Ship Boldly." width={1200} height={630} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          {/* Edge fade overlays */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            boxShadow: 'inset 0 40px 30px -10px #F8F9FB, inset 0 -40px 30px -10px #F8F9FB, inset 40px 0 30px -10px #F8F9FB, inset -40px 0 30px -10px #F8F9FB',
+          }} />
+        </div>
 
-        {/* Google Sign-in CTA — bottom center */}
-        <div className="mb-[9%] flex flex-col items-center gap-3">
-          <form
-            action={async () => {
-              'use server';
-              await signIn('google', { redirectTo: '/' });
+        {/* Google Sign-in — overlays SVG CTA button (x:60 y:408 w:192 h:46 in 1200x630 viewBox) */}
+        <form
+          action={async () => {
+            'use server';
+            await signIn('google', { redirectTo: '/' });
+          }}
+          style={{
+            position: 'absolute',
+            left: 'calc(5% - 5px)',
+            top: 'calc(64.8% - 15px)',
+            width: 'calc(16% + 10px)',
+            height: 'calc(7.3% + 10px)',
+          }}
+        >
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: 8,
+            }}
+            aria-label="Google로 시작하기"
+          />
+        </form>
+
+        {/* Trust indicators — real data from DB */}
+        {totalUsers > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              left: '5%',
+              top: '76%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0,
             }}
           >
-            <button
-              type="submit"
-              className="flex items-center gap-3 rounded-lg bg-[#629584] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#527D6F] focus:outline-none focus:ring-2 focus:ring-[#629584] focus:ring-offset-2"
+            {recentUsers.map((user, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: user.bgcolor || AVATAR_COLORS[i % AVATAR_COLORS.length],
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#fff',
+                  border: '2px solid #F8F9FB',
+                  marginLeft: i > 0 ? -6 : 0,
+                  zIndex: recentUsers.length - i,
+                  position: 'relative',
+                }}
+              >
+                {user.name.charAt(0)}
+              </div>
+            ))}
+            <span
+              style={{
+                marginLeft: 8,
+                fontSize: 13,
+                color: '#5A6B7F',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              Google로 시작하기
-            </button>
-          </form>
+              {totalUsers.toLocaleString()}팀이 사용 중
+            </span>
+          </div>
+        )}
 
-          {/* Error state */}
-          {error && (
-            <div className="flex items-center gap-2 rounded-md border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-sm text-[#DC2626]">
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx={12} cy={12} r={10} />
-                <line x1={12} x2={12} y1={8} y2={12} />
-                <line x1={12} x2={12.01} y1={16} y2={16} />
-              </svg>
-              {error === 'AccessDenied'
-                ? '접근이 거부되었습니다. 다시 시도해주세요.'
-                : '인증에 실패했습니다. 다시 시도해주세요.'}
-            </div>
-          )}
-        </div>
+        {/* Error state */}
+        {error && (
+          <div
+            className="flex items-center gap-2 rounded-md border border-[#FECACA] bg-[#FEF2F2] px-4 py-2.5 text-sm text-[#DC2626]"
+            style={{ position: 'absolute', left: '5%', top: '73%' }}
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx={12} cy={12} r={10} />
+              <line x1={12} x2={12} y1={8} y2={12} />
+              <line x1={12} x2={12.01} y1={16} y2={16} />
+            </svg>
+            {error === 'AccessDenied'
+              ? '접근이 거부되었습니다. 다시 시도해주세요.'
+              : '인증에 실패했습니다. 다시 시도해주세요.'}
+          </div>
+        )}
       </section>
 
       {/* Feature Showcase */}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { WithdrawDialog } from '@/components/layout/WithdrawDialog';
 
 const COLOR_SWATCHES = [
   '#629584',
@@ -22,6 +23,7 @@ interface ProfileModalProps {
   initialDisplayName: string;
   initialColor: string;
   onSaved: (data: { displayName: string; color: string }) => void;
+  userEmail?: string;
 }
 
 export function ProfileModal({
@@ -31,11 +33,13 @@ export function ProfileModal({
   initialDisplayName,
   initialColor,
   onSaved,
+  userEmail,
 }: ProfileModalProps) {
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [color, setColor] = useState(initialColor);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
   const initials = displayName.slice(0, 2).toUpperCase() || '?';
 
@@ -68,6 +72,7 @@ export function ProfileModal({
   };
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title="프로필 설정" maxWidth={400}>
       <div style={{ padding: '24px' }}>
         {/* Avatar Preview */}
@@ -143,7 +148,7 @@ export function ProfileModal({
           >
             색상
           </label>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             {COLOR_SWATCHES.map((c) => (
               <button
                 key={c}
@@ -172,7 +177,28 @@ export function ProfileModal({
         {error && <p style={{ color: '#EF4444', fontSize: 13, marginBottom: 12 }}>{error}</p>}
 
         {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {userEmail && (
+            <button
+              type="button"
+              onClick={() => setShowWithdraw(true)}
+              style={{
+                height: 36,
+                padding: '0 16px',
+                border: 'none',
+                borderRadius: 6,
+                background: '#EF4444',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#fff',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              계정 탈퇴
+            </button>
+          )}
+          <div style={{ flex: 1 }} />
           <button
             type="button"
             onClick={onClose}
@@ -214,5 +240,14 @@ export function ProfileModal({
         </div>
       </div>
     </Modal>
+
+    {userEmail && showWithdraw && (
+      <WithdrawDialog
+        isOpen={showWithdraw}
+        onClose={() => setShowWithdraw(false)}
+        userEmail={userEmail}
+      />
+    )}
+    </>
   );
 }

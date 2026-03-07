@@ -29,7 +29,7 @@ export function InviteModalTrigger({ workspaceId }: InviteModalTriggerProps) {
         }}
       >
         <span style={{ fontSize: 16 }}>+</span>
-        팀원 초대
+        초대 링크 생성
       </button>
       {open && <InviteModal workspaceId={workspaceId} onClose={() => setOpen(false)} />}
     </>

@@ -18,7 +18,6 @@ export async function POST(
     }
 
     const { token } = await params;
-    const userEmail = session.user.email as string | undefined;
     const userId = session.user.id as string;
     const displayName = (session.user.name as string | null) ?? '사용자';
 
@@ -42,18 +41,6 @@ export async function POST(
       return NextResponse.json(
         { error: { code: 'INVITE_EXPIRED', message: '초대 링크가 만료되었습니다' } },
         { status: 400 },
-      );
-    }
-
-    if (!userEmail || userEmail.toLowerCase() !== invite.email.toLowerCase()) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 'EMAIL_MISMATCH',
-            message: '초대받은 이메일 주소와 로그인 계정이 일치하지 않습니다',
-          },
-        },
-        { status: 403 },
       );
     }
 

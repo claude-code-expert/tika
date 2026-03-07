@@ -154,12 +154,12 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
           return;
         }
 
-        setInviteWorkspaceId(data.member?.workspaceId ?? null);
+        setInviteWorkspaceId(data.workspaceId ?? null);
         setState('invite-success');
 
         // Auto-redirect to the team workspace
-        if (data.member?.workspaceId) {
-          setTimeout(() => router.push(`/team/${data.member.workspaceId}`), 1500);
+        if (data.workspaceId) {
+          setTimeout(() => router.push(`/team/${data.workspaceId}`), 1500);
         }
       } catch {
         setErrorMsg('초대 링크 처리 중 오류가 발생했습니다.');

@@ -73,7 +73,7 @@ function AnalyticsIcon() {
 
 function TrashIcon() {
   return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6" /><path d="M14 11v6" />
@@ -227,7 +227,7 @@ export function TeamSidebar({ workspaceId, role, workspaceName }: TeamSidebarPro
         </nav>
 
         {/* Trash link */}
-        <div style={{ borderTop: '1px solid #DFE1E6', padding: '8px 0', flexShrink: 0 }}>
+        <div style={{ borderTop: '1px solid #DFE1E6', flexShrink: 0 }}>
           {(() => {
             const trashHref = `${base}/trash`;
             const isActive = pathname.startsWith(trashHref);
@@ -240,8 +240,9 @@ export function TeamSidebar({ workspaceId, role, workspaceName }: TeamSidebarPro
                   alignItems: 'center',
                   justifyContent: iconOnly ? 'center' : 'flex-start',
                   gap: iconOnly ? 0 : 8,
-                  padding: iconOnly ? '10px 0' : '8px 16px',
-                  fontSize: 13,
+                  height: 30,
+                  padding: iconOnly ? '0' : '0 16px',
+                  fontSize: 11,
                   color: isActive ? '#629584' : '#5A6B7F',
                   fontWeight: isActive ? 500 : 400,
                   background: isActive ? '#E8F5F0' : 'transparent',

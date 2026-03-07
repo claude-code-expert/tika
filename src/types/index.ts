@@ -109,6 +109,8 @@ export interface Ticket {
   position: number;
   startDate: string | null; // YYYY-MM-DD
   dueDate: string | null; // YYYY-MM-DD
+  plannedStartDate: string | null; // YYYY-MM-DD
+  plannedEndDate: string | null; // YYYY-MM-DD
   parentId: number | null;
   assigneeId: number | null;
   sprintId: number | null; // Phase 4
@@ -197,7 +199,7 @@ export interface WorkspaceInvite {
   workspaceId: number;
   invitedBy: number;
   token: string;
-  email: string;
+  email: string | null;
   role: 'MEMBER' | 'VIEWER';
   status: InviteStatus;
   expiresAt: string;
@@ -313,11 +315,13 @@ export interface LabelAnalytic {
 export interface MemberWorkload {
   memberId: number;
   displayName: string;
+  email: string | null;
   color: string;
   role: TeamRole;
   assigned: number;
   inProgress: number;
   completed: number;
+  overdue: number;
   byStatus: Record<TicketStatus, number>;
 }
 

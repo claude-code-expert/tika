@@ -157,7 +157,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
               <select
                 value={selectedGoalId === 'all' ? 'all' : String(selectedGoalId)}
                 onChange={(e) => setSelectedGoalId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                style={{ height: 34, paddingLeft: 12, paddingRight: 32, fontFamily: 'inherit', fontSize: 12, fontWeight: 600, color: '#2C3E50', background: '#F8F9FB', border: '1px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', transition: 'border-color .15s' }}
+                style={{ height: 34, paddingLeft: 12, paddingRight: 32, fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, color: '#2C3E50', background: '#F8F9FB', border: '1px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', transition: 'border-color .15s' }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = '#629584')}
                 onBlur={(e)  => (e.currentTarget.style.borderColor = '#DFE1E6')}
               >

@@ -94,6 +94,8 @@ export const tickets = pgTable(
     position: integer('position').notNull().default(0),
     startDate: date('start_date', { mode: 'string' }),
     dueDate: date('due_date', { mode: 'string' }),
+    plannedStartDate: date('planned_start_date', { mode: 'string' }),
+    plannedEndDate: date('planned_end_date', { mode: 'string' }),
     parentId: integer('parent_id'), // self-reference — handled at app level
     assigneeId: integer('assignee_id').references(() => members.id, { onDelete: 'set null' }),
     sprintId: integer('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
@@ -243,7 +245,7 @@ export const workspaceInvites = pgTable(
       .notNull()
       .references(() => members.id, { onDelete: 'cascade' }),
     token: uuid('token').notNull().unique().defaultRandom(),
-    email: varchar('email', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }),
     role: varchar('role', { length: 10 }).notNull(), // 'MEMBER' | 'VIEWER'
     status: varchar('status', { length: 10 }).notNull().default('PENDING'), // PENDING|ACCEPTED|REJECTED|EXPIRED
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),

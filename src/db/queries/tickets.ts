@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, count, sql, ne } from 'drizzle-orm';
+import { eq, and, asc, desc, count, sql, ne, inArray } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { tickets, checklistItems, ticketLabels, labels, members, ticketAssignees, workspaces } from '@/db/schema';
 import type { Ticket, TicketWithMeta, BoardData, TicketStatus } from '@/types/index';
@@ -17,6 +17,8 @@ function toTicket(row: typeof tickets.$inferSelect): Ticket {
     position: row.position,
     startDate: row.startDate ?? null,
     dueDate: row.dueDate ?? null,
+    plannedStartDate: row.plannedStartDate ?? null,
+    plannedEndDate: row.plannedEndDate ?? null,
     parentId: row.parentId ?? null,
     assigneeId: row.assigneeId ?? null,
     sprintId: row.sprintId ?? null,
@@ -135,7 +137,7 @@ export async function getBoardData(workspaceId: number): Promise<BoardData> {
 
     const meta: TicketWithMeta = {
       ...ticket,
-      isOverdue: isOverdue(ticket.dueDate, ticket.status),
+      isOverdue: isOverdue(ticket.plannedEndDate, ticket.status),
       labels: ticketLabelsData,
       checklistItems: checklist,
       assignees: assigneeRows.map(toMember),
@@ -227,7 +229,7 @@ export async function getWbsTickets(workspaceId: number): Promise<TicketWithMeta
 
     return {
       ...ticket,
-      isOverdue: isOverdue(ticket.dueDate, ticket.status),
+      isOverdue: isOverdue(ticket.plannedEndDate, ticket.status),
       labels: ticketLabelsData,
       checklistItems: checklist,
       assignees: assigneeRows.map(toMember),
@@ -278,7 +280,7 @@ export async function getTicketById(
 
   return {
     ...ticket,
-    isOverdue: isOverdue(ticket.dueDate, ticket.status),
+    isOverdue: isOverdue(ticket.plannedEndDate, ticket.status),
     labels: ticketLabelRows.map((r) => ({
       id: r.label.id,
       workspaceId: r.label.workspaceId,
@@ -309,6 +311,8 @@ export async function createTicket(
     priority?: string;
     startDate?: string | null;
     dueDate?: string | null;
+    plannedStartDate?: string | null;
+    plannedEndDate?: string | null;
     parentId?: number | null;
     assigneeId?: number | null;
     sprintId?: number | null;
@@ -337,6 +341,8 @@ export async function createTicket(
       position,
       startDate: data.startDate ?? null,
       dueDate: data.dueDate ?? null,
+      plannedStartDate: data.plannedStartDate ?? null,
+      plannedEndDate: data.plannedEndDate ?? null,
       parentId: data.parentId ?? null,
       assigneeId: data.assigneeId ?? null,
       sprintId: data.sprintId ?? null,
@@ -364,6 +370,8 @@ export async function updateTicket(
     priority: string;
     startDate: string | null;
     dueDate: string | null;
+    plannedStartDate: string | null;
+    plannedEndDate: string | null;
     parentId: number | null;
     assigneeId: number | null;
     completedAt: Date | null;
@@ -381,6 +389,8 @@ export async function updateTicket(
   if (data.priority !== undefined) updateData.priority = data.priority;
   if (data.startDate !== undefined) updateData.startDate = data.startDate;
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+  if (data.plannedStartDate !== undefined) updateData.plannedStartDate = data.plannedStartDate;
+  if (data.plannedEndDate !== undefined) updateData.plannedEndDate = data.plannedEndDate;
   if (data.parentId !== undefined) updateData.parentId = data.parentId;
   if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
   if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
@@ -504,7 +514,7 @@ export async function getDeletedTickets(workspaceId: number): Promise<TicketWith
 
     return {
       ...ticket,
-      isOverdue: isOverdue(ticket.dueDate, ticket.status),
+      isOverdue: isOverdue(ticket.plannedEndDate, ticket.status),
       labels: ticketLabelsData,
       checklistItems: checklist,
       assignees: assigneeRows.map(toMember),
@@ -514,12 +524,30 @@ export async function getDeletedTickets(workspaceId: number): Promise<TicketWith
   });
 }
 
+export async function restoreTicket(id: number, workspaceId: number): Promise<boolean> {
+  const result = await db
+    .update(tickets)
+    .set({ deleted: false })
+    .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
+    .returning({ id: tickets.id });
+  return result.length > 0;
+}
+
 export async function permanentDeleteTicket(id: number, workspaceId: number): Promise<boolean> {
   const result = await db
     .delete(tickets)
     .where(and(eq(tickets.id, id), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
     .returning({ id: tickets.id });
   return result.length > 0;
+}
+
+export async function bulkPermanentDeleteTickets(ids: number[], workspaceId: number): Promise<number> {
+  if (ids.length === 0) return 0;
+  const result = await db
+    .delete(tickets)
+    .where(and(inArray(tickets.id, ids), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, true)))
+    .returning({ id: tickets.id });
+  return result.length;
 }
 
 export async function getTicketsDueTomorrow(workspaceId: number): Promise<Ticket[]> {
@@ -533,7 +561,7 @@ export async function getTicketsDueTomorrow(workspaceId: number): Promise<Ticket
     .where(
       and(
         eq(tickets.workspaceId, workspaceId),
-        eq(tickets.dueDate, tomorrowStr),
+        eq(tickets.plannedEndDate, tomorrowStr),
         ne(tickets.status, 'DONE'),
         eq(tickets.deleted, false),
       ),

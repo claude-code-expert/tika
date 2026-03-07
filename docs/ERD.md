@@ -145,8 +145,10 @@ entity "**tickets**" as tickets {
   * priority       : VARCHAR(10)  DEFAULT 'MEDIUM'
   .. LOW | MEDIUM | HIGH | CRITICAL ..
   * position       : INT          DEFAULT 0
-    start_date     : DATE
+    start_date     : DATE         <<auto: IN_PROGRESS 전환 시>>
     due_date       : DATE
+    planned_start_date : DATE    <<계획 시작일>>
+    planned_end_date   : DATE    <<계획 종료일>>
     parent_id      : INT          <<self-ref: GOAL>STORY>FEATURE>TASK>>
     assignee_id    : INT          <<FK → members.id, ON DELETE SET NULL>>
     sprint_id      : INT          <<FK → sprints.id, ON DELETE SET NULL>>
@@ -487,8 +489,10 @@ Google OAuth로 인증된 사용자 정보를 저장한다.
 | status | `status` | VARCHAR(20) | NOT NULL | `'BACKLOG'` | `BACKLOG` \| `TODO` \| `IN_PROGRESS` \| `DONE` |
 | priority | `priority` | VARCHAR(10) | NOT NULL | `'MEDIUM'` | `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` |
 | position | `position` | INT | NOT NULL | `0` | 칼럼 내 정렬 순서 (gap-based) |
-| startDate | `start_date` | DATE | NULLABLE | NULL | 시작일 (YYYY-MM-DD) |
-| dueDate | `due_date` | DATE | NULLABLE | NULL | 마감일 (YYYY-MM-DD) |
+| startDate | `start_date` | DATE | NULLABLE | NULL | 실제 시작일 — IN_PROGRESS 전환 시 자동 설정 (YYYY-MM-DD) |
+| dueDate | `due_date` | DATE | NULLABLE | NULL | 실제 마감일 (YYYY-MM-DD) |
+| plannedStartDate | `planned_start_date` | DATE | NULLABLE | NULL | 계획 시작일 (YYYY-MM-DD) |
+| plannedEndDate | `planned_end_date` | DATE | NULLABLE | NULL | 계획 종료일 (YYYY-MM-DD) |
 | parentId | `parent_id` | INT | NULLABLE (self-ref) | NULL | 상위 티켓 (GOAL/STORY/FEATURE 계층용) |
 | assigneeId | `assignee_id` | INT | NULLABLE, **FK** → members(id) ON DELETE SET NULL | NULL | 담당자 |
 | sprintId | `sprint_id` | INT | NULLABLE, **FK** → sprints(id) ON DELETE SET NULL | NULL | 소속 스프린트 |

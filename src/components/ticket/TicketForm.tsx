@@ -86,8 +86,8 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [status, setStatus] = useState<string>(initialData?.status ?? 'BACKLOG');
   const [priority, setPriority] = useState<string>(initialData?.priority ?? 'MEDIUM');
-  const [startDate, setStartDate] = useState(initialData?.startDate ?? '');
-  const [dueDate, setDueDate] = useState(initialData?.dueDate ?? '');
+  const [startDate, setStartDate] = useState(initialData?.plannedStartDate ?? '');
+  const [dueDate, setDueDate] = useState(initialData?.plannedEndDate ?? '');
   const [parentId, setParentId] = useState<number | null>(initialData?.parentId ?? null);
   const [titleError, setTitleError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,8 +258,8 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         title: title.trim(),
         type: type as (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE],
         priority: priority as (typeof TICKET_PRIORITY)[keyof typeof TICKET_PRIORITY],
-        startDate: startDate || null,
-        dueDate: dueDate || null,
+        plannedStartDate: startDate || null,
+        plannedEndDate: dueDate || null,
         description: description || null,
         parentId: parentId ?? null,
         assigneeId: selectedAssigneeIds[0] ?? null,
@@ -445,7 +445,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
                     <button key={label.id} type="button"
                       onClick={() => handleLabelToggle(label.id)}
                       disabled={!isSelected && isAtLimit}
-                      style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 9px', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: !isSelected && isAtLimit ? 'not-allowed' : 'pointer', border: `1px solid ${label.color}`, background: isSelected ? `${label.color}18` : 'transparent', color: '#2C3E50', fontFamily: 'inherit', transition: 'opacity 0.15s, background 0.12s', opacity: !isSelected && isAtLimit ? 0.4 : 1 }}
+                      style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 9px', borderRadius: 4, fontSize: 11, fontWeight: isSelected ? 700 : 500, cursor: !isSelected && isAtLimit ? 'not-allowed' : 'pointer', border: isSelected ? `2px solid ${label.color}` : `1px solid ${label.color}55`, background: isSelected ? `${label.color}30` : 'transparent', color: isSelected ? label.color : '#2C3E50', fontFamily: 'inherit', transition: 'opacity 0.15s, background 0.12s, border 0.12s', opacity: !isSelected && isAtLimit ? 0.4 : 1, boxShadow: isSelected ? `0 0 0 1px ${label.color}40` : 'none' }}
                     >
                       {label.name}
                     </button>

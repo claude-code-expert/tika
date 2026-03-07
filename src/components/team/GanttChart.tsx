@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import type { Member } from '@/types/index';
+import { PriorityBadge, StatusBadge } from '@/components/ui/Chips';
 
 export interface GanttItem {
   id: number;
@@ -37,19 +38,6 @@ const TYPE_BADGE: Record<string, { bg: string; color: string; abbr: string }> = 
   TASK:    { bg: '#F3F4F6', color: '#6B7280', abbr: 'T' },
 };
 
-const PRIORITY_CHIP: Record<string, { bg: string; color: string; label: string }> = {
-  CRITICAL: { bg: '#FEE2E2', color: '#DC2626', label: 'CRITICAL' },
-  HIGH:     { bg: '#FEF3C7', color: '#D97706', label: 'HIGH' },
-  MEDIUM:   { bg: '#DBEAFE', color: '#2563EB', label: 'MEDIUM' },
-  LOW:      { bg: '#F3F4F6', color: '#6B7280', label: 'LOW' },
-};
-
-const STATUS_CHIP: Record<string, { bg: string; color: string; label: string }> = {
-  DONE:        { bg: '#D1FAE5', color: '#065F46', label: 'Done' },
-  IN_PROGRESS: { bg: '#FEF3C7', color: '#92400E', label: 'In Progress' },
-  TODO:        { bg: '#DBEAFE', color: '#1E40AF', label: 'TODO' },
-  BACKLOG:     { bg: '#F3F4F6', color: '#6B7280', label: 'Backlog' },
-};
 
 function parseDateStr(s: string | null): Date | null {
   if (!s) return null;
@@ -108,8 +96,15 @@ function getBarColor(item: GanttItem, todayStr: string) {
   return { bg: '#E5E7EB', border: '#D1D5DB' };
 }
 
+interface TooltipState {
+  item: GanttItem;
+  x: number;
+  y: number;
+}
+
 export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   // Center split: header (horizontal-only, hidden overflow) + body (full scroll)
   const centerHeaderRef  = useRef<HTMLDivElement>(null);
@@ -156,6 +151,8 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
     return {
       x: startIdx * DAY_W + 3,
       w: (endIdx - startIdx + 1) * DAY_W - 6,
+      startIdx,
+      endIdx,
       startClipped: startD < weekdays[0],
       endClipped:   endD   > weekdays[weekdays.length - 1],
     };
@@ -281,7 +278,7 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
       {/* ══ LEFT PANEL ══ */}
       <div style={{ width: LEFT_W, flexShrink: 0, borderRight: '2px solid #DFE1E6', display: 'flex', flexDirection: 'column', zIndex: 10, background: '#fff' }}>
         {/* Header */}
-        <div style={{ height: HEADER_H, display: 'flex', alignItems: 'center', padding: '0 12px', background: '#F8F9FB', borderBottom: '1px solid #DFE1E6', fontSize: 12, fontWeight: 600, color: '#5A6B7F', flexShrink: 0 }}>
+        <div style={{ height: HEADER_H, display: 'flex', alignItems: 'center', padding: '0 12px', background: '#F8F9FB', borderBottom: '1px solid #DFE1E6', fontSize: '11px', fontWeight: 600, color: '#5A6B7F', flexShrink: 0 }}>
           작업 항목
         </div>
         {/* Body */}
@@ -324,11 +321,14 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
           <div style={{ width: timelineW }}>
             {/* Month row */}
             <div style={{ display: 'flex', height: 22, borderBottom: '1px solid #DFE1E6' }}>
-              {monthGroups.map((mg, i) => (
-                <div key={i} style={{ width: mg.count * DAY_W, minWidth: mg.count * DAY_W, display: 'flex', alignItems: 'center', paddingLeft: 4, fontSize: 12, fontWeight: 600, color: '#5A6B7F', borderRight: '1px solid #DFE1E6', flexShrink: 0 }}>
-                  {mg.label}
-                </div>
-              ))}
+              {monthGroups.map((mg, i) => {
+                const isPartialFirst = i === 0 && weekdays[0].getDate() !== 1;
+                return (
+                  <div key={i} style={{ width: mg.count * DAY_W, minWidth: mg.count * DAY_W, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: isPartialFirst ? '#C4C9D4' : '#5A6B7F', borderRight: '1px solid #DFE1E6', flexShrink: 0 }}>
+                    {isPartialFirst ? '이전' : mg.label}
+                  </div>
+                );
+              })}
             </div>
             {/* Day row */}
             <div style={{ display: 'flex', height: 30 }}>
@@ -371,14 +371,26 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
                   key={`cr-${item.id}-${i}`}
                   style={{ height: ROW_H, borderBottom: '1px solid #F1F3F6', position: 'relative', zIndex: 1, ...hRow(i) }}
                   onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
+                  onMouseLeave={() => { setHoveredRow(null); setTooltip(null); }}
+                  onMouseMove={bounds ? (e) => setTooltip({ item, x: e.clientX, y: e.clientY }) : undefined}
                 >
-                  {bounds && (
-                    <div
-                      style={{ position: 'absolute', left: bounds.x, width: bounds.w, top: (ROW_H - BAR_H) / 2, height: BAR_H, background: barColor.bg, border: `1px solid ${barColor.border}`, borderRadius: getBorderRadius(bounds), zIndex: 2 }}
-                      title={`${item.name}: ${item.startDate} ~ ${item.endDate}`}
-                    />
-                  )}
+                  {bounds && Array.from({ length: bounds.endIdx - bounds.startIdx + 1 }, (_, di) => {
+                    const idx = bounds.startIdx + di;
+                    const isFirst = di === 0;
+                    const isLast = di === bounds.endIdx - bounds.startIdx;
+                    const r = 4;
+                    const borderRadius = isFirst && isLast ? r
+                      : isFirst ? `${r}px 0 0 ${r}px`
+                      : isLast ? `0 ${r}px ${r}px 0`
+                      : 0;
+                    return (
+                      <div
+                        key={`bar-${item.id}-${di}`}
+                        style={{ position: 'absolute', left: idx * DAY_W + 2, width: DAY_W - 4, top: (ROW_H - BAR_H) / 2, height: BAR_H, background: barColor.bg, border: `1px solid ${barColor.border}`, borderRadius, zIndex: 2 }}
+                        title={`${item.name}: ${item.startDate} ~ ${item.endDate}`}
+                      />
+                    );
+                  })}
                 </div>
               );
             })}
@@ -386,12 +398,60 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
         </div>
       </div>
 
+      {/* ══ TOOLTIP ══ */}
+      {tooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            left: tooltip.x + 14,
+            top: tooltip.y - 10,
+            zIndex: 9999,
+            background: '#1F2937',
+            color: '#F9FAFB',
+            borderRadius: 8,
+            padding: '10px 12px',
+            fontSize: 12,
+            boxShadow: '0 4px 16px rgba(0,0,0,.25)',
+            pointerEvents: 'none',
+            maxWidth: 260,
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {tooltip.item.name}
+          </div>
+          <div style={{ color: '#9CA3AF', fontSize: 11, marginBottom: 4 }}>
+            {tooltip.item.startDate ?? '?'} ~ {tooltip.item.endDate ?? '?'}
+          </div>
+          {tooltip.item.assignees.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+              {tooltip.item.assignees.slice(0, 3).map((a) => (
+                <div
+                  key={a.id}
+                  style={{ width: 18, height: 18, borderRadius: '50%', background: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#fff' }}
+                  title={a.displayName}
+                >
+                  {a.displayName.charAt(0).toUpperCase()}
+                </div>
+              ))}
+              {tooltip.item.assignees.length > 3 && (
+                <span style={{ fontSize: 10, color: '#9CA3AF' }}>+{tooltip.item.assignees.length - 3}</span>
+              )}
+              <span style={{ fontSize: 11, color: '#D1D5DB', marginLeft: 4 }}>
+                {tooltip.item.assignees.slice(0, 3).map((a) => a.displayName).join(', ')}
+                {tooltip.item.assignees.length > 3 ? ` 외 ${tooltip.item.assignees.length - 3}명` : ''}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ══ RIGHT PANEL ══ */}
       <div style={{ width: RIGHT_W, flexShrink: 0, borderLeft: '2px solid #DFE1E6', display: 'flex', flexDirection: 'column', zIndex: 10, background: '#fff' }}>
         {/* Header */}
         <div style={{ height: HEADER_H, display: 'flex', alignItems: 'center', background: '#F8F9FB', borderBottom: '1px solid #DFE1E6', flexShrink: 0 }}>
           {[{ label: '담당자', w: 90 }, { label: '우선순위', w: 82 }, { label: '상태', w: 88 }].map((col) => (
-            <div key={col.label} style={{ width: col.w, minWidth: col.w, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#5A6B7F' }}>
+            <div key={col.label} style={{ width: col.w, minWidth: col.w, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: '#5A6B7F' }}>
               {col.label}
             </div>
           ))}
@@ -399,8 +459,6 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
         {/* Body */}
         <div ref={rightBodyRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
           {flatItems.map((item, i) => {
-            const pChip = PRIORITY_CHIP[item.priority] ?? PRIORITY_CHIP.MEDIUM;
-            const sChip = STATUS_CHIP[item.status]    ?? STATUS_CHIP.BACKLOG;
             const first = item.assignees[0];
             const extra = item.assignees.length - 1;
             return (
@@ -411,17 +469,17 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
                 onMouseLeave={() => setHoveredRow(null)}
               >
                 {/* Assignee */}
-                <div style={{ width: 90, minWidth: 90, display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 8, overflow: 'hidden' }}>
+                <div style={{ width: 90, minWidth: 90, display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 8, overflow: 'visible' }}>
                   {!first ? (
                     <span style={{ fontSize: 10, color: '#C4C9D4' }}>—</span>
                   ) : (
                     <>
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div style={{ position: 'relative', flexShrink: 0, width: 18, height: 18 }}>
                         <div style={{ width: 18, height: 18, borderRadius: '50%', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: first.color }}>
                           {first.displayName.charAt(0).toUpperCase()}
                         </div>
                         {extra > 0 && (
-                          <div style={{ position: 'absolute', top: -4, right: -8, width: 14, height: 14, borderRadius: '50%', fontSize: 7, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#8993A4', border: '1px solid #fff' }}>
+                          <div style={{ position: 'absolute', top: -3, right: -9, width: 14, height: 14, borderRadius: '50%', fontSize: 7, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#8993A4', border: '1px solid #fff', zIndex: 1 }}>
                             +{extra}
                           </div>
                         )}
@@ -434,15 +492,11 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
                 </div>
                 {/* Priority */}
                 <div style={{ width: 82, minWidth: 82, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 3, background: pChip.bg, color: pChip.color, letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>
-                    {pChip.label}
-                  </span>
+                  <PriorityBadge priority={item.priority} size="sm" />
                 </div>
                 {/* Status */}
                 <div style={{ width: 88, minWidth: 88, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 7px', borderRadius: 3, background: sChip.bg, color: sChip.color, whiteSpace: 'nowrap' }}>
-                    {sChip.label}
-                  </span>
+                  <StatusBadge status={item.status} size="sm" />
                 </div>
               </div>
             );

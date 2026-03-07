@@ -103,7 +103,7 @@ export function AppShell() {
         onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}>
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <Sidebar
             backlogTickets={displayBoard.board.BACKLOG}

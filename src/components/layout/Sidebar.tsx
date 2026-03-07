@@ -44,7 +44,7 @@ function SidebarTask({ ticket, onClick }: { ticket: TicketWithMeta; onClick?: ()
   };
 
   const type = TICKET_TYPE_META[ticket.type as keyof typeof TICKET_TYPE_META] ?? TICKET_TYPE_META.TASK;
-  const deadline = formatDeadline(ticket.dueDate, ticket.isOverdue);
+  const deadline = formatDeadline(ticket.plannedEndDate, ticket.isOverdue);
 
   return (
     <div

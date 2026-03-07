@@ -20,7 +20,7 @@ export function InviteAcceptClient({ token, isLoggedIn, userEmail }: InviteAccep
     setError(null);
     try {
       const res = await fetch(`/api/invites/${token}/accept`, { method: 'POST' });
-      const data = (await res.json()) as { workspaceId?: number; error?: { message: string } };
+      const data = (await res.json()) as { workspaceId?: number; error?: { code?: string; message: string } };
       if (!res.ok) {
         setError(data.error?.message ?? '수락에 실패했습니다');
         setState('idle');
@@ -39,7 +39,7 @@ export function InviteAcceptClient({ token, isLoggedIn, userEmail }: InviteAccep
     setError(null);
     try {
       await fetch(`/api/invites/${token}/reject`, { method: 'POST' });
-      router.push('/');
+      router.push('/login');
     } catch {
       setState('idle');
     }

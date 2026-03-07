@@ -1,27 +1,15 @@
 'use client';
 
+import { PRIORITY_CONFIG } from '@/components/ui/Chips';
+
 const PRIORITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
 const STATUSES = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE'] as const;
-
-const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: 'Crit',
-  HIGH: 'High',
-  MEDIUM: 'Med',
-  LOW: 'Low',
-};
 
 const STATUS_LABELS: Record<string, string> = {
   BACKLOG: 'Backlog',
   TODO: 'Todo',
   IN_PROGRESS: 'In Prog.',
   DONE: 'Done',
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#DC2626',
-  HIGH: '#C2410C',
-  MEDIUM: '#A16207',
-  LOW: '#6B7280',
 };
 
 type MatrixData = Record<string, Record<string, number>>;
@@ -101,10 +89,14 @@ export function PriorityStatusMatrix({ data }: PriorityStatusMatrixProps) {
                   padding: '8px 8px',
                   fontWeight: 600,
                   fontSize: 11,
-                  color: PRIORITY_COLORS[p],
+                  color: PRIORITY_CONFIG[p].color,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {PRIORITY_LABELS[p]}
+                <span style={{ fontWeight: 800, marginRight: 3, letterSpacing: -0.5 }}>
+                  {PRIORITY_CONFIG[p].icon}
+                </span>
+                {PRIORITY_CONFIG[p].label}
               </td>
               {STATUSES.map((s) => {
                 const val = data[p]?.[s] ?? 0;

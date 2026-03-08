@@ -14,6 +14,9 @@ jest.mock('@/db/queries/members', () => ({
   getAdminCount: jest.fn(), // deprecated alias, kept for backward compat
   getMembersWithEmailByWorkspace: jest.fn(),
 }));
+jest.mock('@/db/queries/users', () => ({
+  updateUserBgcolor: jest.fn().mockResolvedValue(undefined),
+}));
 
 import { NextRequest } from 'next/server';
 import { PATCH, DELETE } from '@/app/api/members/[id]/route';

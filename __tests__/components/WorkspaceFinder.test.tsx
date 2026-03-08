@@ -2,7 +2,7 @@
  * WorkspaceFinder component tests
  * - Plain text search flow
  * - Invite link (/invite/<uuid>) auto-accept flow
- * - /team/<id> URL join-request flow
+ * - /workspace/<id> URL join-request flow
  * - No results state
  * - Error state
  */
@@ -154,7 +154,7 @@ describe('WorkspaceFinder — invite link', () => {
   it('auto-accepts invite link and shows success message', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ member: { workspaceId: 42 } }),
+      json: async () => ({ workspaceId: 42 }),
     });
 
     renderFinder();
@@ -174,11 +174,11 @@ describe('WorkspaceFinder — invite link', () => {
     });
   });
 
-  it('redirects to /team/[id] after 1500ms', async () => {
+  it('redirects to /workspace/[id] after 1500ms', async () => {
     jest.useFakeTimers();
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ member: { workspaceId: 42 } }),
+      json: async () => ({ workspaceId: 42 }),
     });
 
     renderFinder();
@@ -191,7 +191,7 @@ describe('WorkspaceFinder — invite link', () => {
     });
 
     act(() => jest.runAllTimers());
-    expect(mockPush).toHaveBeenCalledWith('/team/42');
+    expect(mockPush).toHaveBeenCalledWith('/workspace/42');
     jest.useRealTimers();
   });
 
@@ -213,10 +213,10 @@ describe('WorkspaceFinder — invite link', () => {
   });
 });
 
-// ─── /team/<id> URL flow ─────────────────────────────────────────────────────
+// ─── /workspace/<id> URL flow ─────────────────────────────────────────────────────
 
-describe('WorkspaceFinder — /team/<id> URL', () => {
-  it('submits join request for /team/<id> URL', async () => {
+describe('WorkspaceFinder — /workspace/<id> URL', () => {
+  it('submits join request for /workspace/<id> URL', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ joinRequest: { id: 55 } }),
@@ -224,7 +224,7 @@ describe('WorkspaceFinder — /team/<id> URL', () => {
 
     renderFinder();
     const input = screen.getByPlaceholderText(/워크스페이스 이름 또는 초대 링크/);
-    typeInput(input, 'http://localhost/team/99');
+    typeInput(input, 'http://localhost/workspace/99');
     fireEvent.click(screen.getByRole('button', { name: /검색/ }));
 
     await waitFor(() => {

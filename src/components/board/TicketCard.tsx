@@ -47,8 +47,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
   const handleNavigate = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isDragging) return;
-    const prefix = (workspaceName ?? 'tkt').toLowerCase();
-    router.push(`/team/${ticket.workspaceId}/${prefix}-${ticket.id}`);
+    router.push(`/workspace/${ticket.workspaceId}/${ticket.id}`);
   };
 
   const style = useMemo(() => ({
@@ -139,6 +138,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
           {typeIndicator.abbr}
         </span>
         <span
+          onClick={handleNavigate}
           style={{
             fontSize: 13,
             fontWeight: 600,
@@ -149,6 +149,16 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
             whiteSpace: 'nowrap',
             flex: 1,
             minWidth: 0,
+            cursor: 'pointer',
+            transition: 'color 0.12s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--color-accent)';
+            e.currentTarget.style.textDecoration = ticket.status === 'DONE' ? 'line-through' : 'underline';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = ticket.status === 'DONE' ? 'var(--color-text-muted)' : 'var(--color-text-primary)';
+            e.currentTarget.style.textDecoration = ticket.status === 'DONE' ? 'line-through' : 'none';
           }}
         >
           {ticket.title}

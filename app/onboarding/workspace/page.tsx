@@ -24,20 +24,20 @@ export default async function WorkspaceOnboardingPage() {
   const userType = sessionUser.userType ?? null;
   const userId = sessionUser.id;
 
-  // Personal users don't belong here
-  if (userType === 'USER') redirect('/');
+  // Null type (onboarding not completed) — route to wizard first
+  if (userType === null) redirect('/onboarding');
 
-  // If already has a team workspace, go there directly
-  if (userType === 'WORKSPACE' && userId) {
-    const [membership] = await db
-      .select({ workspaceId: members.workspaceId })
+  // If user's primary is already a team workspace, skip this page
+  if (userId) {
+    const [primary] = await db
+      .select({ workspaceId: members.workspaceId, type: workspaces.type })
       .from(members)
       .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
-      .where(and(eq(members.userId, userId), eq(workspaces.type, 'TEAM')))
+      .where(and(eq(members.userId, userId), eq(members.isPrimary, true)))
       .limit(1);
 
-    if (membership) {
-      redirect(`/team/${membership.workspaceId}`);
+    if (primary?.type === 'TEAM') {
+      redirect(`/workspace/${primary.workspaceId}`);
     }
   }
 

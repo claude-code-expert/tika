@@ -107,7 +107,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
         const ws = data.workspace as WorkspaceWithRole;
         setTeamWorkspaces((prev) => [...prev, ws]);
         setIsTeamOpen(false);
-        router.push(`/team/${ws.id}`);
+        router.push(`/workspace/${ws.id}`);
       } else {
         const err = await res.json();
         alert(err?.error?.message ?? '생성 실패');
@@ -206,7 +206,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             </button>
           )}
           <Link
-            href={teamWorkspaces.length > 0 ? `/team/${teamWorkspaces[0].id}` : '/'}
+            href={teamWorkspaces.length > 0 ? `/workspace/${teamWorkspaces[0].id}` : '/'}
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
             <Image
@@ -338,13 +338,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           {/* Team workspace button + dropdown */}
           <div ref={teamRef} style={{ position: 'relative' }}>
             <button
-              aria-label="팀 워크스페이스"
-              title="팀 워크스페이스"
-              onClick={() => {
-                setIsNotifOpen(false);
-                setIsDropdownOpen(false);
-                setIsTeamOpen((prev) => !prev);
-              }}
+              aria-label="팀 워크스페이스 개설"
+              title="팀 워크스페이스 개설"
+              onClick={() => router.push('/onboarding/workspace')}
               style={{
                 width: 32,
                 height: 32,
@@ -473,7 +469,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                       {teamWorkspaces.map((ws) => (
                         <a
                           key={ws.id}
-                          href={`/team/${ws.id}`}
+                          href={`/workspace/${ws.id}`}
                           onClick={() => setIsTeamOpen(false)}
                           style={{
                             display: 'flex',
@@ -985,6 +981,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           initialDisplayName={displayName}
           initialColor={avatarColor}
           onSaved={handleProfileSaved}
+          userEmail={user?.email ?? undefined}
         />
       )}
     </>

@@ -131,7 +131,7 @@ export function CommentSection({
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-            {newText.length}/500 · Ctrl+Enter로 등록
+            {newText.length}/500
           </span>
           <button
             onClick={handleAdd}

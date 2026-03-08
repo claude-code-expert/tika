@@ -3,7 +3,7 @@ import Google from 'next-auth/providers/google';
 import { db } from '@/db/index';
 import { users, workspaces, members, labels } from '@/db/schema';
 import { DEFAULT_LABELS } from '@/lib/constants';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 async function createPersonalWorkspace(userId: string, userName: string) {
   const [newWorkspace] = await db
@@ -16,6 +16,7 @@ async function createPersonalWorkspace(userId: string, userName: string) {
     workspaceId: newWorkspace.id,
     displayName: userName,
     color: '#7EB4A2',
+    isPrimary: true,
   });
 
   await db.insert(labels).values(
@@ -27,6 +28,60 @@ async function createPersonalWorkspace(userId: string, userName: string) {
   );
 
   return newWorkspace;
+}
+
+export interface SessionUserData {
+  id: string;
+  userType: string | null;
+  workspaceId: number | null;
+  memberId: number | null;
+}
+
+/**
+ * Builds session user data from DB — always fresh, never from stale JWT.
+ * Returns null if the user no longer exists in DB (e.g. after DB reset),
+ * which signals the session callback to invalidate the session.
+ */
+export async function buildSessionUser(tokenSub: string): Promise<SessionUserData | null> {
+  // Verify user exists — guards against stale JWT after DB reset or user deletion
+  const [dbUser] = await db
+    .select({ id: users.id, userType: users.userType })
+    .from(users)
+    .where(eq(users.id, tokenSub))
+    .limit(1);
+
+  if (!dbUser) return null;
+
+  const { userType } = dbUser;
+
+  // NULL type: onboarding incomplete
+  if (!userType) return { id: tokenSub, userType: null, workspaceId: null, memberId: null };
+
+  // Find the primary member record (is_primary = true) to determine default workspace
+  const [primary] = await db
+    .select({ id: members.id, workspaceId: members.workspaceId })
+    .from(members)
+    .where(and(eq(members.userId, tokenSub), eq(members.isPrimary, true)))
+    .limit(1);
+
+  if (primary) {
+    return { id: tokenSub, userType, workspaceId: primary.workspaceId, memberId: primary.id };
+  }
+
+  // Fallback: no primary set — use personal workspace (PERSONAL type owned by user)
+  const [personalMember] = await db
+    .select({ id: members.id, workspaceId: members.workspaceId })
+    .from(members)
+    .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
+    .where(and(eq(members.userId, tokenSub), eq(workspaces.type, 'PERSONAL')))
+    .limit(1);
+
+  return {
+    id: tokenSub,
+    userType,
+    workspaceId: personalMember?.workspaceId ?? null,
+    memberId: personalMember?.id ?? null,
+  };
 }
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
@@ -64,19 +119,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         const userId = upsertedUser.id;
         user.id = userId;
 
-        // Only auto-create workspace for USER-type accounts (existing personal users).
-        // NULL type = new user, will be routed to /onboarding.
-        // WORKSPACE type = user manages their own workspace; no auto-creation.
-        if (upsertedUser.userType === 'USER') {
-          const existingWorkspace = await db
-            .select({ id: workspaces.id })
-            .from(workspaces)
-            .where(eq(workspaces.ownerId, userId))
-            .limit(1);
+        // All users get a personal workspace on first signup (regardless of userType).
+        // Guard: only create if no personal workspace exists yet (idempotent).
+        const existingPersonal = await db
+          .select({ id: workspaces.id })
+          .from(workspaces)
+          .where(eq(workspaces.ownerId, userId))
+          .limit(1);
 
-          if (existingWorkspace.length === 0) {
-            await createPersonalWorkspace(userId, user.name);
-          }
+        if (existingPersonal.length === 0) {
+          await createPersonalWorkspace(userId, user.name);
         }
 
         return true;
@@ -89,50 +141,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (!session.user || !token.sub) return session;
 
-      // Attach user id and userType from JWT token
-      const sessionUser = session.user as unknown as Record<string, unknown>;
-      sessionUser.id = token.sub;
-      sessionUser.userType = (token as Record<string, unknown>).userType ?? null;
-
-      // Attach workspaceId and memberId based on userType
-      const userType = sessionUser.userType as string | null;
-
-      if (userType === 'USER') {
-        // Personal user: look up their personal workspace by ownerId
-        const [workspace] = await db
-          .select({ id: workspaces.id })
-          .from(workspaces)
-          .where(eq(workspaces.ownerId, token.sub))
-          .limit(1);
-
-        if (workspace) {
-          const [member] = await db
-            .select({ id: members.id })
-            .from(members)
-            .where(eq(members.userId, token.sub))
-            .limit(1);
-
-          sessionUser.workspaceId = workspace.id;
-          sessionUser.memberId = member?.id ?? null;
-        } else {
-          sessionUser.workspaceId = null;
-          sessionUser.memberId = null;
-        }
-      } else if (userType === 'WORKSPACE') {
-        // Workspace user: find first team workspace they belong to as a member
-        const [member] = await db
-          .select({ id: members.id, workspaceId: members.workspaceId })
-          .from(members)
-          .where(eq(members.userId, token.sub))
-          .limit(1);
-
-        sessionUser.workspaceId = member?.workspaceId ?? null;
-        sessionUser.memberId = member?.id ?? null;
-      } else {
-        // NULL type: onboarding incomplete
-        sessionUser.workspaceId = null;
-        sessionUser.memberId = null;
+      const data = await buildSessionUser(token.sub);
+      if (!data) {
+        // User not in DB — invalidate session to force re-login
+        return { ...session, user: undefined } as unknown as typeof session;
       }
+
+      const sessionUser = session.user as unknown as Record<string, unknown>;
+      sessionUser.id = data.id;
+      sessionUser.userType = data.userType;
+      sessionUser.workspaceId = data.workspaceId;
+      sessionUser.memberId = data.memberId;
 
       return session;
     },

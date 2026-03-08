@@ -160,6 +160,7 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
       description: workspaces.description,
       ownerId: workspaces.ownerId,
       type: workspaces.type,
+      iconColor: workspaces.iconColor,
       createdAt: workspaces.createdAt,
       role: members.role,
     })
@@ -173,6 +174,7 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
     description: row.description,
     ownerId: row.ownerId,
     type: row.type as WorkspaceType,
+    iconColor: row.iconColor ?? null,
     createdAt: row.createdAt.toISOString(),
     role: row.role as TeamRole,
   }));

@@ -1,721 +1,1346 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tika — Plan Simply. Ship Boldly.</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --accent:    #629584;
-      --accent-lt: #E8F5F0;
-      --app-bg:    #F8F9FB;
-      --card-bg:   #ffffff;
-      --border:    #DFE1E6;
-      --board-bg:  #E8EDF2;
-      --txt-1:     #2C3E50;
-      --txt-2:     #5A6B7F;
-      --txt-3:     #8993A4;
-      --purple-bg: #EDE9FE;
-      --purple:    #7C3AED;
-      --blue-bg:   #DBEAFE;
-      --blue:      #1D4ED8;
-      --yellow-bg: #FEF3C7;
-      --yellow:    #92400E;
-      --green-bg:  #D1FAE5;
-      --green:     #065F46;
-      --red-bg:    #FEE2E2;
-      --red:       #DC2626;
-    }
-    body {
-      font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
-      background: var(--app-bg);
-      color: var(--txt-1);
-      line-height: 1.6;
-    }
-    a { color: inherit; text-decoration: none; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tika — Plan Simply. Ship Boldly.</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --accent: #629584;
+        --accent-lt: #e8f5f0;
+        --app-bg: #f8f9fb;
+        --card-bg: #ffffff;
+        --border: #dfe1e6;
+        --board-bg: #e8edf2;
+        --txt-1: #2c3e50;
+        --txt-2: #5a6b7f;
+        --txt-3: #8993a4;
+        --purple-bg: #ede9fe;
+        --purple: #7c3aed;
+        --blue-bg: #dbeafe;
+        --blue: #1d4ed8;
+        --yellow-bg: #fef3c7;
+        --yellow: #92400e;
+        --green-bg: #d1fae5;
+        --green: #065f46;
+        --red-bg: #fee2e2;
+        --red: #dc2626;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+        background: var(--app-bg);
+        color: var(--txt-1);
+        line-height: 1.6;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
 
-    /* ── Layout ─────────────────────────────── */
-    .wrap    { max-width: 900px;  margin: 0 auto; padding: 0 24px; }
-    .wrap-lg { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-    .section    { padding: 72px 0; }
-    .section-sm { padding: 48px 0; }
-    .divider { border: none; border-top: 1px solid var(--border); max-width: 900px; margin: 0 auto; }
+      /* ── Layout ─────────────────────────────── */
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .wrap-lg {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .section {
+        padding: 72px 0;
+      }
+      .section-sm {
+        padding: 48px 0;
+      }
+      .divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        max-width: 900px;
+        margin: 0 auto;
+      }
 
-    /* ── Typography ─────────────────────────── */
-    .section-label {
-      display: inline-block; font-size: 11px; font-weight: 700;
-      letter-spacing: .08em; text-transform: uppercase;
-      color: var(--accent); background: var(--accent-lt);
-      padding: 3px 10px; border-radius: 20px; margin-bottom: 14px;
-    }
-    .section-title { font-size: 28px; font-weight: 800; color: var(--txt-1); margin-bottom: 10px; }
-    .section-sub   { font-size: 15px; color: var(--txt-2); }
+      /* ── Typography ─────────────────────────── */
+      .section-label {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-lt);
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+      }
+      .section-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--txt-1);
+        margin-bottom: 10px;
+      }
+      .section-sub {
+        font-size: 15px;
+        color: var(--txt-2);
+      }
 
-    /* ── Header ─────────────────────────────── */
-    header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(248,249,251,.92); backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-    }
-    nav {
-      max-width: 1100px; margin: 0 auto; padding: 0 24px;
-      height: 58px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; }
-    .logo-mark {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--accent); color: #fff;
-      font-size: 14px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .nav-right { display: flex; align-items: center; gap: 10px; }
-    .badge-trust {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 11px; font-weight: 600; color: var(--txt-2);
-      border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px;
-    }
-    .btn { padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; transition: all .15s; }
-    .btn-primary   { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #4d7a6a; }
-    .btn-dark      { background: var(--txt-1); color: #fff; }
-    .btn-dark:hover { background: #1a2530; }
-    .btn-outline   { background: #fff; color: var(--txt-1); border: 1.5px solid var(--border); }
-    .btn-outline:hover { border-color: var(--accent); background: var(--accent-lt); color: var(--accent); }
+      /* ── Header ─────────────────────────────── */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(248, 249, 251, 0.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      nav {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 18px;
+        font-weight: 800;
+      }
+      .logo-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .badge-trust {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--txt-2);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 3px 10px;
+      }
+      .btn {
+        padding: 9px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        transition: all 0.15s;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #4d7a6a;
+      }
+      .btn-dark {
+        background: var(--txt-1);
+        color: #fff;
+      }
+      .btn-dark:hover {
+        background: #1a2530;
+      }
+      .btn-outline {
+        background: #fff;
+        color: var(--txt-1);
+        border: 1.5px solid var(--border);
+      }
+      .btn-outline:hover {
+        border-color: var(--accent);
+        background: var(--accent-lt);
+        color: var(--accent);
+      }
 
-    /* ── Hero ───────────────────────────────── */
-    .hero {
-      padding: 80px 24px 60px; max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
-    }
-    .hero-kicker { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
-    .hero-title  { font-size: 40px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
-    .hero-title em { color: var(--accent); font-style: normal; }
-    .hero-sub    { font-size: 16px; color: var(--txt-2); margin-bottom: 28px; line-height: 1.7; }
-    .hero-cta    { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
-    .hero-cta .btn { padding: 12px 28px; font-size: 14px; }
-    .trust-note  { font-size: 12px; color: var(--txt-3); }
-    .hero-visual {
-      border-radius: 14px; border: 1px solid var(--border);
-      background: var(--board-bg); overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0,0,0,.08);
-    }
-    .mock-header {
-      background: #fff; border-bottom: 1px solid var(--border);
-      padding: 10px 16px; display: flex; align-items: center; gap: 6px;
-    }
-    .mock-dot { width: 8px; height: 8px; border-radius: 50%; }
-    .mock-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
-    .mock-col-hd {
-      height: 22px; border-radius: 4px; margin-bottom: 8px;
-      font-size: 10px; font-weight: 700; display: flex; align-items: center; padding: 0 8px;
-    }
-    .mock-card {
-      background: #fff; border-radius: 6px; padding: 8px; margin-bottom: 6px;
-      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.04);
-    }
-    .mock-card-title { font-size: 10px; font-weight: 600; color: var(--txt-1); margin-bottom: 5px; }
-    .mock-card-row   { display: flex; align-items: center; gap: 4px; }
-    .tag { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+      /* ── Hero ───────────────────────────────── */
+      .hero {
+        padding: 80px 24px 60px;
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: center;
+      }
+      .hero-kicker {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .hero-title {
+        font-size: 40px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 16px;
+      }
+      .hero-title em {
+        color: var(--accent);
+        font-style: normal;
+      }
+      .hero-sub {
+        font-size: 16px;
+        color: var(--txt-2);
+        margin-bottom: 28px;
+        line-height: 1.7;
+      }
+      .hero-cta {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .hero-cta .btn {
+        padding: 12px 28px;
+        font-size: 14px;
+      }
+      .trust-note {
+        font-size: 12px;
+        color: var(--txt-3);
+      }
+      .hero-visual {
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--board-bg);
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      }
+      .mock-header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .mock-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .mock-board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 14px;
+      }
+      .mock-col-hd {
+        height: 22px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+      }
+      .mock-card {
+        background: #fff;
+        border-radius: 6px;
+        padding: 8px;
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .mock-card-title {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--txt-1);
+        margin-bottom: 5px;
+      }
+      .mock-card-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .tag {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
 
-    /* ── Grid helpers ───────────────────────── */
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 40px; }
+      /* ── Grid helpers ───────────────────────── */
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-top: 40px;
+      }
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 40px;
+      }
 
-    /* ── Pain cards ─────────────────────────── */
-    .pain-card {
-      background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 24px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.04);
-    }
-    .pain-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
-    .pain-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .pain-card p  { font-size: 13px; color: var(--txt-2); line-height: 1.6; }
+      /* ── Pain cards ─────────────────────────── */
+      .pain-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      }
+      .pain-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 14px;
+      }
+      .pain-card h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .pain-card p {
+        font-size: 13px;
+        color: var(--txt-2);
+        line-height: 1.6;
+      }
 
-    /* ── Feature cards ──────────────────────── */
-    .feat-card {
-      background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 24px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.04); transition: border-color .15s, box-shadow .15s;
-    }
-    .feat-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(98,149,132,.12); }
-    .feat-card.hl { border-color: var(--accent); background: var(--accent-lt); }
-    .feat-chip {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px; margin-bottom: 10px;
-    }
-    .feat-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .feat-card p  { font-size: 13px; color: var(--txt-2); line-height: 1.6; }
+      /* ── Feature cards ──────────────────────── */
+      .feat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .feat-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 4px 16px rgba(98, 149, 132, 0.12);
+      }
+      .feat-card.hl {
+        border-color: var(--accent);
+        background: var(--accent-lt);
+      }
+      .feat-chip {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+      }
+      .feat-card h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .feat-card p {
+        font-size: 13px;
+        color: var(--txt-2);
+        line-height: 1.6;
+      }
 
-    /* ── Steps ──────────────────────────────── */
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 44px; position: relative; }
-    .steps::before {
-      content: ''; position: absolute; top: 22px; left: 16.6%; right: 16.6%; height: 2px;
-      background: linear-gradient(90deg, var(--accent-lt), var(--accent), var(--accent-lt));
-    }
-    .step { text-align: center; position: relative; z-index: 1; padding: 0 16px; }
-    .step-num {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--accent); color: #fff; font-size: 16px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px; border: 3px solid var(--app-bg);
-      box-shadow: 0 0 0 3px var(--accent);
-    }
-    .step h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-    .step p  { font-size: 12px; color: var(--txt-2); line-height: 1.6; }
+      /* ── Steps ──────────────────────────────── */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        margin-top: 44px;
+        position: relative;
+      }
+      .steps::before {
+        content: '';
+        position: absolute;
+        top: 22px;
+        left: 16.6%;
+        right: 16.6%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent-lt), var(--accent), var(--accent-lt));
+      }
+      .step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 0 16px;
+      }
+      .step-num {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        border: 3px solid var(--app-bg);
+        box-shadow: 0 0 0 3px var(--accent);
+      }
+      .step h3 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .step p {
+        font-size: 12px;
+        color: var(--txt-2);
+        line-height: 1.6;
+      }
 
-    /* ── Spotlight ──────────────────────────── */
-    .spotlight { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-top: 40px; }
-    .spotlight-visual {
-      border-radius: 14px; border: 1px solid var(--border);
-      background: var(--board-bg); overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0,0,0,.08);
-    }
-    .checklist { list-style: none; display: flex; flex-direction: column; gap: 14px; }
-    .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
-    .checklist li::before {
-      content: '✓'; flex-shrink: 0; width: 20px; height: 20px;
-      background: var(--accent); color: #fff; border-radius: 50%;
-      font-size: 11px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .checklist li span { color: var(--txt-2); font-size: 12px; display: block; margin-top: 2px; }
+      /* ── Spotlight ──────────────────────────── */
+      .spotlight {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: center;
+        margin-top: 40px;
+      }
+      .spotlight-visual {
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--board-bg);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      }
+      .checklist {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .checklist li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 14px;
+      }
+      .checklist li::before {
+        content: '✓';
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .checklist li span {
+        color: var(--txt-2);
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+      }
 
-    /* ── Pricing ────────────────────────────── */
-    .plan-card {
-      background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 24px;
-      display: flex; flex-direction: column;
-      transition: box-shadow .15s;
-    }
-    .plan-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,.09); }
-    .plan-card.popular { border-color: var(--accent); box-shadow: 0 4px 20px rgba(98,149,132,.18); }
-    .plan-badge {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px; margin-bottom: 12px; align-self: flex-start;
-    }
-    .plan-name  { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
-    .plan-desc  { font-size: 12px; color: var(--txt-2); margin-bottom: 16px; line-height: 1.5; }
-    .plan-price { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
-    .plan-note  { font-size: 11px; color: var(--txt-3); margin-bottom: 20px; }
-    .plan-cta {
-      display: block; width: 100%; padding: 10px; text-align: center;
-      border-radius: 8px; border: 1.5px solid var(--border);
-      cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
-      background: #fff; color: var(--txt-1);
-      transition: all .15s; margin-bottom: 20px;
-    }
-    .plan-cta:hover { border-color: var(--accent); background: var(--accent-lt); color: var(--accent); }
-    .plan-cta.p { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .plan-cta.p:hover { background: #4d7a6a; }
-    .plan-cta.d { background: var(--txt-1); color: #fff; border-color: var(--txt-1); }
-    .plan-cta.d:hover { background: #1a2530; }
-    .plan-cta:disabled { opacity: .45; cursor: default; }
-    .plan-divider { border: none; border-top: 1px solid var(--border); margin: 0 0 16px; }
-    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .plan-features li { font-size: 12px; color: var(--txt-2); display: flex; align-items: flex-start; gap: 7px; }
-    .plan-features li.on  { color: var(--txt-1); }
-    .plan-features li.off { color: var(--txt-3); text-decoration: line-through; }
+      /* ── Pricing ────────────────────────────── */
+      .plan-card {
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.15s;
+      }
+      .plan-card:hover {
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.09);
+      }
+      .plan-card.popular {
+        border-color: var(--accent);
+        box-shadow: 0 4px 20px rgba(98, 149, 132, 0.18);
+      }
+      .plan-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+        align-self: flex-start;
+      }
+      .plan-name {
+        font-size: 17px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .plan-desc {
+        font-size: 12px;
+        color: var(--txt-2);
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .plan-price {
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .plan-note {
+        font-size: 11px;
+        color: var(--txt-3);
+        margin-bottom: 20px;
+      }
+      .plan-cta {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        border-radius: 8px;
+        border: 1.5px solid var(--border);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        background: #fff;
+        color: var(--txt-1);
+        transition: all 0.15s;
+        margin-bottom: 20px;
+      }
+      .plan-cta:hover {
+        border-color: var(--accent);
+        background: var(--accent-lt);
+        color: var(--accent);
+      }
+      .plan-cta.p {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .plan-cta.p:hover {
+        background: #4d7a6a;
+      }
+      .plan-cta.d {
+        background: var(--txt-1);
+        color: #fff;
+        border-color: var(--txt-1);
+      }
+      .plan-cta.d:hover {
+        background: #1a2530;
+      }
+      .plan-cta:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .plan-divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 0 0 16px;
+      }
+      .plan-features {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .plan-features li {
+        font-size: 12px;
+        color: var(--txt-2);
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+      }
+      .plan-features li.on {
+        color: var(--txt-1);
+      }
+      .plan-features li.off {
+        color: var(--txt-3);
+        text-decoration: line-through;
+      }
 
-    /* ── FAQ ────────────────────────────────── */
-    .faq-list { display: flex; flex-direction: column; gap: 10px; margin-top: 36px; }
-    .faq-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .faq-q {
-      width: 100%; padding: 16px 20px; text-align: left;
-      background: none; border: none; cursor: pointer; font-family: inherit;
-      font-size: 14px; font-weight: 600; color: var(--txt-1);
-      display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    }
-    .faq-icon { font-size: 18px; color: var(--txt-3); transition: transform .2s; flex-shrink: 0; }
-    .faq-a {
-      padding: 0 20px; max-height: 0; overflow: hidden;
-      transition: max-height .25s ease, padding .25s;
-      font-size: 13px; color: var(--txt-2); line-height: 1.7;
-    }
-    .faq-item.open .faq-a { max-height: 200px; padding: 0 20px 16px; }
-    .faq-item.open .faq-icon { transform: rotate(45deg); }
+      /* ── FAQ ────────────────────────────────── */
+      .faq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 36px;
+      }
+      .faq-item {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .faq-q {
+        width: 100%;
+        padding: 16px 20px;
+        text-align: left;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--txt-1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .faq-icon {
+        font-size: 18px;
+        color: var(--txt-3);
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      .faq-a {
+        padding: 0 20px;
+        max-height: 0;
+        overflow: hidden;
+        transition:
+          max-height 0.25s ease,
+          padding 0.25s;
+        font-size: 13px;
+        color: var(--txt-2);
+        line-height: 1.7;
+      }
+      .faq-item.open .faq-a {
+        max-height: 200px;
+        padding: 0 20px 16px;
+      }
+      .faq-item.open .faq-icon {
+        transform: rotate(45deg);
+      }
 
-    /* ── CTA Band ───────────────────────────── */
-    .cta-band {
-      background: var(--txt-1); border-radius: 20px; padding: 56px 48px;
-      text-align: center; margin: 0 24px;
-    }
-    .cta-band h2 { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 10px; }
-    .cta-band p  { font-size: 15px; color: rgba(255,255,255,.6); margin-bottom: 28px; }
-    .cta-band .btn { padding: 14px 36px; font-size: 15px; }
+      /* ── CTA Band ───────────────────────────── */
+      .cta-band {
+        background: var(--txt-1);
+        border-radius: 20px;
+        padding: 56px 48px;
+        text-align: center;
+        margin: 0 24px;
+      }
+      .cta-band h2 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 10px;
+      }
+      .cta-band p {
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 28px;
+      }
+      .cta-band .btn {
+        padding: 14px 36px;
+        font-size: 15px;
+      }
 
-    /* ── Footer ─────────────────────────────── */
-    footer { padding: 32px 24px; text-align: center; font-size: 12px; color: var(--txt-3); border-top: 1px solid var(--border); margin-top: 72px; }
-    footer a { color: var(--txt-2); }
-    footer a:hover { color: var(--accent); }
+      /* ── Footer ─────────────────────────────── */
+      footer {
+        padding: 32px 24px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--txt-3);
+        border-top: 1px solid var(--border);
+        margin-top: 72px;
+      }
+      footer a {
+        color: var(--txt-2);
+      }
+      footer a:hover {
+        color: var(--accent);
+      }
 
-    /* ── Responsive ─────────────────────────── */
-    @media (max-width: 768px) {
-      .hero, .spotlight      { grid-template-columns: 1fr; gap: 32px; }
-      .hero-title            { font-size: 30px; }
-      .grid-3, .grid-4       { grid-template-columns: 1fr; }
-      .steps                 { grid-template-columns: 1fr; gap: 28px; }
-      .steps::before         { display: none; }
-      .cta-band              { padding: 36px 20px; margin: 0; border-radius: 0; }
-      .section-title         { font-size: 22px; }
-    }
-  </style>
-</head>
-<body>
+      /* ── Responsive ─────────────────────────── */
+      @media (max-width: 768px) {
+        .hero,
+        .spotlight {
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        .hero-title {
+          font-size: 30px;
+        }
+        .grid-3,
+        .grid-4 {
+          grid-template-columns: 1fr;
+        }
+        .steps {
+          grid-template-columns: 1fr;
+          gap: 28px;
+        }
+        .steps::before {
+          display: none;
+        }
+        .cta-band {
+          padding: 36px 20px;
+          margin: 0;
+          border-radius: 0;
+        }
+        .section-title {
+          font-size: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════ HEADER ════════════════════════════════════════════════════════ -->
+    <header>
+      <nav>
+        <div class="logo">
+          <div class="logo-mark">T</div>
+          Tika
+        </div>
+        <div class="nav-right">
+          <div class="badge-trust">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            신뢰할 수 있는 서비스
+          </div>
+          <a href="/login"><button class="btn btn-dark">시작하기</button></a>
+        </div>
+      </nav>
+    </header>
 
-<!-- ═══════ HEADER ════════════════════════════════════════════════════════ -->
-<header>
-  <nav>
-    <div class="logo">
-      <div class="logo-mark">T</div>
-      Tika
-    </div>
-    <div class="nav-right">
-      <div class="badge-trust">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        신뢰할 수 있는 서비스
-      </div>
-      <a href="/login"><button class="btn btn-dark">시작하기</button></a>
-    </div>
-  </nav>
-</header>
-
-
-<!-- ═══════ HERO ══════════════════════════════════════════════════════════ -->
-<section style="max-width:1100px; margin:0 auto;">
-  <div class="hero">
-    <!-- 카피 -->
-    <div>
-      <p class="hero-kicker">Ticket-based Kanban Board</p>
-      <h1 class="hero-title">목표부터 실행까지,<br><em>흐름대로 관리</em>하세요</h1>
-      <p class="hero-sub">
-        Goal → Story → Feature → Task 계층으로 큰 목표를 잘게 쪼개고,
-        칸반 보드에서 드래그 한 번으로 진행 상태를 바꾸세요.
-        개인 생산성부터 팀 협업까지.
-      </p>
-      <div class="hero-cta">
-        <a href="/login"><button class="btn btn-primary">Google로 무료 시작</button></a>
-        <button class="btn btn-outline">데모 보기</button>
-      </div>
-      <p class="trust-note">신용카드 불필요 &middot; 영구 무료 플랜 제공</p>
-    </div>
-
-    <!-- 보드 mock-up -->
-    <div class="hero-visual">
-      <div class="mock-header">
-        <div class="mock-dot" style="background:#EF4444"></div>
-        <div class="mock-dot" style="background:#F59E0B; margin-left:4px"></div>
-        <div class="mock-dot" style="background:#10B981; margin-left:4px"></div>
-        <span style="margin-left:10px; font-size:11px; color:var(--txt-3)">tika.app / board</span>
-      </div>
-      <div class="mock-board">
+    <!-- ═══════ HERO ══════════════════════════════════════════════════════════ -->
+    <section style="max-width: 1100px; margin: 0 auto">
+      <div class="hero">
+        <!-- 카피 -->
         <div>
-          <div class="mock-col-hd" style="background:var(--blue-bg); color:var(--blue)">TODO · 2</div>
-          <div class="mock-card">
-            <div class="mock-card-title">랜딩 페이지 카피라이팅</div>
-            <div class="mock-card-row">
-              <span class="tag" style="background:#FEE2E2; color:#991B1B">CRITICAL</span>
-              <span class="tag" style="background:var(--purple-bg); color:var(--purple)">G</span>
-            </div>
+          <p class="hero-kicker">Ticket-based Kanban Board</p>
+          <h1 class="hero-title">목표부터 실행까지,<br /><em>흐름대로 관리</em>하세요</h1>
+          <p class="hero-sub">
+            Goal → Story → Feature → Task 계층으로 큰 목표를 잘게 쪼개고, 칸반 보드에서 드래그 한
+            번으로 진행 상태를 바꾸세요. 개인 생산성부터 팀 협업까지.
+          </p>
+          <div class="hero-cta">
+            <a href="/login"><button class="btn btn-primary">Google로 무료 시작</button></a>
+            <button class="btn btn-outline">데모 보기</button>
           </div>
-          <div class="mock-card">
-            <div class="mock-card-title">디자인 시스템 정의</div>
-            <div class="mock-card-row"><span class="tag" style="background:var(--yellow-bg); color:var(--yellow)">HIGH</span></div>
-          </div>
+          <p class="trust-note">신용카드 불필요 &middot; 영구 무료 플랜 제공</p>
         </div>
-        <div>
-          <div class="mock-col-hd" style="background:var(--yellow-bg); color:var(--yellow)">In Progress · 1</div>
-          <div class="mock-card" style="border-color:var(--accent)">
-            <div class="mock-card-title">API 엔드포인트 구현</div>
-            <div class="mock-card-row">
-              <span class="tag" style="background:var(--accent-lt); color:var(--accent)">MEDIUM</span>
-              <div style="margin-left:auto; width:18px; height:18px; border-radius:50%; background:var(--accent); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center;">K</div>
-            </div>
+
+        <!-- 보드 mock-up -->
+        <div class="hero-visual">
+          <div class="mock-header">
+            <div class="mock-dot" style="background: #ef4444"></div>
+            <div class="mock-dot" style="background: #f59e0b; margin-left: 4px"></div>
+            <div class="mock-dot" style="background: #10b981; margin-left: 4px"></div>
+            <span style="margin-left: 10px; font-size: 11px; color: var(--txt-3)"
+              >tika.app / board</span
+            >
           </div>
-        </div>
-        <div>
-          <div class="mock-col-hd" style="background:var(--green-bg); color:var(--green)">Done · 2</div>
-          <div class="mock-card" style="opacity:.55">
-            <div class="mock-card-title" style="text-decoration:line-through">요구사항 정의</div>
-            <div class="mock-card-row"><span class="tag" style="background:var(--green-bg); color:var(--green)">LOW</span></div>
-          </div>
-          <div class="mock-card" style="opacity:.55">
-            <div class="mock-card-title" style="text-decoration:line-through">DB 스키마 설계</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-
-<!-- ═══════ PAIN POINTS ═══════════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap" style="text-align:center">
-    <span class="section-label">문제 제기</span>
-    <h2 class="section-title">이런 불편함 겪고 계신가요?</h2>
-    <p class="section-sub" style="max-width:500px; margin:0 auto">복잡한 툴에 지쳐 정작 중요한 일에 집중하지 못하는 팀들을 위해 만들었습니다.</p>
-  </div>
-  <div class="wrap">
-    <div class="grid-3">
-      <div class="pain-card">
-        <div class="pain-icon" style="background:var(--red-bg)">😵</div>
-        <h3>흩어진 할 일</h3>
-        <p>슬랙, 노션, 엑셀에 분산된 태스크를 하나로 모으는 데 매일 30분을 낭비합니다.</p>
-      </div>
-      <div class="pain-card">
-        <div class="pain-icon" style="background:var(--yellow-bg)">🌀</div>
-        <h3>진행 상태 불투명</h3>
-        <p>지금 팀에서 뭘 하고 있는지, 어디서 막혔는지 회의 전까지는 아무도 모릅니다.</p>
-      </div>
-      <div class="pain-card">
-        <div class="pain-icon" style="background:var(--blue-bg)">📅</div>
-        <h3>맥락 없는 마감일</h3>
-        <p>큰 목표와 세부 태스크가 연결되지 않아 우선순위를 잘못 잡고 마감을 놓칩니다.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-
-<!-- ═══════ FEATURES (차별점) ═════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap" style="text-align:center">
-    <span class="section-label">문제 해결책</span>
-    <h2 class="section-title">Tika가 다른 이유</h2>
-    <p class="section-sub" style="max-width:500px; margin:0 auto">단순히 할 일을 적는 것을 넘어, 목표 → 실행 흐름 전체를 하나의 도구로 연결합니다.</p>
-  </div>
-  <div class="wrap">
-    <div class="grid-3">
-      <div class="feat-card hl">
-        <span class="feat-chip" style="background:var(--accent); color:#fff">Core</span>
-        <h3 style="color:#1a4d3f">Goal → Task 계층 구조</h3>
-        <p>큰 목표(Goal)를 Story → Feature → Task로 분해. 모든 태스크가 왜 존재하는지 맥락이 살아있습니다.</p>
-      </div>
-      <div class="feat-card">
-        <span class="feat-chip" style="background:var(--blue-bg); color:var(--blue)">UX</span>
-        <h3>드래그 앤 드롭 칸반</h3>
-        <p>Backlog → TODO → In Progress → Done. 카드 한 번 끌어다 놓으면 상태 변경 완료.</p>
-      </div>
-      <div class="feat-card">
-        <span class="feat-chip" style="background:var(--purple-bg); color:var(--purple)">협업</span>
-        <h3>팀 워크스페이스</h3>
-        <p>멤버 초대, 역할(Owner · Member · Viewer) 관리, 진척 대시보드로 팀 전체 현황 한눈에.</p>
-      </div>
-      <div class="feat-card">
-        <span class="feat-chip" style="background:var(--yellow-bg); color:var(--yellow)">생산성</span>
-        <h3>체크리스트 & 라벨</h3>
-        <p>티켓 내 하위 작업을 체크리스트로 추적. 색상 라벨로 빠른 분류와 필터링.</p>
-      </div>
-      <div class="feat-card">
-        <span class="feat-chip" style="background:var(--green-bg); color:var(--green)">분석</span>
-        <h3>WBS & 간트 차트</h3>
-        <p>업무 계층을 타임라인으로 시각화. 스프린트 번다운 차트로 팀 속도를 측정.</p>
-      </div>
-      <div class="feat-card">
-        <span class="feat-chip" style="background:#F3F4F6; color:var(--txt-2)">예정</span>
-        <h3>MCP · Slack 자동화</h3>
-        <p>AI 에이전트가 티켓을 자동 생성·변경. 마감 D-1 알림을 Slack · Telegram으로 발송.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-
-<!-- ═══════ HOW TO USE ════════════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap" style="text-align:center">
-    <span class="section-label">이용 방법</span>
-    <h2 class="section-title">3단계로 바로 시작</h2>
-    <p class="section-sub" style="max-width:400px; margin:0 auto">설치 없이 브라우저에서 바로 시작하세요.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Google 로그인</h3>
-        <p>계정 생성 없이 Google 계정으로 즉시 로그인. 개인 워크스페이스가 자동 생성됩니다.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Goal 설정 & 분해</h3>
-        <p>이번 목표를 Goal로 만들고 Story → Feature → Task로 쪼개세요. 구조가 잡힙니다.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>보드에서 실행</h3>
-        <p>칸반 보드에서 카드를 끌어 상태를 바꾸고, 팀원을 초대해 함께 진행하세요.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-
-<!-- ═══════ PRODUCT SPOTLIGHT ════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap">
-    <div class="spotlight">
-      <!-- 티켓 상세 mock-up -->
-      <div class="spotlight-visual">
-        <div class="mock-header">
-          <span style="font-size:11px; color:var(--txt-3)">티켓 상세 · API 엔드포인트 구현</span>
-        </div>
-        <div style="padding:14px; display:flex; flex-direction:column; gap:10px;">
-          <!-- breadcrumb -->
-          <div style="display:flex; align-items:center; gap:5px; font-size:10px; flex-wrap:wrap;">
-            <span class="tag" style="background:var(--purple-bg); color:var(--purple)">G</span>
-            <span style="color:var(--txt-3)">Tika 런칭 › </span>
-            <span class="tag" style="background:var(--blue-bg); color:var(--blue)">S</span>
-            <span style="color:var(--txt-3)">백엔드 구축 › </span>
-            <span class="tag" style="background:var(--green-bg); color:var(--green)">F</span>
-            <span style="color:var(--txt-3)">티켓 API</span>
-          </div>
-          <div style="font-size:16px; font-weight:700">API 엔드포인트 구현</div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <span class="tag" style="background:var(--accent-lt); color:var(--accent); padding:3px 8px; border-radius:5px">In Progress</span>
-            <span class="tag" style="background:var(--yellow-bg); color:var(--yellow); padding:3px 8px; border-radius:5px">HIGH</span>
-            <span class="tag" style="background:#F3F4F6; color:var(--txt-2); padding:3px 8px; border-radius:5px">마감 D-2</span>
-          </div>
-          <!-- checklist -->
-          <div style="background:var(--app-bg); border-radius:8px; padding:10px; font-size:11px;">
-            <div style="font-weight:700; color:var(--txt-2); margin-bottom:8px">체크리스트 2/3</div>
-            <div style="margin-bottom:5px; display:flex; gap:6px; align-items:center"><span style="color:var(--accent)">☑</span> GET /api/tickets 구현</div>
-            <div style="margin-bottom:5px; display:flex; gap:6px; align-items:center"><span style="color:var(--accent)">☑</span> POST /api/tickets 구현</div>
-            <div style="color:var(--txt-3); display:flex; gap:6px; align-items:center"><span>☐</span> PATCH /api/tickets/[id] 구현</div>
-          </div>
-          <!-- comment -->
-          <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:11px; color:var(--txt-2)">
-            <div style="display:flex; gap:6px; align-items:center; margin-bottom:5px">
-              <div style="width:18px; height:18px; border-radius:50%; background:var(--accent); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center">K</div>
-              <strong style="color:var(--txt-1); font-size:11px">김코드</strong>
-              <span style="color:var(--txt-3)">방금 전</span>
-            </div>
-            PATCH도 오늘 안에 완료할게요 ✔
-          </div>
-        </div>
-      </div>
-
-      <!-- 체크리스트 설명 -->
-      <div>
-        <span class="section-label">Product</span>
-        <h2 class="section-title" style="margin-bottom:20px">맥락이 살아있는<br>티켓 상세 페이지</h2>
-        <ul class="checklist">
-          <li>
+          <div class="mock-board">
             <div>
-              <strong>계층 브레드크럼</strong>
-              <span>Goal부터 Feature까지 한눈에 — 이 태스크가 왜 존재하는지 항상 보입니다.</span>
+              <div class="mock-col-hd" style="background: var(--blue-bg); color: var(--blue)">
+                TODO · 2
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-title">랜딩 페이지 카피라이팅</div>
+                <div class="mock-card-row">
+                  <span class="tag" style="background: #fee2e2; color: #991b1b">CRITICAL</span>
+                  <span class="tag" style="background: var(--purple-bg); color: var(--purple)"
+                    >G</span
+                  >
+                </div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-title">디자인 시스템 정의</div>
+                <div class="mock-card-row">
+                  <span class="tag" style="background: var(--yellow-bg); color: var(--yellow)"
+                    >HIGH</span
+                  >
+                </div>
+              </div>
             </div>
-          </li>
-          <li>
             <div>
-              <strong>체크리스트 진행률</strong>
-              <span>하위 작업을 쪼개고 완료율을 실시간으로 추적하세요.</span>
+              <div class="mock-col-hd" style="background: var(--yellow-bg); color: var(--yellow)">
+                In Progress · 1
+              </div>
+              <div class="mock-card" style="border-color: var(--accent)">
+                <div class="mock-card-title">API 엔드포인트 구현</div>
+                <div class="mock-card-row">
+                  <span class="tag" style="background: var(--accent-lt); color: var(--accent)"
+                    >MEDIUM</span
+                  >
+                  <div
+                    style="
+                      margin-left: auto;
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 50%;
+                      background: var(--accent);
+                      color: #fff;
+                      font-size: 9px;
+                      font-weight: 700;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    K
+                  </div>
+                </div>
+              </div>
             </div>
-          </li>
-          <li>
             <div>
-              <strong>댓글 & 담당자</strong>
-              <span>티켓 안에서 바로 소통. 팀원 멘션과 수정 이력 확인.</span>
+              <div class="mock-col-hd" style="background: var(--green-bg); color: var(--green)">
+                Done · 2
+              </div>
+              <div class="mock-card" style="opacity: 0.55">
+                <div class="mock-card-title" style="text-decoration: line-through">
+                  요구사항 정의
+                </div>
+                <div class="mock-card-row">
+                  <span class="tag" style="background: var(--green-bg); color: var(--green)"
+                    >LOW</span
+                  >
+                </div>
+              </div>
+              <div class="mock-card" style="opacity: 0.55">
+                <div class="mock-card-title" style="text-decoration: line-through">
+                  DB 스키마 설계
+                </div>
+              </div>
             </div>
-          </li>
-          <li>
-            <div>
-              <strong>마감일 경고</strong>
-              <span>마감 D-3부터 경고 표시, 초과 시 빨간 테두리로 즉시 인지.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ═══════ PAIN POINTS ═══════════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap" style="text-align: center">
+        <span class="section-label">문제 제기</span>
+        <h2 class="section-title">이런 불편함 겪고 계신가요?</h2>
+        <p class="section-sub" style="max-width: 500px; margin: 0 auto">
+          복잡한 툴에 지쳐 정작 중요한 일에 집중하지 못하는 팀들을 위해 만들었습니다.
+        </p>
+      </div>
+      <div class="wrap">
+        <div class="grid-3">
+          <div class="pain-card">
+            <div class="pain-icon" style="background: var(--red-bg)">😵</div>
+            <h3>흩어진 할 일</h3>
+            <p>슬랙, 노션, 엑셀에 분산된 태스크를 하나로 모으는 데 매일 30분을 낭비합니다.</p>
+          </div>
+          <div class="pain-card">
+            <div class="pain-icon" style="background: var(--yellow-bg)">🌀</div>
+            <h3>진행 상태 불투명</h3>
+            <p>지금 팀에서 뭘 하고 있는지, 어디서 막혔는지 회의 전까지는 아무도 모릅니다.</p>
+          </div>
+          <div class="pain-card">
+            <div class="pain-icon" style="background: var(--blue-bg)">📅</div>
+            <h3>맥락 없는 마감일</h3>
+            <p>큰 목표와 세부 태스크가 연결되지 않아 우선순위를 잘못 잡고 마감을 놓칩니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ═══════ FEATURES (차별점) ═════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap" style="text-align: center">
+        <span class="section-label">문제 해결책</span>
+        <h2 class="section-title">Tika가 다른 이유</h2>
+        <p class="section-sub" style="max-width: 500px; margin: 0 auto">
+          단순히 할 일을 적는 것을 넘어, 목표 → 실행 흐름 전체를 하나의 도구로 연결합니다.
+        </p>
+      </div>
+      <div class="wrap">
+        <div class="grid-3">
+          <div class="feat-card hl">
+            <span class="feat-chip" style="background: var(--accent); color: #fff">Core</span>
+            <h3 style="color: #1a4d3f">Goal → Task 계층 구조</h3>
+            <p>
+              큰 목표(Goal)를 Story → Feature → Task로 분해. 모든 태스크가 왜 존재하는지 맥락이
+              살아있습니다.
+            </p>
+          </div>
+          <div class="feat-card">
+            <span class="feat-chip" style="background: var(--blue-bg); color: var(--blue)">UX</span>
+            <h3>드래그 앤 드롭 칸반</h3>
+            <p>Backlog → TODO → In Progress → Done. 카드 한 번 끌어다 놓으면 상태 변경 완료.</p>
+          </div>
+          <div class="feat-card">
+            <span class="feat-chip" style="background: var(--purple-bg); color: var(--purple)"
+              >협업</span
+            >
+            <h3>팀 워크스페이스</h3>
+            <p>
+              멤버 초대, 역할(Owner · Member · Viewer) 관리, 진척 대시보드로 팀 전체 현황 한눈에.
+            </p>
+          </div>
+          <div class="feat-card">
+            <span class="feat-chip" style="background: var(--yellow-bg); color: var(--yellow)"
+              >생산성</span
+            >
+            <h3>체크리스트 & 라벨</h3>
+            <p>티켓 내 하위 작업을 체크리스트로 추적. 색상 라벨로 빠른 분류와 필터링.</p>
+          </div>
+          <div class="feat-card">
+            <span class="feat-chip" style="background: var(--green-bg); color: var(--green)"
+              >분석</span
+            >
+            <h3>WBS & 간트 차트</h3>
+            <p>업무 계층을 타임라인으로 시각화. 스프린트 번다운 차트로 팀 속도를 측정.</p>
+          </div>
+          <div class="feat-card">
+            <span class="feat-chip" style="background: #f3f4f6; color: var(--txt-2)">예정</span>
+            <h3>MCP · Slack 자동화</h3>
+            <p>AI 에이전트가 티켓을 자동 생성·변경. 마감 D-1 알림을 Slack · Telegram으로 발송.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ═══════ HOW TO USE ════════════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap" style="text-align: center">
+        <span class="section-label">이용 방법</span>
+        <h2 class="section-title">3단계로 바로 시작</h2>
+        <p class="section-sub" style="max-width: 400px; margin: 0 auto">
+          설치 없이 브라우저에서 바로 시작하세요.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Google 로그인</h3>
+            <p>계정 생성 없이 Google 계정으로 즉시 로그인. 개인 워크스페이스가 자동 생성됩니다.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Goal 설정 & 분해</h3>
+            <p>이번 목표를 Goal로 만들고 Story → Feature → Task로 쪼개세요. 구조가 잡힙니다.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>보드에서 실행</h3>
+            <p>칸반 보드에서 카드를 끌어 상태를 바꾸고, 팀원을 초대해 함께 진행하세요.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ═══════ PRODUCT SPOTLIGHT ════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap">
+        <div class="spotlight">
+          <!-- 티켓 상세 mock-up -->
+          <div class="spotlight-visual">
+            <div class="mock-header">
+              <span style="font-size: 11px; color: var(--txt-3)"
+                >티켓 상세 · API 엔드포인트 구현</span
+              >
             </div>
-          </li>
-        </ul>
+            <div style="padding: 14px; display: flex; flex-direction: column; gap: 10px">
+              <!-- breadcrumb -->
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 5px;
+                  font-size: 10px;
+                  flex-wrap: wrap;
+                "
+              >
+                <span class="tag" style="background: var(--purple-bg); color: var(--purple)"
+                  >G</span
+                >
+                <span style="color: var(--txt-3)">Tika 런칭 › </span>
+                <span class="tag" style="background: var(--blue-bg); color: var(--blue)">S</span>
+                <span style="color: var(--txt-3)">백엔드 구축 › </span>
+                <span class="tag" style="background: var(--green-bg); color: var(--green)">F</span>
+                <span style="color: var(--txt-3)">티켓 API</span>
+              </div>
+              <div style="font-size: 16px; font-weight: 700">API 엔드포인트 구현</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <span
+                  class="tag"
+                  style="
+                    background: var(--accent-lt);
+                    color: var(--accent);
+                    padding: 3px 8px;
+                    border-radius: 5px;
+                  "
+                  >In Progress</span
+                >
+                <span
+                  class="tag"
+                  style="
+                    background: var(--yellow-bg);
+                    color: var(--yellow);
+                    padding: 3px 8px;
+                    border-radius: 5px;
+                  "
+                  >HIGH</span
+                >
+                <span
+                  class="tag"
+                  style="
+                    background: #f3f4f6;
+                    color: var(--txt-2);
+                    padding: 3px 8px;
+                    border-radius: 5px;
+                  "
+                  >마감 D-2</span
+                >
+              </div>
+              <!-- checklist -->
+              <div
+                style="
+                  background: var(--app-bg);
+                  border-radius: 8px;
+                  padding: 10px;
+                  font-size: 11px;
+                "
+              >
+                <div style="font-weight: 700; color: var(--txt-2); margin-bottom: 8px">
+                  체크리스트 2/3
+                </div>
+                <div style="margin-bottom: 5px; display: flex; gap: 6px; align-items: center">
+                  <span style="color: var(--accent)">☑</span> GET /api/tickets 구현
+                </div>
+                <div style="margin-bottom: 5px; display: flex; gap: 6px; align-items: center">
+                  <span style="color: var(--accent)">☑</span> POST /api/tickets 구현
+                </div>
+                <div style="color: var(--txt-3); display: flex; gap: 6px; align-items: center">
+                  <span>☐</span> PATCH /api/tickets/[id] 구현
+                </div>
+              </div>
+              <!-- comment -->
+              <div
+                style="
+                  background: #fff;
+                  border: 1px solid var(--border);
+                  border-radius: 8px;
+                  padding: 10px;
+                  font-size: 11px;
+                  color: var(--txt-2);
+                "
+              >
+                <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 5px">
+                  <div
+                    style="
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 50%;
+                      background: var(--accent);
+                      color: #fff;
+                      font-size: 9px;
+                      font-weight: 700;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    K
+                  </div>
+                  <strong style="color: var(--txt-1); font-size: 11px">김코드</strong>
+                  <span style="color: var(--txt-3)">방금 전</span>
+                </div>
+                PATCH도 오늘 안에 완료할게요 ✔
+              </div>
+            </div>
+          </div>
+
+          <!-- 체크리스트 설명 -->
+          <div>
+            <span class="section-label">Product</span>
+            <h2 class="section-title" style="margin-bottom: 20px">
+              맥락이 살아있는<br />티켓 상세 페이지
+            </h2>
+            <ul class="checklist">
+              <li>
+                <div>
+                  <strong>계층 브레드크럼</strong>
+                  <span
+                    >Goal부터 Feature까지 한눈에 — 이 태스크가 왜 존재하는지 항상 보입니다.</span
+                  >
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>체크리스트 진행률</strong>
+                  <span>하위 작업을 쪼개고 완료율을 실시간으로 추적하세요.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>댓글 & 담당자</strong>
+                  <span>티켓 안에서 바로 소통. 팀원 멘션과 수정 이력 확인.</span>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>마감일 경고</strong>
+                  <span>마감 D-3부터 경고 표시, 초과 시 빨간 테두리로 즉시 인지.</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<hr class="divider" />
+    <hr class="divider" />
 
-
-<!-- ═══════ PRICING ═══════════════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap-lg" style="text-align:center">
-    <span class="section-label">요금제</span>
-    <h2 class="section-title">팀 규모에 맞는 플랜</h2>
-    <p class="section-sub" style="max-width:440px; margin:0 auto">개인부터 엔터프라이즈까지. 지금 시작은 언제나 무료.</p>
-  </div>
-  <div class="wrap-lg">
-    <div class="grid-4">
-
-      <!-- Personal -->
-      <div class="plan-card">
-        <span class="plan-badge" style="background:var(--green-bg); color:var(--green)">Free · 사용 가능</span>
-        <div class="plan-name">Personal</div>
-        <div class="plan-desc">개인 생산성 도구로 지금 바로 시작</div>
-        <div class="plan-price">₩0</div>
-        <div class="plan-note">영구 무료</div>
-        <a href="/login"><button class="plan-cta">무료로 시작</button></a>
-        <hr class="plan-divider" />
-        <ul class="plan-features">
-          <li class="on"><span>✓</span> 칸반 보드 (Backlog ~ Done)</li>
-          <li class="on"><span>✓</span> Goal › Story › Feature › Task</li>
-          <li class="on"><span>✓</span> 체크리스트 · 라벨 · 우선순위</li>
-          <li class="on"><span>✓</span> 드래그 앤 드롭</li>
-          <li class="on"><span>✓</span> Google OAuth 로그인</li>
-          <li class="on"><span>✓</span> 댓글 & 담당자</li>
-          <li class="off"><span>✕</span> 팀 멤버 초대</li>
-          <li class="off"><span>✕</span> WBS / 간트 차트</li>
-        </ul>
+    <!-- ═══════ PRICING ═══════════════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap-lg" style="text-align: center">
+        <span class="section-label">요금제</span>
+        <h2 class="section-title">팀 규모에 맞는 플랜</h2>
+        <p class="section-sub" style="max-width: 440px; margin: 0 auto">
+          개인부터 엔터프라이즈까지. 지금 시작은 언제나 무료.
+        </p>
       </div>
+      <div class="wrap-lg">
+        <div class="grid-4">
+          <!-- Personal -->
+          <div class="plan-card">
+            <span class="plan-badge" style="background: var(--green-bg); color: var(--green)"
+              >Free · 사용 가능</span
+            >
+            <div class="plan-name">Personal</div>
+            <div class="plan-desc">개인 생산성 도구로 지금 바로 시작</div>
+            <div class="plan-price">₩0</div>
+            <div class="plan-note">영구 무료</div>
+            <a href="/login"><button class="plan-cta">무료로 시작</button></a>
+            <hr class="plan-divider" />
+            <ul class="plan-features">
+              <li class="on"><span>✓</span> 칸반 보드 (Backlog ~ Done)</li>
+              <li class="on"><span>✓</span> Goal › Story › Feature › Task</li>
+              <li class="on"><span>✓</span> 체크리스트 · 라벨 · 우선순위</li>
+              <li class="on"><span>✓</span> 드래그 앤 드롭</li>
+              <li class="on"><span>✓</span> Google OAuth 로그인</li>
+              <li class="on"><span>✓</span> 댓글 & 담당자</li>
+              <li class="off"><span>✕</span> 팀 멤버 초대</li>
+              <li class="off"><span>✕</span> WBS / 간트 차트</li>
+            </ul>
+          </div>
 
-      <!-- Workspace -->
-      <div class="plan-card popular">
-        <span class="plan-badge" style="background:var(--accent); color:#fff">Popular · 사용 가능</span>
-        <div class="plan-name">Workspace</div>
-        <div class="plan-desc">소규모 팀의 협업과 진척 관리</div>
-        <div class="plan-price">₩0</div>
-        <div class="plan-note">베타 기간 무료</div>
-        <a href="/login"><button class="plan-cta p">무료로 시작</button></a>
-        <hr class="plan-divider" />
-        <ul class="plan-features">
-          <li class="on"><span>✓</span> Personal 전체 포함</li>
-          <li class="on"><span>✓</span> 팀 워크스페이스 개설</li>
-          <li class="on"><span>✓</span> 멤버 초대 · 역할 관리</li>
-          <li class="on"><span>✓</span> WBS · 간트 차트</li>
-          <li class="on"><span>✓</span> 진척 대시보드</li>
-          <li class="on"><span>✓</span> 스프린트 관리</li>
-          <li class="on"><span>✓</span> 다중 담당자</li>
-          <li class="off"><span>✕</span> MCP · Slack 연동</li>
-        </ul>
+          <!-- Workspace -->
+          <div class="plan-card popular">
+            <span class="plan-badge" style="background: var(--accent); color: #fff"
+              >Popular · 사용 가능</span
+            >
+            <div class="plan-name">Workspace</div>
+            <div class="plan-desc">소규모 팀의 협업과 진척 관리</div>
+            <div class="plan-price">₩0</div>
+            <div class="plan-note">베타 기간 무료</div>
+            <a href="/login"><button class="plan-cta p">무료로 시작</button></a>
+            <hr class="plan-divider" />
+            <ul class="plan-features">
+              <li class="on"><span>✓</span> Personal 전체 포함</li>
+              <li class="on"><span>✓</span> 팀 워크스페이스 개설</li>
+              <li class="on"><span>✓</span> 멤버 초대 · 역할 관리</li>
+              <li class="on"><span>✓</span> WBS · 간트 차트</li>
+              <li class="on"><span>✓</span> 진척 대시보드</li>
+              <li class="on"><span>✓</span> 스프린트 관리</li>
+              <li class="on"><span>✓</span> 다중 담당자</li>
+              <li class="off"><span>✕</span> MCP · Slack 연동</li>
+            </ul>
+          </div>
+
+          <!-- Team Pro -->
+          <div class="plan-card">
+            <span class="plan-badge" style="background: var(--yellow-bg); color: var(--yellow)"
+              >2Q 출시 예정</span
+            >
+            <div class="plan-name">Team Pro</div>
+            <div class="plan-desc">AI 자동화와 알림으로 팀 속도를 높이세요</div>
+            <div class="plan-price" style="color: var(--txt-3); font-size: 20px; margin-top: 4px">
+              곧 공개
+            </div>
+            <div class="plan-note">&nbsp;</div>
+            <button class="plan-cta" disabled>출시 알림 받기</button>
+            <hr class="plan-divider" />
+            <ul class="plan-features">
+              <li class="on"><span>✓</span> Workspace 전체 포함</li>
+              <li class="on"><span>✓</span> MCP 서버 연동 (AI 자동화)</li>
+              <li class="on"><span>✓</span> 워크스페이스 무제한 생성</li>
+              <li class="on"><span>✓</span> Slack · Telegram 실시간 알림</li>
+              <li class="on"><span>✓</span> Markdown 에디터 지원</li>
+              <li class="on"><span>✓</span> 제한없는 이미지 및 파일 첨부</li>
+              <li class="on"><span>✓</span> 고급 검색 & 필터</li>
+              <li class="on"><span>✓</span> 번다운 · 워크로드 분석</li>
+            </ul>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="plan-card">
+            <span class="plan-badge" style="background: var(--red-bg); color: var(--red)"
+              >문의</span
+            >
+            <div class="plan-name">Enterprise</div>
+            <div class="plan-desc">온프레미스 설치 & 완전 커스터마이징</div>
+            <div class="plan-price" style="font-size: 18px; margin-top: 6px">별도 협의</div>
+            <div class="plan-note">연간 계약</div>
+            <a href="mailto:hello@tika.app"><button class="plan-cta d">도입 문의하기</button></a>
+            <hr class="plan-divider" />
+            <ul class="plan-features">
+              <li class="on"><span>✓</span> Team Pro 전체 포함</li>
+              <li class="on"><span>✓</span> 셀프 호스팅 (온프레미스)</li>
+              <li class="on"><span>✓</span> 커스텀 워크플로우</li>
+              <li class="on"><span>✓</span> 감사 로그 & 컴플라이언스</li>
+              <li class="on"><span>✓</span> REST API & 웹훅</li>
+              <li class="on"><span>✓</span> 온보딩 · 마이그레이션 지원</li>
+            </ul>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <!-- Team Pro -->
-      <div class="plan-card">
-        <span class="plan-badge" style="background:var(--yellow-bg); color:var(--yellow)">2Q 출시 예정</span>
-        <div class="plan-name">Team Pro</div>
-        <div class="plan-desc">AI 자동화와 알림으로 팀 속도를 높이세요</div>
-        <div class="plan-price" style="color:var(--txt-3); font-size:20px; margin-top:4px">곧 공개</div>
-        <div class="plan-note">&nbsp;</div>
-        <button class="plan-cta" disabled>출시 알림 받기</button>
-        <hr class="plan-divider" />
-        <ul class="plan-features">
-          <li class="on"><span>✓</span> Workspace 전체 포함</li>
-          <li class="on"><span>✓</span> MCP 서버 연동 (AI 자동화)</li>
-          <li class="on"><span>✓</span> 워크스페이스 무제한 생성</li>
-          <li class="on"><span>✓</span> Slack · Telegram 실시간 알림</li>
-          <li class="on"><span>✓</span> Markdown 리치 에디터</li>
-          <li class="on"><span>✓</span> 파일 첨부</li>
-          <li class="on"><span>✓</span> 고급 검색 & 필터</li>
-          <li class="on"><span>✓</span> 번다운 · 워크로드 분석</li>
-        </ul>
+    <hr class="divider" />
+
+    <!-- ═══════ FAQ ════════════════════════════════════════════════════════════ -->
+    <section class="section">
+      <div class="wrap" style="text-align: center">
+        <span class="section-label">자주 묻는 질문</span>
+        <h2 class="section-title">궁금한 점이 있으신가요?</h2>
       </div>
-
-      <!-- Enterprise -->
-      <div class="plan-card">
-        <span class="plan-badge" style="background:var(--red-bg); color:var(--red)">문의</span>
-        <div class="plan-name">Enterprise</div>
-        <div class="plan-desc">온프레미스 설치 & 완전 커스터마이징</div>
-        <div class="plan-price" style="font-size:18px; margin-top:6px">별도 협의</div>
-        <div class="plan-note">연간 계약</div>
-        <a href="mailto:hello@tika.app"><button class="plan-cta d">도입 문의하기</button></a>
-        <hr class="plan-divider" />
-        <ul class="plan-features">
-          <li class="on"><span>✓</span> Team Pro 전체 포함</li>
-          <li class="on"><span>✓</span> 셀프 호스팅 (온프레미스)</li>
-          <li class="on"><span>✓</span> 커스텀 워크플로우</li>
-          <li class="on"><span>✓</span> 감사 로그 & 컴플라이언스</li>
-          <li class="on"><span>✓</span> REST API & 웹훅</li>
-          <li class="on"><span>✓</span> 온보딩 · 마이그레이션 지원</li>
-        </ul>
+      <div class="wrap" style="max-width: 640px; margin-top: 0">
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">
+              Q. 무료로 계속 쓸 수 있나요?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">
+              Personal 플랜은 영구 무료이며 개인 할 일 관리에 필요한 핵심 기능을 모두 제공합니다.
+              Workspace 플랜도 현재 베타 기간 동안 무료로 이용하실 수 있습니다.
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">
+              Q. 팀원을 몇 명까지 초대할 수 있나요?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">
+              현재 Workspace 플랜에서는 워크스페이스당 팀원 초대에 별도 제한이 없습니다. Team Pro
+              출시 이후 플랜별 정책이 확정될 예정입니다.
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">
+              Q. MCP는 어떤 AI와 연동되나요?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">
+              Team Pro 플랜에서 MCP(Model Context Protocol)를 지원합니다. Claude, GPT 등 MCP 호환 AI
+              에이전트가 Tika 티켓을 직접 생성·조회·수정할 수 있습니다. 상세 스펙은 2Q 출시 시
+              공개됩니다.
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">
+              Q. 데이터는 어디에 저장되나요?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">
+              클라우드 플랜은 Vercel + Neon(PostgreSQL) 인프라에 안전하게 저장됩니다. Enterprise
+              온프레미스 설치 시 고객사 서버에만 데이터가 저장되며 외부 전송이 없습니다.
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">
+              Q. Enterprise 도입 절차는 어떻게 되나요?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">
+              hello@tika.app으로 문의 주시면 영업일 1일 이내 담당자가 연락드립니다. 요구사항 파악 →
+              데모·PoC → 계약 → 설치 지원 순서로 진행됩니다.
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
 
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-
-<!-- ═══════ FAQ ════════════════════════════════════════════════════════════ -->
-<section class="section">
-  <div class="wrap" style="text-align:center">
-    <span class="section-label">자주 묻는 질문</span>
-    <h2 class="section-title">궁금한 점이 있으신가요?</h2>
-  </div>
-  <div class="wrap" style="max-width:640px; margin-top:0">
-    <div class="faq-list">
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Q. 무료로 계속 쓸 수 있나요?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Personal 플랜은 영구 무료이며 개인 할 일 관리에 필요한 핵심 기능을 모두 제공합니다. Workspace 플랜도 현재 베타 기간 동안 무료로 이용하실 수 있습니다.</div>
+    <!-- ═══════ CTA BAND ═══════════════════════════════════════════════════════ -->
+    <section style="padding: 0 0 72px">
+      <div class="wrap-lg">
+        <div class="cta-band">
+          <h2>시작할 준비 되셨나요?</h2>
+          <p>신용카드 없이 · 설치 없이 · 지금 바로</p>
+          <a href="/login"><button class="btn btn-primary">Google로 무료 시작하기</button></a>
+          <p style="margin-top: 14px; font-size: 12px; color: rgba(255, 255, 255, 0.35)">
+            부담 없이, 언제든 해지 가능
+          </p>
+        </div>
       </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Q. 팀원을 몇 명까지 초대할 수 있나요?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">현재 Workspace 플랜에서는 워크스페이스당 팀원 초대에 별도 제한이 없습니다. Team Pro 출시 이후 플랜별 정책이 확정될 예정입니다.</div>
+    </section>
+
+    <!-- ═══════ FOOTER ════════════════════════════════════════════════════════ -->
+    <footer>
+      <div
+        style="
+          margin-bottom: 12px;
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          flex-wrap: wrap;
+        "
+      >
+        <a href="#">로고</a>
+        <a href="#">개인정보처리방침</a>
+        <a href="#">이용약관</a>
+        <a href="mailto:hello@tika.app">문의하기</a>
       </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Q. MCP는 어떤 AI와 연동되나요?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Team Pro 플랜에서 MCP(Model Context Protocol)를 지원합니다. Claude, GPT 등 MCP 호환 AI 에이전트가 Tika 티켓을 직접 생성·조회·수정할 수 있습니다. 상세 스펙은 2Q 출시 시 공개됩니다.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Q. 데이터는 어디에 저장되나요?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">클라우드 플랜은 Vercel + Neon(PostgreSQL) 인프라에 안전하게 저장됩니다. Enterprise 온프레미스 설치 시 고객사 서버에만 데이터가 저장되며 외부 전송이 없습니다.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Q. Enterprise 도입 절차는 어떻게 되나요?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">hello@tika.app으로 문의 주시면 영업일 1일 이내 담당자가 연락드립니다. 요구사항 파악 → 데모·PoC → 계약 → 설치 지원 순서로 진행됩니다.</div>
-      </div>
-    </div>
-  </div>
-</section>
+      Tika &mdash; Plan Simply. Ship Boldly. &copy; 2026
+    </footer>
 
-
-<!-- ═══════ CTA BAND ═══════════════════════════════════════════════════════ -->
-<section style="padding: 0 0 72px">
-  <div class="wrap-lg">
-    <div class="cta-band">
-      <h2>시작할 준비 되셨나요?</h2>
-      <p>신용카드 없이 · 설치 없이 · 지금 바로</p>
-      <a href="/login"><button class="btn btn-primary">Google로 무료 시작하기</button></a>
-      <p style="margin-top:14px; font-size:12px; color:rgba(255,255,255,.35)">부담 없이, 언제든 해지 가능</p>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════ FOOTER ════════════════════════════════════════════════════════ -->
-<footer>
-  <div style="margin-bottom:12px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap">
-    <a href="#">로고</a>
-    <a href="#">개인정보처리방침</a>
-    <a href="#">이용약관</a>
-    <a href="mailto:hello@tika.app">문의하기</a>
-  </div>
-  Tika &mdash; Plan Simply. Ship Boldly. &copy; 2026
-</footer>
-
-
-<script>
-  function toggleFaq(btn) {
-    const item = btn.closest('.faq-item');
-    const isOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
-    if (!isOpen) item.classList.add('open');
-  }
-</script>
-</body>
+    <script>
+      function toggleFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach((el) => el.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+      }
+    </script>
+  </body>
 </html>

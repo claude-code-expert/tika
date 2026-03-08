@@ -210,10 +210,10 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
             <Image
-              src="/images/tika-logo-combo.png"
+              src="/images/icon/tika-logo-header.png"
               alt="Tika"
-              width={72}
-              height={32}
+              width={45}
+              height={20}
               style={{ objectFit: 'contain', flexShrink: 0 }}
               priority
             />

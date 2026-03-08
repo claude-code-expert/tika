@@ -52,7 +52,7 @@ export function WorkspaceOnboarding({ userId, userName }: WorkspaceOnboardingPro
         {/* Logo — heading 바로 위, 중앙 */}
         <div style={{ marginBottom: 20 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/tika-logo-combo.png" alt="Tika" style={{ height: 36, objectFit: 'contain' }} />
+          <img src="/images/icon/tika-logo-header.png" alt="Tika" style={{ height: 36, objectFit: 'contain' }} />
         </div>
 
         {/* Heading */}

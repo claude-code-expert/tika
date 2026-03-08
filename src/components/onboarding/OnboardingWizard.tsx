@@ -184,7 +184,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
         {/* Logo area */}
         <div style={{ marginBottom: 48 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/tika-logo-combo.png" alt="Tika" style={{ height: 40, objectFit: 'contain' }} />
+          <img src="/images/icon/tika-logo-header.png" alt="Tika" style={{ height: 40, objectFit: 'contain' }} />
         </div>
 
         {/* Heading */}

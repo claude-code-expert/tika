@@ -137,8 +137,8 @@ export function ContactModal({
                 <Image
                   src="/images/icon/tika-logo-header@2x.png"
                   alt="Tika"
-                  width={80}
-                  height={80}
+                  width={60}
+                  height={60}
                   style={{ margin: '0 auto 12px' }}
                 />
                 <div

@@ -7,8 +7,12 @@ export const metadata: Metadata = {
   title: 'Tika',
   description: '티켓 기반 칸반 보드 TODO 앱',
   icons: {
-    icon: '/favicon.svg',
-    apple: '/images/tika-app-icon.png',
+    icon: [
+      { url: '/images/icon/favicon.ico', sizes: 'any' },
+      { url: '/images/icon/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/images/icon/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/images/icon/apple-touch-icon.png',
   },
 };
 

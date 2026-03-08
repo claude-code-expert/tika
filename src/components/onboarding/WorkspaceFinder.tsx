@@ -12,8 +12,8 @@ interface WorkspaceFinderProps {
 
 // Pattern: /invite/<uuid-token>
 const INVITE_PATTERN = /\/invite\/([0-9a-f-]{36})/i;
-// Pattern: /team/<number>
-const TEAM_URL_PATTERN = /\/team\/(\d+)/;
+// Pattern: /workspace/<number>
+const TEAM_URL_PATTERN = /\/workspace\/(\d+)/;
 
 type SearchState = 'idle' | 'loading' | 'results' | 'no-results' | 'invite-success' | 'error';
 
@@ -159,7 +159,7 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
 
         // Auto-redirect to the team workspace
         if (data.workspaceId) {
-          setTimeout(() => router.push(`/team/${data.workspaceId}`), 1500);
+          setTimeout(() => router.push(`/workspace/${data.workspaceId}`), 1500);
         }
       } catch {
         setErrorMsg('초대 링크 처리 중 오류가 발생했습니다.');
@@ -168,7 +168,7 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
       return;
     }
 
-    // Case 2: /team/<id> URL — submit join request directly
+    // Case 2: /workspace/<id> URL — submit join request directly
     const teamMatch = trimmed.match(TEAM_URL_PATTERN);
     if (teamMatch) {
       const wsId = parseInt(teamMatch[1], 10);

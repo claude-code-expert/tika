@@ -14,10 +14,11 @@ interface TeamShellProps {
   workspaceId: number;
   role: TeamRole;
   workspaceName?: string;
+  iconColor?: string | null;
   children: React.ReactNode;
 }
 
-export function TeamShell({ workspaceId, role, workspaceName, children }: TeamShellProps) {
+export function TeamShell({ workspaceId, role, workspaceName, iconColor, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
   const router = useRouter();
   const fetchBoardRef = useRef<(() => Promise<void>) | null>(null);
@@ -37,7 +38,7 @@ export function TeamShell({ workspaceId, role, workspaceName, children }: TeamSh
         body: JSON.stringify({ ...data, workspaceId }),
       });
       setIsNewTicketOpen(false);
-      router.push(`/team/${workspaceId}/board`);
+      router.push(`/workspace/${workspaceId}/board`);
       await fetchBoardRef.current?.();
     },
     [workspaceId, router],
@@ -99,7 +100,7 @@ export function TeamShell({ workspaceId, role, workspaceName, children }: TeamSh
       )}
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <TeamSidebar workspaceId={workspaceId} role={role} workspaceName={workspaceName} />
+        <TeamSidebar workspaceId={workspaceId} role={role} workspaceName={workspaceName} iconColor={iconColor} />
 
         <main
           style={{

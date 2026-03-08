@@ -16,9 +16,9 @@ export function SprintSelector({ sprints, selectedSprintId, workspaceId, basePat
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     if (val) {
-      router.push(`/team/${workspaceId}/${basePath}?sprintId=${val}`);
+      router.push(`/workspace/${workspaceId}/${basePath}?sprintId=${val}`);
     } else {
-      router.push(`/team/${workspaceId}/${basePath}`);
+      router.push(`/workspace/${workspaceId}/${basePath}`);
     }
   };
 

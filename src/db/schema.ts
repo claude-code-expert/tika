@@ -277,6 +277,22 @@ export const ticketAssignees = pgTable(
   ],
 );
 
+// 16. notification_signups — early-access / launch notification signups (not tied to users)
+export const notificationSignups = pgTable(
+  'notification_signups',
+  {
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 255 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // 'team-pro' | 'enterprise' | etc.
+    send: boolean('send').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('notification_signups_email_type_unique').on(table.email, table.type),
+    index('idx_notification_signups_type_send').on(table.type, table.send),
+  ],
+);
+
 // 15. workspace_join_requests — join request from user to workspace (onboarding flow)
 export const workspaceJoinRequests = pgTable(
   'workspace_join_requests',

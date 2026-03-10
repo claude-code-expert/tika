@@ -10,6 +10,10 @@ import {
   getPendingRequestByUser,
 } from '@/db/queries/joinRequests';
 import type { JoinRequestStatus } from '@/types/index';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { getMembersByWorkspace } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { sendInAppNotification, buildJoinRequestReceivedMessage } from '@/lib/notifications';
 
 // POST /api/workspaces/[id]/join-requests — submit a join request
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -88,6 +92,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const joinRequest = await createJoinRequest(workspaceId, userId, message);
+
+    // Notify workspace owners about the join request
+    const [wsData, wsMembers] = await Promise.all([
+      getWorkspaceById(workspaceId),
+      getMembersByWorkspace(workspaceId),
+    ]);
+    const ownerUserIds = wsMembers.filter((m) => m.role === 'OWNER').map((m) => m.userId);
+    const requesterName = (session.user.name as string | null) ?? '사용자';
+    const { title: nTitle, message: nMessage } = buildJoinRequestReceivedMessage(
+      requesterName, wsData?.name ?? '워크스페이스',
+    );
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.JOIN_REQUEST_RECEIVED,
+      title: nTitle,
+      message: nMessage,
+      link: `/workspace/${workspaceId}/members`,
+      actorId: userId,
+      recipientUserIds: ownerUserIds,
+    }).catch((e) => console.error('Notification error (join request):', e));
 
     return NextResponse.json({ joinRequest }, { status: 201 });
   } catch (err) {

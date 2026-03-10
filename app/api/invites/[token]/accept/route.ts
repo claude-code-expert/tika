@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getInviteByToken, acceptInvite } from '@/db/queries/invites';
-import { getMemberByUserId } from '@/db/queries/members';
+import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildMemberJoinedMessage } from '@/lib/notifications';
 
 // POST /api/invites/[token]/accept — requires auth; validates email match; creates member
 export async function POST(
@@ -60,6 +63,25 @@ export async function POST(
         { status: 500 },
       );
     }
+
+    // Notify workspace owners that a new member joined
+    const [workspace, wsMembers] = await Promise.all([
+      getWorkspaceById(invite.workspaceId),
+      getMembersByWorkspace(invite.workspaceId),
+    ]);
+    const ownerUserIds = wsMembers.filter((m) => m.role === 'OWNER').map((m) => m.userId);
+    const { title, message } = buildMemberJoinedMessage(displayName, workspace?.name ?? '워크스페이스');
+    sendInAppNotification({
+      workspaceId: invite.workspaceId,
+      type: NOTIFICATION_TYPE.MEMBER_JOINED,
+      title,
+      message,
+      link: `/workspace/${invite.workspaceId}/members`,
+      actorId: userId,
+      recipientUserIds: ownerUserIds,
+      refType: 'member',
+      refId: result.member.id,
+    }).catch((e) => console.error('Notification error (member joined):', e));
 
     return NextResponse.json({
       workspaceId: result.member.workspaceId,

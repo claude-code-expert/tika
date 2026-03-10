@@ -1,4 +1,4 @@
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { members, users, workspaces } from '@/db/schema';
 import type { Member, MemberRole, MemberWithEmail, WorkspaceWithRole, TeamRole, WorkspaceType } from '@/types/index';
@@ -136,6 +136,7 @@ export async function createMember(data: {
   role: string;
   invitedBy?: number | null;
   joinedAt?: Date | null;
+  isPrimary?: boolean;
 }): Promise<Member> {
   const [row] = await db
     .insert(members)
@@ -147,9 +148,22 @@ export async function createMember(data: {
       role: data.role,
       invitedBy: data.invitedBy ?? null,
       joinedAt: data.joinedAt ?? null,
+      isPrimary: data.isPrimary ?? false,
     })
     .returning();
   return toMember(row);
+}
+
+/** Sets isPrimary=true for the given workspace member, clears it for all other workspaces of the same user. */
+export async function setPrimaryWorkspace(userId: string, workspaceId: number): Promise<void> {
+  await db
+    .update(members)
+    .set({ isPrimary: false })
+    .where(and(eq(members.userId, userId), ne(members.workspaceId, workspaceId)));
+  await db
+    .update(members)
+    .set({ isPrimary: true })
+    .where(and(eq(members.userId, userId), eq(members.workspaceId, workspaceId)));
 }
 
 export async function transferOwnership(
@@ -190,6 +204,7 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
       ownerId: workspaces.ownerId,
       type: workspaces.type,
       iconColor: workspaces.iconColor,
+      isSearchable: workspaces.isSearchable,
       createdAt: workspaces.createdAt,
       role: members.role,
     })
@@ -204,6 +219,7 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
     ownerId: row.ownerId,
     type: row.type as WorkspaceType,
     iconColor: row.iconColor ?? null,
+    isSearchable: row.isSearchable,
     createdAt: row.createdAt.toISOString(),
     role: row.role as TeamRole,
   }));

@@ -5,7 +5,14 @@ import { updateTicketSchema } from '@/lib/validations';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 import { requireRole, isRoleError } from '@/lib/permissions';
-import { TEAM_ROLE } from '@/types/index';
+import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
+import {
+  sendInAppNotification,
+  buildTicketStatusChangedMessage,
+  buildTicketAssignedMessage,
+  buildTicketUnassignedMessage,
+  buildTicketDeletedMessage,
+} from '@/lib/notifications';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -98,9 +105,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     // Handle status change side effects (startDate, completedAt)
     let completedAt: Date | null | undefined = undefined;
     let startDate: string | null | undefined = undefined;
+    let existing: Awaited<ReturnType<typeof getTicketById>> | null = null;
 
     if (result.data.status !== undefined) {
-      const existing = await getTicketById(ticketId, workspaceId);
+      existing = await getTicketById(ticketId, workspaceId);
       if (existing) {
         // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
         if (
@@ -139,12 +147,77 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // Capture previous assignees for notification diff
+    const prevAssignees = assigneeIds !== undefined ? await getAssigneesByTicket(ticketId) : [];
+
     // Update multi-assignees if provided
     if (assigneeIds !== undefined) {
       await setAssignees(ticketId, assigneeIds);
     }
 
     const assignees = await getAssigneesByTicket(ticketId);
+    const actorName = (session.user.name as string | null) ?? '사용자';
+    const ticketLink = `/workspace/${workspaceId}/${ticketId}`;
+
+    // --- Notification triggers (fire-and-forget) ---
+
+    // 1. Status changed → notify assignees
+    if (result.data.status !== undefined && existing && existing.status !== result.data.status) {
+      const { title, message } = buildTicketStatusChangedMessage(
+        actorName, ticket.title, existing.status, result.data.status,
+      );
+      sendInAppNotification({
+        workspaceId,
+        type: NOTIFICATION_TYPE.TICKET_STATUS_CHANGED,
+        title,
+        message,
+        link: ticketLink,
+        actorId: userId,
+        recipientUserIds: assignees.map((a) => a.userId),
+        refType: 'ticket',
+        refId: ticketId,
+      }).catch((e) => console.error('Notification error (status changed):', e));
+    }
+
+    // 2. Assignees changed → notify added/removed
+    if (assigneeIds !== undefined) {
+      const prevUserIds = new Set(prevAssignees.map((a) => a.userId));
+      const newUserIds = new Set(assignees.map((a) => a.userId));
+
+      const addedUserIds = assignees.filter((a) => !prevUserIds.has(a.userId)).map((a) => a.userId);
+      const removedUserIds = prevAssignees.filter((a) => !newUserIds.has(a.userId)).map((a) => a.userId);
+
+      if (addedUserIds.length > 0) {
+        const { title, message } = buildTicketAssignedMessage(actorName, ticket.title);
+        sendInAppNotification({
+          workspaceId,
+          type: NOTIFICATION_TYPE.TICKET_ASSIGNED,
+          title,
+          message,
+          link: ticketLink,
+          actorId: userId,
+          recipientUserIds: addedUserIds,
+          refType: 'ticket',
+          refId: ticketId,
+        }).catch((e) => console.error('Notification error (assigned):', e));
+      }
+
+      if (removedUserIds.length > 0) {
+        const { title, message } = buildTicketUnassignedMessage(actorName, ticket.title);
+        sendInAppNotification({
+          workspaceId,
+          type: NOTIFICATION_TYPE.TICKET_UNASSIGNED,
+          title,
+          message,
+          link: ticketLink,
+          actorId: userId,
+          recipientUserIds: removedUserIds,
+          refType: 'ticket',
+          refId: ticketId,
+        }).catch((e) => console.error('Notification error (unassigned):', e));
+      }
+    }
+
     return NextResponse.json({ ticket: { ...ticket, assignees } });
   } catch (error) {
     console.error('PATCH /api/tickets/:id error:', error);
@@ -185,6 +258,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       );
     }
 
+    // Fetch ticket + assignees before delete for notification
+    const ticketToDelete = await getTicketById(ticketId, workspaceId);
+    const assigneesBeforeDelete = ticketToDelete ? await getAssigneesByTicket(ticketId) : [];
+
     const deleted = await deleteTicket(ticketId, workspaceId);
     if (!deleted) {
       return NextResponse.json(
@@ -192,6 +269,24 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         { status: 404 },
       );
     }
+
+    // Notify assignees about deletion
+    if (ticketToDelete && assigneesBeforeDelete.length > 0) {
+      const actorName = (session.user.name as string | null) ?? '사용자';
+      const { title, message } = buildTicketDeletedMessage(actorName, ticketToDelete.title);
+      sendInAppNotification({
+        workspaceId,
+        type: NOTIFICATION_TYPE.TICKET_DELETED,
+        title,
+        message,
+        link: `/workspace/${workspaceId}`,
+        actorId: userId,
+        recipientUserIds: assigneesBeforeDelete.map((a) => a.userId),
+        refType: 'ticket',
+        refId: ticketId,
+      }).catch((e) => console.error('Notification error (ticket deleted):', e));
+    }
+
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('DELETE /api/tickets/:id error:', error);

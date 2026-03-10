@@ -34,7 +34,6 @@
     </clipPath>
 
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700&amp;display=swap');
       .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
       .font-body    { font-family: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif; }
     </style>
@@ -62,16 +61,17 @@
   <text x="90" y="156" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="12" fill="#629584" letter-spacing="0.5">Ticket-based Kanban Board</text>
 
   <!-- Main headline line 1 -->
-  <text x="60" y="234" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" fill="#2C3E50" letter-spacing="-1.5">Plan</text>
-  <text x="172" y="234" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" fill="url(#accentGrad)" letter-spacing="-1.5"> Simply.</text>
+  <text x="60" y="234" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" letter-spacing="-1.5">
+    <tspan fill="#2C3E50">Plan </tspan><tspan fill="url(#accentGrad)">Simply.</tspan>
+  </text>
 
   <!-- Main headline line 2 -->
-  <text x="60" y="305" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" fill="#2C3E50" letter-spacing="-1.5">Ship</text>
-  <text x="184" y="305" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" fill="url(#accentGrad)" letter-spacing="-1.5"> Boldly.</text>
+  <text x="60" y="305" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" letter-spacing="-1.5">
+    <tspan fill="#2C3E50">Ship </tspan><tspan fill="url(#accentGrad)">Boldly.</tspan>
+  </text>
 
   <!-- Subscription text -->
-  <text x="60" y="354" font-family="'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" font-weight="400" font-size="16" fill="#5A6B7F">Ticket-based Kanban Board for</text>
-  <text x="60" y="378" font-family="'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" font-weight="400" font-size="16" fill="#5A6B7F">Goal-driven Task Management</text>
+  <text x="60" y="354" font-family="'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" font-weight="400" font-size="16" fill="#5A6B7F">Ticket-based Kanban Board for Goal-driven Task Management</text>
 
   <!-- Divider line under copy -->
   <rect x="60" y="332" width="48" height="3" rx="2" fill="#629584"/>

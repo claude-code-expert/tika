@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { getSprintById, hasActiveSprint, activateSprint } from '@/db/queries/sprints';
+import { getMembersByWorkspace } from '@/db/queries/members';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildSprintStartedMessage } from '@/lib/notifications';
 
 type RouteParams = { params: Promise<{ id: string; sid: string }> };
 
@@ -55,6 +58,22 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     }
 
     const updated = await activateSprint(sprintId, workspaceId);
+
+    // Notify all workspace members
+    const wsMembers = await getMembersByWorkspace(workspaceId);
+    const { title, message } = buildSprintStartedMessage(sprint.name);
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.SPRINT_STARTED,
+      title,
+      message,
+      link: `/workspace/${workspaceId}/board`,
+      actorId: userId,
+      recipientUserIds: wsMembers.map((m) => m.userId),
+      refType: 'sprint',
+      refId: sprintId,
+    }).catch((e) => console.error('Notification error (sprint started):', e));
+
     return NextResponse.json({ sprint: updated });
   } catch (error) {
     console.error('POST /api/workspaces/[id]/sprints/[sid]/activate error:', error);

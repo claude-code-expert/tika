@@ -17,7 +17,7 @@ build/
 .env.production.local
 
 #docs
-/docs/phase/
+
 
 # debug
 npm-debug.log*

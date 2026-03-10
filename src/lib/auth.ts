@@ -16,6 +16,7 @@ async function createPersonalWorkspace(userId: string, userName: string) {
     workspaceId: newWorkspace.id,
     displayName: userName,
     color: '#7EB4A2',
+    role: 'OWNER',
     isPrimary: true,
   });
 

@@ -4,14 +4,11 @@ import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
 import { getMemberWorkload } from '@/db/queries/analytics';
 import { getBoardData } from '@/db/queries/tickets';
-import { getJoinRequests } from '@/db/queries/joinRequests';
-import { getInvitesByWorkspace } from '@/db/queries/invites';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { MemberDetailCard } from '@/components/team/MemberDetailCard';
 import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
 import { MemberList } from '@/components/team/MemberList';
-import { JoinRequestList } from '@/components/workspace/JoinRequestList';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
 
 export default async function TeamMembersPage({
@@ -27,21 +24,18 @@ export default async function TeamMembersPage({
 
   const userId = session.user.id as string;
 
-  const [workspace, currentMember, workload, boardData, allMembers, joinRequests, pendingInvites] = await Promise.all([
+  const [workspace, currentMember, workload, boardData, allMembers] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
     getMemberWorkload(workspaceId),
     getBoardData(workspaceId),
     getMembersByWorkspace(workspaceId),
-    getJoinRequests(workspaceId, 'PENDING'),
-    getInvitesByWorkspace(workspaceId),
   ]);
 
   if (!workspace || !currentMember) redirect('/');
 
   const role = currentMember.role as TeamRole;
   const isOwner = role === 'OWNER';
-  const pendingRequests = isOwner ? joinRequests : [];
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
 
@@ -51,7 +45,7 @@ export default async function TeamMembersPage({
   const totalWorkday  = totalAssigned * 2;
 
   const summaryStats = [
-    { value: String(workload.length),    label: '팀 멤버',     color: '#2C3E50' },
+    { value: String(workload.length),    label: '워크스페이스 멤버',     color: '#2C3E50' },
     { value: String(totalAssigned),      label: '총 할당 티켓', color: '#2C3E50' },
     { value: String(totalDone),          label: '완료 티켓',   color: '#629584' },
     { value: `${totalWorkday}d`,         label: '총 Workday',  color: '#F59E0B' },
@@ -65,7 +59,7 @@ export default async function TeamMembersPage({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 700, color: '#2C3E50', marginBottom: 4 }}>
-              팀 멤버
+              워크스페이스 멤버
             </h1>
             <p style={{ fontSize: 13, color: '#8993A4', margin: 0 }}>
               {allMembers.length}명의 멤버
@@ -135,14 +129,8 @@ export default async function TeamMembersPage({
             isOwner={isOwner}
             workspaceName={workspace.name}
             workspaceId={workspaceId}
-            pendingInvites={isOwner ? pendingInvites : []}
           />
         </section>
-
-        {/* Join requests section (OWNER only) */}
-        {isOwner && (
-          <JoinRequestList workspaceId={workspaceId} initialRequests={pendingRequests} />
-        )}
       </div>
     </TeamShell>
   );

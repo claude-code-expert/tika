@@ -6,14 +6,19 @@ import { WithdrawDialog } from '@/components/layout/WithdrawDialog';
 
 const COLOR_SWATCHES = [
   '#629584',
-  '#3B82F6',
-  '#8B5CF6',
-  '#F59E0B',
-  '#EF4444',
-  '#10B981',
-  '#ffa8d3',
-  '#c7c758',
-  '#50bef0',
+  '#E8392A',
+  '#F5671A',
+  '#F5A008',
+  '#F0C800',
+  '#7AB518',
+  '#279957',
+  '#18A870',
+  '#19A3D4',
+  '#2B72D8',
+  '#7048D8',
+  '#B825B8',
+  '#B5521C',
+  '#5A5898',
 ];
 
 interface ProfileModalProps {
@@ -148,24 +153,24 @@ export function ProfileModal({
           >
             색상
           </label>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
             {COLOR_SWATCHES.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
+                  width: 22,
+                  height: 22,
+                  borderRadius: 4,
                   backgroundColor: c,
                   border:
-                    color === c ? '3px solid var(--color-text-primary)' : '3px solid transparent',
+                    color === c ? '2px solid var(--color-text-primary)' : '2px solid transparent',
                   cursor: 'pointer',
                   padding: 0,
                   outline: 'none',
                   transition: 'border-color 0.15s, transform 0.15s',
-                  transform: color === c ? 'scale(1.1)' : 'scale(1)',
+                  transform: color === c ? 'scale(1.15)' : 'scale(1)',
                 }}
                 aria-label={`색상 ${c}`}
               />

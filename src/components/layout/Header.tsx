@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
-import { CreateTeamModal } from './CreateTeamModal';
-import type { Member, NotificationLog } from '@/types/index';
-import { X, ArrowRight, Users, Plus, ChevronRight } from 'lucide-react';
-import type { WorkspaceWithRole } from '@/types/index';
+import { MemberDrawer } from '@/components/settings/MemberDrawer';
+import type { Member, InAppNotification } from '@/types/index';
+import { X, ArrowRight, Users } from 'lucide-react';
 import { useOutsideClick } from '@/hooks/useOutsideClick';
 
 interface HeaderProps {
@@ -33,6 +31,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   const { data: session } = useSession();
   const user = session?.user;
   const memberId = (user as Record<string, unknown> | undefined)?.memberId as number | undefined;
+  const workspaceId = (user as Record<string, unknown> | undefined)?.workspaceId as number | null | undefined;
 
   const [member, setMember] = useState<Member | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -41,19 +40,13 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   const [isMobile, setIsMobile] = useState(false);
 
   // Notification state
-  const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
+  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [memberAlertCount, setMemberAlertCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [isMemberDrawerOpen, setIsMemberDrawerOpen] = useState(false);
 
-  // Team workspace state
-  const [teamWorkspaces, setTeamWorkspaces] = useState<WorkspaceWithRole[]>([]);
-  const [isTeamOpen, setIsTeamOpen] = useState(false);
-  const [isCreatingTeam] = useState(false);
-  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
-  const teamRef = useRef<HTMLDivElement>(null);
-
-  const router = useRouter();
   const displayName = member?.displayName ?? user?.name ?? '사용자';
   const avatarColor = member?.color ?? '#629584';
   const initial = displayName.slice(0, 2).toUpperCase();
@@ -67,50 +60,44 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Fetch workspaces, member, notification logs in parallel
+  // Fetch workspaces, member, in-app notifications in parallel
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      fetch('/api/workspaces').then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch('/api/members').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('/api/notifications/logs').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([workspacesData, membersData, notifData]: [
-      { workspaces?: WorkspaceWithRole[] } | null,
+      fetch('/api/notifications/in-app?limit=5').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/notifications/in-app/unread-count').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/notifications/in-app/member-alert-count').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([membersData, notifData, countData, memberAlertData]: [
       { members?: Member[] } | null,
-      { logs?: NotificationLog[]; unreadCount?: number } | null,
+      { notifications?: InAppNotification[] } | null,
+      { count?: number } | null,
+      { count?: number } | null,
     ]) => {
-      if (workspacesData?.workspaces) {
-        setTeamWorkspaces(workspacesData.workspaces.filter((w) => w.type === 'TEAM'));
-      }
       if (membersData?.members?.length) {
         setMember(membersData.members[0]);
       }
-      if (notifData) {
-        setNotifLogs(notifData.logs ?? []);
-        setUnreadCount(notifData.unreadCount ?? 0);
+      if (notifData?.notifications) {
+        setNotifications(notifData.notifications);
+      }
+      if (countData) {
+        setUnreadCount(countData.count ?? 0);
+      }
+      if (memberAlertData) {
+        setMemberAlertCount(memberAlertData.count ?? 0);
       }
     });
   }, [user]);
-
-  useOutsideClick(teamRef, isTeamOpen, () => setIsTeamOpen(false));
-
-  const handleCreateTeam = () => {
-    setIsTeamOpen(false);
-    setIsCreateTeamModalOpen(true);
-  };
 
   // Close notif dropdown on outside click → mark as read
   const handleNotifClose = useCallback(() => {
     setIsNotifOpen(false);
     if (unreadCount > 0) {
-      fetch('/api/notifications/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAllRead' }),
-      })
+      fetch('/api/notifications/in-app/read-all', { method: 'PATCH' })
         .then(() => {
           setUnreadCount(0);
-          setNotifLogs((prev) => prev.map((l) => ({ ...l, isRead: true })));
+          setMemberAlertCount(0);
+          setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         })
         .catch(() => {});
     }
@@ -187,8 +174,8 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               </svg>
             </button>
           )}
-          <Link
-            href={teamWorkspaces.length > 0 ? `/workspace/${teamWorkspaces[0].id}` : '/'}
+          <a
+            href="/"
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
             <Image
@@ -212,7 +199,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                 Plan Simply. Ship Boldly.
               </span>
             )}
-          </Link>
+          </a>
         </div>
 
         {/* Center: Search (only when search handler provided) */}
@@ -317,188 +304,49 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             </button>
           )}
 
-          {/* Team workspace button + dropdown */}
-          <div ref={teamRef} style={{ position: 'relative' }}>
-            <button
-              aria-label="팀 워크스페이스 개설"
-              title="팀 워크스페이스 개설"
-              onClick={() => router.push('/onboarding/workspace')}
-              style={{
-                width: 32,
-                height: 32,
-                border: 'none',
-                background: isTeamOpen ? 'var(--color-sidebar-bg)' : 'transparent',
-                borderRadius: 'var(--radius-button)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: isTeamOpen ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                transition: 'background 0.15s, color 0.15s',
-                position: 'relative',
-                flexShrink: 0,
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isTeamOpen) (e.currentTarget as HTMLElement).style.background = 'transparent';
-              }}
-            >
-              <Users size={16} />
-              {teamWorkspaces.length > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 3,
-                    right: 3,
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    background: 'var(--color-accent)',
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
-            </button>
-
-            {/* Team workspace dropdown */}
-            {isTeamOpen && (
-              <div
+          {/* Member management button → opens drawer */}
+          <button
+            onClick={() => setIsMemberDrawerOpen(true)}
+            title="멤버 관리"
+            aria-label="멤버 관리"
+            style={{
+              width: 32,
+              height: 32,
+              border: 'none',
+              background: 'transparent',
+              borderRadius: 'var(--radius-button)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary)',
+              transition: 'background 0.15s, color 0.15s',
+              flexShrink: 0,
+              position: 'relative',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
+          >
+            <Users size={16} />
+            {memberAlertCount > 0 && (
+              <span
                 style={{
                   position: 'absolute',
-                  top: 'calc(100% + 6px)',
-                  right: 0,
-                  width: 280,
-                  background: '#fff',
-                  borderRadius: 8,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                  border: '1px solid var(--color-border)',
-                  zIndex: 100,
-                  overflow: 'hidden',
-                  animation: 'modalIn 0.15s ease-out',
+                  top: 3,
+                  right: 3,
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: 'var(--color-accent)',
+                  pointerEvents: 'none',
                 }}
-              >
-                {/* Header */}
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderBottom: '1px solid var(--color-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Users size={13} style={{ color: 'var(--color-accent)' }} />
-                    팀 워크스페이스
-                  </span>
-                  <button
-                    onClick={handleCreateTeam}
-                    disabled={isCreatingTeam}
-                    title="새 팀 만들기"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--color-accent)',
-                      background: 'none',
-                      border: '1px solid var(--color-accent)',
-                      borderRadius: 5,
-                      cursor: isCreatingTeam ? 'default' : 'pointer',
-                      opacity: isCreatingTeam ? 0.5 : 1,
-                      fontFamily: 'inherit',
-                      padding: '3px 8px',
-                    }}
-                  >
-                    <Plus size={11} /> 새 팀
-                  </button>
-                </div>
-
-                {/* Workspace list */}
-                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                  {teamWorkspaces.length === 0 ? (
-                    <div style={{ padding: '20px 14px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 10 }}>
-                        팀 워크스페이스가 없습니다
-                      </p>
-                      <button
-                        onClick={handleCreateTeam}
-                        disabled={isCreatingTeam}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#fff',
-                          background: 'var(--color-accent)',
-                          border: 'none',
-                          borderRadius: 6,
-                          padding: '6px 14px',
-                          cursor: isCreatingTeam ? 'default' : 'pointer',
-                          fontFamily: 'inherit',
-                          opacity: isCreatingTeam ? 0.5 : 1,
-                        }}
-                      >
-                        <Plus size={12} /> 팀 만들기
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '4px 0' }}>
-                      {teamWorkspaces.map((ws) => (
-                        <a
-                          key={ws.id}
-                          href={`/workspace/${ws.id}`}
-                          onClick={() => setIsTeamOpen(false)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '8px 14px',
-                            textDecoration: 'none',
-                            transition: 'background 0.1s',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = '#F8F9FB')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <div
-                            style={{
-                              width: 30,
-                              height: 30,
-                              borderRadius: 7,
-                              background: 'var(--color-accent)',
-                              color: '#fff',
-                              fontSize: 13,
-                              fontWeight: 700,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              fontFamily: "'Plus Jakarta Sans', sans-serif",
-                            }}
-                          >
-                            {ws.name.slice(0, 1).toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#2C3E50', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {ws.name}
-                            </div>
-                            <div style={{ fontSize: 11, color: '#8993A4', marginTop: 1 }}>
-                              {ws.role === 'OWNER' ? '관리자' : ws.role === 'MEMBER' ? '멤버' : '뷰어'}
-                            </div>
-                          </div>
-                          <ChevronRight size={13} style={{ color: '#8993A4', flexShrink: 0 }} />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+              />
             )}
-          </div>
+          </button>
 
           {/* Notification button + dropdown */}
           <div ref={notifRef} style={{ position: 'relative' }}>
@@ -506,7 +354,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               aria-label="알림"
               onClick={() => {
                 setIsNotifOpen((prev) => {
-                  if (!prev) { setIsTeamOpen(false); setIsDropdownOpen(false); }
+                  if (!prev) { setIsDropdownOpen(false); }
                   return !prev;
                 });
               }}
@@ -612,14 +460,10 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                   {unreadCount > 0 && (
                     <button
                       onClick={() => {
-                        fetch('/api/notifications/logs', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ action: 'markAllRead' }),
-                        })
+                        fetch('/api/notifications/in-app/read-all', { method: 'PATCH' })
                           .then(() => {
                             setUnreadCount(0);
-                            setNotifLogs((prev) => prev.map((l) => ({ ...l, isRead: true })));
+                            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
                           })
                           .catch(() => {});
                       }}
@@ -638,9 +482,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                   )}
                 </div>
 
-                {/* Log list */}
+                {/* Notification list */}
                 <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                  {notifLogs.length === 0 ? (
+                  {notifications.length === 0 ? (
                     <div
                       style={{
                         padding: '24px 16px',
@@ -652,18 +496,35 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                       알림이 없습니다
                     </div>
                   ) : (
-                    notifLogs.slice(0, 5).map((log) => (
-                      <div
-                        key={log.id}
+                    notifications.map((notif) => (
+                      <a
+                        key={notif.id}
+                        href={notif.link ?? '#'}
+                        onClick={(e) => {
+                          setIsNotifOpen(false);
+                          if (!notif.isRead) {
+                            fetch(`/api/notifications/in-app/${notif.id}/read`, { method: 'PATCH' })
+                              .then(() => {
+                                setNotifications((prev) => prev.map((n) => n.id === notif.id ? { ...n, isRead: true } : n));
+                                setUnreadCount((c) => Math.max(0, c - 1));
+                              })
+                              .catch(() => {});
+                          }
+                          if (!notif.link) e.preventDefault();
+                        }}
                         style={{
+                          display: 'block',
                           padding: '10px 16px',
                           borderBottom: '1px solid var(--color-border)',
-                          background:
-                            log.status === 'FAILED'
-                              ? '#FEF2F2'
-                              : log.isRead
-                                ? 'transparent'
-                                : '#F0FDF4',
+                          background: notif.isRead ? 'transparent' : '#F0FDF4',
+                          textDecoration: 'none',
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (notif.isRead) (e.currentTarget as HTMLElement).style.background = '#F8F9FB';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.background = notif.isRead ? 'transparent' : '#F0FDF4';
                         }}
                       >
                         <div
@@ -676,49 +537,28 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                         >
                           <span
                             style={{
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: 600,
-                              padding: '1px 6px',
-                              borderRadius: 4,
-                              background:
-                                log.channel === 'slack' ? '#E0F2FE' : '#EDE9FE',
-                              color: log.channel === 'slack' ? '#0369A1' : '#6D28D9',
-                              textTransform: 'uppercase',
+                              color: 'var(--color-text-primary)',
                             }}
                           >
-                            {log.channel}
+                            {notif.title}
                           </span>
-                          {log.status === 'FAILED' && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 600,
-                                padding: '1px 6px',
-                                borderRadius: 4,
-                                background: '#FEE2E2',
-                                color: '#DC2626',
-                              }}
-                            >
-                              실패
-                            </span>
-                          )}
                           <span
                             style={{
                               fontSize: 11,
                               color: 'var(--color-text-muted)',
                               marginLeft: 'auto',
+                              flexShrink: 0,
                             }}
                           >
-                            {timeAgo(log.sentAt)}
+                            {timeAgo(notif.createdAt)}
                           </span>
                         </div>
                         <div
                           style={{
                             fontSize: 12,
-                            color:
-                              log.status === 'FAILED'
-                                ? '#DC2626'
-                                : 'var(--color-text-secondary)',
+                            color: 'var(--color-text-secondary)',
                             lineHeight: 1.4,
                             overflow: 'hidden',
                             display: '-webkit-box',
@@ -726,11 +566,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                             WebkitBoxOrient: 'vertical',
                           }}
                         >
-                          {log.status === 'FAILED' && log.errorMessage
-                            ? log.errorMessage
-                            : log.message.split('\n')[0]}
+                          {notif.message}
                         </div>
-                      </div>
+                      </a>
                     ))
                   )}
                 </div>
@@ -800,7 +638,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             <button
               onClick={() => {
                 setIsDropdownOpen((prev) => {
-                  if (!prev) { setIsTeamOpen(false); setIsNotifOpen(false); }
+                  if (!prev) { setIsNotifOpen(false); }
                   return !prev;
                 });
               }}
@@ -967,14 +805,13 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
         />
       )}
 
-      <CreateTeamModal
-        isOpen={isCreateTeamModalOpen}
-        onClose={() => setIsCreateTeamModalOpen(false)}
-        onCreated={(ws) => {
-          setTeamWorkspaces((prev) => [...prev, ws as WorkspaceWithRole]);
-          router.push(`/workspace/${ws.id}`);
-        }}
+      {/* Member Drawer */}
+      <MemberDrawer
+        workspaceId={workspaceId ?? 0}
+        isOpen={isMemberDrawerOpen}
+        onClose={() => setIsMemberDrawerOpen(false)}
       />
+
     </>
   );
 }

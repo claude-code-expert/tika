@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getCommentsByTicketId, createComment } from '@/db/queries/comments';
+import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { getTicketById } from '@/db/queries/tickets';
 import { z } from 'zod';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildTicketCommentedMessage } from '@/lib/notifications';
 
 const createCommentSchema = z.object({
   text: z
@@ -75,7 +79,38 @@ export async function POST(
     }
 
     const memberId = session.user.memberId as number | null ?? null;
+    const userId = session.user.id as string;
     const comment = await createComment(ticketId, memberId, parsed.data.text);
+
+    // Notify assignees + previous commenters
+    const workspaceId = (session.user.workspaceId as number | null) ?? null;
+    if (workspaceId) {
+      const [assignees, existingComments, ticket] = await Promise.all([
+        getAssigneesByTicket(ticketId),
+        getCommentsByTicketId(ticketId),
+        getTicketById(ticketId, workspaceId),
+      ]);
+      // Collect unique userIds from assignees + comment authors (via memberId → member lookup)
+      const recipientSet = new Set<string>();
+      for (const a of assignees) recipientSet.add(a.userId);
+      // Previous commenters' memberIds are available but userId needs member lookup;
+      // for now just use assignees as recipients (commenters who are also assignees are covered)
+      const actorName = (session.user.name as string | null) ?? '사용자';
+      const ticketTitle = ticket?.title ?? '티켓';
+      const { title, message } = buildTicketCommentedMessage(actorName, ticketTitle, parsed.data.text);
+      sendInAppNotification({
+        workspaceId,
+        type: NOTIFICATION_TYPE.TICKET_COMMENTED,
+        title,
+        message,
+        link: `/workspace/${workspaceId}/${ticketId}`,
+        actorId: userId,
+        recipientUserIds: Array.from(recipientSet),
+        refType: 'ticket',
+        refId: ticketId,
+      }).catch((e) => console.error('Notification error (comment):', e));
+    }
+
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {
     console.error('POST /api/tickets/[id]/comments error:', error);

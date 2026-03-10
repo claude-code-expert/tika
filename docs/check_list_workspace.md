@@ -395,17 +395,32 @@ PLANNED → ACTIVE → COMPLETED
 
 ### 8-3. 알림 내역 조회 (FR-104)
 
+> **[2026-03-10] In-App 알림 시스템 전환**: 헤더 벨 아이콘과 `/notifications` 페이지가 `notification_logs`(외부 채널) → `in_app_notifications`(개인별) 기반으로 전환됨. 상세: `docs/check_list_notification.md` 참조.
+
 | # | 기능 | 상태 | 관련 파일 | 상세 내용 |
 |---|------|------|-----------|-----------|
-| 8-3-1 | 헤더 알림 벨 아이콘 | ✅ | `Header.tsx` | |
-| 8-3-2 | 미읽음 알림 수 뱃지 | ✅ | `Header.tsx`, `getUnreadNotificationCount()` | |
-| 8-3-3 | 알림 드롭다운 (최근 목록) | ✅ | `Header.tsx` | |
-| 8-3-4 | 알림 내역 전용 페이지 | ✅ | `app/notifications/page.tsx`, `NotificationsPage.tsx` | |
-| 8-3-5 | 채널 필터 (Slack / Telegram) | ✅ | `NotificationsPage.tsx` | |
-| 8-3-6 | 상태 필터 (SENT / FAILED) | ✅ | `NotificationsPage.tsx` | |
-| 8-3-7 | 페이지네이션 (20건 단위) | ✅ | `NotificationsPage.tsx` | |
-| 8-3-8 | 전체 읽음 처리 | ✅ | `markAllNotificationsAsRead()` | |
-| 8-3-9 | **알림 클릭 → 해당 티켓 상세 이동** | ⚠️ | `NotificationsPage.tsx` | 티켓 ID 기반 링크는 구성되어 있으나, 개인/팀 워크스페이스 라우팅 분기(`/workspace/[wsId]/[ticketId]` vs 개인 보드)가 정확히 처리되는지 확인 필요 |
+| 8-3-1 | 헤더 알림 벨 아이콘 | ✅ | `Header.tsx` | `in_app_notifications` 기반으로 전환 완료 |
+| 8-3-2 | 미읽음 알림 수 뱃지 | ✅ | `Header.tsx` | `GET /api/notifications/in-app/unread-count` 사용 |
+| 8-3-3 | 알림 드롭다운 (최근 5건) | ✅ | `Header.tsx` | In-App 알림 기반, 클릭 시 link 이동 + 읽음 처리 |
+| 8-3-4 | 알림 내역 전용 페이지 | ✅ | `app/notifications/page.tsx`, `NotificationsPage.tsx` | In-App 알림 기반으로 전환 |
+| 8-3-5 | 읽음/미읽음 필터 | ✅ | `NotificationsPage.tsx` | 전체/미읽음/읽음 3단 필터 (기존 채널 필터 대체) |
+| 8-3-6 | 알림 유형별 뱃지 표시 | ✅ | `NotificationsPage.tsx` | 14종 알림 유형별 컬러 뱃지 |
+| 8-3-7 | 페이지네이션 (10건 단위) | ✅ | `NotificationsPage.tsx` | |
+| 8-3-8 | 전체 읽음 처리 | ✅ | `PATCH /api/notifications/in-app/read-all` | |
+| 8-3-9 | **알림 클릭 → 해당 링크 이동 + 읽음 처리** | ✅ | `NotificationsPage.tsx` | `notif.link` 기반 `router.push()` + `PATCH /in-app/:id/read` |
+
+### 8-4. In-App 알림 시스템 (신규 — 2026-03-10)
+
+> 상세 체크리스트: `docs/check_list_notification.md` 참조
+
+| # | 기능 | 상태 | 관련 파일 | 상세 내용 |
+|---|------|------|-----------|-----------|
+| 8-4-1 | In-App 알림 DB 스키마 (`in_app_notifications`, `notification_preferences`) | ✅ | `src/db/schema.ts`, `migrations/0016_moaning_kingpin.sql` | 2개 테이블, FK, 인덱스 |
+| 8-4-2 | In-App 알림 쿼리 레이어 | ✅ | `src/db/queries/inAppNotifications.ts` | bulkCreate, 조회, 읽음 처리, 선호도 CRUD |
+| 8-4-3 | In-App 알림 API (5개 엔드포인트) | ✅ | `app/api/notifications/in-app/`, `app/api/notifications/preferences/` | 목록, 미읽음 수, 단일 읽음, 전체 읽음, 선호도 GET/PUT |
+| 8-4-4 | 알림 생성 헬퍼 + 14개 메시지 빌더 | ✅ | `src/lib/notifications.ts` | `sendInAppNotification()` — fire-and-forget, 자기 자신 제외, 선호도 체크 |
+| 8-4-5 | 트리거 연동 (13/14 유형) | ⚠️ | 11개 API route에 후처리 추가 | `INVITE_RECEIVED` 트리거만 미연결 |
+| 8-4-6 | 알림 설정 UI | ✅ | `src/components/settings/NotificationPreferencesSection.tsx` | 14개 알림 유형별 on/off 토글 |
 
 ---
 

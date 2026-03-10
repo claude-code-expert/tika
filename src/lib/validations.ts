@@ -4,6 +4,7 @@ import {
   TICKET_PRIORITY,
   TICKET_TYPE,
   TEAM_ROLE,
+  NOTIFICATION_TYPE,
 } from '@/types/index';
 import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from './constants';
 
@@ -141,10 +142,16 @@ export const updateWorkspaceSchema = z
     name: z.string().min(1, '이름은 1자 이상 입력해야 합니다').max(100, '이름은 100자 이하여야 합니다').optional(),
     description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
     iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '올바른 HEX 색상 코드를 입력해주세요').nullable().optional(),
+    isSearchable: z.boolean().optional(),
   })
-  .refine((data) => data.name !== undefined || data.description !== undefined, {
-    message: '수정할 항목이 없습니다',
-  });
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.description !== undefined ||
+      data.iconColor !== undefined ||
+      data.isSearchable !== undefined,
+    { message: '수정할 항목이 없습니다' },
+  );
 
 export const deleteWorkspaceSchema = z.object({
   confirmName: z.string().min(1, '워크스페이스 이름을 입력해주세요'),
@@ -289,6 +296,28 @@ export const transferOwnerSchema = z.object({
 export const resetWorkspaceSchema = z.object({
   confirmName: z.string().min(1),
 });
+
+// In-App notification schemas
+const notificationTypeValues = Object.values(NOTIFICATION_TYPE) as [string, ...string[]];
+
+export const inAppNotificationQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+  workspaceId: z.coerce.number().int().positive().optional(),
+  unreadOnly: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
+});
+
+export const updateNotificationPreferenceSchema = z.object({
+  workspaceId: z.number().int().positive(),
+  type: z.enum(notificationTypeValues),
+  inAppEnabled: z.boolean(),
+});
+
+export type InAppNotificationQueryInput = z.infer<typeof inAppNotificationQuerySchema>;
+export type UpdateNotificationPreferenceInput = z.infer<typeof updateNotificationPreferenceSchema>;
 
 export type PatchUserTypeInput = z.infer<typeof patchUserTypeSchema>;
 export type PostJoinRequestInput = z.infer<typeof postJoinRequestSchema>;

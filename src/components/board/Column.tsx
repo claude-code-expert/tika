@@ -69,6 +69,18 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
         >
           {tickets.length}
         </span>
+        {status === 'IN_PROGRESS' && tickets.length > 3 && (
+          <span
+            title="WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다"
+            style={{
+              fontSize: 11, fontWeight: 700, color: '#D97706',
+              background: '#FEF3C7', borderRadius: 6,
+              padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: 3,
+            }}
+          >
+            ⚠ {tickets.length}/3
+          </span>
+        )}
       </div>
 
       {/* Drop zone + cards */}

@@ -1,6 +1,6 @@
 import { eq, and, count } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { workspaces, members } from '@/db/schema';
+import { workspaces, members, tickets, labels, sprints } from '@/db/schema';
 import type { Workspace, WorkspaceWithRole, WorkspaceType, TeamRole } from '@/types/index';
 
 function toWorkspace(row: typeof workspaces.$inferSelect): Workspace {
@@ -104,4 +104,12 @@ export async function deleteWorkspace(id: number): Promise<boolean> {
     .where(eq(workspaces.id, id))
     .returning({ id: workspaces.id });
   return result.length > 0;
+}
+
+// Reset all workspace data (tickets, labels, sprints)
+export async function resetWorkspaceData(workspaceId: number): Promise<void> {
+  // Delete all tickets for workspace (cascade deletes checklist_items, ticket_labels, ticket_assignees)
+  await db.delete(tickets).where(eq(tickets.workspaceId, workspaceId));
+  await db.delete(labels).where(eq(labels.workspaceId, workspaceId));
+  await db.delete(sprints).where(eq(sprints.workspaceId, workspaceId));
 }

@@ -24,6 +24,13 @@ export function GeneralSection({ showToast }: SectionProps) {
   const [iconColor, setIconColor] = useState('#629584');
   const [saving, setSaving] = useState(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmName, setResetConfirmName] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
   useEffect(() => {
     fetch('/api/workspaces')
       .then((r) => r.json())
@@ -64,6 +71,52 @@ export function GeneralSection({ showToast }: SectionProps) {
       setSaving(false);
     }
   }
+
+  const handleDelete = async () => {
+    if (!workspace || deleteConfirmName !== workspace.name) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspace.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmName: deleteConfirmName }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: { message?: string } };
+        showToast(data.error?.message ?? '삭제 실패', 'fail');
+        return;
+      }
+      window.location.href = '/';
+    } catch {
+      showToast('삭제 중 오류가 발생했습니다', 'fail');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!workspace || resetConfirmName !== workspace.name) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspace.id}/reset`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmName: resetConfirmName }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: { message?: string } };
+        showToast(data.error?.message ?? '초기화 실패', 'fail');
+        return;
+      }
+      showToast('데이터가 초기화되었습니다', 'success');
+      setShowResetConfirm(false);
+      setResetConfirmName('');
+    } catch {
+      showToast('초기화 중 오류가 발생했습니다', 'fail');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const cardStyle: React.CSSProperties = {
     background: '#fff',
@@ -177,24 +230,121 @@ export function GeneralSection({ showToast }: SectionProps) {
           </div>
           <span style={{ fontSize: 16, fontWeight: 600, color: '#DC2626' }}>위험 영역</span>
         </div>
-        {[
-          { label: '프로젝트 데이터 초기화', desc: '모든 티켓, 라벨, 활동 내역이 삭제됩니다. 되돌릴 수 없습니다.', btn: '초기화' },
-          { label: '프로젝트 삭제', desc: '프로젝트 및 관련 모든 데이터가 영구 삭제됩니다.', btn: '삭제' },
-        ].map(({ label, desc, btn }, i, arr) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #FEE2E2' : 'none', gap: 16 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#991B1B' }}>{label}</div>
-              <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 2 }}>{desc}</div>
-            </div>
-            <button
-              onClick={() => showToast('이 기능은 아직 구현 중입니다', 'info')}
-              style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #FECACA', color: '#DC2626', display: 'inline-flex', alignItems: 'center' }}
-            >
-              {btn}
-            </button>
+        {/* 데이터 초기화 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #FEE2E2', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#991B1B' }}>프로젝트 데이터 초기화</div>
+            <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 2 }}>모든 티켓, 라벨, 활동 내역이 삭제됩니다. 되돌릴 수 없습니다.</div>
           </div>
-        ))}
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #FECACA', color: '#DC2626', display: 'inline-flex', alignItems: 'center' }}
+          >
+            초기화
+          </button>
+        </div>
+        {/* 프로젝트 삭제 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#991B1B' }}>프로젝트 삭제</div>
+            <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 2 }}>프로젝트 및 관련 모든 데이터가 영구 삭제됩니다.</div>
+          </div>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #FECACA', color: '#DC2626', display: 'inline-flex', alignItems: 'center' }}
+          >
+            삭제
+          </button>
+        </div>
       </div>
+
+      {/* Delete Confirm Modal */}
+      {showDeleteConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmName(''); }}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>워크스페이스 삭제</div>
+            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 16 }}>
+              이 작업은 되돌릴 수 없습니다. 삭제를 확인하려면 워크스페이스 이름{' '}
+              <strong style={{ color: '#2C3E50' }}>{workspace?.name}</strong>을(를) 입력하세요.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder="워크스페이스 이름 입력"
+              style={{ width: '100%', border: '1.5px solid #DFE1E6', borderRadius: 8, padding: '9px 12px', fontSize: 13, marginBottom: 16, boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmName(''); }}
+                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}
+              >취소</button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || deleteConfirmName !== workspace?.name}
+                style={{
+                  padding: '9px 20px', border: 'none', borderRadius: 8,
+                  background: isDeleting || deleteConfirmName !== workspace?.name ? '#9BA8B4' : '#DC2626',
+                  color: '#fff', fontSize: 13, fontWeight: 600,
+                  cursor: isDeleting || deleteConfirmName !== workspace?.name ? 'not-allowed' : 'pointer',
+                }}
+              >{isDeleting ? '삭제 중...' : '삭제'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirm Modal */}
+      {showResetConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => { setShowResetConfirm(false); setResetConfirmName(''); }}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>데이터 초기화</div>
+            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 16 }}>
+              모든 티켓, 라벨, 스프린트가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.{' '}
+              확인하려면 워크스페이스 이름 <strong style={{ color: '#2C3E50' }}>{workspace?.name}</strong>을(를) 입력하세요.
+            </p>
+            <input
+              type="text"
+              value={resetConfirmName}
+              onChange={(e) => setResetConfirmName(e.target.value)}
+              placeholder="워크스페이스 이름 입력"
+              style={{ width: '100%', border: '1.5px solid #DFE1E6', borderRadius: 8, padding: '9px 12px', fontSize: 13, marginBottom: 16, boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => { setShowResetConfirm(false); setResetConfirmName(''); }}
+                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}
+              >취소</button>
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isResetting || resetConfirmName !== workspace?.name}
+                style={{
+                  padding: '9px 20px', border: 'none', borderRadius: 8,
+                  background: isResetting || resetConfirmName !== workspace?.name ? '#9BA8B4' : '#F59E0B',
+                  color: '#fff', fontSize: 13, fontWeight: 600,
+                  cursor: isResetting || resetConfirmName !== workspace?.name ? 'not-allowed' : 'pointer',
+                }}
+              >{isResetting ? '초기화 중...' : '초기화'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { auth } from '@/lib/auth';
 import { updateTicketSchema } from '@/lib/validations';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { requireRole, isRoleError } from '@/lib/permissions';
+import { TEAM_ROLE } from '@/types/index';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -70,6 +72,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { status: 401 },
       );
     }
+
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
+    if (isRoleError(roleCheck)) return roleCheck;
 
     const { id } = await context.params;
     const ticketId = Number(id);
@@ -165,6 +171,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         { status: 401 },
       );
     }
+
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
+    if (isRoleError(roleCheck)) return roleCheck;
 
     const { id } = await context.params;
     const ticketId = Number(id);

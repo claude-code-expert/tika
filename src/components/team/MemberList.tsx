@@ -11,10 +11,11 @@ interface MemberListProps {
   currentMemberId: number;
   isOwner: boolean;
   workspaceName: string;
+  workspaceId: number;
   pendingInvites?: WorkspaceInvite[];
 }
 
-export function MemberList({ members, currentMemberId, isOwner, workspaceName, pendingInvites = [] }: MemberListProps) {
+export function MemberList({ members, currentMemberId, isOwner, workspaceName, workspaceId, pendingInvites = [] }: MemberListProps) {
   const router = useRouter();
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,6 +105,25 @@ export function MemberList({ members, currentMemberId, isOwner, workspaceName, p
                 )}
               </div>
               <RoleBadge role={m.role as TeamRole} size="sm" />
+              {isSelf && m.role !== 'OWNER' && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!confirm('이 워크스페이스에서 나가시겠습니까?')) return;
+                    const res = await fetch(`/api/workspaces/${workspaceId}/members/me`, { method: 'DELETE' });
+                    if (res.ok) {
+                      window.location.href = '/';
+                    }
+                  }}
+                  style={{
+                    padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                    border: '1.5px solid #DFE1E6', borderRadius: 6,
+                    background: '#fff', color: '#5A6B7F', cursor: 'pointer',
+                  }}
+                >
+                  나가기
+                </button>
+              )}
               {canDelete && (
                 <button
                   onClick={() => setDeletingMember(m)}

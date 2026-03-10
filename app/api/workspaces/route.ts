@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enforce max 1 TEAM workspace per owner
+    // Enforce max 3 TEAM workspaces per owner
     const teamCount = await getTeamWorkspaceCountByOwner(userId);
-    if (teamCount >= 1) {
+    if (teamCount >= 3) {
       return NextResponse.json(
         {
           error: {
             code: 'WORKSPACE_LIMIT_EXCEEDED',
-            message: '팀 워크스페이스는 1개까지만 생성할 수 있습니다',
+            message: '팀 워크스페이스는 최대 3개까지 생성할 수 있습니다',
           },
         },
         { status: 409 },

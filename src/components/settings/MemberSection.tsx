@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import type { SectionProps } from './types';
 import type { MemberWithEmail, MemberRole } from '@/types/index';
 
+type TransferTarget = MemberWithEmail;
+
 function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel }: { title: string; message: string; confirmLabel: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div
@@ -28,9 +30,27 @@ export function MemberSection({ showToast }: SectionProps) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [confirmRole, setConfirmRole] = useState<{ member: MemberWithEmail; newRole: MemberRole } | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<MemberWithEmail | null>(null);
+  const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMembers();
+    // Fetch workspace id
+    fetch('/api/workspaces')
+      .then((r) => r.json())
+      .then((data: { workspaces?: Array<{ id: number; ownerId: string }> }) => {
+        const ws = data.workspaces?.[0];
+        if (ws) setWorkspaceId(ws.id);
+      })
+      .catch(() => {});
+    // Fetch current user
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((data: { user?: { id?: string } }) => {
+        if (data.user?.id) setCurrentUserId(data.user.id);
+      })
+      .catch(() => {});
   }, []);
 
   async function fetchMembers() {
@@ -93,6 +113,8 @@ export function MemberSection({ showToast }: SectionProps) {
   }
 
   const adminCount = members.filter((m) => m.role === 'OWNER').length;
+  // Determine if current user is OWNER in this workspace
+  const isOwner = members.some((m) => m.userId === currentUserId && m.role === 'OWNER');
 
   return (
     <div>
@@ -157,7 +179,20 @@ export function MemberSection({ showToast }: SectionProps) {
               <span style={{ fontSize: 11, color: '#8993A4', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {member.createdAt.slice(0, 10)}
               </span>
-              <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                {isOwner && member.role !== 'OWNER' && (
+                  <button
+                    type="button"
+                    onClick={() => setTransferTarget(member)}
+                    style={{
+                      padding: '4px 10px', fontSize: 11, fontWeight: 600,
+                      border: '1.5px solid #DFE1E6', borderRadius: 6,
+                      background: '#fff', color: '#5A6B7F', cursor: 'pointer',
+                    }}
+                  >
+                    소유권 이전
+                  </button>
+                )}
                 <button
                   onClick={() => handleRoleChange(member, newRole)}
                   title="역할 변경"
@@ -207,6 +242,49 @@ export function MemberSection({ showToast }: SectionProps) {
           onConfirm={doRemove}
           onCancel={() => setConfirmRemove(null)}
         />
+      )}
+
+      {transferTarget && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => setTransferTarget(null)}
+        >
+          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#2C3E50', marginBottom: 12 }}>소유권 이전</div>
+            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 20 }}>
+              <strong style={{ color: '#2C3E50' }}>{transferTarget.displayName}</strong>님에게 소유권을 이전하시겠습니까?
+              이전 후 당신은 일반 멤버가 됩니다.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setTransferTarget(null)}
+                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}>
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!workspaceId) return;
+                  const res = await fetch(`/api/workspaces/${workspaceId}/transfer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetMemberId: transferTarget.id }),
+                  });
+                  if (res.ok) {
+                    window.location.reload();
+                  } else {
+                    const data = (await res.json()) as { error?: { message?: string } };
+                    showToast(data.error?.message ?? '이전 실패', 'fail');
+                  }
+                  setTransferTarget(null);
+                }}
+                style={{ padding: '9px 20px', border: 'none', borderRadius: 8, background: '#629584', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                이전 확인
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -17,6 +17,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  minRole?: 'VIEWER' | 'MEMBER' | 'OWNER'; // minimum role required to see this item
 }
 
 interface TeamSidebarProps {
@@ -74,6 +75,12 @@ function AnalyticsIcon() {
 }
 
 
+/** Role hierarchy: VIEWER < MEMBER < OWNER */
+const ROLE_RANK: Record<string, number> = { VIEWER: 0, MEMBER: 1, OWNER: 2 };
+function hasRole(userRole: string, minRole: string): boolean {
+  return (ROLE_RANK[userRole] ?? 0) >= (ROLE_RANK[minRole] ?? 0);
+}
+
 export function TeamSidebar({ workspaceId, role, workspaceName, iconColor }: TeamSidebarProps) {
   const pathname = usePathname();
   const base = `/workspace/${workspaceId}`;
@@ -81,13 +88,15 @@ export function TeamSidebar({ workspaceId, role, workspaceName, iconColor }: Tea
   const { width, handleResizeStart, isResizing } = useResizable(SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX);
   const iconOnly = width < SIDEBAR_ICON_THRESHOLD;
 
-  const navItems: NavItem[] = [
+  const allNavItems: NavItem[] = [
     { href: base, label: '대시보드', icon: <DashboardIcon /> },
     { href: `${base}/board`, label: '칸반보드', icon: <BoardIcon /> },
-    { href: `${base}/members`, label: '멤버관리', icon: <MembersIcon /> },
     { href: `${base}/wbs`, label: 'WBS', icon: <WbsIcon /> },
     { href: `${base}/analytics`, label: '분석', icon: <AnalyticsIcon /> },
+    { href: `${base}/members`, label: '워크 멤버', icon: <MembersIcon />, minRole: 'MEMBER' },
   ];
+
+  const navItems = allNavItems.filter((item) => hasRole(role, item.minRole ?? 'VIEWER'));
 
   return (
     <div
@@ -157,64 +166,68 @@ export function TeamSidebar({ workspaceId, role, workspaceName, iconColor }: Tea
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-          {!iconOnly && (
-            <div
-              style={{
-                padding: '8px 16px',
-                fontSize: 10,
-                fontWeight: 600,
-                color: '#8993A4',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              팀 메뉴
-            </div>
-          )}
-
-          {navItems.map(({ href, label, icon }) => {
-            const isActive = href === base ? pathname === base : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                title={iconOnly ? label : undefined}
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0', display: 'flex', flexDirection: 'column' }}>
+          {/* Main menu items */}
+          <div style={{ flex: 1 }}>
+            {!iconOnly && (
+              <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: iconOnly ? 'center' : 'flex-start',
-                  gap: iconOnly ? 0 : 8,
-                  padding: iconOnly ? '10px 0' : '8px 16px',
-                  fontSize: 13,
-                  color: isActive ? '#629584' : '#5A6B7F',
-                  fontWeight: isActive ? 500 : 400,
-                  background: isActive ? '#E8F5F0' : 'transparent',
-                  textDecoration: 'none',
-                  transition: 'background 0.1s, color 0.1s',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = '#E2E5EA';
-                    e.currentTarget.style.color = '#2C3E50';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = '#5A6B7F';
-                  }
+                  padding: '8px 16px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: '#8993A4',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
                 }}
               >
-                <span style={{ color: isActive ? '#629584' : '#8993A4', display: 'inline-flex', flexShrink: 0 }}>
-                  {icon}
-                </span>
-                {!iconOnly && label}
-              </Link>
-            );
-          })}
+                팀 메뉴
+              </div>
+            )}
+
+            {navItems.map(({ href, label, icon }) => {
+              const isActive = href === base ? pathname === base : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={iconOnly ? label : undefined}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: iconOnly ? 'center' : 'flex-start',
+                    gap: iconOnly ? 0 : 8,
+                    padding: iconOnly ? '10px 0' : '8px 16px',
+                    fontSize: 13,
+                    color: isActive ? '#629584' : '#5A6B7F',
+                    fontWeight: isActive ? 500 : 400,
+                    background: isActive ? '#E8F5F0' : 'transparent',
+                    textDecoration: 'none',
+                    transition: 'background 0.1s, color 0.1s',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = '#E2E5EA';
+                      e.currentTarget.style.color = '#2C3E50';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#5A6B7F';
+                    }
+                  }}
+                >
+                  <span style={{ color: isActive ? '#629584' : '#8993A4', display: 'inline-flex', flexShrink: 0 }}>
+                    {icon}
+                  </span>
+                  {!iconOnly && label}
+                </Link>
+              );
+            })}
+          </div>
+
         </nav>
 
         {/* Trash link */}

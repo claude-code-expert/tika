@@ -587,22 +587,22 @@ export default async function LoginPage({
                 <span>✓</span> Workspace 전체 포함
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> MCP 서버 연동 (자동화 워크 플로우 지원)
+                <span>✓</span> MCP 서버 연동
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 워크스페이스 무제한 생성
+                <span>✓</span> 자동화 워크 플로우 지원
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> Slack · Telegram 실시간 알림
+                <span>✓</span> 워크스페이스 생성 (최대 100개)
+              </li>
+              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
+                <span>✓</span> Slack · Telegram 실시간 알림 설정
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
                 <span>✓</span> Markdown 에디터 지원
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 제한없는 이미지 및 파일 첨부
-              </li>
-              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 고급 검색 &amp; 필터
+                <span>✓</span> 이미지 및 파일 첨부
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
                 <span>✓</span> 번다운 · 워크로드 · 통계 팀 대시보드
@@ -632,19 +632,19 @@ export default async function LoginPage({
                 <span>✓</span> 커스텀 워크플로우 지원
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 사내 업무 도구 연동
-              </li>
-              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> AI 도구 연동 지원
-              </li>
-              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 감사 로그 &amp; 컴플라이언스
+                <span>✓</span> AI 도구 연동 지원 (API Key 연동)
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
                 <span>✓</span> REST API &amp; 웹훅
               </li>
               <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
-                <span>✓</span> 온보딩 · 마이그레이션 지원
+                <span>✓</span> 고급 검색 &amp; 퀵 필터
+              </li>
+              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
+                <span>✓</span> 무제한 첨부 파일
+              </li>
+              <li className="flex items-start gap-[7px] text-xs text-[#2C3E50]">
+                <span>✓</span> 워크스페이스 제한 없음
               </li>
             </ul>
           </div>

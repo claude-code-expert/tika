@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
-import { members } from '@/db/schema';
+import { members, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { patchJoinRequestSchema } from '@/lib/validations';
 import {
@@ -9,7 +9,9 @@ import {
   approveJoinRequest,
   rejectJoinRequest,
 } from '@/db/queries/joinRequests';
-import { getMemberByUserId } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildJoinRequestResolvedMessage } from '@/lib/notifications';
 
 // PATCH /api/workspaces/[id]/join-requests/[reqId] — approve or reject a join request
 export async function PATCH(
@@ -93,10 +95,13 @@ export async function PATCH(
     const { action } = parsed.data;
 
     if (action === 'APPROVE') {
-      // Look up the applicant's display name from users table
-      const applicantMember = await getMemberByUserId(joinRequest.userId, workspaceId);
-      // If already a member (race condition), still mark approved
-      const displayName = applicantMember?.displayName ?? '멤버';
+      // Look up the applicant's real name from the users table
+      const [applicantUser] = await db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, joinRequest.userId))
+        .limit(1);
+      const displayName = applicantUser?.name ?? '멤버';
 
       const { joinRequest: updated, member } = await approveJoinRequest(
         reqId,
@@ -105,11 +110,37 @@ export async function PATCH(
         { userId: joinRequest.userId, displayName },
       );
 
+      // Notify the applicant about approval
+      const wsApprove = await getWorkspaceById(workspaceId);
+      const { title: aTitle, message: aMsg } = buildJoinRequestResolvedMessage(wsApprove?.name ?? '워크스페이스', true);
+      sendInAppNotification({
+        workspaceId,
+        type: NOTIFICATION_TYPE.JOIN_REQUEST_RESOLVED,
+        title: aTitle,
+        message: aMsg,
+        link: `/workspace/${workspaceId}`,
+        actorId: userId,
+        recipientUserIds: [joinRequest.userId],
+      }).catch((e) => console.error('Notification error (join approved):', e));
+
       return NextResponse.json({ joinRequest: updated, member });
     }
 
     // action === 'REJECT'
     const updated = await rejectJoinRequest(reqId, workspaceId, ownerMember.id);
+
+    // Notify the applicant about rejection
+    const wsReject = await getWorkspaceById(workspaceId);
+    const { title: rTitle, message: rMsg } = buildJoinRequestResolvedMessage(wsReject?.name ?? '워크스페이스', false);
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.JOIN_REQUEST_RESOLVED,
+      title: rTitle,
+      message: rMsg,
+      actorId: userId,
+      recipientUserIds: [joinRequest.userId],
+    }).catch((e) => console.error('Notification error (join rejected):', e));
+
     return NextResponse.json({ joinRequest: updated });
   } catch (err) {
     console.error('PATCH /api/workspaces/[id]/join-requests/[reqId] error:', err);

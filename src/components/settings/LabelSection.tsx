@@ -52,6 +52,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: { title: string;
   );
 }
 
+// workspaceId prop received but /api/labels uses session.workspaceId server-side
 export function LabelSection({ showToast }: SectionProps) {
   const [labels, setLabels] = useState<LabelWithCount[]>([]);
   const [creatorOpen, setCreatorOpen] = useState(false);

@@ -11,6 +11,7 @@ function toWorkspace(row: typeof workspaces.$inferSelect): Workspace {
     ownerId: row.ownerId,
     type: row.type as WorkspaceType,
     iconColor: row.iconColor ?? null,
+    isSearchable: row.isSearchable,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -34,6 +35,7 @@ export async function getWorkspacesByMemberId(userId: string): Promise<Workspace
       ownerId: workspaces.ownerId,
       type: workspaces.type,
       iconColor: workspaces.iconColor,
+      isSearchable: workspaces.isSearchable,
       createdAt: workspaces.createdAt,
       role: members.role,
     })
@@ -48,6 +50,7 @@ export async function getWorkspacesByMemberId(userId: string): Promise<Workspace
     ownerId: row.ownerId,
     type: row.type as WorkspaceType,
     iconColor: row.iconColor ?? null,
+    isSearchable: row.isSearchable,
     createdAt: row.createdAt.toISOString(),
     role: row.role as TeamRole,
   }));
@@ -81,12 +84,13 @@ export async function createWorkspace(data: {
 
 export async function updateWorkspace(
   id: number,
-  data: { name?: string; description?: string | null; iconColor?: string | null },
+  data: { name?: string; description?: string | null; iconColor?: string | null; isSearchable?: boolean },
 ): Promise<Workspace | null> {
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.iconColor !== undefined) updateData.iconColor = data.iconColor;
+  if (data.isSearchable !== undefined) updateData.isSearchable = data.isSearchable;
 
   if (Object.keys(updateData).length === 0) return null;
 

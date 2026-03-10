@@ -4,6 +4,9 @@ import { getTicketsDueTomorrow } from '@/db/queries/tickets';
 import { getNotificationChannels } from '@/db/queries/notificationChannels';
 import { createNotificationLog } from '@/db/queries/notificationLogs';
 import type { SlackConfig, TelegramConfig } from '@/types/index';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { getAssigneesByTickets } from '@/db/queries/ticketAssignees';
+import { sendInAppNotification, buildDeadlineWarningMessage } from '@/lib/notifications';
 
 const TIMEOUT_MS = 5000;
 
@@ -72,6 +75,28 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (dueTomorrow.length === 0) continue;
+
+    // In-app notifications for assignees (regardless of external channel setup)
+    const ticketIds = dueTomorrow.map((t) => t.id);
+    const assigneeMap = await getAssigneesByTickets(ticketIds);
+    for (const ticket of dueTomorrow) {
+      const ticketAssignees = assigneeMap[ticket.id] ?? [];
+      if (ticketAssignees.length === 0) continue;
+      const { title, message: nMsg } = buildDeadlineWarningMessage(
+        ticket.title, ticket.dueDate ?? ticket.plannedEndDate ?? '미정',
+      );
+      sendInAppNotification({
+        workspaceId: workspace.id,
+        type: NOTIFICATION_TYPE.DEADLINE_WARNING,
+        title,
+        message: nMsg,
+        link: `/workspace/${workspace.id}/${ticket.id}`,
+        actorId: null,
+        recipientUserIds: ticketAssignees.map((a) => a.userId),
+        refType: 'ticket',
+        refId: ticket.id,
+      }).catch((e) => console.error('[cron/notify-due] in-app notification error:', e));
+    }
 
     const enabledChannels = channels.filter((c) => c.enabled);
     if (enabledChannels.length === 0) continue;

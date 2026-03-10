@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { GeneralSection } from './GeneralSection';
-// Phase 4: 알림 채널 — REQUIREMENT-Phase4.md 참조
-// import { NotificationSection } from './NotificationSection';
+import { NotificationPreferencesSection } from './NotificationPreferencesSection';
 import { LabelSection } from './LabelSection';
-import { MemberSection } from './MemberSection';
 import type { SectionKey, ToastType } from './types';
 
 interface ToastState {
@@ -27,17 +26,16 @@ const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
-  // Phase 4: 알림 채널 — REQUIREMENT-Phase4.md 참조
-  // {
-  //   key: 'notifications',
-  //   label: '알림 채널',
-  //   icon: (
-  //     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-  //       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-  //       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  //     </svg>
-  //   ),
-  // },
+  {
+    key: 'notification-preferences',
+    label: '알림 설정',
+    icon: (
+      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    ),
+  },
   {
     key: 'labels',
     label: '라벨 관리',
@@ -48,26 +46,12 @@ const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
-  {
-    key: 'members',
-    label: '멤버 관리',
-    icon: (
-      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx={9} cy={7} r={4} />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
 ];
 
-export interface SectionProps {
-  showToast: (message: string, type?: ToastType) => void;
-}
-
-export function SettingsShell() {
-  const [activeSection, setActiveSection] = useState<SectionKey>('general');
+export function SettingsShell({ workspaceId }: { workspaceId: number }) {
+  const searchParams = useSearchParams();
+  const initialSection = (searchParams.get('section') as SectionKey) ?? 'general';
+  const [activeSection, setActiveSection] = useState<SectionKey>(initialSection);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   function showToast(message: string, type: ToastType = 'success') {
@@ -76,11 +60,29 @@ export function SettingsShell() {
   }
 
   const sectionRenderers: Record<SectionKey, ReactNode> = {
-    general: <GeneralSection showToast={showToast} />,
-    // Phase 4: notifications: <NotificationSection showToast={showToast} />,
-    labels: <LabelSection showToast={showToast} />,
-    members: <MemberSection showToast={showToast} />,
+    general: <GeneralSection showToast={showToast} workspaceId={workspaceId} />,
+    'notification-preferences': <NotificationPreferencesSection showToast={showToast} workspaceId={workspaceId} />,
+    labels: <LabelSection showToast={showToast} workspaceId={workspaceId} />,
   };
+
+  const toastEl = toast ? (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: 'fixed', top: 80, right: 20, padding: '10px 16px', borderRadius: 6,
+        fontSize: 14, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 500,
+        display: 'flex', alignItems: 'center', gap: 6, animation: 'toastIn 0.2s ease',
+        ...(toast.type === 'success'
+          ? { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
+          : toast.type === 'fail'
+            ? { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }
+            : { background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }),
+      }}
+    >
+      {toast.type === 'success' ? '✓' : toast.type === 'fail' ? '✕' : 'ℹ'} {toast.message}
+    </div>
+  ) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F8F9FB', fontFamily: "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" }}>
@@ -131,35 +133,7 @@ export function SettingsShell() {
 
       <Footer />
 
-      {/* Toast */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: 'fixed',
-            top: 80,
-            right: 20,
-            padding: '10px 16px',
-            borderRadius: 6,
-            fontSize: 14,
-            fontWeight: 500,
-            boxShadow: '0 8px 24px rgba(0,0,0,.12)',
-            zIndex: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            animation: 'toastIn 0.2s ease',
-            ...(toast.type === 'success'
-              ? { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
-              : toast.type === 'fail'
-                ? { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }
-                : { background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }),
-          }}
-        >
-          {toast.type === 'success' ? '✓' : toast.type === 'fail' ? '✕' : 'ℹ'} {toast.message}
-        </div>
-      )}
+      {toastEl}
     </div>
   );
 }

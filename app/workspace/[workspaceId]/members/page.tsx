@@ -134,6 +134,7 @@ export default async function TeamMembersPage({
             currentMemberId={currentMember.id}
             isOwner={isOwner}
             workspaceName={workspace.name}
+            workspaceId={workspaceId}
             pendingInvites={isOwner ? pendingInvites : []}
           />
         </section>

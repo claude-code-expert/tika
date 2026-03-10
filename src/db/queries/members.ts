@@ -152,6 +152,35 @@ export async function createMember(data: {
   return toMember(row);
 }
 
+export async function transferOwnership(
+  workspaceId: number,
+  currentOwnerUserId: string,
+  targetMemberId: number,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    // Find current owner member record
+    const [currentMember] = await tx
+      .select()
+      .from(members)
+      .where(and(eq(members.userId, currentOwnerUserId), eq(members.workspaceId, workspaceId)));
+    if (!currentMember) throw new Error('Current owner member not found');
+
+    // Find target member record (must be in same workspace)
+    const [targetMember] = await tx
+      .select()
+      .from(members)
+      .where(and(eq(members.id, targetMemberId), eq(members.workspaceId, workspaceId)));
+    if (!targetMember) throw new Error('Target member not found');
+
+    // Demote current owner to MEMBER
+    await tx.update(members).set({ role: 'MEMBER' }).where(eq(members.id, currentMember.id));
+    // Promote target to OWNER
+    await tx.update(members).set({ role: 'OWNER' }).where(eq(members.id, targetMemberId));
+    // Update workspace ownerId
+    await tx.update(workspaces).set({ ownerId: targetMember.userId }).where(eq(workspaces.id, workspaceId));
+  });
+}
+
 export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRole[]> {
   const rows = await db
     .select({

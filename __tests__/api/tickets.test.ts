@@ -16,12 +16,27 @@ jest.mock('@/db/queries/tickets', () => ({
   getWbsTickets: jest.fn(),
 }));
 
+jest.mock('@/lib/permissions', () => ({
+  requireRole: jest.fn(),
+  isRoleError: jest.fn(),
+}));
+
+jest.mock('@/db/queries/workspaces', () => ({
+  getWorkspaceById: jest.fn(),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/tickets/route';
 import { auth } from '@/lib/auth';
 import { getBoardData, createTicket, getTicketCount } from '@/db/queries/tickets';
-import { TICKET_MAX_PER_WORKSPACE } from '@/lib/constants';
+import { requireRole, isRoleError } from '@/lib/permissions';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { TICKET_MAX_PER_WORKSPACE, TICKET_MAX_TEAM_WORKSPACE } from '@/lib/constants';
 import type { BoardData } from '@/types/index';
+
+const mockedRequireRole = requireRole as jest.Mock;
+const mockedIsRoleError = isRoleError as jest.Mock;
+const mockedGetWorkspaceById = getWorkspaceById as jest.Mock;
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetBoardData = getBoardData as jest.Mock;
@@ -43,8 +58,15 @@ function makePostRequest(body: unknown): NextRequest {
   });
 }
 
+const mockPersonalWorkspace = { id: 1, type: 'PERSONAL', name: '내 워크스페이스' };
+
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: RBAC passes (MEMBER role)
+  mockedRequireRole.mockResolvedValue({ member: { role: 'MEMBER', id: 1 } });
+  mockedIsRoleError.mockReturnValue(false);
+  // Default: personal workspace
+  mockedGetWorkspaceById.mockResolvedValue(mockPersonalWorkspace);
 });
 
 describe('GET /api/tickets', () => {
@@ -136,15 +158,37 @@ describe('POST /api/tickets', () => {
     expect(body.error.message).toBe('날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)');
   });
 
-  it('티켓 수 한도 초과 시 400 TICKET_LIMIT_EXCEEDED를 반환한다', async () => {
+  it('개인 워크스페이스 티켓 한도(300) 초과 시 400 TICKET_LIMIT_EXCEEDED를 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce(mockSession);
-    mockedGetTicketCount.mockResolvedValueOnce(TICKET_MAX_PER_WORKSPACE);
+    mockedGetTicketCount.mockResolvedValueOnce(TICKET_MAX_PER_WORKSPACE); // 300
 
     const response = await POST(makePostRequest({ title: '제목' }));
     const body = await response.json();
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe('TICKET_LIMIT_EXCEEDED');
+  });
+
+  it('팀 워크스페이스 티켓 한도(1000) 초과 시 400 TICKET_LIMIT_EXCEEDED를 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    mockedGetWorkspaceById.mockResolvedValueOnce({ id: 1, type: 'TEAM', name: '팀 스페이스' });
+    mockedGetTicketCount.mockResolvedValueOnce(TICKET_MAX_TEAM_WORKSPACE); // 1000
+
+    const response = await POST(makePostRequest({ title: '제목' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('TICKET_LIMIT_EXCEEDED');
+  });
+
+  it('VIEWER 역할이면 티켓 생성 시 403을 반환한다', async () => {
+    mockedAuth.mockResolvedValueOnce(mockSession);
+    const forbidden = new Response(JSON.stringify({ error: { code: 'FORBIDDEN', message: '권한이 부족합니다' } }), { status: 403 });
+    mockedRequireRole.mockResolvedValueOnce(forbidden);
+    mockedIsRoleError.mockReturnValueOnce(true);
+
+    const response = await POST(makePostRequest({ title: '제목' }));
+    expect(response.status).toBe(403);
   });
 
   it('유효한 요청에 201과 생성된 티켓을 반환한다', async () => {

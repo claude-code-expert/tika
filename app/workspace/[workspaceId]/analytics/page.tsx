@@ -19,6 +19,7 @@ import { CycleTimeAnalysis } from '@/components/team/charts/CycleTimeAnalysis';
 import { TypeDistributionChart } from '@/components/team/charts/TypeDistributionChart';
 import { LabelAnalyticsCard } from '@/components/team/charts/LabelAnalyticsCard';
 import { DailyLogTable } from '@/components/team/charts/DailyLogTable';
+import { StoryScheduleTable } from '@/components/team/charts/StoryScheduleTable';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
 
 export default async function TeamAnalyticsPage({
@@ -138,6 +139,15 @@ export default async function TeamAnalyticsPage({
         <Card title="라벨 분석">
           <LabelAnalyticsCard labels={labelAnalytics} />
         </Card>
+
+        <div style={{ marginTop: 20 }}>
+          <Card title="Story 진행 현황">
+            <StoryScheduleTable
+              stories={allTickets.filter((t) => t.type === 'STORY')}
+              allTickets={allTickets}
+            />
+          </Card>
+        </div>
       </div>
     </TeamShell>
   );

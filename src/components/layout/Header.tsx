@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
+import { CreateTeamModal } from './CreateTeamModal';
 import type { Member, NotificationLog } from '@/types/index';
 import { X, ArrowRight, Users, Plus, ChevronRight } from 'lucide-react';
 import type { WorkspaceWithRole } from '@/types/index';
@@ -48,7 +49,8 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   // Team workspace state
   const [teamWorkspaces, setTeamWorkspaces] = useState<WorkspaceWithRole[]>([]);
   const [isTeamOpen, setIsTeamOpen] = useState(false);
-  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [isCreatingTeam] = useState(false);
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
   const teamRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
@@ -92,29 +94,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
 
   useOutsideClick(teamRef, isTeamOpen, () => setIsTeamOpen(false));
 
-  const handleCreateTeam = async () => {
-    const name = prompt('팀 워크스페이스 이름을 입력하세요');
-    if (!name?.trim()) return;
-    setIsCreatingTeam(true);
-    try {
-      const res = await fetch('/api/workspaces', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), type: 'TEAM' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const ws = data.workspace as WorkspaceWithRole;
-        setTeamWorkspaces((prev) => [...prev, ws]);
-        setIsTeamOpen(false);
-        router.push(`/workspace/${ws.id}`);
-      } else {
-        const err = await res.json();
-        alert(err?.error?.message ?? '생성 실패');
-      }
-    } finally {
-      setIsCreatingTeam(false);
-    }
+  const handleCreateTeam = () => {
+    setIsTeamOpen(false);
+    setIsCreateTeamModalOpen(true);
   };
 
   // Close notif dropdown on outside click → mark as read
@@ -984,6 +966,15 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           userEmail={user?.email ?? undefined}
         />
       )}
+
+      <CreateTeamModal
+        isOpen={isCreateTeamModalOpen}
+        onClose={() => setIsCreateTeamModalOpen(false)}
+        onCreated={(ws) => {
+          setTeamWorkspaces((prev) => [...prev, ws as WorkspaceWithRole]);
+          router.push(`/workspace/${ws.id}`);
+        }}
+      />
     </>
   );
 }

@@ -20,11 +20,20 @@ jest.mock('@/db/queries/ticketAssignees', () => ({
   getAssigneesByTicket: jest.fn(),
 }));
 
+jest.mock('@/lib/permissions', () => ({
+  requireRole: jest.fn(),
+  isRoleError: jest.fn(),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '@/app/api/tickets/[id]/route';
 import { auth } from '@/lib/auth';
 import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { requireRole, isRoleError } from '@/lib/permissions';
+
+const mockedRequireRole = requireRole as jest.Mock;
+const mockedIsRoleError = isRoleError as jest.Mock;
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetTicketById = getTicketById as jest.Mock;
@@ -59,6 +68,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default: assignees query returns empty array
   mockedGetAssigneesByTicket.mockResolvedValue([]);
+  // Default: RBAC passes (MEMBER role)
+  mockedRequireRole.mockResolvedValue({ member: { role: 'MEMBER', id: 1 } });
+  mockedIsRoleError.mockReturnValue(false);
 });
 
 describe('GET /api/tickets/:id', () => {

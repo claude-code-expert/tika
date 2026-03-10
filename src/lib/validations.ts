@@ -282,6 +282,14 @@ export const withdrawAccountSchema = z.object({
   confirmEmail: z.string().email('올바른 이메일을 입력해주세요'),
 });
 
+export const transferOwnerSchema = z.object({
+  targetMemberId: z.number().int().positive(),
+});
+
+export const resetWorkspaceSchema = z.object({
+  confirmName: z.string().min(1),
+});
+
 export type PatchUserTypeInput = z.infer<typeof patchUserTypeSchema>;
 export type PostJoinRequestInput = z.infer<typeof postJoinRequestSchema>;
 export type PatchJoinRequestInput = z.infer<typeof patchJoinRequestSchema>;

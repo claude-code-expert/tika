@@ -21,6 +21,9 @@ export const CHECKLIST_MAX_ITEMS = 20;
 export const LABEL_MAX_PER_TICKET = 3;
 export const LABEL_MAX_PER_WORKSPACE = 20;
 export const TICKET_MAX_PER_WORKSPACE = 300;
+export const TICKET_MAX_TEAM_WORKSPACE = 1000;
+export const TICKET_WARNING_TEAM = 900;
+export const TICKET_WARNING_PERSONAL = 270;
 
 export const DEFAULT_LABELS = [
   { name: 'Frontend', color: '#2b7fff' },

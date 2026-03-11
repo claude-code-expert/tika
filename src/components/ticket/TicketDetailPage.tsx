@@ -179,6 +179,7 @@ export function TicketDetailPage({
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
 
@@ -193,6 +194,14 @@ export function TicketDetailPage({
   useEffect(() => {
     autoResizeTitle();
   }, [title, autoResizeTitle]);
+
+  // ── auto-resize description textarea ──
+  useEffect(() => {
+    const el = descTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
 
   // ── fetch parents, members, comments ──
   useEffect(() => {
@@ -406,7 +415,8 @@ export function TicketDetailPage({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '6px 20px',
+            padding: '0 20px',
+            height: 48,
             borderBottom: '1px solid var(--color-border)',
             background: '#fff',
             flexShrink: 0,
@@ -586,10 +596,14 @@ export function TicketDetailPage({
                   설명
                 </div>
                 <textarea
+                  ref={descTextareaRef}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
                   maxLength={1000}
-                  rows={4}
                   placeholder="티켓에 대한 설명을 입력하세요..."
                   aria-label="설명"
                   style={{
@@ -597,7 +611,7 @@ export function TicketDetailPage({
                     border: '1px solid var(--color-border)', borderRadius: 8,
                     fontFamily: 'inherit', fontSize: 14, color: 'var(--color-text-primary)',
                     lineHeight: 1.7, background: 'var(--color-board-bg)',
-                    resize: 'vertical', outline: 'none',
+                    resize: 'none', overflow: 'hidden', outline: 'none',
                     transition: 'border-color 0.15s, box-shadow 0.15s',
                   }}
                   onFocus={(e) => {

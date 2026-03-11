@@ -5,6 +5,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { TicketStatus, TicketWithMeta } from '@/types/index';
 import { TicketCard } from './TicketCard';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 const COLUMN_HEADER_BG: Partial<Record<TicketStatus, string>> = {
   TODO: 'var(--color-col-todo)',
@@ -70,16 +71,21 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
           {tickets.length}
         </span>
         {status === 'IN_PROGRESS' && tickets.length > 3 && (
-          <span
-            title="WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다"
-            style={{
-              fontSize: 11, fontWeight: 700, color: '#D97706',
-              background: '#FEF3C7', borderRadius: 6,
-              padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: 3,
-            }}
+          <Tooltip
+            content={`적정 칸반 티켓수 = 3, 현재 ${tickets.length - 3}건 초과`}
+            position="bottom"
           >
-            ⚠ {tickets.length}/3
-          </span>
+            <span
+              style={{
+                fontSize: 11, fontWeight: 700, color: '#D97706',
+                background: '#FEF3C7', borderRadius: 6,
+                padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: 3,
+                cursor: 'default',
+              }}
+            >
+              ⚠ {tickets.length}/3
+            </span>
+          </Tooltip>
         )}
       </div>
 

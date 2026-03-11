@@ -3,6 +3,89 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-03-11 (팀 보드 버그 수정 + UX 개선 + WIP 툴팁 + 주간 필터 + 데이터 삽입)
+
+### 🎯 Prompts
+1. "이전작업 다시 이어서"
+2. "@<Modal> brew 라고 입력해도 검색결과가 안나와"
+3. "@<Modal> 이 영역 복사 및 닫기는 우측 정렬"
+4. "@<Modal> 여전히 brew 라고 입력해도 안나와"
+5. "@<TicketCardInner> 상위 카테고리가 노출된 티켓에서 클릭시 상세 페이지로 이동"
+6. "@<Modal> 담당자 추가 및 담당자 지정된 내역 박스는 이 영역에 100% 너비여야해"
+7. "상세 보이길 경우 이 영역이 글의 길이 만큼 길어지고 나머지 영역은 밑으로 밀리는거야"
+8. "@<TicketDetailPage> 이 영역도 글의 길이 만큼 넓어지고 나머지 영역은 밑으로 밀리고 스크롤"
+9. "@<TicketDetailPage> and @<TeamSidebar> 이 영역의 높이가 맞도록 해줘"
+10. "@<TicketCardInner> 오버시 밑줄 및 색상 변경 효과"
+11. "@<Modal> 이것도 담당자 추가와 마찬가지로 같은 너비로 고정"
+12. "각 티켓에 라벨 최소 한개 이상으로 추가해 데이터 인서트 해줘"
+13. "@<Modal> tika-45번 티켓인데 G 영역은 선택하세요가 나오고 S 영역은 [G] 알림시스템 완성이 나와 f 영역은 리스트도 없어. 데이터 검증해봐"
+14. "@<BacklogItem> 공간이 부족해질때 하나씩 라벨이 가려져야지 왜 밑으로 내려가지?"
+15. "@<ColumnInner> 이 표시는 어떤 의미지?"
+16. "@<ColumnInner> 마우스 오버시 공통 툴팁 보여줘야지 적정 칸반 티켓수 = 3, 현재 3건 초과 이런식으로"
+17. "@<BoardFilterBar> 이 필터는 이번주에 Done인것과 + 이번주 금요일까지 완료해야 할 건이 나와야 해"
+18. "@<BacklogPanel> and @<BoardFilterBar> 사이 간격이 15px 정도 벌어진건 붙일수 없어?"
+
+### ✅ Changes
+
+#### 드래그 앤 드롭 버그 수정 (팀 보드)
+- **Fixed**: `app/api/tickets/reorder/route.ts` — `session.user.workspaceId`(primary)가 아닌 요청 본문의 `workspaceId`로 멤버십 검증 후 처리. 팀 보드에서 티켓 드래그 시 "티켓을 찾을 수 없습니다" 404 에러 해결
+- **Modified**: `src/lib/validations.ts` — `reorderSchema`에 `workspaceId: z.number().int().positive().optional()` 추가
+- **Modified**: `src/hooks/useTickets.ts` — `reorder()` 함수에 `workspaceId?: number` 파라미터 추가, 요청 본문에 포함
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `handleDragEnd`에서 `workspaceId` 전달
+
+#### 담당자 검색 수정 (TicketModal)
+- **Fixed**: `app/api/members/route.ts` — `?workspaceId=N` 쿼리 파라미터 지원 추가. 팀 워크스페이스 멤버를 멤버십 검증 후 반환
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 담당자 검색: Enter키 필요 → 입력 즉시 결과 표시 (`assigneeSearched` 상태 제거)
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 멤버 fetch URL에 `ticket.workspaceId` 파라미터 추가 (세션의 primary workspace가 아닌 현재 티켓 워크스페이스 기준)
+
+#### TicketModal UX 개선
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 복사/닫기 버튼 `marginLeft: 'auto'`로 헤더 우측 정렬
+- **Modified**: `src/components/ticket/TicketModal.tsx` — 담당자 영역 100% 너비 (칩 + 추가 버튼 모두 `width: '100%'`)
+- **Modified**: `src/components/ticket/TicketModal.tsx` — 설명 textarea 자동 높이 (`descTextareaRef` + `scrollHeight` 기반 auto-resize)
+- **Removed**: 미사용 `iconBtnBase` 스타일 객체 제거
+
+#### TicketCard 개선
+- **Added**: `src/components/board/TicketCard.tsx` — 상위 태그 클릭 시 부모 티켓 상세 페이지 이동 (`handleNavigateToParent`)
+- **Modified**: `src/components/board/TicketCard.tsx` — 상위 태그 hover 시 밑줄 + 타입 색상 변경 효과
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — BacklogItem 라벨 `flexWrap: 'nowrap', overflow: 'hidden'` (공간 부족 시 라벨이 줄 바꿈 → 숨김으로 변경)
+
+#### TicketDetailPage 개선
+- **Modified**: `src/components/ticket/TicketDetailPage.tsx` — 설명 textarea 자동 높이 (`scrollHeight` auto-resize)
+- **Modified**: `src/components/ticket/TicketDetailPage.tsx` — 헤더 고정 높이 48px (`height: 48, padding: '0 20px'`)
+
+#### BreadcrumbPicker 버그 수정
+- **Fixed**: `src/components/ticket/BreadcrumbPicker.tsx` — `useEffect` 조상 체인 탐색 로직: 인덱스 역순이 아닌 `ancestorTypes.indexOf(p.type)`으로 정확한 슬롯 배치 (tika-45 G/S/F 계층 오표시 수정)
+- **Fixed**: `src/components/ticket/BreadcrumbPicker.tsx` — `useState` 초기값도 `parent.type` 인덱스 기반으로 수정
+
+#### WIP 툴팁 (신규 공통 컴포넌트)
+- **Added**: `src/components/ui/Tooltip.tsx` — 공통 호버 툴팁 (fixed positioning, 화살표, `position: 'top' | 'bottom'`)
+- **Modified**: `src/components/board/Column.tsx` — IN_PROGRESS 초과 배지의 native `title` → `<Tooltip>` 교체 ("적정 칸반 티켓수 = 3, 현재 N건 초과")
+
+#### 주간 필터 개선
+- **Modified**: `src/hooks/useBoardFilter.ts` — "이번 주" 필터: 이번 주 완료(DONE) + 이번 주 금요일까지 마감 예정(미완료) 포함
+- **Modified**: `src/components/board/BoardFilterBar.tsx` — 버튼 라벨 "이번 주 완료" → "이번 주"
+
+#### 데이터 삽입
+- **Modified**: `ticket.sql` — 워크스페이스 8번 전체 티켓에 라벨 1개 이상 추가 (labels + ticket_labels INSERT)
+
+### 📁 Files Modified
+- `app/api/members/route.ts` (+32 lines)
+- `app/api/tickets/reorder/route.ts` (+41 lines)
+- `src/lib/validations.ts` (+1 line)
+- `src/hooks/useTickets.ts` (+4 lines)
+- `src/components/team/TeamBoardClient.tsx` (+8 lines)
+- `src/components/ticket/TicketModal.tsx` (+76, -대폭 정리)
+- `src/components/board/TicketCard.tsx` (+18 lines)
+- `src/components/ticket/TicketDetailPage.tsx` (+22 lines)
+- `src/components/ticket/BreadcrumbPicker.tsx` (+20 lines)
+- `src/components/ui/Tooltip.tsx` (신규, ~75 lines)
+- `src/components/board/Column.tsx` (+24 lines)
+- `src/hooks/useBoardFilter.ts` (+28 lines)
+- `src/components/board/BoardFilterBar.tsx` (+2 lines)
+- **총 23 files changed, +354 / -943 lines**
+
+---
+
 ## [develop] - 2026-03-11 01:01 (랜딩/설정/온보딩 UI 개선 + 색상 팔레트 통일)
 
 ### 🎯 Prompts

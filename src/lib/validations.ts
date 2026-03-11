@@ -96,6 +96,7 @@ export const reorderSchema = z.object({
   ticketId: z.number().int().positive(),
   targetStatus: z.enum(ticketStatusValues as [string, ...string[]]),
   targetIndex: z.number().int().min(0),
+  workspaceId: z.number().int().positive().optional(),
 });
 
 export const createLabelSchema = z.object({

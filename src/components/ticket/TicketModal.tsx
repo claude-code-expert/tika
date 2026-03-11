@@ -262,10 +262,11 @@ export function TicketModal({
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
-  const [assigneeSearched, setAssigneeSearched] = useState(false);
+
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
   // ── auto-resize title textarea ──
@@ -285,8 +286,8 @@ export function TicketModal({
     const controller = new AbortController();
     const { signal } = controller;
     Promise.all([
-      fetch('/api/tickets?types=GOAL,STORY,FEATURE', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('/api/members', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`/api/tickets?types=GOAL,STORY,FEATURE&workspaceId=${ticket.workspaceId}`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`/api/members?workspaceId=${ticket.workspaceId}`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`/api/tickets/${ticket.id}/comments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]).then(([parentsData, membersData, commentsData]) => {
       if (parentsData?.tickets) {
@@ -297,6 +298,14 @@ export function TicketModal({
     });
     return () => controller.abort();
   }, [ticket.id]);
+
+  // ── auto-resize description textarea on mount ──
+  useEffect(() => {
+    const el = descTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
 
   // ── outside click: label picker ──
   useEffect(() => {
@@ -428,22 +437,6 @@ export function TicketModal({
   const totalItems = checklistItems.length;
   const clPct = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
 
-  // ── icon button styles ──
-  const iconBtnBase: React.CSSProperties = {
-    width: 32,
-    height: 32,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    borderRadius: 6,
-    background: 'transparent',
-    color: 'var(--color-text-muted)',
-    cursor: 'pointer',
-    transition: 'background 0.15s, color 0.15s',
-    flexShrink: 0,
-  };
-
   const footerBtnBase: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -519,8 +512,19 @@ export function TicketModal({
               onChange={(id) => setSelectedParentId(id)}
             />
 
-            {/* Right: URL + icon action buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Right: ticket number + URL copy + close */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'var(--color-text-muted)',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {workspaceName ? `${workspaceName}-${ticket.id}` : `#${ticket.id}`}
+              </span>
               <IconBtnWithTooltip
                 label="URL 복사"
                 icon={<Link2 size={15} />}
@@ -662,10 +666,14 @@ export function TicketModal({
                     설명
                   </div>
                   <textarea
+                    ref={descTextareaRef}
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                     maxLength={1000}
-                    rows={4}
                     placeholder="티켓에 대한 설명을 입력하세요..."
                     aria-label="설명"
                     style={{
@@ -679,7 +687,8 @@ export function TicketModal({
                       color: 'var(--color-text-primary)',
                       lineHeight: 1.7,
                       background: 'var(--color-board-bg)',
-                      resize: 'vertical',
+                      resize: 'none',
+                      overflow: 'hidden',
                       outline: 'none',
                       transition: 'border-color 0.15s, box-shadow 0.15s',
                     }}
@@ -1088,15 +1097,15 @@ export function TicketModal({
                     담당자
                   </div>
                   {currentAssignees.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
                       {currentAssignees.map((member) => (
                         <span
                           key={member.id}
                           style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            height: 24, padding: '0 8px', borderRadius: 5,
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
+                            height: 28, padding: '0 8px', borderRadius: 5, width: '100%',
                             background: 'transparent', border: `1.5px solid ${member.color}`,
-                            color: member.color, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+                            color: member.color, fontSize: 11, fontWeight: 600,
                           }}
                         >
                           {member.displayName}
@@ -1114,7 +1123,7 @@ export function TicketModal({
                   {!showAssigneePicker ? (
                     <button
                       onClick={() => { setShowAssigneePicker(true); setAssigneeSearch(''); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px dashed #9CA3AF', cursor: 'pointer', transition: 'all 0.15s', fontSize: 12, color: 'var(--color-text-muted)', background: 'transparent', fontFamily: 'inherit' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px dashed #9CA3AF', cursor: 'pointer', transition: 'all 0.15s', fontSize: 12, color: 'var(--color-text-muted)', background: 'transparent', fontFamily: 'inherit', width: '100%' }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-accent-light, #E8F5F0)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#9CA3AF'; e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'transparent'; }}
                     >
@@ -1125,27 +1134,24 @@ export function TicketModal({
                     <div style={{ position: 'relative' }}>
                       <input
                         type="text" value={assigneeSearch}
-                        onChange={(e) => { setAssigneeSearch(e.target.value); setAssigneeSearched(false); }}
+                        onChange={(e) => { setAssigneeSearch(e.target.value); }}
                         placeholder="이름으로 검색..."
                         autoFocus
                         onKeyDown={(e) => {
-                          if (e.key === 'Escape') { setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }
-                          if (e.key === 'Enter' && assigneeSearch.length >= 2) { setAssigneeSearched(true); }
+                          if (e.key === 'Escape') { setShowAssigneePicker(false); setAssigneeSearch(''); }
                         }}
                         style={{ width: '100%', padding: '5px 10px', border: '1px solid var(--color-accent)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', color: 'var(--color-text-primary)', background: '#fff', outline: 'none', boxShadow: '0 0 0 3px var(--color-accent-light, #E8F5F0)' }}
                       />
                       <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 8, boxShadow: 'var(--shadow-dropdown)', zIndex: 200, padding: 4, maxHeight: 180, overflowY: 'auto' }}>
                         {selectedAssigneeIds.length >= 3 ? (
                           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>모든 멤버가 배정됨</p>
-                        ) : !assigneeSearched ? (
-                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>2글자 이상 입력 후 Enter</p>
                         ) : unassignedMembers.filter(m => m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase())).length === 0 ? (
                           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>검색 결과 없음</p>
                         ) : (
                           unassignedMembers.filter(m => m.displayName.toLowerCase().includes(assigneeSearch.toLowerCase())).map((member) => (
                             <button
                               key={member.id}
-                              onMouseDown={(e) => { e.preventDefault(); addAssignee(member.id); setShowAssigneePicker(false); setAssigneeSearch(''); setAssigneeSearched(false); }}
+                              onMouseDown={(e) => { e.preventDefault(); addAssignee(member.id); setShowAssigneePicker(false); setAssigneeSearch(''); }}
                               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', width: '100%', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', textAlign: 'left' }}
                               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-board-bg)'; }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}

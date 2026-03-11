@@ -109,7 +109,7 @@ function BacklogItem({ ticket, onClick }: { ticket: TicketWithMeta; onClick: () 
       </div>
       {/* Labels */}
       {ticket.labels && ticket.labels.length > 0 && (
-        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
+        <div style={{ display: 'flex', gap: 3, flexWrap: 'nowrap', overflow: 'hidden', marginBottom: 4 }}>
           {ticket.labels.slice(0, 3).map((label) => (
             <LabelBadge key={label.id} label={label} size="sm" />
           ))}
@@ -482,7 +482,7 @@ interface TeamBoardClientProps {
   currentMemberId: number | null;
 }
 
-export function TeamBoardClient({ initialData, currentMemberId }: TeamBoardClientProps) {
+export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: TeamBoardClientProps) {
   const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder, fetchBoard } =
     useTickets(initialData);
 
@@ -519,9 +519,9 @@ export function TeamBoardClient({ initialData, currentMemberId }: TeamBoardClien
       if (!over || active.id === over.id) return;
       const target = resolveDropTarget(board, over.id);
       if (!target) return;
-      await reorder(Number(active.id), target.status, target.index);
+      await reorder(Number(active.id), target.status, target.index, workspaceId);
     },
-    [board, reorder],
+    [board, reorder, workspaceId],
   );
 
   const { displayBoard, filter } = useBoardFilter(board);

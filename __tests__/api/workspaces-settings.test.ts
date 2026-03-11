@@ -26,7 +26,7 @@ const mockedUpdateWorkspace = updateWorkspace as jest.Mock;
 const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
-const mockWorkspace = { id: 1, name: '내 워크스페이스', description: null, ownerId: 'user-1', createdAt: '2026-01-01T00:00:00.000Z' };
+const mockWorkspace = { id: 1, name: 'My-Workspace', description: null, ownerId: 'user-1', createdAt: '2026-01-01T00:00:00.000Z' };
 const mockOwnerMember = { id: 1, userId: 'user-1', workspaceId: 1, displayName: '홍길동', color: '#629584', role: 'OWNER', invitedBy: null, joinedAt: null, createdAt: '2026-01-01T00:00:00.000Z' };
 
 function makePatchRequest(id: string, body: unknown): [NextRequest, { params: Promise<{ id: string }> }] {

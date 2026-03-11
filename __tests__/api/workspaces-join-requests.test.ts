@@ -20,17 +20,31 @@ jest.mock('@/db/queries/joinRequests', () => ({
   createJoinRequest: jest.fn(),
   getPendingRequestByUser: jest.fn(),
 }));
+jest.mock('@/db/queries/members', () => ({
+  getMembersByWorkspace: jest.fn(),
+}));
+jest.mock('@/db/queries/workspaces', () => ({
+  getWorkspaceById: jest.fn(),
+}));
+jest.mock('@/lib/notifications', () => ({
+  sendInAppNotification: jest.fn().mockResolvedValue(undefined),
+  buildJoinRequestReceivedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+}));
 
 import { NextRequest } from 'next/server';
 import { POST, GET } from '@/app/api/workspaces/[id]/join-requests/route';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
 import { getJoinRequests, createJoinRequest, getPendingRequestByUser } from '@/db/queries/joinRequests';
+import { getMembersByWorkspace } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetJoinRequests = getJoinRequests as jest.Mock;
 const mockedCreateJoinRequest = createJoinRequest as jest.Mock;
 const mockedGetPendingRequestByUser = getPendingRequestByUser as jest.Mock;
+const mockedGetMembersByWorkspace = getMembersByWorkspace as jest.Mock;
+const mockedGetWorkspaceById = getWorkspaceById as jest.Mock;
 
 const mockSession = { user: { id: 'user-1' } };
 const WORKSPACE_ID = '5';
@@ -81,6 +95,9 @@ function mockDbSelectSequence(sequences: unknown[][]) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: safe fallbacks for post-create notification calls
+  mockedGetMembersByWorkspace.mockResolvedValue([]);
+  mockedGetWorkspaceById.mockResolvedValue({ id: 5, name: '테스트' });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

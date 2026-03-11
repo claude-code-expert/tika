@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { User, Building2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface OnboardingWizardProps {
   userId: string;
@@ -132,6 +133,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
   const { update } = useSession();
   const [loading, setLoading] = useState<'USER' | 'WORKSPACE' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showGoHomeConfirm, setShowGoHomeConfirm] = useState(false);
 
   const handleSelect = async (userType: 'USER' | 'WORKSPACE') => {
     if (loading) return;
@@ -258,7 +260,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
 
         {/* 메인 페이지 이동 */}
         <button
-          onClick={() => router.push('/')}
+          onClick={() => setShowGoHomeConfirm(true)}
           style={{
             marginTop: 32,
             padding: '8px 20px',
@@ -274,6 +276,19 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
         >
           메인 페이지로 이동
         </button>
+
+        <ConfirmDialog
+          isOpen={showGoHomeConfirm}
+          title="개인용 워크스페이스로 이동"
+          message="개인용 워크스페이스 페이지로 이동하겠습니까?"
+          confirmLabel="확인"
+          confirmVariant="primary"
+          onConfirm={() => {
+            setShowGoHomeConfirm(false);
+            handleSelect('USER');
+          }}
+          onCancel={() => setShowGoHomeConfirm(false)}
+        />
       </div>
     </>
   );

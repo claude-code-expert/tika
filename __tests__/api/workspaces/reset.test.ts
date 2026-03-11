@@ -25,7 +25,7 @@ const mockedResetWorkspaceData = resetWorkspaceData as jest.Mock;
 const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
-const mockWorkspace = { id: 1, name: '내 워크스페이스', description: null, ownerId: 'user-1', type: 'TEAM', iconColor: null, createdAt: '2026-01-01T00:00:00.000Z' };
+const mockWorkspace = { id: 1, name: 'My-Workspace', description: null, ownerId: 'user-1', type: 'TEAM', iconColor: null, createdAt: '2026-01-01T00:00:00.000Z' };
 const mockOwnerMember = { id: 1, userId: 'user-1', workspaceId: 1, displayName: '홍길동', color: '#629584', role: 'OWNER', invitedBy: null, joinedAt: null, createdAt: '2026-01-01T00:00:00.000Z' };
 const mockMemberMember = { ...mockOwnerMember, id: 2, userId: 'user-2', role: 'MEMBER' };
 
@@ -49,7 +49,7 @@ describe('DELETE /api/workspaces/[id]/reset', () => {
     mockedGetWorkspaceById.mockResolvedValueOnce(mockWorkspace);
     mockedResetWorkspaceData.mockResolvedValueOnce(undefined);
 
-    const [req, ctx] = makeDeleteRequest('1', { confirmName: '내 워크스페이스' });
+    const [req, ctx] = makeDeleteRequest('1', { confirmName: 'My-Workspace' });
     const res = await DELETE(req, ctx);
     expect(res.status).toBe(204);
     expect(mockedResetWorkspaceData).toHaveBeenCalledWith(1);
@@ -72,7 +72,7 @@ describe('DELETE /api/workspaces/[id]/reset', () => {
     mockedAuth.mockResolvedValueOnce({ user: { id: 'user-2', workspaceId: 1 } });
     mockedGetMemberByUserId.mockResolvedValueOnce(mockMemberMember);
 
-    const [req, ctx] = makeDeleteRequest('1', { confirmName: '내 워크스페이스' });
+    const [req, ctx] = makeDeleteRequest('1', { confirmName: 'My-Workspace' });
     const res = await DELETE(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(403);
@@ -82,7 +82,7 @@ describe('DELETE /api/workspaces/[id]/reset', () => {
   it('401 when unauthenticated', async () => {
     mockedAuth.mockResolvedValueOnce(null);
 
-    const [req, ctx] = makeDeleteRequest('1', { confirmName: '내 워크스페이스' });
+    const [req, ctx] = makeDeleteRequest('1', { confirmName: 'My-Workspace' });
     const res = await DELETE(req, ctx);
     const body = await res.json();
     expect(res.status).toBe(401);

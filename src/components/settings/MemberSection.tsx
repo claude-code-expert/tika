@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { RoleBadge, ROLE_STYLES } from '@/components/ui/RoleBadge';
 import type { SectionProps } from './types';
+import { TEAM_ROLE } from '@/types/index';
 import type { MemberWithEmail, MemberRole, JoinRequestWithUser, WorkspaceWithRole } from '@/types/index';
 
 type TransferTarget = MemberWithEmail;
@@ -105,7 +107,8 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
   }
 
   async function handleRoleChange(member: MemberWithEmail, newRole: MemberRole) {
-    if (member.role === 'OWNER' && newRole === 'MEMBER' && adminCount <= 1) {
+    if (newRole === member.role) return;
+    if (member.role === 'OWNER' && adminCount <= 1) {
       showToast('관리자가 최소 1명 이상이어야 합니다', 'fail');
       return;
     }
@@ -128,7 +131,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         return;
       }
       await fetchMembers();
-      showToast(`${member.displayName}의 역할이 ${newRole === 'OWNER' ? '관리자' : '멤버'}로 변경되었습니다`, 'success');
+      showToast(`${member.displayName}의 역할이 ${ROLE_STYLES[newRole].label}로 변경되었습니다`, 'success');
     } catch {
       showToast('역할 변경 중 오류가 발생했습니다', 'fail');
     }
@@ -196,7 +199,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>
-                {ws.name} ({ws.role === 'OWNER' ? '관리자' : ws.role === 'MEMBER' ? '멤버' : '뷰어'})
+                {ws.name} ({ROLE_STYLES[ws.role as MemberRole]?.label ?? ws.role})
               </option>
             ))}
           </select>
@@ -277,8 +280,8 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         {members.map((member) => {
           const isAdmin = member.role === 'OWNER';
           const canRemove = !(isAdmin && adminCount <= 1);
-          const newRole: MemberRole = isAdmin ? 'MEMBER' : 'OWNER';
           const initial = member.displayName.slice(0, 1).toUpperCase();
+          const isSelf = member.userId === currentUserId;
 
           return (
             <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6 }}>
@@ -289,9 +292,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
                 <div style={{ fontSize: 12, fontWeight: 500 }}>{member.displayName}</div>
                 <div style={{ fontSize: 11, color: '#8993A4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 10px', borderRadius: 10, flexShrink: 0, whiteSpace: 'nowrap', background: isAdmin ? '#E0E7FF' : '#F1F3F6', color: isAdmin ? '#4338CA' : '#8993A4' }}>
-                {isAdmin ? '관리자' : '멤버'}
-              </span>
+              <RoleBadge role={member.role} size="sm" />
               <span style={{ fontSize: 11, color: '#8993A4', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {member.createdAt.slice(0, 10)}
               </span>
@@ -310,17 +311,24 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
                       소유권 이전
                     </button>
                   )}
-                  <button
-                    onClick={() => handleRoleChange(member, newRole)}
-                    title="역할 변경"
-                    style={{ width: 28, height: 28, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', borderRadius: 4, color: '#8993A4', cursor: 'pointer' }}
-                  >
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx={9} cy={7} r={4} />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  </button>
-                  {canRemove && (
+                  {/* Role select — visible to OWNER, hidden for self */}
+                  {!isSelf && (
+                    <select
+                      value={member.role}
+                      onChange={(e) => handleRoleChange(member, e.target.value as MemberRole)}
+                      title="역할 변경"
+                      style={{
+                        height: 28, padding: '0 6px', border: '1px solid #DFE1E6',
+                        borderRadius: 6, fontSize: 11, fontFamily: 'inherit',
+                        color: '#5A6B7F', background: '#fff', cursor: 'pointer', outline: 'none',
+                      }}
+                    >
+                      {Object.values(TEAM_ROLE).map((r) => (
+                        <option key={r} value={r}>{ROLE_STYLES[r].label}</option>
+                      ))}
+                    </select>
+                  )}
+                  {canRemove && !isSelf && (
                     <button
                       onClick={() => setConfirmRemove(member)}
                       title="제거"
@@ -346,7 +354,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
       <ConfirmDialog
         isOpen={confirmRole !== null}
         title="역할 변경"
-        message={`"${confirmRole?.member.displayName}"의 역할을 ${confirmRole?.newRole === 'OWNER' ? '관리자' : '멤버'}(으)로 변경하시겠습니까?`}
+        message={`"${confirmRole?.member.displayName}"의 역할을 ${confirmRole ? ROLE_STYLES[confirmRole.newRole].label : ''}(으)로 변경하시겠습니까?`}
         confirmLabel="변경"
         confirmVariant="primary"
         onConfirm={doRoleChange}

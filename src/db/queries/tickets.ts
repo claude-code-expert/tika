@@ -44,6 +44,16 @@ function toMember(m: typeof members.$inferSelect): import('@/types/index').Membe
   };
 }
 
+/** Quick lookup: returns the workspaceId that owns the given ticket, or null. */
+export async function getTicketWorkspaceId(ticketId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ workspaceId: tickets.workspaceId })
+    .from(tickets)
+    .where(and(eq(tickets.id, ticketId), eq(tickets.deleted, false)))
+    .limit(1);
+  return row?.workspaceId ?? null;
+}
+
 export async function getTicketCount(workspaceId: number): Promise<number> {
   const [result] = await db
     .select({ count: count() })

@@ -21,6 +21,7 @@ jest.mock('@dnd-kit/core', () => ({
     setNodeRef: jest.fn(),
     isOver: false,
   }),
+  useDndContext: () => ({ active: null, over: null }),
 }));
 
 jest.mock('@dnd-kit/utilities', () => ({

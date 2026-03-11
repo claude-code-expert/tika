@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  closestCorners,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -529,6 +530,7 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: T
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}

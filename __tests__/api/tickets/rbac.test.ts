@@ -37,7 +37,7 @@ const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
 
 const mockSession = { user: { id: 'user-1', workspaceId: 1 } };
 const mockTeamWorkspace = { id: 1, name: '팀 워크스페이스', type: 'TEAM', ownerId: 'user-1' };
-const mockPersonalWorkspace = { id: 1, name: '내 워크스페이스', type: 'PERSONAL', ownerId: 'user-1' };
+const mockPersonalWorkspace = { id: 1, name: 'My-Workspace', type: 'PERSONAL', ownerId: 'user-1' };
 const mockOwnerMember = { id: 1, userId: 'user-1', workspaceId: 1, displayName: '홍길동', color: '#629584', role: 'OWNER', invitedBy: null, joinedAt: null, createdAt: '2026-01-01T00:00:00.000Z' };
 const mockMemberMember = { ...mockOwnerMember, role: 'MEMBER' };
 const mockViewerMember = { ...mockOwnerMember, role: 'VIEWER' };

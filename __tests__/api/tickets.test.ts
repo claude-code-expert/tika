@@ -83,7 +83,7 @@ describe('GET /api/tickets', () => {
   it('workspaceId 없는 세션이면 401을 반환한다', async () => {
     mockedAuth.mockResolvedValueOnce({ user: { id: 'user-1' } });
 
-    const response = await GET();
+    const response = await GET(new NextRequest('http://localhost/api/tickets'));
     const body = await response.json();
 
     expect(response.status).toBe(401);

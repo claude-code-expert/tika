@@ -8,7 +8,7 @@ import { eq, and } from 'drizzle-orm';
 async function createPersonalWorkspace(userId: string, userName: string) {
   const [newWorkspace] = await db
     .insert(workspaces)
-    .values({ ownerId: userId, name: '내 워크스페이스', type: 'PERSONAL' })
+    .values({ ownerId: userId, name: 'My-Workspace', type: 'PERSONAL' })
     .returning({ id: workspaces.id });
 
   await db.insert(members).values({

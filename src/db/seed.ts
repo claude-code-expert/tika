@@ -20,7 +20,7 @@ export async function seedDefaultLabels(workspaceId: number): Promise<void> {
   );
 }
 
-export async function seedDefaultIssues(workspaceId: number): Promise<void> {
+export async function seedDefaultIssues(workspaceId: number, memberId?: number): Promise<void> {
   const existing = await db
     .select({ id: tickets.id, title: tickets.title })
     .from(tickets)
@@ -28,26 +28,48 @@ export async function seedDefaultIssues(workspaceId: number): Promise<void> {
 
   if (existing.some((t) => t.title === 'MVP 출시')) return;
 
+  const assignee = memberId ? { assigneeId: memberId } : {};
+
   // GOAL
   const [goal] = await db
     .insert(tickets)
-    .values({ workspaceId, title: 'MVP 출시', type: 'GOAL', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: null })
+    .values({ workspaceId, title: 'MVP 출시', type: 'GOAL', status: 'IN_PROGRESS', priority: 'HIGH', position: 0, parentId: null, ...assignee })
     .returning({ id: tickets.id });
 
-  // STORY
+  // STORY x2
   const [story1, story2] = await db
     .insert(tickets)
     .values([
-      { workspaceId, title: '사용자 인증 시스템', type: 'STORY', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: goal.id },
-      { workspaceId, title: '칸반 보드', type: 'STORY', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, parentId: goal.id },
+      { workspaceId, title: '사용자 인증 시스템', type: 'STORY', status: 'IN_PROGRESS', priority: 'HIGH', position: 0, parentId: goal.id, ...assignee },
+      { workspaceId, title: '칸반 보드', type: 'STORY', status: 'TODO', priority: 'MEDIUM', position: 1024, parentId: goal.id, ...assignee },
     ])
     .returning({ id: tickets.id });
 
-  // FEATURE
+  // FEATURE x2 per Story
+  const [feat1_1, feat1_2, feat2_1, feat2_2] = await db
+    .insert(tickets)
+    .values([
+      { workspaceId, title: 'OAuth 로그인 구현', type: 'FEATURE', status: 'DONE', priority: 'HIGH', position: 0, parentId: story1.id, ...assignee },
+      { workspaceId, title: '사용자 프로필 관리', type: 'FEATURE', status: 'IN_PROGRESS', priority: 'MEDIUM', position: 1024, parentId: story1.id, ...assignee },
+      { workspaceId, title: '드래그앤드롭', type: 'FEATURE', status: 'TODO', priority: 'HIGH', position: 0, parentId: story2.id, ...assignee },
+      { workspaceId, title: '티켓 CRUD', type: 'FEATURE', status: 'TODO', priority: 'MEDIUM', position: 1024, parentId: story2.id, ...assignee },
+    ])
+    .returning({ id: tickets.id });
+
+  // TASK x2 per Feature
   await db.insert(tickets).values([
-    { workspaceId, title: '인증 API', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: story1.id },
-    { workspaceId, title: '드래그앤드롭', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: story2.id },
-    { workspaceId, title: '티켓 CRUD', type: 'FEATURE', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, parentId: story2.id },
+    // feat1_1 (OAuth) — DONE
+    { workspaceId, title: 'Google OAuth 설정', type: 'TASK', status: 'DONE', priority: 'HIGH', position: 0, parentId: feat1_1.id, ...assignee },
+    { workspaceId, title: '세션 관리 구현', type: 'TASK', status: 'DONE', priority: 'MEDIUM', position: 1024, parentId: feat1_1.id, ...assignee },
+    // feat1_2 (프로필) — IN_PROGRESS / TODO
+    { workspaceId, title: '프로필 페이지 UI', type: 'TASK', status: 'IN_PROGRESS', priority: 'MEDIUM', position: 0, parentId: feat1_2.id, ...assignee },
+    { workspaceId, title: '프로필 수정 API', type: 'TASK', status: 'TODO', priority: 'MEDIUM', position: 1024, parentId: feat1_2.id, ...assignee },
+    // feat2_1 (드래그앤드롭) — TODO
+    { workspaceId, title: '칼럼 간 이동 구현', type: 'TASK', status: 'TODO', priority: 'HIGH', position: 0, parentId: feat2_1.id, ...assignee },
+    { workspaceId, title: '순서 변경 구현', type: 'TASK', status: 'BACKLOG', priority: 'MEDIUM', position: 1024, parentId: feat2_1.id, ...assignee },
+    // feat2_2 (티켓 CRUD) — BACKLOG
+    { workspaceId, title: '티켓 생성 폼 구현', type: 'TASK', status: 'BACKLOG', priority: 'MEDIUM', position: 0, parentId: feat2_2.id, ...assignee },
+    { workspaceId, title: '티켓 상세 모달 구현', type: 'TASK', status: 'BACKLOG', priority: 'LOW', position: 1024, parentId: feat2_2.id, ...assignee },
   ]);
 }
 
@@ -192,7 +214,7 @@ if (process.argv[1] === import.meta.url || process.argv[1]?.endsWith('seed.ts'))
 
   (async () => {
     await seedDefaultLabels(workspaceId);
-    await seedDefaultIssues(workspaceId);
+    await seedDefaultIssues(workspaceId, memberId);
     await seedSampleTickets(workspaceId, memberId);
     console.log(`Seeded workspace ${workspaceId} successfully`);
     process.exit(0);

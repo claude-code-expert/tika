@@ -26,6 +26,7 @@ export default async function TeamWbsPage({
     getWbsTickets(workspaceId),
   ]);
   if (!workspace || !member) redirect('/');
+  if (workspace.type === 'PERSONAL') redirect('/');
 
   const role = member.role as TeamRole;
 

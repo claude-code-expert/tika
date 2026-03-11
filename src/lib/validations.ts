@@ -134,7 +134,8 @@ export const createWorkspaceSchema = z.object({
   name: z
     .string()
     .min(1, '워크스페이스 이름을 입력해주세요')
-    .max(100, '워크스페이스 이름은 100자 이하여야 합니다'),
+    .max(100, '워크스페이스 이름은 100자 이하여야 합니다')
+    .regex(/^[a-zA-Z0-9_-]+$/, '영문, 숫자, -, _ 만 사용할 수 있습니다. 띄어쓰기는 허용되지 않습니다.'),
   description: z.string().max(200, '설명은 200자 이하여야 합니다').nullable().optional(),
 });
 

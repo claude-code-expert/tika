@@ -31,6 +31,10 @@ export default async function TrashPage({
     redirect('/');
   }
 
+  if (workspace.type === 'PERSONAL') {
+    redirect('/');
+  }
+
   const role = member.role as TeamRole;
   const deletedTickets = await getDeletedTickets(workspaceId);
 

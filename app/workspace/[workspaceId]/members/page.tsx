@@ -33,6 +33,7 @@ export default async function TeamMembersPage({
   ]);
 
   if (!workspace || !currentMember) redirect('/');
+  if (workspace.type === 'PERSONAL') redirect('/');
 
   const role = currentMember.role as TeamRole;
   const isOwner = role === 'OWNER';

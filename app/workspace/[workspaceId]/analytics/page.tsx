@@ -2,19 +2,16 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId } from '@/db/queries/members';
-import { getSprintsByWorkspace } from '@/db/queries/sprints';
 import { getBoardData } from '@/db/queries/tickets';
 import {
-  getVelocityData,
   getCfdData,
   getCycleTimeData,
   getLabelAnalytics,
-  getBurndownData,
+  getPeriodBurndownData,
 } from '@/db/queries/analytics';
 import { TeamShell } from '@/components/layout/TeamShell';
-import { BurndownChart } from '@/components/team/charts/BurndownChart';
+import { BurndownPeriodChart } from '@/components/team/charts/BurndownPeriodChart';
 import { CumulativeFlowDiagram } from '@/components/team/charts/CumulativeFlowDiagram';
-import { VelocityChart } from '@/components/team/charts/VelocityChart';
 import { CycleTimeAnalysis } from '@/components/team/charts/CycleTimeAnalysis';
 import { TypeDistributionChart } from '@/components/team/charts/TypeDistributionChart';
 import { LabelAnalyticsCard } from '@/components/team/charts/LabelAnalyticsCard';
@@ -34,12 +31,10 @@ export default async function TeamAnalyticsPage({
   if (!session?.user) redirect('/login');
 
   const userId = session.user.id as string;
-  const [workspace, member, sprints, boardData, velocity, cfd, cycleTime, labelAnalytics] = await Promise.all([
+  const [workspace, member, boardData, cfd, cycleTime, labelAnalytics] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
-    getSprintsByWorkspace(workspaceId),
     getBoardData(workspaceId),
-    getVelocityData(workspaceId),
     getCfdData(workspaceId, 30),
     getCycleTimeData(workspaceId),
     getLabelAnalytics(workspaceId),
@@ -49,16 +44,47 @@ export default async function TeamAnalyticsPage({
 
   const role = member.role as TeamRole;
 
-  const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
-  const burndownData = activeSprint ? await getBurndownData(workspaceId, activeSprint.id) : [];
+  // Burndown periods
+  const now = new Date();
+  const todayDate = now.toISOString().slice(0, 10);
+
+  // 지난주: 지난 월요일 ~ 지난 일요일
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const lastSunday = new Date(now);
+  lastSunday.setDate(now.getDate() - (dayOfWeek === 0 ? 0 : dayOfWeek));
+  const lastMonday = new Date(lastSunday);
+  lastMonday.setDate(lastSunday.getDate() - 6);
+
+  // 이번달: 이번달 1일 ~ 오늘
+  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  // 지난달: 지난달 1일 ~ 지난달 말일
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthStart = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  const lastMonthEndStr = lastMonthEnd.toISOString().slice(0, 10);
+
+  const [burndownLastWeek, burndownThisMonth, burndownLastMonth] = await Promise.all([
+    getPeriodBurndownData(workspaceId, lastMonday.toISOString().slice(0, 10), lastSunday.toISOString().slice(0, 10)),
+    getPeriodBurndownData(workspaceId, thisMonthStart, todayDate),
+    getPeriodBurndownData(workspaceId, lastMonthStart, lastMonthEndStr),
+  ]);
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
   const total = allTickets.length;
 
-  // Sprint summary stats
-  const completedSprints = sprints.filter((s) => s.status === 'COMPLETED').length;
   const doneTickets = allTickets.filter((t) => t.status === 'DONE').length;
   const completionRate = total > 0 ? Math.round((doneTickets / total) * 100) : 0;
+
+  // Overdue tickets (not DONE, past due date)
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const overdueCount = allTickets.filter((t) => t.status !== 'DONE' && t.dueDate && t.dueDate < todayStr).length;
+
+  // Type breakdown
+  const goalCount = allTickets.filter((t) => t.type === 'GOAL').length;
+  const storyCount = allTickets.filter((t) => t.type === 'STORY').length;
+  const featureCount = allTickets.filter((t) => t.type === 'FEATURE').length;
+  const taskCount = allTickets.filter((t) => t.type === 'TASK').length;
 
   // Type distribution
   const typeCounts: Record<string, number> = {};
@@ -99,26 +125,24 @@ export default async function TeamAnalyticsPage({
         </div>
 
         {/* Summary stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14, marginBottom: 24 }}>
-          <MiniStat label="완료 티켓" value={doneTickets} total={total} color="#629584" />
-          <MiniStat label="완료율" value={`${completionRate}%`} color="#3B82F6" />
-          <MiniStat label="완료 스프린트" value={completedSprints} color="#8B5CF6" />
-          <MiniStat label="평균 사이클" value={`${avgCycleTime}일`} color="#F59E0B" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 14, marginBottom: 24 }}>
+          <MiniStat label="Goal" value={goalCount} color="#4338CA" />
+          <MiniStat label="Story" value={storyCount} color="#1D4ED8" />
+          <MiniStat label="Feature" value={featureCount} color="#065F46" />
+          <MiniStat label="Task" value={taskCount} color="#6B7280" />
+          <MiniStat label="완료 티켓" value={doneTickets} sub={`전체 ${total}`} color="#629584" />
+          <MiniStat label="평균 Cycle Time" value={`${avgCycleTime}d`} sub="생성 → 완료" color="#629584" />
+          <MiniStat label="전체 완료율" value={`${completionRate}%`} sub={`${doneTickets} / ${total} 완료`} color="#22C55E" />
+          <MiniStat label="지연 티켓" value={overdueCount} sub="마감일 초과" color="#DC2626" />
         </div>
 
         {/* Charts 2-col grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-          <Card title="번다운 차트 (현재 스프린트)">
-            <BurndownChart data={burndownData} storyPointsTotal={burndownData[0]?.remainingPoints ?? 0} />
+          <Card title="번다운 차트">
+            <BurndownPeriodChart lastWeek={burndownLastWeek} thisMonth={burndownThisMonth} lastMonth={burndownLastMonth} />
           </Card>
           <Card title="누적 흐름도 (30일)">
             <CumulativeFlowDiagram data={cfd} />
-          </Card>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <Card title="스프린트 벨로시티">
-            <VelocityChart sprints={velocity} />
           </Card>
         </div>
 
@@ -165,12 +189,12 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function MiniStat({ label, value, total, color }: { label: string; value: number | string; total?: number; color: string }) {
+function MiniStat({ label, value, sub, color }: { label: string; value: number | string; sub?: string; color: string }) {
   return (
     <div style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '14px 16px' }}>
       <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{value}</div>
       <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginTop: 2 }}>{label}</div>
-      {total !== undefined && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>전체 {total}</div>}
+      {sub && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }

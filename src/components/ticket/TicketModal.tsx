@@ -10,7 +10,8 @@ import { CommentSection } from './CommentSection';
 import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
-import { PRIORITY_CONFIG } from '@/components/ui/Chips';
+import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/components/ui/Chips';
+import { CHEVRON_SVG, metaSelectStyle, metaDateStyle as metaDateStyleShared } from '@/lib/ticketMetaStyles';
 import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
 import {
   FileText,
@@ -23,19 +24,7 @@ import {
   Copy,
 } from 'lucide-react';
 
-// ─── style helpers ────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  BACKLOG: { bg: '#F1F3F6', color: '#5A6B7F' },
-  TODO: { bg: '#DBEAFE', color: '#1E40AF' },
-  IN_PROGRESS: { bg: '#FEF3C7', color: '#92400E' },
-  DONE: { bg: '#D1FAE5', color: '#065F46' },
-};
-
 // ─── constants ─────────────────────────────────────────────────────────────────
-
-const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
-
 
 // ─── UrlCopyBadge ────────────────────────────────────────────────────────────
 
@@ -431,7 +420,7 @@ export function TicketModal({
   const currentAssignees = allMembers.filter((m) => selectedAssigneeIds.includes(m.id));
   const unassignedMembers = allMembers.filter((m) => !selectedAssigneeIds.includes(m.id));
 
-  const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.TODO;
+  const statusStyle = STATUS_CONFIG[status] ?? STATUS_CONFIG.TODO;
   const priorityStyle = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.MEDIUM;
   const completedItems = checklistItems.filter((i) => i.isCompleted).length;
   const totalItems = checklistItems.length;
@@ -452,37 +441,8 @@ export function TicketModal({
     whiteSpace: 'nowrap',
   };
 
-  const metaSelectStyle: React.CSSProperties = {
-    width: '100%',
-    height: 28,
-    padding: '0 24px 0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: `var(--color-board-bg) ${CHEVRON_SVG}`,
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-  };
-
-  const metaDateStyle: React.CSSProperties = {
-    width: '100%',
-    height: 32,
-    padding: '0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: 'var(--color-board-bg)',
-    outline: 'none',
-    cursor: 'pointer',
-    // Ensure native date picker renders at correct size across environments
-    boxSizing: 'border-box',
-  };
+  // TicketModal uses height:32 + boxSizing for date inputs (vs shared height:28)
+  const metaDateStyle: React.CSSProperties = { ...metaDateStyleShared, height: 32, boxSizing: 'border-box' };
 
   // ──────────────────────────────────────────────────────────────────────────
   return (
@@ -943,11 +903,9 @@ export function TicketModal({
                     value={startDate}
                     onChange={(e) => {
                       setStartDate(e.target.value);
-                      // Workaround: body overflow:hidden (set by Modal) causes Chrome's native
-                      // date picker to stay open after selection. Blur forces it to close.
-                      e.target.blur();
                     }}
                     aria-label="시작 예정일"
+                    max={`${new Date().getFullYear() + 5}-12-31`}
                     style={metaDateStyle}
                     onFocus={(e) => {
                       e.target.style.borderColor = 'var(--color-accent)';
@@ -970,9 +928,9 @@ export function TicketModal({
                       value={dueDate}
                       onChange={(e) => {
                         setDueDate(e.target.value);
-                        e.target.blur(); // same Chrome body overflow:hidden workaround
                       }}
                       aria-label="종료 예정일"
+                      max={`${new Date().getFullYear() + 5}-12-31`}
                       style={{
                         ...metaDateStyle,
                         color: ticket.isOverdue ? '#DC2626' : 'var(--color-text-primary)',

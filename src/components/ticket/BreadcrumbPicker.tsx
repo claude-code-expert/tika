@@ -172,6 +172,8 @@ export function BreadcrumbPicker({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
+                  width: 190,
+                  minWidth: 190,
                   background: (selectedItem || !isDisabled) ? '#fff' : 'var(--color-board-bg)',
                   color: 'var(--color-text-primary)',
                   border: isDisabled ? '1px dashed var(--color-border)' : '1px solid var(--color-border)',
@@ -182,7 +184,7 @@ export function BreadcrumbPicker({
                   cursor: isDisabled ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
                   fontFamily: 'inherit',
-                  maxWidth: 180,
+                  overflow: 'hidden',
                 }}
               >
                 <span

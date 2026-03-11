@@ -70,6 +70,58 @@ export async function getBurndownData(
   return result;
 }
 
+// ─── Period Burndown (date-range based) ──────────────────────────────────────
+
+export async function getPeriodBurndownData(
+  workspaceId: number,
+  startDate: string,
+  endDate: string,
+): Promise<BurndownDataPoint[]> {
+  const allTickets = await db
+    .select({ id: tickets.id, completedAt: tickets.completedAt, storyPoints: tickets.storyPoints, createdAt: tickets.createdAt })
+    .from(tickets)
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
+
+  // Tickets that existed at or before the period start
+  const periodStart = new Date(startDate);
+  periodStart.setHours(0, 0, 0, 0);
+  const periodEnd = new Date(endDate);
+  periodEnd.setHours(23, 59, 59, 999);
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const lastDay = periodEnd < today ? periodEnd : today;
+
+  // Count tickets created on or before end of period (they are the pool)
+  const relevantTickets = allTickets.filter((t) => t.createdAt.getTime() <= lastDay.getTime());
+  const total = relevantTickets.length;
+  const totalPoints = relevantTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+
+  const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
+
+  const result: BurndownDataPoint[] = [];
+
+  for (let d = new Date(periodStart); d.getTime() <= lastDay.getTime(); d.setDate(d.getDate() + 1)) {
+    const dayEnd = new Date(d);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const completedByDay = relevantTickets.filter(
+      (t) => t.completedAt && t.completedAt.getTime() <= dayEnd.getTime(),
+    );
+
+    const dayIndex = Math.ceil((d.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+    const idealTickets = Math.max(0, total - Math.round((total / totalDays) * dayIndex));
+
+    result.push({
+      date: d.toISOString().slice(0, 10),
+      remainingTickets: total - completedByDay.length,
+      remainingPoints: totalPoints - completedByDay.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0),
+      idealTickets,
+    });
+  }
+
+  return result;
+}
+
 // ─── CFD (Cumulative Flow Diagram) ───────────────────────────────────────────
 
 export async function getCfdData(

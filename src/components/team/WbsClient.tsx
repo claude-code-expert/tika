@@ -146,7 +146,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
       </div>
 
       {/* ── Gantt card ── */}
-      <div style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,.04)',  }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
 
         {/* Toolbar */}
         <div style={{ padding: '10px 16px', borderBottom: '1px solid #DFE1E6', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', background: '#fff' }}>

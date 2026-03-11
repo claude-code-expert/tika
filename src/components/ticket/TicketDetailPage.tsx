@@ -11,6 +11,7 @@ import { TICKET_STATUS, TICKET_PRIORITY } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
+import { CHEVRON_SVG, metaSelectStyle, metaDateStyle } from '@/lib/ticketMetaStyles';
 import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
 import {
   FileText,
@@ -115,8 +116,6 @@ const TYPE_BADGE_STYLES: Record<string, { bg: string; color: string }> = {
   FEATURE: { bg: '#D1FAE5', color: '#065F46' },
   TASK: { bg: '#FEF3C7', color: '#92400E' },
 };
-
-const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -367,35 +366,6 @@ export function TicketDetailPage({
     whiteSpace: 'nowrap',
   };
 
-  const metaSelectStyle: React.CSSProperties = {
-    width: '100%',
-    height: 28,
-    padding: '0 24px 0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: `var(--color-board-bg) ${CHEVRON_SVG}`,
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-  };
-
-  const metaDateStyle: React.CSSProperties = {
-    width: '100%',
-    height: 28,
-    padding: '0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: 'var(--color-board-bg)',
-    outline: 'none',
-    cursor: 'pointer',
-  };
 
   // ──────────────────────────────────────────────────────────────────────────
   return (

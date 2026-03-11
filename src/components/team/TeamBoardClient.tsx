@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronLeft, ChevronRight, ArrowUpNarrowWide, ClockArrowDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpNarrowWide, ClockArrowDown, ClockArrowUp } from 'lucide-react';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { BoardFilterBar } from '@/components/board/BoardFilterBar';
 import { TicketCard } from '@/components/board/TicketCard';
@@ -201,13 +201,14 @@ function sortByWbs(tickets: TicketWithMeta[]): TicketWithMeta[] {
   return result;
 }
 
-function sortByCreatedAt(tickets: TicketWithMeta[]): TicketWithMeta[] {
-  return [...tickets].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+function sortByCreatedAt(tickets: TicketWithMeta[], desc = false): TicketWithMeta[] {
+  return [...tickets].sort((a, b) => {
+    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return desc ? -diff : diff;
+  });
 }
 
-type BacklogSortMode = 'created' | 'wbs';
+type BacklogSortMode = 'created' | 'created-desc' | 'wbs';
 
 // ─── BacklogPanel ─────────────────────────────────────────────────────────────
 function BacklogPanel({
@@ -227,7 +228,7 @@ function BacklogPanel({
     BACKLOG_MAX,
   );
 
-  const sortedTickets = sortMode === 'wbs' ? sortByWbs(tickets) : sortByCreatedAt(tickets);
+  const sortedTickets = sortMode === 'wbs' ? sortByWbs(tickets) : sortByCreatedAt(tickets, sortMode === 'created-desc');
 
   return (
     <div
@@ -359,7 +360,7 @@ function BacklogPanel({
             </button>
             {/* Created sort */}
             <button
-              onClick={() => setSortMode('created')}
+              onClick={() => setSortMode(sortMode === 'created' ? 'created-desc' : 'created')}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -372,14 +373,14 @@ function BacklogPanel({
                 cursor: 'pointer',
                 padding: 0,
                 background: 'transparent',
-                color: sortMode === 'created' ? '#629584' : '#8993A4',
+                color: sortMode === 'created' || sortMode === 'created-desc' ? '#629584' : '#8993A4',
                 transition: 'color 0.12s',
               }}
               onMouseEnter={() => setHoverSort('created')}
               onMouseLeave={() => setHoverSort(null)}
               aria-label="생성일 정렬"
             >
-              <ClockArrowDown size={14} />
+              {sortMode === 'created-desc' ? <ClockArrowUp size={14} /> : <ClockArrowDown size={14} />}
               {hoverSort === 'created' && (
                 <span
                   style={{
@@ -398,7 +399,7 @@ function BacklogPanel({
                     zIndex: 50,
                   }}
                 >
-                  생성일 정렬
+                  {sortMode === 'created-desc' ? '생성일 역순' : '생성일 정렬'}
                 </span>
               )}
             </button>

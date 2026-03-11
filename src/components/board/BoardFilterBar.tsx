@@ -68,7 +68,7 @@ export function BoardFilterBar({ filter }: BoardFilterBarProps) {
           data-active={activeFilter === 'week_done' ? 'true' : undefined}
           onClick={() => setActiveFilter('week_done')}
         >
-          이번 주 완료
+          이번 주
           <span className="chip-count">{weekDoneCount}</span>
         </button>
 

@@ -44,7 +44,13 @@ export function BreadcrumbPicker({
   const [chainIds, setChainIds] = useState<(number | null)[]>(() => {
     const levels = ancestorTypes.length;
     const chain: (number | null)[] = Array(levels).fill(null);
-    if (parentId) chain[levels - 1] = parentId;
+    // Place parentId at the slot matching the parent's actual type (if known via `parent` prop)
+    if (parentId && parent) {
+      const idx = ancestorTypes.indexOf(parent.type);
+      if (idx !== -1) chain[idx] = parentId;
+    } else if (parentId) {
+      chain[levels - 1] = parentId; // fallback before parent prop loads
+    }
     return chain;
   });
 
@@ -54,16 +60,16 @@ export function BreadcrumbPicker({
   const breadcrumbBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const breadcrumbPickerRef = useRef<HTMLDivElement | null>(null);
 
-  // When allParents loads, traverse ancestor chain to initialize chainIds properly
+  // When allParents loads, traverse ancestor chain and place each ticket at its type-correct slot
   useEffect(() => {
     if (!allParents.length) return;
-    const levels = ancestorTypes.length;
-    const chain: (number | null)[] = Array(levels).fill(null);
+    const chain: (number | null)[] = Array(ancestorTypes.length).fill(null);
     let id: number | null = parentId ?? null;
-    for (let i = levels - 1; i >= 0 && id !== null; i--) {
+    while (id !== null) {
       const p = allParents.find((t) => t.id === id);
       if (!p) break;
-      chain[i] = p.id;
+      const idx = ancestorTypes.indexOf(p.type);
+      if (idx !== -1) chain[idx] = p.id;
       id = p.parentId ?? null;
     }
     setChainIds(chain);
@@ -123,7 +129,7 @@ export function BreadcrumbPicker({
         const selectedId = chainIds[idx] ?? null;
         const selectedItem =
           allParents.find((t) => t.id === selectedId) ??
-          (idx === ancestorTypes.length - 1 && !allParents.length && parent
+          (!allParents.length && parent && ancestorTypes.indexOf(parent.type) === idx
             ? (parent as unknown as Ticket)
             : undefined);
 

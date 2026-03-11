@@ -50,6 +50,12 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
     router.push(`/workspace/${ticket.workspaceId}/${ticket.id}`);
   };
 
+  const handleNavigateToParent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isDragging || !ticket.parent) return;
+    router.push(`/workspace/${ticket.workspaceId}/${ticket.parent.id}`);
+  };
+
   const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
@@ -206,6 +212,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
       {ticket.parent && parentStyle && (
         <div style={{ marginBottom: 6 }}>
           <span
+            onClick={handleNavigateToParent}
             style={{
               fontSize: 10,
               fontWeight: 600,
@@ -218,6 +225,17 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              textDecorationColor: parentStyle.color,
+              transition: 'text-decoration 0.12s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+              e.currentTarget.style.textDecorationColor = parentStyle.color;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
             }}
           >
             {ticket.parent.title}

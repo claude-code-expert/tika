@@ -45,6 +45,7 @@ export default async function TeamAnalyticsPage({
     getLabelAnalytics(workspaceId),
   ]);
   if (!workspace || !member) redirect('/');
+  if (workspace.type === 'PERSONAL') redirect('/');
 
   const role = member.role as TeamRole;
 

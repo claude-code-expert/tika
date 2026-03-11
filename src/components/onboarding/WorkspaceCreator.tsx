@@ -21,6 +21,11 @@ export function WorkspaceCreator() {
       return;
     }
 
+    if (!/^[a-zA-Z0-9_-]+$/.test(name.trim())) {
+      setNameError('영문, 숫자, -, _ 만 사용할 수 있습니다. 띄어쓰기는 허용되지 않습니다.');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/workspaces', {
@@ -63,7 +68,7 @@ export function WorkspaceCreator() {
           id="ws-name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
           maxLength={100}
           placeholder="예: marketing-team, dev_squad (영문·숫자·-·_ 사용 가능)"
           disabled={loading}

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { updateTicketSchema } from '@/lib/validations';
-import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
+import { getTicketById, getTicketWorkspaceId, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
@@ -16,23 +15,12 @@ import {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-function getWorkspaceId(session: Session | null): number | null {
-  return ((session?.user as Record<string, unknown> | undefined)?.workspaceId as number) ?? null;
-}
-
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '인증이 필요합니다' } },
-        { status: 401 },
-      );
-    }
-    const workspaceId = getWorkspaceId(session);
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
         { status: 401 },
       );
     }
@@ -45,6 +33,19 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         { status: 400 },
       );
     }
+
+    // Resolve workspace from ticket, not session (supports cross-workspace access)
+    const workspaceId = await getTicketWorkspaceId(ticketId);
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: '티켓을 찾을 수 없습니다' } },
+        { status: 404 },
+      );
+    }
+
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.VIEWER);
+    if (isRoleError(roleCheck)) return roleCheck;
 
     const ticket = await getTicketById(ticketId, workspaceId);
     if (!ticket) {
@@ -72,17 +73,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { status: 401 },
       );
     }
-    const workspaceId = getWorkspaceId(session);
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
-        { status: 401 },
-      );
-    }
-
-    const userId = (session.user as unknown as Record<string, unknown>).id as string;
-    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
-    if (isRoleError(roleCheck)) return roleCheck;
 
     const { id } = await context.params;
     const ticketId = Number(id);
@@ -92,6 +82,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { status: 400 },
       );
     }
+
+    // Resolve workspace from ticket, not session
+    const workspaceId = await getTicketWorkspaceId(ticketId);
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: '티켓을 찾을 수 없습니다' } },
+        { status: 404 },
+      );
+    }
+
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
+    if (isRoleError(roleCheck)) return roleCheck;
 
     const body = await request.json();
     const result = updateTicketSchema.safeParse(body);
@@ -237,17 +240,6 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         { status: 401 },
       );
     }
-    const workspaceId = getWorkspaceId(session);
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
-        { status: 401 },
-      );
-    }
-
-    const userId = (session.user as unknown as Record<string, unknown>).id as string;
-    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
-    if (isRoleError(roleCheck)) return roleCheck;
 
     const { id } = await context.params;
     const ticketId = Number(id);
@@ -257,6 +249,19 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         { status: 400 },
       );
     }
+
+    // Resolve workspace from ticket, not session
+    const workspaceId = await getTicketWorkspaceId(ticketId);
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: { code: 'TICKET_NOT_FOUND', message: '티켓을 찾을 수 없습니다' } },
+        { status: 404 },
+      );
+    }
+
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
+    if (isRoleError(roleCheck)) return roleCheck;
 
     // Fetch ticket + assignees before delete for notification
     const ticketToDelete = await getTicketById(ticketId, workspaceId);

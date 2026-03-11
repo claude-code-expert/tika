@@ -23,16 +23,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const workspaceId = getWorkspaceId(session);
-    if (!workspaceId) {
+    const { searchParams } = new URL(request.url);
+
+    // Accept explicit workspaceId query param (for cross-workspace access)
+    const wsParam = searchParams.get('workspaceId');
+    const workspaceId = wsParam ? Number(wsParam) : getWorkspaceId(session);
+    if (!workspaceId || Number.isNaN(workspaceId)) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
         { status: 401 },
       );
     }
 
+    // RBAC check when explicit workspaceId is provided
+    if (wsParam) {
+      const userId = (session.user as unknown as Record<string, unknown>).id as string;
+      const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.VIEWER);
+      if (isRoleError(roleCheck)) return roleCheck;
+    }
+
     // ?types=GOAL,STORY,FEATURE → return flat ticket list filtered by type
-    const { searchParams } = new URL(request.url);
     const typesParam = searchParams.get('types');
     if (typesParam) {
       const allowedTypes = typesParam.split(',').map((t) => t.trim().toUpperCase());

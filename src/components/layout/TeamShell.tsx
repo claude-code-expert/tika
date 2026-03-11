@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from './Header';
 import { Footer } from './Footer';
@@ -21,6 +21,11 @@ interface TeamShellProps {
 export function TeamShell({ workspaceId, role, workspaceName, iconColor, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
   const router = useRouter();
+
+  // Sync isPrimary so that navigating to "/" redirects back to this workspace
+  useEffect(() => {
+    fetch(`/api/workspaces/${workspaceId}/primary`, { method: 'PATCH' }).catch(() => {});
+  }, [workspaceId]);
   const fetchBoardRef = useRef<(() => Promise<void>) | null>(null);
 
   const boardRefreshCtx = useMemo(

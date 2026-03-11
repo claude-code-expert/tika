@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import type { InAppNotification } from '@/types/index';
+import type { InAppNotification, WorkspaceWithRole } from '@/types/index';
 
 type ReadFilter = 'all' | 'unread' | 'read';
 
@@ -65,19 +65,35 @@ export function NotificationsPage() {
   const [readFilter, setReadFilter] = useState<ReadFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [workspaces, setWorkspaces] = useState<{ id: number; name: string }[]>([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | null>(null);
   const router = useRouter();
 
-  // Fetch notifications on mount
+  // Fetch workspaces for filter dropdown
+  useEffect(() => {
+    fetch('/api/workspaces')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { workspaces?: WorkspaceWithRole[] } | null) => {
+        if (data?.workspaces) {
+          setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch notifications (re-fetch when workspace filter changes)
   useEffect(() => {
     setIsLoading(true);
-    fetch('/api/notifications/in-app?limit=200')
+    const params = new URLSearchParams({ limit: '200' });
+    if (selectedWorkspaceId !== null) params.set('workspaceId', String(selectedWorkspaceId));
+    fetch(`/api/notifications/in-app?${params}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { notifications?: InAppNotification[] } | null) => {
         if (data?.notifications) setNotifications(data.notifications);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [selectedWorkspaceId]);
 
   // Filtered list
   const filtered = notifications.filter((n) => {
@@ -194,6 +210,37 @@ export function NotificationsPage() {
               </button>
             ))}
           </div>
+
+          {/* Workspace filter */}
+          {workspaces.length > 1 && (
+            <select
+              value={selectedWorkspaceId ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedWorkspaceId(val === '' ? null : Number(val));
+                setCurrentPage(1);
+              }}
+              style={{
+                height: 30,
+                padding: '0 8px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 20,
+                fontSize: 12,
+                color: 'var(--color-text-secondary)',
+                background: '#fff',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+            >
+              <option value="">전체 워크스페이스</option>
+              {workspaces.map((ws) => (
+                <option key={ws.id} value={ws.id}>
+                  {ws.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Mark all read */}
           {unreadCount > 0 && (

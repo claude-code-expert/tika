@@ -1,4 +1,4 @@
-export type SectionKey = 'general' | 'notification-preferences' | 'labels' | 'members';
+export type SectionKey = 'general' | 'notification-preferences' | 'labels';
 export type ToastType = 'success' | 'fail' | 'info';
 
 export interface SectionProps {

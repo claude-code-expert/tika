@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { ProfileModal } from './ProfileModal';
 import { MemberDrawer } from '@/components/settings/MemberDrawer';
@@ -29,9 +30,16 @@ function timeAgo(iso: string): string {
 
 export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar }: HeaderProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const user = session?.user;
   const memberId = (user as Record<string, unknown> | undefined)?.memberId as number | undefined;
   const workspaceId = (user as Record<string, unknown> | undefined)?.workspaceId as number | null | undefined;
+
+  // Derive logo link from current URL — preserve workspace context
+  const logoHref = (() => {
+    const match = pathname.match(/^\/workspace\/(\d+)/);
+    return match ? `/workspace/${match[1]}` : '/';
+  })();
 
   const [member, setMember] = useState<Member | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -175,7 +183,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
             </button>
           )}
           <a
-            href="/"
+            href={logoHref}
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
             <Image

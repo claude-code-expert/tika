@@ -28,49 +28,68 @@ export async function getBurndownData(
   if (!sprint || !sprint.startDate || !sprint.endDate) return [];
 
   const sprintTickets = await db
-    .select({ id: tickets.id, completedAt: tickets.completedAt, storyPoints: tickets.storyPoints })
+    .select({ id: tickets.id, completedAt: tickets.completedAt, storyPoints: tickets.storyPoints, createdAt: tickets.createdAt })
     .from(tickets)
     .where(and(eq(tickets.sprintId, sprintId), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
 
-  const total = sprintTickets.length;
-  const totalPoints = sprintTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+  return computePeriodBurndown(sprintTickets, sprint.startDate, sprint.endDate);
+}
 
-  const start = new Date(sprint.startDate);
-  const end = new Date(sprint.endDate);
+// ─── Period Burndown (date-range based) ──────────────────────────────────────
+
+function computePeriodBurndown(
+  allTickets: { id: number; completedAt: Date | null; storyPoints: number | null; createdAt: Date }[],
+  startDate: string,
+  endDate: string,
+): BurndownDataPoint[] {
+  const periodStart = new Date(startDate);
+  periodStart.setHours(0, 0, 0, 0);
+  const periodEnd = new Date(endDate);
+  periodEnd.setHours(23, 59, 59, 999);
   const today = new Date();
-  const lastDay = end < today ? end : today;
+  today.setHours(23, 59, 59, 999);
+  const lastDay = periodEnd < today ? periodEnd : today;
 
-  const totalDays = Math.max(
-    1,
-    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-  );
+  const relevantTickets = allTickets.filter((t) => t.createdAt.getTime() <= lastDay.getTime());
+  const total = relevantTickets.length;
+  const totalPoints = relevantTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+
+  const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Pre-sort by completedAt for efficient cumulative counting
+  const completed = relevantTickets
+    .filter((t): t is typeof t & { completedAt: Date } => t.completedAt !== null)
+    .sort((a, b) => a.completedAt.getTime() - b.completedAt.getTime());
 
   const result: BurndownDataPoint[] = [];
+  let completedIdx = 0;
+  let completedCount = 0;
+  let completedPoints = 0;
 
-  for (let d = new Date(start); d.getTime() <= lastDay.getTime(); d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(periodStart); d.getTime() <= lastDay.getTime(); d.setDate(d.getDate() + 1)) {
     const dayEnd = new Date(d);
     dayEnd.setHours(23, 59, 59, 999);
+    const dayEndMs = dayEnd.getTime();
 
-    const completedByDay = sprintTickets.filter(
-      (t) => t.completedAt && t.completedAt.getTime() <= dayEnd.getTime(),
-    );
+    while (completedIdx < completed.length && completed[completedIdx].completedAt.getTime() <= dayEndMs) {
+      completedCount++;
+      completedPoints += completed[completedIdx].storyPoints ?? 0;
+      completedIdx++;
+    }
 
-    const dayIndex = Math.ceil((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const dayIndex = Math.ceil((d.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
     const idealTickets = Math.max(0, total - Math.round((total / totalDays) * dayIndex));
 
     result.push({
       date: d.toISOString().slice(0, 10),
-      remainingTickets: total - completedByDay.length,
-      remainingPoints:
-        totalPoints - completedByDay.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0),
+      remainingTickets: total - completedCount,
+      remainingPoints: totalPoints - completedPoints,
       idealTickets,
     });
   }
 
   return result;
 }
-
-// ─── Period Burndown (date-range based) ──────────────────────────────────────
 
 export async function getPeriodBurndownData(
   workspaceId: number,
@@ -82,44 +101,19 @@ export async function getPeriodBurndownData(
     .from(tickets)
     .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
 
-  // Tickets that existed at or before the period start
-  const periodStart = new Date(startDate);
-  periodStart.setHours(0, 0, 0, 0);
-  const periodEnd = new Date(endDate);
-  periodEnd.setHours(23, 59, 59, 999);
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  const lastDay = periodEnd < today ? periodEnd : today;
+  return computePeriodBurndown(allTickets, startDate, endDate);
+}
 
-  // Count tickets created on or before end of period (they are the pool)
-  const relevantTickets = allTickets.filter((t) => t.createdAt.getTime() <= lastDay.getTime());
-  const total = relevantTickets.length;
-  const totalPoints = relevantTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+export async function getMultiPeriodBurndownData(
+  workspaceId: number,
+  periods: { startDate: string; endDate: string }[],
+): Promise<BurndownDataPoint[][]> {
+  const allTickets = await db
+    .select({ id: tickets.id, completedAt: tickets.completedAt, storyPoints: tickets.storyPoints, createdAt: tickets.createdAt })
+    .from(tickets)
+    .where(and(eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)));
 
-  const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
-
-  const result: BurndownDataPoint[] = [];
-
-  for (let d = new Date(periodStart); d.getTime() <= lastDay.getTime(); d.setDate(d.getDate() + 1)) {
-    const dayEnd = new Date(d);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const completedByDay = relevantTickets.filter(
-      (t) => t.completedAt && t.completedAt.getTime() <= dayEnd.getTime(),
-    );
-
-    const dayIndex = Math.ceil((d.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
-    const idealTickets = Math.max(0, total - Math.round((total / totalDays) * dayIndex));
-
-    result.push({
-      date: d.toISOString().slice(0, 10),
-      remainingTickets: total - completedByDay.length,
-      remainingPoints: totalPoints - completedByDay.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0),
-      idealTickets,
-    });
-  }
-
-  return result;
+  return periods.map((p) => computePeriodBurndown(allTickets, p.startDate, p.endDate));
 }
 
 // ─── CFD (Cumulative Flow Diagram) ───────────────────────────────────────────

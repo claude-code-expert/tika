@@ -7,7 +7,7 @@ import {
   getCfdData,
   getCycleTimeData,
   getLabelAnalytics,
-  getPeriodBurndownData,
+  getMultiPeriodBurndownData,
 } from '@/db/queries/analytics';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { BurndownPeriodChart } from '@/components/team/charts/BurndownPeriodChart';
@@ -64,33 +64,32 @@ export default async function TeamAnalyticsPage({
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const lastMonthEndStr = lastMonthEnd.toISOString().slice(0, 10);
 
-  const [burndownLastWeek, burndownThisMonth, burndownLastMonth] = await Promise.all([
-    getPeriodBurndownData(workspaceId, lastMonday.toISOString().slice(0, 10), lastSunday.toISOString().slice(0, 10)),
-    getPeriodBurndownData(workspaceId, thisMonthStart, todayDate),
-    getPeriodBurndownData(workspaceId, lastMonthStart, lastMonthEndStr),
-  ]);
+  const [burndownLastWeek, burndownThisMonth, burndownLastMonth] = await getMultiPeriodBurndownData(
+    workspaceId,
+    [
+      { startDate: lastMonday.toISOString().slice(0, 10), endDate: lastSunday.toISOString().slice(0, 10) },
+      { startDate: thisMonthStart, endDate: todayDate },
+      { startDate: lastMonthStart, endDate: lastMonthEndStr },
+    ],
+  );
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
   const total = allTickets.length;
 
-  const doneTickets = allTickets.filter((t) => t.status === 'DONE').length;
-  const completionRate = total > 0 ? Math.round((doneTickets / total) * 100) : 0;
-
-  // Overdue tickets (not DONE, past due date)
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const overdueCount = allTickets.filter((t) => t.status !== 'DONE' && t.dueDate && t.dueDate < todayStr).length;
-
-  // Type breakdown
-  const goalCount = allTickets.filter((t) => t.type === 'GOAL').length;
-  const storyCount = allTickets.filter((t) => t.type === 'STORY').length;
-  const featureCount = allTickets.filter((t) => t.type === 'FEATURE').length;
-  const taskCount = allTickets.filter((t) => t.type === 'TASK').length;
-
-  // Type distribution
+  // Single-pass stats
   const typeCounts: Record<string, number> = {};
+  let doneTickets = 0;
+  let overdueCount = 0;
   for (const t of allTickets) {
     typeCounts[t.type] = (typeCounts[t.type] ?? 0) + 1;
+    if (t.status === 'DONE') doneTickets++;
+    else if (t.dueDate && t.dueDate < todayDate) overdueCount++;
   }
+  const completionRate = total > 0 ? Math.round((doneTickets / total) * 100) : 0;
+  const goalCount = typeCounts['GOAL'] ?? 0;
+  const storyCount = typeCounts['STORY'] ?? 0;
+  const featureCount = typeCounts['FEATURE'] ?? 0;
+  const taskCount = typeCounts['TASK'] ?? 0;
   const typeData = Object.entries(typeCounts).map(([type, count]) => ({ type, count }));
 
   // Cycle time stats

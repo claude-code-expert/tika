@@ -36,6 +36,7 @@ export default async function TeamMembersPage({
   if (workspace.type === 'PERSONAL') redirect('/');
 
   const role = currentMember.role as TeamRole;
+  if (role === 'VIEWER') redirect(`/workspace/${workspaceId}`);
   const isOwner = role === 'OWNER';
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];

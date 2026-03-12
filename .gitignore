@@ -16,7 +16,7 @@ build/
 .env.test.local
 .env.production.local
 
-# docs/phase
+docs/phase/
 
 
 # debug

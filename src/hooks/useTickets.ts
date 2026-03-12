@@ -14,6 +14,7 @@ export function useTickets(initialData?: BoardData) {
   const [board, setBoard] = useState<BoardData>(initialData ?? EMPTY_BOARD);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [activeLabels, setActiveLabels] = useState<number[]>([]); // T057: label filter
 
   const fetchBoard = useCallback(async () => {
@@ -54,7 +55,9 @@ export function useTickets(initialData?: BoardData) {
         const err = await res.json();
         throw new Error(err.error?.message ?? '티켓 생성에 실패했습니다');
       }
-      const { ticket } = await res.json();
+      const responseData = await res.json();
+      if (responseData.warning) setWarningMessage(responseData.warning);
+      const ticket = responseData.ticket;
       setBoard((prev) => ({
         ...prev,
         total: prev.total + 1,
@@ -175,5 +178,7 @@ export function useTickets(initialData?: BoardData) {
     updateTicket,
     deleteTicket,
     reorder,
+    warningMessage,
+    clearWarning: () => setWarningMessage(null),
   };
 }

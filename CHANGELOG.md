@@ -3,6 +3,45 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-03-13 13:08 (멤버 알림 MemberDrawer 연결 + 워크스페이스 참여 한도 + 라벨 단일 소스 + 랜딩 통계 수정)
+
+### 🎯 Prompts
+1. "멤버 승인, 조인 이런 알림들은 멤버관리 레이어창이 열려야 하는거 아냐?"
+2. "개인이 개설할 수 있는팀 워크스페이스 갯수는 3개야. 마찬가지로 개인이 참여할 수 있는 워크스페이스도 3개여야해. 워크스페이스 추가 로직에서 내가 가입되어있는 TEAM 워크스페이스 갯수를 구해서 3개 초과시 더 이상 워크스페이스에 참여할 수 없습니다라는 경고 뿌려"
+3. "CROSS JOIN (VALUES ...) 이거 자동 생성 라벨 기능이랑 데이터 다른거 같은데 / 라벨에 Analyze 가 없어? / 내가 분명 과거 지시에 Plan 이랑 Analyze 라벨이 기본값으로 있어야 한다고 했는데"
+4. "seed, @src/lib/constants.ts 등 기본 데이터 셋에 포함해, 온보딩에 자동생성되는건 제외해. 사용자가 생성하는거지 자동생성은 세팅에서만 되어야 해"
+5. "prod 메인 랜딩 페이지에 prod 워크스페이스는 3건인데, 총 2개팀, 1개의 워크스페이스가 사용중이라고만 나와. 왜 데이터가 다르지?"
+
+### ✅ Changes
+- **Fixed**: 멤버 알림(JOIN_REQUEST_RECEIVED, MEMBER_JOINED) 클릭 시 URL 이동 대신 MemberDrawer 열기 (`src/components/layout/Header.tsx`)
+- **Added**: `getTeamWorkspaceMemberCount(userId)` — 사용자의 TEAM 워크스페이스 멤버 수 조회 (`src/db/queries/members.ts`)
+- **Added**: 워크스페이스 참여 신청 시 3개 초과 차단 (`app/api/workspaces/[id]/join-requests/route.ts`)
+- **Added**: 참여 신청 승인 시 3개 초과 방어 체크 (`app/api/workspaces/[id]/join-requests/[reqId]/route.ts`)
+- **Added**: 초대 수락 시 3개 초과 차단 (`app/api/invites/[token]/accept/route.ts`)
+- **Modified**: `DEFAULT_LABELS` 9개로 확장 (Plan, Frontend, Backend, Analyze, Test, Debug, Design, Infra, QA) (`src/lib/constants.ts`)
+- **Removed**: `createPersonalWorkspace`에서 라벨 자동 생성 제거 (`src/lib/auth.ts`)
+- **Modified**: `LabelSection` 로컬 템플릿 상수 제거 → `DEFAULT_LABELS` 단일 소스로 통합 (`src/components/settings/LabelSection.tsx`)
+- **Added**: `scripts/reset.sql` — 테이블 전체 TRUNCATE RESTART IDENTITY
+- **Added**: `scripts/seed.sql` — 실제 사용자(eDell/performizer@gmail.com) 기준 시드 (Goal→Story→Feature→Task)
+- **Modified**: `scripts/reset-and-seed.sql` — 9개 라벨 반영
+- **Fixed**: 랜딩 페이지 통계 문구 "2팀" → "2명" (totalUsers는 사용자 수임) (`app/login/page.tsx`)
+
+### 📁 Files Modified
+- `app/login/page.tsx` (+1, -1 lines)
+- `src/components/settings/LabelSection.tsx` (+7, -14 lines)
+- `src/lib/auth.ts` (+1, -10 lines)
+- `src/lib/constants.ts` (+9, -6 lines)
+- `scripts/reset.sql` (new)
+- `scripts/seed.sql` (new)
+- `scripts/reset-and-seed.sql` (label section updated)
+- `src/db/queries/members.ts` (getTeamWorkspaceMemberCount added)
+- `app/api/workspaces/[id]/join-requests/route.ts` (3개 한도 체크)
+- `app/api/workspaces/[id]/join-requests/[reqId]/route.ts` (승인 시 방어 체크)
+- `app/api/invites/[token]/accept/route.ts` (수락 시 한도 체크)
+- `src/components/layout/Header.tsx` (알림 클릭 MemberDrawer 연결)
+
+---
+
 ## [debug/workspace] - 2026-03-13 (VIEWER 제한 구현 + QA 리포트 + 라벨 자동 생성 템플릿)
 
 ### 🎯 Prompts

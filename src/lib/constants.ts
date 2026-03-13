@@ -26,10 +26,13 @@ export const TICKET_WARNING_TEAM = 900;
 export const TICKET_WARNING_PERSONAL = 270;
 
 export const DEFAULT_LABELS = [
-  { name: 'Frontend', color: '#2b7fff' },
-  { name: 'Backend', color: '#00c950' },
-  { name: 'Design', color: '#ad46ff' },
-  { name: 'Bug', color: '#fb2c36' },
-  { name: 'Docs', color: '#ffac6d' },
-  { name: 'Infra', color: '#615fff' },
+  { name: 'Plan',     color: '#2b7fff' },
+  { name: 'Frontend', color: '#615fff' },
+  { name: 'Backend',  color: '#00c950' },
+  { name: 'Analyze',  color: '#ad46ff' },
+  { name: 'Test',     color: '#ffac6d' },
+  { name: 'Debug',    color: '#fb2c36' },
+  { name: 'Design',   color: '#ff29d3' },
+  { name: 'Infra',    color: '#89d0f0' },
+  { name: 'QA',       color: '#46e264' },
 ] as const;

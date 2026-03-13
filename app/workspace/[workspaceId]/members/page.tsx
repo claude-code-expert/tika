@@ -7,7 +7,7 @@ import { getBoardData } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { MemberDetailCard } from '@/components/team/MemberDetailCard';
-import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
+
 import { MemberList } from '@/components/team/MemberList';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
 
@@ -67,7 +67,6 @@ export default async function TeamMembersPage({
               {allMembers.length}명의 멤버
             </p>
           </div>
-          {isOwner && <InviteModalTrigger workspaceId={workspaceId} />}
         </div>
 
         {/* Summary Row */}

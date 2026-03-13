@@ -13,7 +13,6 @@ const PALETTE = [
   '#ffac6d', '#f7d1d1', '#f7a2ff', '#c1d1ff', '#c5dbdc',
 ];
 
-
 function ColorSwatches({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) {
   return (
     <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>

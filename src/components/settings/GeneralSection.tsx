@@ -34,7 +34,14 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
   const [resetConfirmName, setResetConfirmName] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
+  const [nonOwnerMembers, setNonOwnerMembers] = useState<MemberWithEmail[]>([]);
+  const [showNoMemberWarning, setShowNoMemberWarning] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [selectedTransferMemberId, setSelectedTransferMemberId] = useState<number | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
+
   const isOwner = workspace?.role === 'OWNER';
+  const isTeam = workspace?.type === 'TEAM';
 
   useEffect(() => {
     // Fetch workspace details and members in parallel using the workspaceId from session
@@ -51,8 +58,10 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
           setIconColor(ws.iconColor ?? '#629584');
           setIsSearchable(ws.isSearchable ?? true);
         }
-        const owner = memberData.members?.find((m) => m.role === 'OWNER') ?? null;
+        const memberList = memberData.members ?? [];
+        const owner = memberList.find((m) => m.role === 'OWNER') ?? null;
         setOwnerMember(owner);
+        setNonOwnerMembers(memberList.filter((m) => m.role !== 'OWNER'));
       })
       .catch(() => {});
   }, [workspaceId]);
@@ -104,6 +113,37 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
       setIsDeleting(false);
     }
   };
+
+  function openTransferDialog() {
+    if (nonOwnerMembers.length === 0) {
+      setShowNoMemberWarning(true);
+    } else {
+      setSelectedTransferMemberId(nonOwnerMembers[0].id);
+      setShowTransferDialog(true);
+    }
+  }
+
+  async function handleTransfer() {
+    if (!workspace || selectedTransferMemberId === null) return;
+    setIsTransferring(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspace.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetMemberId: selectedTransferMemberId }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: { message?: string } };
+        showToast(data.error?.message ?? '오너 변경 실패', 'fail');
+        return;
+      }
+      window.location.reload();
+    } catch {
+      showToast('오너 변경 중 오류가 발생했습니다', 'fail');
+    } finally {
+      setIsTransferring(false);
+    }
+  }
 
   const handleReset = async () => {
     if (!workspace || resetConfirmName !== workspace.name) return;
@@ -323,6 +363,21 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
             </div>
             <span style={{ fontSize: 16, fontWeight: 600, color: '#DC2626' }}>위험 영역</span>
           </div>
+          {/* 오너 변경 — 팀 워크스페이스만 */}
+          {isTeam && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #FEE2E2', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#991B1B' }}>오너 변경</div>
+                <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 2 }}>프로젝트 관리자를 다른 멤버에게 이관합니다.</div>
+              </div>
+              <button
+                onClick={openTransferDialog}
+                style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #FECACA', color: '#DC2626', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}
+              >
+                오너 변경
+              </button>
+            </div>
+          )}
           {/* 데이터 초기화 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #FEE2E2', gap: 16 }}>
             <div style={{ flex: 1 }}>
@@ -348,6 +403,95 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
             >
               삭제
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* No Member Warning Modal */}
+      {showNoMemberWarning && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => setShowNoMemberWarning(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>오너 변경 불가</div>
+            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 20 }}>
+              변경할 멤버가 없습니다. 오너를 변경하려면 먼저 워크스페이스에 멤버를 초대하세요.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowNoMemberWarning(false)}
+                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}
+              >확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Owner Modal */}
+      {showTransferDialog && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => { setShowTransferDialog(false); }}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>오너 변경</div>
+            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 16 }}>
+              오너 권한을 이전할 멤버를 선택하세요. 이전 후 당신은 일반 멤버가 됩니다.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20, maxHeight: 220, overflowY: 'auto' }}>
+              {nonOwnerMembers.map((m) => (
+                <label
+                  key={m.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                    border: `1.5px solid ${selectedTransferMemberId === m.id ? '#629584' : '#DFE1E6'}`,
+                    borderRadius: 8, cursor: 'pointer',
+                    background: selectedTransferMemberId === m.id ? '#E8F5F0' : '#fff',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="transferTarget"
+                    value={m.id}
+                    checked={selectedTransferMemberId === m.id}
+                    onChange={() => setSelectedTransferMemberId(m.id)}
+                    style={{ accentColor: '#629584' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#2C3E50' }}>{m.displayName}</div>
+                    <div style={{ fontSize: 11, color: '#8993A4', marginTop: 1 }}>{m.email}</div>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10, background: '#F1F3F6', color: '#5A6B7F', whiteSpace: 'nowrap' }}>{m.role}</span>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowTransferDialog(false)}
+                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}
+              >취소</button>
+              <button
+                type="button"
+                onClick={handleTransfer}
+                disabled={isTransferring || selectedTransferMemberId === null}
+                style={{
+                  padding: '9px 20px', border: 'none', borderRadius: 8,
+                  background: isTransferring || selectedTransferMemberId === null ? '#9BA8B4' : '#DC2626',
+                  color: '#fff', fontSize: 13, fontWeight: 600,
+                  cursor: isTransferring || selectedTransferMemberId === null ? 'not-allowed' : 'pointer',
+                }}
+              >{isTransferring ? '변경 중...' : '오너 변경'}</button>
+            </div>
           </div>
         </div>
       )}

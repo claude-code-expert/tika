@@ -3,6 +3,69 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [debug/workspace] - 2026-03-13 (VIEWER 제한 구현 + QA 리포트 + 라벨 자동 생성 템플릿)
+
+### 🎯 Prompts
+1. "5-2 온보딩 순차는 현재 유지하고 나머지 구현해"
+2. "현재 작업한 QA 리포트: check_list_workspace.md 구현 현황 점검에 대한 구현 내역과 확인 방법 등을 정리한 QA_REPORT.md를 작성해. 이미 과거에 완성된거 말고 이번에 추가로 완성된 내역들에 대해서 설명하고 QA 점검을 어떻게 해야 할지 설명해야해 작성 완료되면 커밋하고 푸시해"
+3. "QA_REPORT랑 @docs/check_list_notification.md @docs/check_list_workspace.md 랑 내용 비교해서 구현된 내역이 있으면 체크해"
+4. "이제 로컬 데이터 리셋해 (전체 초기화 Drop + Migrate + Seed)"
+5. "이 영역에 라벨 자동 생성 버튼 두고 생성 누르면 공통 모달로 기본 라벨을 생성하겠습니까? 띄운 후 확인을 누르면 다음의 라벨을 생성해 Plan, Frontend, Backend, Analize, Test, Debug, Design, Infra, QA 철자 잘못된거 있는지 검사해서 자동으로 라벨 생성하는 템플릿 기능 추가해"
+6. "티켓에 사용할 라벨을 관리합니다. 최대 20개까지 생성할 수 있으며, 라벨 삭제 시 연결된 티켓에서 자동으로 제거됩니다. 이 기능 제대로 구현 된건지 확인해"
+7. "현재 커밋된 debug/workspace 브랜치에서 docs/phase 는 커밋된거 같은데 이거 리모트에 들어가면 안돼. 리모트에서 삭제하는 방법은? (A: 로컬 유지, 리모트에서만 제거)"
+8. "@<ConfirmDialog> 라벨은 테두리만 있는 룩앤필이 원칙이야. 내부 소스 확인해서 모양 맞추고, 대신 이 영역에서 클릭 시 선택/비활성화 되도록 한 뒤 선택된것만 insert 하도록 해줘"
+
+### ✅ Changes
+
+#### VIEWER 권한 제한 (check_list_workspace.md 4-2, 4-3, 4-4, 4-5, 4-6, 4-8)
+- **Modified**: `app/api/tickets/[id]/comments/route.ts` — POST에 `requireRole(TEAM_ROLE.MEMBER)` 가드 추가 → VIEWER 댓글 작성 API 차단 (403)
+- **Modified**: `app/workspace/[workspaceId]/members/page.tsx` — 서버 컴포넌트에서 VIEWER role 감지 시 보드로 redirect (URL 직접 접근 차단)
+- **Modified**: `src/components/ticket/TicketModal.tsx` — `readOnly?: boolean` prop 추가; 우선순위/날짜/담당자/저장/삭제 모두 조건부 비활성화
+- **Modified**: `src/components/board/BoardContainer.tsx` — `readOnly` prop 추가 → TicketModal에 전달
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `role` prop 추가; DnD 센서 `distance: 9999` / `delay: 9999`로 VIEWER 드래그 차단; `BoardContainer`에 `readOnly={isViewer}` 전달
+- **Modified**: `src/components/layout/TeamShell.tsx` — VIEWER 새 티켓 버튼 차단 (`if (role === 'VIEWER') return`); 티켓 생성 후 `warning` 필드 감지 → dismissible 경고 배너 표시
+
+#### 티켓 한도 경고 배너 (check_list_workspace.md 1-5, 2-8)
+- **Modified**: `src/hooks/useTickets.ts` — `createTicket` API 응답에서 `warning` 필드 읽어 `warningMessage` 상태 저장; `clearWarning` 노출
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `warningMessage` 배너 렌더링 추가 (노란색 `#FEF3C7`, × 닫기 버튼)
+
+#### QA 문서
+- **Added**: `docs/QA_REPORT.md` — 이번 세션에서 새로 구현된 8개 항목 상세 설명 및 검증 방법 정리
+- **Modified**: `docs/check_list_workspace.md` — 구현 완료 항목 `[ ]` → `[x]` 갱신 (4-2, 4-3, 4-4, 4-5, 4-6, 4-8, 1-5, 2-8)
+- **Modified**: `docs/check_list_notification.md` — 구현 완료 항목 `[ ]` → `[x]` 갱신 (2개 미구현: 벨 배지 99+, Sprint 알림 설정 토글)
+
+#### .gitignore / 리모트 정리
+- **Modified**: `.gitignore` — `docs/phase/` 활성화 (이전: 주석 처리)
+- **Removed** (from remote): `docs/phase/` 디렉토리 — `git rm --cached -r docs/phase/` 후 push, 로컬 파일은 유지
+
+#### 라벨 자동 생성 템플릿 (LabelSection)
+- **Modified**: `src/components/settings/LabelSection.tsx`
+  - `DEFAULT_TEMPLATE_LABELS` 상수 추가 (Plan/Frontend/Backend/Analyze/Test/Debug/Design/Infra/QA — 철자 수정: "Analize" → "Analyze")
+  - `ConfirmDialog`에 `confirmLabel?`, `confirmVariant?`, `children?` prop 확장
+  - "기본 라벨 자동 생성" 버튼 추가 (`⚡` 아이콘, 그린 아웃라인 스타일)
+  - 클릭 시 ConfirmDialog 열림 → 라벨 목록 클릭 토글 (선택/비선택)
+  - 라벨 미리보기: LabelBadge와 동일한 테두리 전용 스타일 (`background: transparent`, `border: 1px solid color`)
+  - `selectedTemplateNames: Set<string>` — 기본 전체 선택, 토글 시 Set 업데이트
+  - 확인 버튼 레이블: `생성 (N개)` (선택 개수 실시간 반영)
+  - `handleCreateTemplate`: 이미 존재하는 라벨 skip, 한도(20개) 초과 시 에러, 성공 시 toast
+
+### 📁 Files Modified
+- `app/api/tickets/[id]/comments/route.ts` (+5, -0 lines)
+- `app/workspace/[workspaceId]/members/page.tsx` (+4, -1 lines)
+- `src/components/ticket/TicketModal.tsx` (+30, -10 lines)
+- `src/components/board/BoardContainer.tsx` (+6, -2 lines)
+- `src/components/team/TeamBoardClient.tsx` (+35, -5 lines)
+- `src/components/layout/TeamShell.tsx` (+25, -3 lines)
+- `src/hooks/useTickets.ts` (+15, -5 lines)
+- `docs/QA_REPORT.md` (+257, -0 lines) — **신규 생성**
+- `docs/check_list_workspace.md` (+/- 체크박스 갱신)
+- `docs/check_list_notification.md` (+/- 체크박스 갱신)
+- `.gitignore` (+1, -1 lines)
+- `src/components/settings/LabelSection.tsx` (+119, -10 lines)
+
+---
+
+
 ## [develop] - 2026-03-11 (팀 보드 버그 수정 + UX 개선 + WIP 툴팁 + 주간 필터 + 데이터 삽입)
 
 ### 🎯 Prompts

@@ -12,7 +12,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const { totalUsers, recentUsers } = await getLandingStats();
+  const { totalUsers, totalWorkspaces, recentUsers } = await getLandingStats();
 
   return (
     <div
@@ -122,7 +122,7 @@ export default async function LoginPage({
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              {totalUsers.toLocaleString()}팀이 사용 중
+              총 {totalUsers.toLocaleString()}팀, {totalWorkspaces.toLocaleString()}개의 워크스페이스가 사용중
             </span>
           </div>
         )}

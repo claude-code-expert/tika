@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
+import { db } from '@/db/index';
+import { users } from '@/db/schema';
 import { getInviteByToken, acceptInvite } from '@/db/queries/invites';
-import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
+import { getMemberByUserId, getMembersByWorkspace, setPrimaryWorkspace, getTeamWorkspaceMemberCount } from '@/db/queries/members';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { NOTIFICATION_TYPE } from '@/types/index';
 import { sendInAppNotification, buildMemberJoinedMessage } from '@/lib/notifications';
@@ -56,12 +59,40 @@ export async function POST(
       );
     }
 
+    // Check if user has already reached the 3 TEAM workspace limit
+    const memberCount = await getTeamWorkspaceMemberCount(userId);
+    if (memberCount >= 3) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'WORKSPACE_MEMBER_LIMIT_EXCEEDED',
+            message: '더 이상 워크스페이스에 참여할 수 없습니다. 팀 워크스페이스는 최대 3개까지 참여할 수 있습니다.',
+          },
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await acceptInvite({ token, userId, displayName });
     if (!result) {
       return NextResponse.json(
         { error: { code: 'ACCEPT_FAILED', message: '초대 수락에 실패했습니다' } },
         { status: 500 },
       );
+    }
+
+    // If user hasn't completed onboarding, auto-set to WORKSPACE type and switch primary
+    const [dbUser] = await db
+      .select({ userType: users.userType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!dbUser?.userType) {
+      await Promise.all([
+        db.update(users).set({ userType: 'WORKSPACE' }).where(eq(users.id, userId)),
+        setPrimaryWorkspace(userId, invite.workspaceId),
+      ]);
     }
 
     // Notify workspace owners that a new member joined

@@ -9,6 +9,7 @@ import { ProfileModal } from './ProfileModal';
 import { MemberDrawer } from '@/components/settings/MemberDrawer';
 import type { Member, InAppNotification } from '@/types/index';
 import { X, ArrowRight, Users } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useOutsideClick } from '@/hooks/useOutsideClick';
 
 interface HeaderProps {
@@ -83,7 +84,8 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
       { count?: number } | null,
     ]) => {
       if (membersData?.members?.length) {
-        setMember(membersData.members[0]);
+        const myMember = membersData.members.find((m) => m.id === memberId) ?? membersData.members[0];
+        setMember(myMember);
       }
       if (notifData?.notifications) {
         setNotifications(notifData.notifications);
@@ -313,9 +315,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           )}
 
           {/* Member management button → opens drawer */}
+          <Tooltip content="멤버 관리" position="bottom">
           <button
             onClick={() => setIsMemberDrawerOpen(true)}
-            title="멤버 관리"
             aria-label="멤버 관리"
             style={{
               width: 32,
@@ -355,9 +357,11 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               />
             )}
           </button>
+          </Tooltip>
 
           {/* Notification button + dropdown */}
           <div ref={notifRef} style={{ position: 'relative' }}>
+            <Tooltip content="알림" position="bottom">
             <button
               aria-label="알림"
               onClick={() => {
@@ -425,6 +429,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                 </span>
               )}
             </button>
+            </Tooltip>
 
             {/* Notification dropdown */}
             {isNotifOpen && (
@@ -509,7 +514,12 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                         key={notif.id}
                         href={notif.link ?? '#'}
                         onClick={(e) => {
+                          const isMemberNotif =
+                            notif.type === 'JOIN_REQUEST_RECEIVED' ||
+                            notif.type === 'MEMBER_JOINED';
+                          if (isMemberNotif || !notif.link) e.preventDefault();
                           setIsNotifOpen(false);
+                          if (isMemberNotif) setIsMemberDrawerOpen(true);
                           if (!notif.isRead) {
                             fetch(`/api/notifications/in-app/${notif.id}/read`, { method: 'PATCH' })
                               .then(() => {
@@ -518,7 +528,6 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                               })
                               .catch(() => {});
                           }
-                          if (!notif.link) e.preventDefault();
                         }}
                         style={{
                           display: 'block',
@@ -601,9 +610,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           </div>
 
           {/* Settings link */}
+          <Tooltip content="설정" position="bottom">
           <Link
             href="/settings"
-            title="설정"
             style={{
               width: 32,
               height: 32,
@@ -640,6 +649,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </Link>
+          </Tooltip>
 
           {/* User Avatar + Dropdown */}
           <div ref={dropdownRef} style={{ position: 'relative' }}>

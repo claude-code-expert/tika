@@ -37,9 +37,13 @@ Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드
 ```bash
 npm install
 cp .env.example .env.local
+npm run db:migrate   # DB 마이그레이션 적용
+npm run dev          # http://localhost:3000
 ```
 
-`.env.local` 편집:
+> 셀프 호스팅 전체 설치 절차(DB, OAuth, Cron, Vercel 배포)는 **[docs/INSTALL.md](docs/INSTALL.md)** 를 참고하세요.
+
+### 필수 환경변수 (`.env.local`)
 
 ```env
 POSTGRES_URL=postgresql://...
@@ -47,12 +51,8 @@ NEXTAUTH_SECRET=          # openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+CRON_SECRET=              # openssl rand -base64 32  ← 크론 인증 토큰
 SLACK_WEBHOOK_URL=        # 문의 폼 → Slack 알림 (선택)
-```
-
-```bash
-npm run db:migrate   # DB 마이그레이션 적용
-npm run dev          # http://localhost:3000
 ```
 
 ### Google OAuth
@@ -60,6 +60,63 @@ npm run dev          # http://localhost:3000
 1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
 2. OAuth 2.0 Client ID 생성 (Web application)
 3. Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+
+### 마감일 D-1 자동 알림 (GitHub Actions Cron)
+
+매일 **KST 09:00** (UTC 00:00)에 내일 마감인 티켓 담당자에게 인앱 알림을 자동 발송합니다.
+워크플로우 파일: `.github/workflows/daily-notify.yml`
+
+#### 동작 방식
+
+```
+매일 KST 09:00
+      ↓
+GitHub Actions 실행
+      ↓
+curl GET https://[APP_URL]/api/cron/notify-due
+     Authorization: Bearer [CRON_SECRET]
+      ↓
+내일 마감 티켓 담당자에게 인앱 알림 발송
+```
+
+`CRON_SECRET`은 외부에서 이 API를 무단 호출하지 못하도록 막는 인증 토큰입니다.
+`.env.local`, Vercel 환경변수, GitHub Secret **세 곳의 값이 모두 동일**해야 합니다.
+
+#### 1단계 — CRON_SECRET 생성
+
+아직 값이 없다면 터미널에서 생성합니다:
+
+```bash
+openssl rand -base64 32
+```
+
+출력된 값을 복사해 `.env.local`과 Vercel 환경변수에 `CRON_SECRET`으로 등록합니다.
+
+#### 2단계 — GitHub Repository Secrets 등록
+
+1. `https://github.com/{owner}/{repo}/settings/secrets/actions` 접속
+2. **"New repository secret"** 버튼 클릭 → 첫 번째 시크릿 입력:
+   ```
+   Name:   APP_URL
+   Secret: https://your-domain.vercel.app
+   ```
+   → **Add secret** 클릭
+
+3. 다시 **"New repository secret"** 버튼 클릭 → 두 번째 시크릿 입력:
+   ```
+   Name:   CRON_SECRET
+   Secret: (1단계에서 생성한 값, .env.local의 CRON_SECRET과 동일)
+   ```
+   → **Add secret** 클릭
+
+4. 목록에 `APP_URL`, `CRON_SECRET` 두 개가 표시되면 완료
+
+> ⚠️ **Environment secrets가 아닌 Repository secrets**에 추가해야 합니다.
+> Settings → Secrets and variables → Actions 페이지의 **"Repository secrets"** 섹션을 확인하세요.
+
+#### 수동 테스트
+
+GitHub → Actions 탭 → **Daily D-1 Notification** → **Run workflow** 버튼으로 즉시 실행 가능합니다.
 
 ---
 

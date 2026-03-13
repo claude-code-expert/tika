@@ -9,6 +9,7 @@ import {
   approveJoinRequest,
   rejectJoinRequest,
 } from '@/db/queries/joinRequests';
+import { getTeamWorkspaceMemberCount } from '@/db/queries/members';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { NOTIFICATION_TYPE } from '@/types/index';
 import { sendInAppNotification, buildJoinRequestResolvedMessage } from '@/lib/notifications';
@@ -95,6 +96,20 @@ export async function PATCH(
     const { action } = parsed.data;
 
     if (action === 'APPROVE') {
+      // Check if applicant has already reached the 3 TEAM workspace limit
+      const memberCount = await getTeamWorkspaceMemberCount(joinRequest.userId);
+      if (memberCount >= 3) {
+        return NextResponse.json(
+          {
+            error: {
+              code: 'WORKSPACE_MEMBER_LIMIT_EXCEEDED',
+              message: '해당 사용자는 더 이상 워크스페이스에 참여할 수 없습니다. 팀 워크스페이스는 최대 3개까지 참여할 수 있습니다.',
+            },
+          },
+          { status: 409 },
+        );
+      }
+
       // Look up the applicant's real name from the users table
       const [applicantUser] = await db
         .select({ name: users.name })

@@ -98,6 +98,16 @@ export async function removeMember(id: number, workspaceId: number): Promise<boo
   return result.length > 0;
 }
 
+/** Counts how many TEAM workspaces this user is currently a member of. */
+export async function getTeamWorkspaceMemberCount(userId: string): Promise<number> {
+  const [{ cnt }] = await db
+    .select({ cnt: count() })
+    .from(members)
+    .innerJoin(workspaces, eq(workspaces.id, members.workspaceId))
+    .where(and(eq(members.userId, userId), eq(workspaces.type, 'TEAM')));
+  return Number(cnt);
+}
+
 export async function getOwnerCount(workspaceId: number): Promise<number> {
   const [{ cnt }] = await db
     .select({ cnt: count() })

@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Link2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RoleBadge, ROLE_STYLES } from '@/components/ui/RoleBadge';
+import { Avatar } from '@/components/ui/Avatar';
+import { Modal } from '@/components/ui/Modal';
 import type { SectionProps } from './types';
 import { TEAM_ROLE } from '@/types/index';
 import type { MemberWithEmail, MemberRole, JoinRequestWithUser, WorkspaceWithRole } from '@/types/index';
@@ -16,7 +19,9 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
   const [joinRequests, setJoinRequests] = useState<JoinRequestWithUser[]>([]);
   const [processingReqId, setProcessingReqId] = useState<number | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'MEMBER' | 'VIEWER'>('MEMBER');
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [confirmRole, setConfirmRole] = useState<{ member: MemberWithEmail; newRole: MemberRole } | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<MemberWithEmail | null>(null);
   const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
@@ -137,6 +142,24 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
     }
   }
 
+  async function generateInviteLink(role: 'MEMBER' | 'VIEWER') {
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`/api/workspaces/${selectedWsId}/invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const data = (await res.json()) as { inviteUrl?: string; error?: { message?: string } };
+      if (!res.ok) { showToast(data.error?.message ?? '링크 생성 실패', 'fail'); return; }
+      setGeneratedLink(data.inviteUrl ?? '');
+    } catch {
+      showToast('링크 생성 중 오류가 발생했습니다', 'fail');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   async function doRemove() {
     if (!confirmRemove) return;
     const member = confirmRemove;
@@ -164,15 +187,16 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         </h2>
         {isOwner && (
           <button
-            onClick={() => setInviteOpen((v) => !v)}
+            onClick={() => { setInviteOpen(true); setGeneratedLink(null); generateInviteLink(inviteRole); }}
             style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> 멤버 초대
+            <Link2 size={14} />
+            초대 링크 생성
           </button>
         )}
       </div>
       <p style={{ fontSize: 12, color: '#8993A4', marginBottom: 20, lineHeight: 1.6 }}>
-        {isOwner ? '프로젝트 멤버를 관리합니다. Google OAuth로 가입된 사용자를 이메일로 초대할 수 있습니다.' : '워크스페이스 멤버 목록입니다.'}
+        {isOwner ? (<>워크스페이스 초대용 링크를 생성해서 전달하세요.<br />브라우저에서 링크를 입력하면 초대 화면으로 이동할 수 있습니다.</>) : '워크스페이스 멤버 목록입니다.'}
       </p>
 
       {/* Workspace selector */}
@@ -218,9 +242,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {joinRequests.map((req) => (
               <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F0FDF4', border: '1px solid #A7F3D0', borderRadius: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#629584', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                  {req.userName.slice(0, 1).toUpperCase()}
-                </div>
+                <Avatar displayName={req.userName} color="#629584" size="md" />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 500 }}>{req.userName}</div>
                   <div style={{ fontSize: 11, color: '#8993A4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.userEmail}</div>
@@ -253,25 +275,41 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         </div>
       )}
 
-      {/* Invite Form — OWNER only */}
+      {/* Invite Link Panel — OWNER only */}
       {isOwner && inviteOpen && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: 14, background: '#F1F3F6', border: '1px dashed #C4C9D1', borderRadius: 8, marginBottom: 12 }}>
-          <input
-            autoFocus
-            style={{ flex: 1, minWidth: 200, height: 30, padding: '0 8px', border: '1px solid #DFE1E6', borderRadius: 4, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, outline: 'none', background: '#fff', color: '#2C3E50' }}
-            type="email"
-            placeholder="이메일 주소"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Escape') setInviteOpen(false); }}
-          />
-          <button
-            onClick={() => { showToast('멤버 초대 기능은 준비 중입니다', 'info'); setInviteOpen(false); setInviteEmail(''); }}
-            style={{ height: 30, padding: '0 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none' }}
-          >
-            초대
-          </button>
-          <button onClick={() => setInviteOpen(false)} style={{ height: 30, padding: '0 8px', borderRadius: 6, fontSize: 12, cursor: 'pointer', background: 'transparent', border: 'none', color: '#8993A4' }}>취소</button>
+        <div style={{ padding: 14, background: '#F1F3F6', border: '1px dashed #C4C9D1', borderRadius: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: '#5A6B7F', fontWeight: 500, marginBottom: 6 }}>초대 링크 (24시간 유효)</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <input
+              readOnly
+              value={isGenerating ? '생성 중...' : (generatedLink ?? '')}
+              placeholder="링크 생성 중..."
+              style={{ flex: 1, minWidth: 200, height: 30, padding: '0 8px', border: '1px solid #DFE1E6', borderRadius: 4, fontFamily: 'monospace', fontSize: 11, color: '#5A6B7F', background: '#fff', outline: 'none' }}
+              onClick={(e) => generatedLink && (e.target as HTMLInputElement).select()}
+            />
+            <button
+              onClick={() => { if (generatedLink) { navigator.clipboard.writeText(generatedLink); showToast('링크가 복사되었습니다', 'success'); } }}
+              disabled={!generatedLink || isGenerating}
+              style={{ height: 30, padding: '0 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: (!generatedLink || isGenerating) ? 'not-allowed' : 'pointer', background: '#629584', color: '#fff', border: 'none', flexShrink: 0, opacity: (!generatedLink || isGenerating) ? 0.5 : 1 }}
+            >
+              복사
+            </button>
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as 'MEMBER' | 'VIEWER')}
+              style={{ height: 30, padding: '0 8px', border: '1px solid #DFE1E6', borderRadius: 4, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, color: '#2C3E50', background: '#fff', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="MEMBER">멤버</option>
+              <option value="VIEWER">뷰어</option>
+            </select>
+            <button
+              onClick={() => generateInviteLink(inviteRole)}
+              disabled={isGenerating}
+              style={{ height: 30, padding: '0 10px', borderRadius: 6, fontSize: 12, cursor: isGenerating ? 'not-allowed' : 'pointer', background: 'transparent', border: '1px solid #DFE1E6', color: '#5A6B7F', flexShrink: 0, opacity: isGenerating ? 0.5 : 1 }}
+            >
+              재생성
+            </button>
+          </div>
         </div>
       )}
 
@@ -280,14 +318,11 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         {members.map((member) => {
           const isAdmin = member.role === 'OWNER';
           const canRemove = !(isAdmin && adminCount <= 1);
-          const initial = member.displayName.slice(0, 1).toUpperCase();
           const isSelf = member.userId === currentUserId;
 
           return (
             <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: member.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                {initial}
-              </div>
+              <Avatar displayName={member.displayName} color={member.color} size="md" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500 }}>{member.displayName}</div>
                 <div style={{ fontSize: 11, color: '#8993A4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
@@ -369,48 +404,46 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         onCancel={() => setConfirmRemove(null)}
       />
 
-      {transferTarget && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
-          onClick={() => setTransferTarget(null)}
-        >
-          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#2C3E50', marginBottom: 12 }}>소유권 이전</div>
-            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 20 }}>
-              <strong style={{ color: '#2C3E50' }}>{transferTarget.displayName}</strong>님에게 소유권을 이전하시겠습니까?
-              이전 후 당신은 일반 멤버가 됩니다.
-            </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setTransferTarget(null)}
-                style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}>
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!selectedWsId) return;
-                  const res = await fetch(`/api/workspaces/${selectedWsId}/transfer`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ targetMemberId: transferTarget.id }),
-                  });
-                  if (res.ok) {
-                    window.location.reload();
-                  } else {
-                    const data = (await res.json()) as { error?: { message?: string } };
-                    showToast(data.error?.message ?? '이전 실패', 'fail');
-                  }
-                  setTransferTarget(null);
-                }}
-                style={{ padding: '9px 20px', border: 'none', borderRadius: 8, background: '#629584', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                이전 확인
-              </button>
-            </div>
+      <Modal
+        isOpen={transferTarget !== null}
+        onClose={() => setTransferTarget(null)}
+        title="소유권 이전"
+        maxWidth={420}
+      >
+        <div style={{ padding: '20px 20px 24px' }}>
+          <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 20 }}>
+            <strong style={{ color: '#2C3E50' }}>{transferTarget?.displayName}</strong>님에게 소유권을 이전하시겠습니까?
+            이전 후 당신은 일반 멤버가 됩니다.
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => setTransferTarget(null)}
+              style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}>
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!selectedWsId || !transferTarget) return;
+                const res = await fetch(`/api/workspaces/${selectedWsId}/transfer`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ targetMemberId: transferTarget.id }),
+                });
+                if (res.ok) {
+                  window.location.reload();
+                } else {
+                  const data = (await res.json()) as { error?: { message?: string } };
+                  showToast(data.error?.message ?? '이전 실패', 'fail');
+                }
+                setTransferTarget(null);
+              }}
+              style={{ padding: '9px 20px', border: 'none', borderRadius: 8, background: '#629584', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >
+              이전 확인
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

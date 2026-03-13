@@ -446,9 +446,12 @@ In-App 알림 탭:
 
 | 항목 | 정책 |
 |------|------|
-| 보관 기간 | 90일 (이후 자동 삭제) |
+| 보관 기간 | **7일** (이후 자동 삭제) |
 | 최대 미읽음 수 | 표시 제한 99+ (100개 이상이면 "99+"로 표시) |
-| 정리 방식 | Cron 또는 수동 배치 — `DELETE FROM in_app_notifications WHERE created_at < NOW() - INTERVAL '90 days'` |
+| 정리 방식 | GitHub Actions Cron (매일 KST 09:00) — `GET /api/cron/cleanup-notifications` |
+| 정리 로직 | `deleteOldInAppNotifications(7)` → `DELETE FROM in_app_notifications WHERE created_at < NOW() - INTERVAL '7 days'` |
+| Cron 설정 | `.github/workflows/daily-notify.yml` — D-1 마감 알림 발송 후 cleanup 순서로 실행 |
+| 인증 | `Authorization: Bearer $CRON_SECRET` (GitHub Secrets에 `APP_URL`, `CRON_SECRET` 필요) |
 
 ### 9-2. 성능 고려사항
 

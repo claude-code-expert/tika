@@ -20,6 +20,7 @@ interface BoardContainerProps {
   selectedTicket: TicketWithMeta | null;
   onSelectTicket: (ticket: TicketWithMeta | null) => void;
   currentMemberId?: number | null;
+  readOnly?: boolean;
 }
 
 export function BoardContainer({
@@ -34,6 +35,7 @@ export function BoardContainer({
   selectedTicket,
   onSelectTicket,
   currentMemberId = null,
+  readOnly = false,
 }: BoardContainerProps) {
   const [createTitle, setCreateTitle] = useState('');
 
@@ -150,6 +152,7 @@ export function BoardContainer({
           }
           currentMemberId={currentMemberId}
           workspaceName={board.workspaceName}
+          readOnly={readOnly}
         />
       )}
     </>

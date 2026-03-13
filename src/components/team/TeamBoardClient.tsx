@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronLeft, ChevronRight, ArrowUpNarrowWide, ClockArrowDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpNarrowWide, ClockArrowDown, ClockArrowUp } from 'lucide-react';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { BoardFilterBar } from '@/components/board/BoardFilterBar';
 import { TicketCard } from '@/components/board/TicketCard';
@@ -26,7 +26,7 @@ import { findTicket, resolveDropTarget, duplicateTicket, truncate } from '@/lib/
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
-import type { TicketWithMeta, BoardData } from '@/types/index';
+import type { TicketWithMeta, BoardData, TeamRole } from '@/types/index';
 import { useBoardRefreshRegistry } from '@/lib/board-refresh-context';
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -201,13 +201,14 @@ function sortByWbs(tickets: TicketWithMeta[]): TicketWithMeta[] {
   return result;
 }
 
-function sortByCreatedAt(tickets: TicketWithMeta[]): TicketWithMeta[] {
-  return [...tickets].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+function sortByCreatedAt(tickets: TicketWithMeta[], desc = false): TicketWithMeta[] {
+  return [...tickets].sort((a, b) => {
+    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return desc ? -diff : diff;
+  });
 }
 
-type BacklogSortMode = 'created' | 'wbs';
+type BacklogSortMode = 'created' | 'created-desc' | 'wbs';
 
 // ─── BacklogPanel ─────────────────────────────────────────────────────────────
 function BacklogPanel({
@@ -227,7 +228,7 @@ function BacklogPanel({
     BACKLOG_MAX,
   );
 
-  const sortedTickets = sortMode === 'wbs' ? sortByWbs(tickets) : sortByCreatedAt(tickets);
+  const sortedTickets = sortMode === 'wbs' ? sortByWbs(tickets) : sortByCreatedAt(tickets, sortMode === 'created-desc');
 
   return (
     <div
@@ -359,7 +360,7 @@ function BacklogPanel({
             </button>
             {/* Created sort */}
             <button
-              onClick={() => setSortMode('created')}
+              onClick={() => setSortMode(sortMode === 'created' ? 'created-desc' : 'created')}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -372,14 +373,14 @@ function BacklogPanel({
                 cursor: 'pointer',
                 padding: 0,
                 background: 'transparent',
-                color: sortMode === 'created' ? '#629584' : '#8993A4',
+                color: sortMode === 'created' || sortMode === 'created-desc' ? '#629584' : '#8993A4',
                 transition: 'color 0.12s',
               }}
               onMouseEnter={() => setHoverSort('created')}
               onMouseLeave={() => setHoverSort(null)}
               aria-label="생성일 정렬"
             >
-              <ClockArrowDown size={14} />
+              {sortMode === 'created-desc' ? <ClockArrowUp size={14} /> : <ClockArrowDown size={14} />}
               {hoverSort === 'created' && (
                 <span
                   style={{
@@ -398,7 +399,7 @@ function BacklogPanel({
                     zIndex: 50,
                   }}
                 >
-                  생성일 정렬
+                  {sortMode === 'created-desc' ? '생성일 역순' : '생성일 정렬'}
                 </span>
               )}
             </button>
@@ -481,10 +482,11 @@ interface TeamBoardClientProps {
   initialData: BoardData;
   workspaceId: number;
   currentMemberId: number | null;
+  role?: TeamRole;
 }
 
-export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: TeamBoardClientProps) {
-  const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder, fetchBoard } =
+export function TeamBoardClient({ initialData, workspaceId, currentMemberId, role }: TeamBoardClientProps) {
+  const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder, fetchBoard, warningMessage, clearWarning } =
     useTickets(initialData);
 
   const { register } = useBoardRefreshRegistry();
@@ -496,9 +498,10 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: T
   const [selectedTicket, setSelectedTicket] = useState<TicketWithMeta | null>(null);
   const [draggingTicket, setDraggingTicket] = useState<TicketWithMeta | null>(null);
 
+  const isViewer = role === 'VIEWER';
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: isViewer ? 9999 : 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: isViewer ? 9999 : 200, tolerance: isViewer ? 0 : 5 } }),
   );
 
   const handleDuplicate = useCallback(
@@ -516,13 +519,14 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: T
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       setDraggingTicket(null);
+      if (isViewer) return;
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const target = resolveDropTarget(board, over.id);
       if (!target) return;
       await reorder(Number(active.id), target.status, target.index, workspaceId);
     },
-    [board, reorder, workspaceId],
+    [board, reorder, workspaceId, isViewer],
   );
 
   const { displayBoard, filter } = useBoardFilter(board);
@@ -535,26 +539,55 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId }: T
       onDragEnd={handleDragEnd}
       accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}
     >
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Backlog panel */}
-        <BacklogPanel tickets={displayBoard.board.BACKLOG} onTicketClick={setSelectedTicket} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Warning banner (ticket limit approaching) */}
+        {warningMessage && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 16px',
+              background: '#FEF3C7',
+              borderBottom: '1px solid #FDE68A',
+              fontSize: 13,
+              color: '#92400E',
+              flexShrink: 0,
+            }}
+          >
+            <span>⚠ {warningMessage}</span>
+            <button
+              onClick={clearWarning}
+              aria-label="경고 닫기"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#92400E', padding: '0 4px', lineHeight: 1 }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-        {/* Kanban columns (TODO / IN_PROGRESS / DONE) + Filter bar */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-          <BoardFilterBar filter={filter} />
-          <BoardContainer
-            board={displayBoard}
-            isLoading={isLoading}
-            createTicket={createTicket}
-            updateTicket={updateTicket}
-            deleteTicket={deleteTicket}
-            onDuplicate={handleDuplicate}
-            isCreating={isCreating}
-            onCreateClose={() => setIsCreating(false)}
-            selectedTicket={selectedTicket}
-            onSelectTicket={setSelectedTicket}
-            currentMemberId={currentMemberId}
-          />
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Backlog panel */}
+          <BacklogPanel tickets={displayBoard.board.BACKLOG} onTicketClick={setSelectedTicket} />
+
+          {/* Kanban columns (TODO / IN_PROGRESS / DONE) + Filter bar */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+            <BoardFilterBar filter={filter} />
+            <BoardContainer
+              board={displayBoard}
+              isLoading={isLoading}
+              createTicket={createTicket}
+              updateTicket={updateTicket}
+              deleteTicket={deleteTicket}
+              onDuplicate={handleDuplicate}
+              isCreating={isCreating}
+              onCreateClose={() => setIsCreating(false)}
+              selectedTicket={selectedTicket}
+              onSelectTicket={setSelectedTicket}
+              currentMemberId={currentMemberId}
+              readOnly={isViewer}
+            />
+          </div>
         </div>
       </div>
 

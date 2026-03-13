@@ -44,6 +44,7 @@ export default async function TeamBoardPage({
         initialData={boardData}
         workspaceId={workspaceId}
         currentMemberId={member.id}
+        role={role}
       />
     </TeamShell>
   );

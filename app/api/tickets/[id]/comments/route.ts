@@ -4,8 +4,9 @@ import { getCommentsByTicketId, createComment } from '@/db/queries/comments';
 import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
 import { getTicketById } from '@/db/queries/tickets';
 import { z } from 'zod';
-import { NOTIFICATION_TYPE } from '@/types/index';
+import { NOTIFICATION_TYPE, TEAM_ROLE } from '@/types/index';
 import { sendInAppNotification, buildTicketCommentedMessage } from '@/lib/notifications';
+import { requireRole, isRoleError } from '@/lib/permissions';
 
 const createCommentSchema = z.object({
   text: z
@@ -78,8 +79,14 @@ export async function POST(
       );
     }
 
-    const memberId = session.user.memberId as number | null ?? null;
     const userId = session.user.id as string;
+    const commentWsId = (session.user.workspaceId as number | null) ?? null;
+    if (commentWsId) {
+      const roleCheck = await requireRole(userId, commentWsId, TEAM_ROLE.MEMBER);
+      if (isRoleError(roleCheck)) return roleCheck;
+    }
+
+    const memberId = session.user.memberId as number | null ?? null;
     const comment = await createComment(ticketId, memberId, parsed.data.text);
 
     // Notify assignees + previous commenters

@@ -20,6 +20,7 @@ interface TeamShellProps {
 
 export function TeamShell({ workspaceId, role, workspaceName, iconColor, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+  const [warningMsg, setWarningMsg] = useState<string | null>(null);
   const router = useRouter();
 
   // Sync isPrimary so that navigating to "/" redirects back to this workspace
@@ -33,15 +34,22 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
     [],
   );
 
-  const handleNewTask = useCallback(() => setIsNewTicketOpen(true), []);
+  const handleNewTask = useCallback(() => {
+    if (role === 'VIEWER') return;
+    setIsNewTicketOpen(true);
+  }, [role]);
 
   const handleTicketSubmit = useCallback(
     async (data: CreateTicketInput | UpdateTicketInput) => {
-      await fetch('/api/tickets', {
+      const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, workspaceId }),
       });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.warning) setWarningMsg(json.warning);
+      }
       setIsNewTicketOpen(false);
       router.push(`/workspace/${workspaceId}/board`);
       await fetchBoardRef.current?.();
@@ -60,6 +68,32 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
       }}
     >
       <Header onNewTask={handleNewTask} />
+
+      {/* Ticket limit warning banner */}
+      {warningMsg && (
+        <div
+          style={{
+            background: '#FEF3C7',
+            borderBottom: '1px solid #FCD34D',
+            padding: '8px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 13,
+            color: '#92400E',
+            flexShrink: 0,
+          }}
+        >
+          <span>⚠️ {warningMsg}</span>
+          <button
+            onClick={() => setWarningMsg(null)}
+            aria-label="경고 닫기"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* New ticket modal */}
       {isNewTicketOpen && (

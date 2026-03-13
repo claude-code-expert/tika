@@ -34,8 +34,9 @@ export default async function TeamWbsPage({
   const storyCount   = wbsTickets.filter((t) => t.type === 'STORY').length;
   const featureCount = wbsTickets.filter((t) => t.type === 'FEATURE').length;
   const taskCount    = wbsTickets.filter((t) => t.type === 'TASK').length;
-  const doneTickets  = wbsTickets.filter((t) => t.type === 'TASK' && t.status === 'DONE').length;
-  const overallPct   = taskCount > 0 ? Math.round((doneTickets / taskCount) * 100) : 0;
+  const totalTickets = wbsTickets.length;
+  const doneTickets  = wbsTickets.filter((t) => t.status === 'DONE').length;
+  const overallPct   = totalTickets > 0 ? Math.round((doneTickets / totalTickets) * 100) : 0;
 
   const ganttItems = buildGanttItems(wbsTickets);
 

@@ -195,7 +195,20 @@ All icons are **inline SVGs** with the `.ic` utility class:
 
 Standard sizes: 12px, 14px, 16px, 18px (set via inline `style="width:Npx;height:Npx"`).
 
-Zero external icon libraries — all icons from Lucide icon set reproduced as inline SVG paths.
+**아이콘 라이브러리:** `lucide-react` 패키지를 공식 아이콘 소스로 사용한다.
+React 컴포넌트에서는 `import { IconName } from 'lucide-react'`로 직접 임포트하거나,
+인라인 SVG가 필요한 경우 Lucide 아이콘셋의 SVG path를 복사하여 사용한다.
+
+### 공식 아이콘 지정 목록
+
+| 용도 | 아이콘 이름 | lucide-react import |
+|------|------------|---------------------|
+| 링크 / 초대 링크 | `Link2` | `import { Link2 } from 'lucide-react'` |
+| 멤버 / 팀 | `Users` | `import { Users } from 'lucide-react'` |
+| 닫기 | `X` | `import { X } from 'lucide-react'` |
+| 더 보기 이동 | `ArrowRight` | `import { ArrowRight } from 'lucide-react'` |
+
+> 새로운 아이콘을 도입할 때는 이 목록에 추가한다.
 
 ---
 

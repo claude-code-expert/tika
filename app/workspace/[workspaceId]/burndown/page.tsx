@@ -35,6 +35,7 @@ export default async function TeamBurndownPage({
     getCfdData(workspaceId, 30),
   ]);
   if (!workspace || !member) redirect('/');
+  if (workspace.type === 'PERSONAL') redirect('/');
 
   const role = member.role as TeamRole;
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');

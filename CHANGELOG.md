@@ -3,6 +3,305 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [debug/workspace] - 2026-03-13 (VIEWER 제한 구현 + QA 리포트 + 라벨 자동 생성 템플릿)
+
+### 🎯 Prompts
+1. "5-2 온보딩 순차는 현재 유지하고 나머지 구현해"
+2. "현재 작업한 QA 리포트: check_list_workspace.md 구현 현황 점검에 대한 구현 내역과 확인 방법 등을 정리한 QA_REPORT.md를 작성해. 이미 과거에 완성된거 말고 이번에 추가로 완성된 내역들에 대해서 설명하고 QA 점검을 어떻게 해야 할지 설명해야해 작성 완료되면 커밋하고 푸시해"
+3. "QA_REPORT랑 @docs/check_list_notification.md @docs/check_list_workspace.md 랑 내용 비교해서 구현된 내역이 있으면 체크해"
+4. "이제 로컬 데이터 리셋해 (전체 초기화 Drop + Migrate + Seed)"
+5. "이 영역에 라벨 자동 생성 버튼 두고 생성 누르면 공통 모달로 기본 라벨을 생성하겠습니까? 띄운 후 확인을 누르면 다음의 라벨을 생성해 Plan, Frontend, Backend, Analize, Test, Debug, Design, Infra, QA 철자 잘못된거 있는지 검사해서 자동으로 라벨 생성하는 템플릿 기능 추가해"
+6. "티켓에 사용할 라벨을 관리합니다. 최대 20개까지 생성할 수 있으며, 라벨 삭제 시 연결된 티켓에서 자동으로 제거됩니다. 이 기능 제대로 구현 된건지 확인해"
+7. "현재 커밋된 debug/workspace 브랜치에서 docs/phase 는 커밋된거 같은데 이거 리모트에 들어가면 안돼. 리모트에서 삭제하는 방법은? (A: 로컬 유지, 리모트에서만 제거)"
+8. "@<ConfirmDialog> 라벨은 테두리만 있는 룩앤필이 원칙이야. 내부 소스 확인해서 모양 맞추고, 대신 이 영역에서 클릭 시 선택/비활성화 되도록 한 뒤 선택된것만 insert 하도록 해줘"
+
+### ✅ Changes
+
+#### VIEWER 권한 제한 (check_list_workspace.md 4-2, 4-3, 4-4, 4-5, 4-6, 4-8)
+- **Modified**: `app/api/tickets/[id]/comments/route.ts` — POST에 `requireRole(TEAM_ROLE.MEMBER)` 가드 추가 → VIEWER 댓글 작성 API 차단 (403)
+- **Modified**: `app/workspace/[workspaceId]/members/page.tsx` — 서버 컴포넌트에서 VIEWER role 감지 시 보드로 redirect (URL 직접 접근 차단)
+- **Modified**: `src/components/ticket/TicketModal.tsx` — `readOnly?: boolean` prop 추가; 우선순위/날짜/담당자/저장/삭제 모두 조건부 비활성화
+- **Modified**: `src/components/board/BoardContainer.tsx` — `readOnly` prop 추가 → TicketModal에 전달
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `role` prop 추가; DnD 센서 `distance: 9999` / `delay: 9999`로 VIEWER 드래그 차단; `BoardContainer`에 `readOnly={isViewer}` 전달
+- **Modified**: `src/components/layout/TeamShell.tsx` — VIEWER 새 티켓 버튼 차단 (`if (role === 'VIEWER') return`); 티켓 생성 후 `warning` 필드 감지 → dismissible 경고 배너 표시
+
+#### 티켓 한도 경고 배너 (check_list_workspace.md 1-5, 2-8)
+- **Modified**: `src/hooks/useTickets.ts` — `createTicket` API 응답에서 `warning` 필드 읽어 `warningMessage` 상태 저장; `clearWarning` 노출
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `warningMessage` 배너 렌더링 추가 (노란색 `#FEF3C7`, × 닫기 버튼)
+
+#### QA 문서
+- **Added**: `docs/QA_REPORT.md` — 이번 세션에서 새로 구현된 8개 항목 상세 설명 및 검증 방법 정리
+- **Modified**: `docs/check_list_workspace.md` — 구현 완료 항목 `[ ]` → `[x]` 갱신 (4-2, 4-3, 4-4, 4-5, 4-6, 4-8, 1-5, 2-8)
+- **Modified**: `docs/check_list_notification.md` — 구현 완료 항목 `[ ]` → `[x]` 갱신 (2개 미구현: 벨 배지 99+, Sprint 알림 설정 토글)
+
+#### .gitignore / 리모트 정리
+- **Modified**: `.gitignore` — `docs/phase/` 활성화 (이전: 주석 처리)
+- **Removed** (from remote): `docs/phase/` 디렉토리 — `git rm --cached -r docs/phase/` 후 push, 로컬 파일은 유지
+
+#### 라벨 자동 생성 템플릿 (LabelSection)
+- **Modified**: `src/components/settings/LabelSection.tsx`
+  - `DEFAULT_TEMPLATE_LABELS` 상수 추가 (Plan/Frontend/Backend/Analyze/Test/Debug/Design/Infra/QA — 철자 수정: "Analize" → "Analyze")
+  - `ConfirmDialog`에 `confirmLabel?`, `confirmVariant?`, `children?` prop 확장
+  - "기본 라벨 자동 생성" 버튼 추가 (`⚡` 아이콘, 그린 아웃라인 스타일)
+  - 클릭 시 ConfirmDialog 열림 → 라벨 목록 클릭 토글 (선택/비선택)
+  - 라벨 미리보기: LabelBadge와 동일한 테두리 전용 스타일 (`background: transparent`, `border: 1px solid color`)
+  - `selectedTemplateNames: Set<string>` — 기본 전체 선택, 토글 시 Set 업데이트
+  - 확인 버튼 레이블: `생성 (N개)` (선택 개수 실시간 반영)
+  - `handleCreateTemplate`: 이미 존재하는 라벨 skip, 한도(20개) 초과 시 에러, 성공 시 toast
+
+### 📁 Files Modified
+- `app/api/tickets/[id]/comments/route.ts` (+5, -0 lines)
+- `app/workspace/[workspaceId]/members/page.tsx` (+4, -1 lines)
+- `src/components/ticket/TicketModal.tsx` (+30, -10 lines)
+- `src/components/board/BoardContainer.tsx` (+6, -2 lines)
+- `src/components/team/TeamBoardClient.tsx` (+35, -5 lines)
+- `src/components/layout/TeamShell.tsx` (+25, -3 lines)
+- `src/hooks/useTickets.ts` (+15, -5 lines)
+- `docs/QA_REPORT.md` (+257, -0 lines) — **신규 생성**
+- `docs/check_list_workspace.md` (+/- 체크박스 갱신)
+- `docs/check_list_notification.md` (+/- 체크박스 갱신)
+- `.gitignore` (+1, -1 lines)
+- `src/components/settings/LabelSection.tsx` (+119, -10 lines)
+
+---
+
+
+## [develop] - 2026-03-11 (팀 보드 버그 수정 + UX 개선 + WIP 툴팁 + 주간 필터 + 데이터 삽입)
+
+### 🎯 Prompts
+1. "이전작업 다시 이어서"
+2. "@<Modal> brew 라고 입력해도 검색결과가 안나와"
+3. "@<Modal> 이 영역 복사 및 닫기는 우측 정렬"
+4. "@<Modal> 여전히 brew 라고 입력해도 안나와"
+5. "@<TicketCardInner> 상위 카테고리가 노출된 티켓에서 클릭시 상세 페이지로 이동"
+6. "@<Modal> 담당자 추가 및 담당자 지정된 내역 박스는 이 영역에 100% 너비여야해"
+7. "상세 보이길 경우 이 영역이 글의 길이 만큼 길어지고 나머지 영역은 밑으로 밀리는거야"
+8. "@<TicketDetailPage> 이 영역도 글의 길이 만큼 넓어지고 나머지 영역은 밑으로 밀리고 스크롤"
+9. "@<TicketDetailPage> and @<TeamSidebar> 이 영역의 높이가 맞도록 해줘"
+10. "@<TicketCardInner> 오버시 밑줄 및 색상 변경 효과"
+11. "@<Modal> 이것도 담당자 추가와 마찬가지로 같은 너비로 고정"
+12. "각 티켓에 라벨 최소 한개 이상으로 추가해 데이터 인서트 해줘"
+13. "@<Modal> tika-45번 티켓인데 G 영역은 선택하세요가 나오고 S 영역은 [G] 알림시스템 완성이 나와 f 영역은 리스트도 없어. 데이터 검증해봐"
+14. "@<BacklogItem> 공간이 부족해질때 하나씩 라벨이 가려져야지 왜 밑으로 내려가지?"
+15. "@<ColumnInner> 이 표시는 어떤 의미지?"
+16. "@<ColumnInner> 마우스 오버시 공통 툴팁 보여줘야지 적정 칸반 티켓수 = 3, 현재 3건 초과 이런식으로"
+17. "@<BoardFilterBar> 이 필터는 이번주에 Done인것과 + 이번주 금요일까지 완료해야 할 건이 나와야 해"
+18. "@<BacklogPanel> and @<BoardFilterBar> 사이 간격이 15px 정도 벌어진건 붙일수 없어?"
+
+### ✅ Changes
+
+#### 드래그 앤 드롭 버그 수정 (팀 보드)
+- **Fixed**: `app/api/tickets/reorder/route.ts` — `session.user.workspaceId`(primary)가 아닌 요청 본문의 `workspaceId`로 멤버십 검증 후 처리. 팀 보드에서 티켓 드래그 시 "티켓을 찾을 수 없습니다" 404 에러 해결
+- **Modified**: `src/lib/validations.ts` — `reorderSchema`에 `workspaceId: z.number().int().positive().optional()` 추가
+- **Modified**: `src/hooks/useTickets.ts` — `reorder()` 함수에 `workspaceId?: number` 파라미터 추가, 요청 본문에 포함
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — `handleDragEnd`에서 `workspaceId` 전달
+
+#### 담당자 검색 수정 (TicketModal)
+- **Fixed**: `app/api/members/route.ts` — `?workspaceId=N` 쿼리 파라미터 지원 추가. 팀 워크스페이스 멤버를 멤버십 검증 후 반환
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 담당자 검색: Enter키 필요 → 입력 즉시 결과 표시 (`assigneeSearched` 상태 제거)
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 멤버 fetch URL에 `ticket.workspaceId` 파라미터 추가 (세션의 primary workspace가 아닌 현재 티켓 워크스페이스 기준)
+
+#### TicketModal UX 개선
+- **Fixed**: `src/components/ticket/TicketModal.tsx` — 복사/닫기 버튼 `marginLeft: 'auto'`로 헤더 우측 정렬
+- **Modified**: `src/components/ticket/TicketModal.tsx` — 담당자 영역 100% 너비 (칩 + 추가 버튼 모두 `width: '100%'`)
+- **Modified**: `src/components/ticket/TicketModal.tsx` — 설명 textarea 자동 높이 (`descTextareaRef` + `scrollHeight` 기반 auto-resize)
+- **Removed**: 미사용 `iconBtnBase` 스타일 객체 제거
+
+#### TicketCard 개선
+- **Added**: `src/components/board/TicketCard.tsx` — 상위 태그 클릭 시 부모 티켓 상세 페이지 이동 (`handleNavigateToParent`)
+- **Modified**: `src/components/board/TicketCard.tsx` — 상위 태그 hover 시 밑줄 + 타입 색상 변경 효과
+- **Modified**: `src/components/team/TeamBoardClient.tsx` — BacklogItem 라벨 `flexWrap: 'nowrap', overflow: 'hidden'` (공간 부족 시 라벨이 줄 바꿈 → 숨김으로 변경)
+
+#### TicketDetailPage 개선
+- **Modified**: `src/components/ticket/TicketDetailPage.tsx` — 설명 textarea 자동 높이 (`scrollHeight` auto-resize)
+- **Modified**: `src/components/ticket/TicketDetailPage.tsx` — 헤더 고정 높이 48px (`height: 48, padding: '0 20px'`)
+
+#### BreadcrumbPicker 버그 수정
+- **Fixed**: `src/components/ticket/BreadcrumbPicker.tsx` — `useEffect` 조상 체인 탐색 로직: 인덱스 역순이 아닌 `ancestorTypes.indexOf(p.type)`으로 정확한 슬롯 배치 (tika-45 G/S/F 계층 오표시 수정)
+- **Fixed**: `src/components/ticket/BreadcrumbPicker.tsx` — `useState` 초기값도 `parent.type` 인덱스 기반으로 수정
+
+#### WIP 툴팁 (신규 공통 컴포넌트)
+- **Added**: `src/components/ui/Tooltip.tsx` — 공통 호버 툴팁 (fixed positioning, 화살표, `position: 'top' | 'bottom'`)
+- **Modified**: `src/components/board/Column.tsx` — IN_PROGRESS 초과 배지의 native `title` → `<Tooltip>` 교체 ("적정 칸반 티켓수 = 3, 현재 N건 초과")
+
+#### 주간 필터 개선
+- **Modified**: `src/hooks/useBoardFilter.ts` — "이번 주" 필터: 이번 주 완료(DONE) + 이번 주 금요일까지 마감 예정(미완료) 포함
+- **Modified**: `src/components/board/BoardFilterBar.tsx` — 버튼 라벨 "이번 주 완료" → "이번 주"
+
+#### 데이터 삽입
+- **Modified**: `ticket.sql` — 워크스페이스 8번 전체 티켓에 라벨 1개 이상 추가 (labels + ticket_labels INSERT)
+
+### 📁 Files Modified
+- `app/api/members/route.ts` (+32 lines)
+- `app/api/tickets/reorder/route.ts` (+41 lines)
+- `src/lib/validations.ts` (+1 line)
+- `src/hooks/useTickets.ts` (+4 lines)
+- `src/components/team/TeamBoardClient.tsx` (+8 lines)
+- `src/components/ticket/TicketModal.tsx` (+76, -대폭 정리)
+- `src/components/board/TicketCard.tsx` (+18 lines)
+- `src/components/ticket/TicketDetailPage.tsx` (+22 lines)
+- `src/components/ticket/BreadcrumbPicker.tsx` (+20 lines)
+- `src/components/ui/Tooltip.tsx` (신규, ~75 lines)
+- `src/components/board/Column.tsx` (+24 lines)
+- `src/hooks/useBoardFilter.ts` (+28 lines)
+- `src/components/board/BoardFilterBar.tsx` (+2 lines)
+- **총 23 files changed, +354 / -943 lines**
+
+---
+
+## [develop] - 2026-03-11 01:01 (랜딩/설정/온보딩 UI 개선 + 색상 팔레트 통일)
+
+### 🎯 Prompts
+1. "랜딩 페이지 히어로 이미지 Ticket-based Kanban Board 한줄로 표기"
+2. "사파리 브라우저 히어로 이미지 배경색 검정 플래시 수정"
+3. "SVG에서 Plan Simply, Ship Boldly 띄어쓰기 간격 수정"
+4. "Enterprise 항목 중 불가능한 기능(감사 로그, 사내 도구 연동, 온보딩·마이그레이션) 제거"
+5. "Team Pro 항목 8개로 재구성 (MCP, 자동화, 워크스페이스 100개 등)"
+6. "Enterprise 항목 7개로 재구성 (셀프 호스팅, AI 도구, REST API 등)"
+7. "Team Pro에서 고급 검색 & 퀵 필터를 Enterprise로 이동"
+8. "온보딩 페이지 하단에 메인 페이지로 이동 버튼 추가"
+9. "WorkspaceOnboarding 페이지에도 메인 페이지 이동 버튼 추가"
+10. "헤더 로고 클릭 시 full page reload (Link → a 태그)"
+11. "사이드바 멤버관리 → 워크스페이스 멤버로 텍스트 변경"
+12. "멤버 페이지 나가기 버튼에 브라우저 confirm → ConfirmDialog 공통 모달 적용"
+13. "설정 페이지 워크스페이스별 역할 기반 권한 표시 (OWNER/MEMBER 분기)"
+14. "알림 설정에서 스프린트 관련 항목 삭제"
+15. "알림 설정 신청 결과 → 승인 완료로 변경, 멤버 제거 → 멤버 나가기로 변경"
+16. "일반 설정 참여 방식을 라디오 버튼으로 변경 (검색 공개 / 초대 링크로만 참여)"
+17. "아이콘 색상 팔레트 18개로 확장 (COLOR.json 기반 → color.html 20색 팔레트 기반으로 재선정)"
+18. "프로필 모달 색상 팔레트도 동일하게 교체, 정사각형으로 변경"
+19. "설정 페이지 멤버 관리 메뉴 삭제"
+
+### ✅ Changes
+
+#### 랜딩 페이지 (`app/login/page.tsx`, `public/images/tika-hero3.svg`)
+- **Fixed**: SVG `@import url()` 제거 — Safari 검정 배경 플래시 해결
+- **Fixed**: "Ticket-based Kanban Board" 두 줄 → 한 줄 표기
+- **Fixed**: "Plan Simply." / "Ship Boldly." `<tspan>` 적용으로 띄어쓰기 간격 통일
+- **Modified**: Team Pro 가격 항목 8개로 재구성
+- **Modified**: Enterprise 가격 항목 8개로 재구성 (비현실적 항목 제거)
+
+#### 온보딩 (`src/components/onboarding/`)
+- **Modified**: `OnboardingWizard.tsx` — 하단 "메인 페이지로 이동" 버튼 추가
+- **Modified**: `WorkspaceOnboarding.tsx` — 하단 "메인 페이지로 이동" 버튼 추가
+
+#### 헤더 & 사이드바
+- **Modified**: `src/components/layout/Header.tsx` — 로고 `Link` → `<a>` 태그 (full reload)
+- **Modified**: `src/components/team/TeamSidebar.tsx` — "멤버관리" → "워크스페이스 멤버"
+
+#### 멤버 관리
+- **Modified**: `app/workspace/[workspaceId]/members/page.tsx` — "팀 멤버" → "워크스페이스 멤버"
+- **Modified**: `src/components/team/MemberList.tsx` — 나가기 버튼 `confirm()` → `ConfirmDialog` 적용
+
+#### 설정 페이지 (`/settings`)
+- **Modified**: `src/components/settings/GeneralSection.tsx` — 참여 방식 라디오 버튼 UI, 아이콘 색상 14색 팔레트 (color.html 기반)
+- **Modified**: `src/components/settings/NotificationPreferencesSection.tsx` — 스프린트 항목 삭제, "신청 결과" → "승인 완료", "멤버 제거" → "멤버 나가기"
+- **Modified**: `src/components/settings/SettingsShell.tsx` — "멤버 관리" 네비 항목 제거
+- **Modified**: `src/components/settings/types.ts` — `SectionKey`에서 `'members'` 제거
+
+#### 색상 팔레트 통일 (color.html 20색 기반)
+- **Modified**: `src/components/layout/ProfileModal.tsx` — 9색 → 14색 정사각형 팔레트 (22px, borderRadius 4px)
+- **Modified**: `src/components/settings/GeneralSection.tsx` — 9색 → 14색 팔레트
+
+### 📁 Files Modified
+- `public/images/tika-hero3.svg` (수정)
+- `app/login/page.tsx` (수정)
+- `src/components/onboarding/OnboardingWizard.tsx` (수정)
+- `src/components/onboarding/WorkspaceOnboarding.tsx` (수정)
+- `src/components/layout/Header.tsx` (수정)
+- `src/components/layout/ProfileModal.tsx` (수정)
+- `src/components/team/TeamSidebar.tsx` (수정)
+- `src/components/team/MemberList.tsx` (수정)
+- `app/workspace/[workspaceId]/members/page.tsx` (수정)
+- `src/components/settings/GeneralSection.tsx` (수정)
+- `src/components/settings/NotificationPreferencesSection.tsx` (수정)
+- `src/components/settings/SettingsShell.tsx` (수정)
+- `src/components/settings/types.ts` (수정)
+
+---
+
+## [develop] - 2026-03-10 22:36 (In-App 알림 시스템 Phase 1 전체 구현)
+
+### 🎯 Prompts
+1. "지금 문서들 참고해서 구현 시작해" — `docs/notification_system_design.md`, `docs/check_list_notification.md` 기반 In-App 알림 시스템 전체 구현
+
+### ✅ Changes
+
+#### DB 스키마 & 마이그레이션
+- **Added**: `in_app_notifications` 테이블 — userId, workspaceId, type, title, message, link, actorId, refType, refId, isRead, createdAt (`src/db/schema.ts`)
+- **Added**: `notification_preferences` 테이블 — userId, workspaceId, type, inAppEnabled, slackEnabled, telegramEnabled (`src/db/schema.ts`)
+- **Added**: 마이그레이션 `0016_moaning_kingpin.sql` — 두 테이블 생성, FK, 인덱스
+
+#### 쿼리 & 헬퍼
+- **Added**: `src/db/queries/inAppNotifications.ts` — bulkCreate, 페이지네이션 조회, 읽음 처리, 선호도 CRUD, 비활성 유저 필터
+- **Added**: `src/lib/notifications.ts` — `sendInAppNotification()` (자기 자신 제외, 선호도 체크, bulk insert) + 14개 메시지 빌더
+
+#### 타입 & 검증
+- **Added**: `NOTIFICATION_TYPE` 상수 14종, `NOTIFICATION_REF_TYPE` 상수 (`src/types/index.ts`)
+- **Added**: `InAppNotification`, `NotificationPreference` 인터페이스 (`src/types/index.ts`)
+- **Added**: `inAppNotificationQuerySchema`, `updateNotificationPreferenceSchema` (`src/lib/validations.ts`)
+
+#### API 라우트 (5개 신규)
+- **Added**: `GET /api/notifications/in-app` — 페이지네이션 조회
+- **Added**: `GET /api/notifications/in-app/unread-count` — 미읽음 수
+- **Added**: `PATCH /api/notifications/in-app/[id]/read` — 단일 읽음
+- **Added**: `PATCH /api/notifications/in-app/read-all` — 전체 읽음
+- **Added**: `GET/PUT /api/notifications/preferences` — 선호도 조회/수정
+
+#### 트리거 통합 (11개 기존 API 수정)
+- **Modified**: `app/api/tickets/[id]/route.ts` — 상태 변경, 배정/해제, 삭제 알림
+- **Modified**: `app/api/tickets/[id]/comments/route.ts` — 새 댓글 알림
+- **Modified**: `app/api/workspaces/[id]/members/[memberId]/route.ts` — 역할 변경, 멤버 제거 알림
+- **Modified**: `app/api/workspaces/[id]/sprints/[sid]/activate/route.ts` — 스프린트 시작 알림
+- **Modified**: `app/api/workspaces/[id]/sprints/[sid]/complete/route.ts` — 스프린트 완료 알림
+- **Modified**: `app/api/invites/[token]/accept/route.ts` — 멤버 참여 알림
+- **Modified**: `app/api/workspaces/[id]/join-requests/route.ts` — 참여 신청 알림
+- **Modified**: `app/api/workspaces/[id]/join-requests/[reqId]/route.ts` — 신청 결과 알림
+- **Modified**: `app/api/cron/notify-due/route.ts` — D-1 마감일 경고 알림
+
+#### UI 변경
+- **Modified**: `src/components/layout/Header.tsx` — 벨 아이콘 `notification_logs` → `in_app_notifications` API 전환, 클릭 시 링크 이동 + 읽음 처리
+- **Modified**: `src/components/notifications/NotificationsPage.tsx` — In-App 알림 기반으로 전환, 읽음/미읽음 필터, 알림 유형별 컬러 뱃지
+- **Added**: `src/components/settings/NotificationPreferencesSection.tsx` — 14개 알림 유형별 토글 on/off, 워크스페이스 선택
+- **Modified**: `src/components/settings/SettingsShell.tsx` — "알림 설정" 네비 항목 + 섹션 추가
+- **Modified**: `src/components/settings/types.ts` — `SectionKey`에 `'notification-preferences'` 추가
+
+### 📊 검사 결과
+- TypeScript: `npx tsc --noEmit` 통과 (0 errors)
+- ESLint: 신규 경고 0개
+
+### 📁 Files Modified
+- `src/db/schema.ts` (+48 lines)
+- `src/types/index.ts` (+53 lines)
+- `src/lib/validations.ts` (+23 lines)
+- `src/lib/notifications.ts` (신규, ~250 lines)
+- `src/db/queries/inAppNotifications.ts` (신규, ~150 lines)
+- `app/api/notifications/in-app/route.ts` (신규)
+- `app/api/notifications/in-app/unread-count/route.ts` (신규)
+- `app/api/notifications/in-app/[id]/read/route.ts` (신규)
+- `app/api/notifications/in-app/read-all/route.ts` (신규)
+- `app/api/notifications/preferences/route.ts` (신규)
+- `src/components/settings/NotificationPreferencesSection.tsx` (신규, ~220 lines)
+- `app/api/tickets/[id]/route.ts` (+99 lines)
+- `app/api/tickets/[id]/comments/route.ts` (+35 lines)
+- `app/api/workspaces/[id]/members/[memberId]/route.ts` (+45 lines)
+- `app/api/workspaces/[id]/sprints/[sid]/activate/route.ts` (+19 lines)
+- `app/api/workspaces/[id]/sprints/[sid]/complete/route.ts` (+18 lines)
+- `app/api/invites/[token]/accept/route.ts` (+24 lines)
+- `app/api/workspaces/[id]/join-requests/route.ts` (+24 lines)
+- `app/api/workspaces/[id]/join-requests/[reqId]/route.ts` (+29 lines)
+- `app/api/cron/notify-due/route.ts` (+25 lines)
+- `src/components/layout/Header.tsx` (수정)
+- `src/components/notifications/NotificationsPage.tsx` (수정)
+- `src/components/settings/SettingsShell.tsx` (수정)
+- `src/components/settings/types.ts` (수정)
+- `migrations/0016_moaning_kingpin.sql` (신규)
+- `migrations/meta/0016_snapshot.json` (신규)
+- `migrations/meta/_journal.json` (+7 lines)
+- **총 27개 파일, +658 / -241 lines**
+
+---
+
 ## [develop] - 2026-03-08 (BreadcrumbPicker 공통 모듈화 + 개인 워크스페이스 상세 페이지 레이아웃 수정)
 
 ### 🎯 Prompts

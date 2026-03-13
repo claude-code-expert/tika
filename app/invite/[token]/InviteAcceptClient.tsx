@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 
 interface InviteAcceptClientProps {
   token: string;
@@ -12,6 +12,7 @@ interface InviteAcceptClientProps {
 
 export function InviteAcceptClient({ token, isLoggedIn, userEmail }: InviteAcceptClientProps) {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [state, setState] = useState<'idle' | 'loading' | 'done'>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +28,7 @@ export function InviteAcceptClient({ token, isLoggedIn, userEmail }: InviteAccep
         return;
       }
       setState('done');
+      await updateSession(); // Refresh JWT with updated userType & primary workspace
       router.push(`/workspace/${data.workspaceId}`);
     } catch {
       setError('오류가 발생했습니다. 다시 시도해주세요.');

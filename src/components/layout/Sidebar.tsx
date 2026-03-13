@@ -347,7 +347,7 @@ export function Sidebar({
               textOverflow: 'ellipsis',
             }}
           >
-            내 워크스페이스
+            {workspaceName || 'My-Workspace'}
           </span>
           {/* Mobile close button */}
           {isMobile ? (

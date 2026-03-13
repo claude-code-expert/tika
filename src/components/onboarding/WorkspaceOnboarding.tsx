@@ -119,6 +119,25 @@ export function WorkspaceOnboarding({ userId, userName }: WorkspaceOnboardingPro
             )}
           </div>
         </div>
+
+        {/* 메인 페이지 이동 */}
+        <button
+          onClick={() => window.location.href = '/'}
+          style={{
+            marginTop: 32,
+            padding: '8px 20px',
+            background: 'transparent',
+            border: 'none',
+            fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+            fontSize: 13,
+            color: '#8993A4',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            textUnderlineOffset: 3,
+          }}
+        >
+          메인 페이지로 이동
+        </button>
       </div>
     </>
   );

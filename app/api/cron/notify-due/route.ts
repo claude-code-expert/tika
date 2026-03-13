@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllWorkspaces } from '@/db/queries/workspaces';
 import { getTicketsDueTomorrow } from '@/db/queries/tickets';
 import { getNotificationChannels } from '@/db/queries/notificationChannels';
-import { createNotificationLog } from '@/db/queries/notificationLogs';
-import type { SlackConfig, TelegramConfig } from '@/types/index';
+import { bulkCreateNotificationLogs } from '@/db/queries/notificationLogs';
+import type { SlackConfig, TelegramConfig, NotificationChannelType } from '@/types/index';
 import { NOTIFICATION_TYPE } from '@/types/index';
 import { getAssigneesByTickets } from '@/db/queries/ticketAssignees';
 import { sendInAppNotification, buildDeadlineWarningMessage } from '@/lib/notifications';
@@ -104,43 +104,65 @@ export async function GET(request: NextRequest) {
     totalProcessed += dueTomorrow.length;
     const message = buildMessage(dueTomorrow);
 
-    for (const channel of enabledChannels) {
-      for (const ticket of dueTomorrow) {
-        let errorMsg: string | undefined;
-        try {
-          if (channel.type === 'slack') {
-            const cfg = channel.config as SlackConfig;
-            await sendSlack(cfg.webhookUrl, message);
-          } else if (channel.type === 'telegram') {
-            const cfg = channel.config as TelegramConfig;
-            await sendTelegram(cfg.botToken, cfg.chatId, message);
-          }
-          await createNotificationLog({
-            workspaceId: workspace.id,
-            ticketId: ticket.id,
-            channel: channel.type,
-            message,
-            status: 'SENT',
-          });
-          totalSent++;
-        } catch (err) {
-          errorMsg = err instanceof Error ? err.message : String(err);
-          console.error(
-            `[cron/notify-due] failed workspace=${workspace.id} channel=${channel.type} ticket=${ticket.id}:`,
-            errorMsg,
-          );
-          await createNotificationLog({
-            workspaceId: workspace.id,
-            ticketId: ticket.id,
-            channel: channel.type,
-            message,
-            status: 'FAILED',
-            errorMessage: errorMsg,
-          });
-          totalFailed++;
+    // Send to all channels in parallel — each channel receives the message once (not per-ticket)
+    const channelResults = await Promise.allSettled(
+      enabledChannels.map(async (channel) => {
+        if (channel.type === 'slack') {
+          const cfg = channel.config as SlackConfig;
+          await sendSlack(cfg.webhookUrl, message);
+        } else if (channel.type === 'telegram') {
+          const cfg = channel.config as TelegramConfig;
+          await sendTelegram(cfg.botToken, cfg.chatId, message);
         }
+      }),
+    );
+
+    // Batch-insert one log row per (ticket × channel) in a single query
+    const logsToInsert: {
+      workspaceId: number;
+      ticketId: number;
+      channel: NotificationChannelType;
+      message: string;
+      status: 'SENT' | 'FAILED';
+      errorMessage?: string | null;
+    }[] = [];
+
+    for (let i = 0; i < enabledChannels.length; i++) {
+      const result = channelResults[i];
+      const channel = enabledChannels[i];
+      const status = result.status === 'fulfilled' ? 'SENT' : 'FAILED';
+      const errorMessage =
+        result.status === 'rejected'
+          ? result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason)
+          : null;
+
+      if (status === 'SENT') {
+        totalSent += dueTomorrow.length;
+      } else {
+        totalFailed += dueTomorrow.length;
+        console.error(
+          `[cron/notify-due] failed workspace=${workspace.id} channel=${channel.type}:`,
+          errorMessage,
+        );
+      }
+
+      for (const ticket of dueTomorrow) {
+        logsToInsert.push({
+          workspaceId: workspace.id,
+          ticketId: ticket.id,
+          channel: channel.type as NotificationChannelType,
+          message,
+          status,
+          errorMessage,
+        });
       }
     }
+
+    await bulkCreateNotificationLogs(logsToInsert).catch((e) =>
+      console.error('[cron/notify-due] bulk log insert error:', e),
+    );
   }
 
   console.log(

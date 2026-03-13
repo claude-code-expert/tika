@@ -127,6 +127,13 @@
       "when": 1773152914126,
       "tag": "0017_bizarre_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1773406390690,
+      "tag": "0018_medical_maggott",
+      "breakpoints": true
     }
   ]
 }

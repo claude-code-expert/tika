@@ -151,4 +151,4 @@ GitHub → Actions 탭 → **Daily D-1 Notification** 선택 → **Run workflow*
 
 ## License
 
-MIT
+Apache 2.0

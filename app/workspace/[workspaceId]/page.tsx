@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId } from '@/db/queries/members';
-import { getBoardData, getWbsTickets } from '@/db/queries/tickets';
+import { getBoardData } from '@/db/queries/tickets';
 import { getMemberWorkload, getCfdData } from '@/db/queries/analytics';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { TrendChart } from '@/components/team/charts/TrendChart';
@@ -28,12 +28,11 @@ export default async function TeamDashboardPage({
 
   const userId = session.user.id as string;
 
-  const [workspace, member, boardData, workload, wbsTickets, cfdData] = await Promise.all([
+  const [workspace, member, boardData, workload, cfdData] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
     getBoardData(workspaceId),
     getMemberWorkload(workspaceId),
-    getWbsTickets(workspaceId),
     getCfdData(workspaceId, 21), // 3주치 fetch 후 워킹데이만 추출
   ]);
 
@@ -48,8 +47,8 @@ export default async function TeamDashboardPage({
   const role = member.role as TeamRole;
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
-  const doneTickets = allTickets.filter((t) => t.status === 'DONE');
-  const goalTickets = wbsTickets.filter((t) => t.type === 'GOAL');
+  const doneTickets = boardData.board.DONE;
+  const goalTickets = allTickets.filter((t) => t.type === 'GOAL');
   const overdueTickets = allTickets.filter((t) => t.isOverdue);
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
@@ -63,10 +62,10 @@ export default async function TeamDashboardPage({
   // Progress rate — status counts for donut
   const progressPct = allTickets.length > 0 ? Math.round((doneTickets.length / allTickets.length) * 100) : 0;
   const statusCounts = {
-    done: allTickets.filter((t) => t.status === 'DONE').length,
-    inProgress: allTickets.filter((t) => t.status === 'IN_PROGRESS').length,
-    todo: allTickets.filter((t) => t.status === 'TODO').length,
-    backlog: allTickets.filter((t) => t.status === 'BACKLOG').length,
+    done: boardData.board.DONE.length,
+    inProgress: boardData.board.IN_PROGRESS.length,
+    todo: boardData.board.TODO.length,
+    backlog: boardData.board.BACKLOG.length,
   };
 
   // My tickets (current member)
@@ -104,11 +103,11 @@ export default async function TeamDashboardPage({
     { key: 'TASK', label: 'Task', abbr: 'T', trackBg: '#F3F4F6', fillBg: '#9CA3AF' },
   ] as const;
   const typeDist = TYPE_DIST.map((td) => {
-    const items = wbsTickets.filter((t) => t.type === td.key);
+    const items = allTickets.filter((t) => t.type === td.key);
     const done = items.filter((t) => t.status === 'DONE').length;
     return { ...td, total: items.length, done, pct: items.length > 0 ? Math.round((done / items.length) * 100) : 0 };
   });
-  const wbsTotal = wbsTickets.length;
+  const wbsTotal = allTickets.length;
 
   // Trend data from CFD — 워킹데이(월~금) 기준 최근 7일치
   const allTrendData = cfdData.map((d, i, arr) => ({
@@ -228,7 +227,7 @@ export default async function TeamDashboardPage({
 
           {/* Goal Progress */}
           <Card title="목표 진행률">
-            <GoalProgressRow goals={goalTickets} allTickets={wbsTickets} />
+            <GoalProgressRow goals={goalTickets} allTickets={allTickets} />
           </Card>
 
           {/* Type Distribution & Completion Rate */}

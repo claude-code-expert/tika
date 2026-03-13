@@ -10,6 +10,7 @@ import type {
   MemberWorkload,
   TeamRole,
   TicketStatus,
+  TicketWithMeta,
 } from '@/types/index';
 import { TICKET_STATUS } from '@/types/index';
 
@@ -37,7 +38,7 @@ export async function getBurndownData(
 
 // ─── Period Burndown (date-range based) ──────────────────────────────────────
 
-function computePeriodBurndown(
+export function computePeriodBurndown(
   allTickets: { id: number; completedAt: Date | null; storyPoints: number | null; createdAt: Date }[],
   startDate: string,
   endDate: string,
@@ -247,6 +248,26 @@ export async function getCycleTimeData(workspaceId: number): Promise<CycleTimeDi
     }
   }
 
+  return Object.entries(distribution)
+    .map(([days, count]) => ({ days: Number(days), count }))
+    .sort((a, b) => a.days - b.days);
+}
+
+export function computeCycleTimeFromTickets(doneTix: TicketWithMeta[]): CycleTimeDistribution[] {
+  const distribution: Record<number, number> = {};
+  for (const t of doneTix) {
+    if (t.completedAt) {
+      const days = Math.max(
+        0,
+        Math.ceil(
+          (new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      );
+      const bucket = Math.min(days, 30);
+      distribution[bucket] = (distribution[bucket] ?? 0) + 1;
+    }
+  }
   return Object.entries(distribution)
     .map(([days, count]) => ({ days: Number(days), count }))
     .sort((a, b) => a.days - b.days);

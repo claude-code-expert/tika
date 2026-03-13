@@ -3,6 +3,48 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-03-13 성능 최적화(CRITICAL/HIGH) — buildSessionUser 병렬화, 쿼리 중복 제거, 인메모리 계산 전환, DB 인덱스 추가
+
+### 🎯 Prompts
+1. "각 모듈과 쿼리 API 처리 등을 탐색해서 화면에서 느린 요소들이나 메모리가 과하게 소모되는 이벤트들 식별하고 어떤 방향으로 개선해야 하는지 연구해봐 ultrathink"
+2. "CRITICAL 부터 정리해."
+3. "좋아 이제 High 구현해"
+4. "다음 단계 진행해"
+5. "1번 부터"
+6. "2 번 진행하고, @.claude/CLAUDE.md 에 코딩컨벤션 및 개발 참조 사항이로 개발시 지금같은 상황이 벌어지지 않도록 개발 원칙 추가해"
+
+### ✅ Changes
+
+#### CRITICAL 최적화
+- **Fixed**: `buildSessionUser` 3개 순차 DB 쿼리 → `Promise.all` 병렬 실행 (`src/lib/auth.ts`) — 모든 API 요청의 세션 인증 비용 1 round trip으로 감소
+- **Fixed**: `PATCH /api/tickets/:id` — `updateTicket`과 `setAssignees` 병렬화, `getAssigneesByTicket` 중복 호출 제거(`existing.assignees` 재사용) (`app/api/tickets/[id]/route.ts`)
+- **Fixed**: `DELETE /api/tickets/:id` — `getAssigneesByTicket` 중복 호출 제거 (`app/api/tickets/[id]/route.ts`)
+- **Fixed**: `bulkCreateNotificationLogs` — 단건 반복 INSERT → 단일 bulk INSERT (`src/db/queries/notificationLogs.ts`)
+- **Fixed**: cron `notify-due` — 채널당 메시지 K번 반복 발송 버그 수정 → 채널당 1회 발송, `Promise.allSettled` 병렬화 (`app/api/cron/notify-due/route.ts`)
+
+#### HIGH 최적화
+- **Added**: `computePeriodBurndown` export, `computeCycleTimeFromTickets` 인메모리 계산 함수 추가 (`src/db/queries/analytics.ts`)
+- **Removed**: 대시보드 `getWbsTickets` 제거 — `boardData.board` flat에서 파생, `statusCounts` O(1) 접근으로 교체 (`app/workspace/[workspaceId]/page.tsx`)
+- **Removed**: 분석 페이지 `getCycleTimeData`, `getMultiPeriodBurndownData` DB 쿼리 제거 → 인메모리 계산으로 대체 (`app/workspace/[workspaceId]/analytics/page.tsx`)
+- **Added**: DB 인덱스 2개 — `idx_tickets_workspace_completed_at`, `idx_members_workspace_role` (`src/db/schema.ts`)
+
+### 📊 Build Results
+- `npm run lint`: ✅ 에러 0 (기존 unused-vars 경고만 유지)
+- `npm run build`: ✅ 성공 — 27개 정적 페이지, 타입 에러 0
+
+### 📁 Files Modified
+- `src/lib/auth.ts` (+58, -16 lines)
+- `app/api/cron/notify-due/route.ts` (+94, -56 lines)
+- `app/api/tickets/[id]/route.ts` (+57, -40 lines)
+- `src/db/queries/notificationLogs.ts` (+23, -0 lines)
+- `src/db/queries/analytics.ts` (+23, -3 lines)
+- `app/workspace/[workspaceId]/page.tsx` (+23, -16 lines)
+- `app/workspace/[workspaceId]/analytics/page.tsx` (+28, -20 lines)
+- `src/db/schema.ts` (+6, -1 lines)
+- `migrations/meta/_journal.json` (+7, -0 lines)
+
+---
+
 ## [develop] - 2026-03-13 13:08 (멤버 알림 MemberDrawer 연결 + 워크스페이스 참여 한도 + 라벨 단일 소스 + 랜딩 통계 수정)
 
 ### 🎯 Prompts

@@ -110,23 +110,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     let startDate: string | null | undefined = undefined;
     let existing: Awaited<ReturnType<typeof getTicketById>> | null = null;
 
-    if (result.data.status !== undefined) {
-      existing = await getTicketById(ticketId, workspaceId);
-      if (existing) {
-        // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
-        if (
-          result.data.status !== 'BACKLOG' &&
-          existing.status === 'BACKLOG' &&
-          !existing.startDate
-        ) {
-          startDate = new Date().toISOString().slice(0, 10);
-        }
-      }
-
-      if (result.data.status === 'DONE') completedAt = new Date();
-      else completedAt = null;
-    }
-
     const { assigneeIds, ...restData } = result.data;
 
     // Validate multi-assignees before update
@@ -137,11 +120,34 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const ticket = await updateTicket(ticketId, workspaceId, {
-      ...restData,
-      completedAt,
-      ...(startDate !== undefined ? { startDate } : {}),
-    });
+    // Fetch existing ticket when status or assignees change — reused for prevAssignees diff
+    if (result.data.status !== undefined || assigneeIds !== undefined) {
+      existing = await getTicketById(ticketId, workspaceId);
+    }
+
+    if (result.data.status !== undefined) {
+      if (existing) {
+        // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
+        if (
+          result.data.status !== 'BACKLOG' &&
+          existing.status === 'BACKLOG' &&
+          !existing.startDate
+        ) {
+          startDate = new Date().toISOString().slice(0, 10);
+        }
+      }
+      completedAt = result.data.status === 'DONE' ? new Date() : null;
+    }
+
+    // updateTicket and setAssignees are independent — run in parallel
+    const [ticket] = await Promise.all([
+      updateTicket(ticketId, workspaceId, {
+        ...restData,
+        completedAt,
+        ...(startDate !== undefined ? { startDate } : {}),
+      }),
+      assigneeIds !== undefined ? setAssignees(ticketId, assigneeIds) : Promise.resolve(),
+    ]);
 
     if (!ticket) {
       return NextResponse.json(
@@ -150,13 +156,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Capture previous assignees for notification diff
-    const prevAssignees = assigneeIds !== undefined ? await getAssigneesByTicket(ticketId) : [];
-
-    // Update multi-assignees if provided
-    if (assigneeIds !== undefined) {
-      await setAssignees(ticketId, assigneeIds);
-    }
+    // Reuse existing data for prevAssignees — avoids a redundant DB call
+    const prevAssignees = assigneeIds !== undefined ? (existing?.assignees ?? []) : [];
 
     const assignees = await getAssigneesByTicket(ticketId);
     const actorName = (session.user.name as string | null) ?? '사용자';
@@ -263,9 +264,9 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
     if (isRoleError(roleCheck)) return roleCheck;
 
-    // Fetch ticket + assignees before delete for notification
+    // Fetch ticket before delete for notification (assignees included in getTicketById result)
     const ticketToDelete = await getTicketById(ticketId, workspaceId);
-    const assigneesBeforeDelete = ticketToDelete ? await getAssigneesByTicket(ticketId) : [];
+    const assigneesBeforeDelete = ticketToDelete?.assignees ?? [];
 
     const deleted = await deleteTicket(ticketId, workspaceId);
     if (!deleted) {

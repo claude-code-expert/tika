@@ -39,6 +39,29 @@ export async function createNotificationLog(data: {
   return toLog(inserted);
 }
 
+export async function bulkCreateNotificationLogs(
+  items: {
+    workspaceId: number;
+    ticketId?: number | null;
+    channel: NotificationChannelType;
+    message: string;
+    status: NotificationStatus;
+    errorMessage?: string | null;
+  }[],
+): Promise<void> {
+  if (items.length === 0) return;
+  await db.insert(notificationLogs).values(
+    items.map((d) => ({
+      workspaceId: d.workspaceId,
+      ticketId: d.ticketId ?? null,
+      channel: d.channel,
+      message: d.message,
+      status: d.status,
+      errorMessage: d.errorMessage ?? null,
+    })),
+  );
+}
+
 export async function getNotificationLogs(
   workspaceId: number,
   limit = 20,

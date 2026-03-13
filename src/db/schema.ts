@@ -59,7 +59,10 @@ export const members = pgTable(
     joinedAt: timestamp('joined_at', { withTimezone: true }), // null = workspace founder
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique('members_user_workspace_unique').on(table.userId, table.workspaceId)],
+  (table) => [
+    unique('members_user_workspace_unique').on(table.userId, table.workspaceId),
+    index('idx_members_workspace_role').on(table.workspaceId, table.role),
+  ],
 );
 
 // 12. sprints (defined before tickets for FK reference)
@@ -122,6 +125,7 @@ export const tickets = pgTable(
     index('idx_tickets_assignee_id').on(table.assigneeId),
     index('idx_tickets_parent_id').on(table.parentId),
     index('idx_tickets_workspace_deleted').on(table.workspaceId, table.deleted),
+    index('idx_tickets_workspace_completed_at').on(table.workspaceId, table.completedAt),
   ],
 );
 

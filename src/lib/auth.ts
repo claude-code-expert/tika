@@ -35,44 +35,36 @@ export interface SessionUserData {
  * which signals the session callback to invalidate the session.
  */
 export async function buildSessionUser(tokenSub: string): Promise<SessionUserData | null> {
-  // Verify user exists — guards against stale JWT after DB reset or user deletion
-  const [dbUser] = await db
-    .select({ id: users.id, userType: users.userType })
-    .from(users)
-    .where(eq(users.id, tokenSub))
-    .limit(1);
+  // All 3 queries run in parallel — reduces 3 sequential round trips to 1
+  const [[dbUser], [primaryMember], [personalMember]] = await Promise.all([
+    db
+      .select({ id: users.id, userType: users.userType })
+      .from(users)
+      .where(eq(users.id, tokenSub))
+      .limit(1),
+    db
+      .select({ id: members.id, workspaceId: members.workspaceId })
+      .from(members)
+      .where(and(eq(members.userId, tokenSub), eq(members.isPrimary, true)))
+      .limit(1),
+    db
+      .select({ id: members.id, workspaceId: members.workspaceId })
+      .from(members)
+      .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
+      .where(and(eq(members.userId, tokenSub), eq(workspaces.type, 'PERSONAL')))
+      .limit(1),
+  ]);
 
   if (!dbUser) return null;
+  if (!dbUser.userType) return { id: tokenSub, userType: null, workspaceId: null, memberId: null };
 
-  const { userType } = dbUser;
-
-  // NULL type: onboarding incomplete
-  if (!userType) return { id: tokenSub, userType: null, workspaceId: null, memberId: null };
-
-  // Find the primary member record (is_primary = true) to determine default workspace
-  const [primary] = await db
-    .select({ id: members.id, workspaceId: members.workspaceId })
-    .from(members)
-    .where(and(eq(members.userId, tokenSub), eq(members.isPrimary, true)))
-    .limit(1);
-
-  if (primary) {
-    return { id: tokenSub, userType, workspaceId: primary.workspaceId, memberId: primary.id };
-  }
-
-  // Fallback: no primary set — use personal workspace (PERSONAL type owned by user)
-  const [personalMember] = await db
-    .select({ id: members.id, workspaceId: members.workspaceId })
-    .from(members)
-    .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
-    .where(and(eq(members.userId, tokenSub), eq(workspaces.type, 'PERSONAL')))
-    .limit(1);
-
+  // primary wins over personal workspace fallback
+  const member = primaryMember ?? personalMember;
   return {
     id: tokenSub,
-    userType,
-    workspaceId: personalMember?.workspaceId ?? null,
-    memberId: personalMember?.id ?? null,
+    userType: dbUser.userType,
+    workspaceId: member?.workspaceId ?? null,
+    memberId: member?.id ?? null,
   };
 }
 

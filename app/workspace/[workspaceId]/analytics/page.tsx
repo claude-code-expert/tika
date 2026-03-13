@@ -5,9 +5,9 @@ import { getMemberByUserId } from '@/db/queries/members';
 import { getBoardData } from '@/db/queries/tickets';
 import {
   getCfdData,
-  getCycleTimeData,
   getLabelAnalytics,
-  getMultiPeriodBurndownData,
+  computePeriodBurndown,
+  computeCycleTimeFromTickets,
 } from '@/db/queries/analytics';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { BurndownPeriodChart } from '@/components/team/charts/BurndownPeriodChart';
@@ -31,12 +31,11 @@ export default async function TeamAnalyticsPage({
   if (!session?.user) redirect('/login');
 
   const userId = session.user.id as string;
-  const [workspace, member, boardData, cfd, cycleTime, labelAnalytics] = await Promise.all([
+  const [workspace, member, boardData, cfd, labelAnalytics] = await Promise.all([
     getWorkspaceById(workspaceId),
     getMemberByUserId(userId, workspaceId),
     getBoardData(workspaceId),
     getCfdData(workspaceId, 30),
-    getCycleTimeData(workspaceId),
     getLabelAnalytics(workspaceId),
   ]);
   if (!workspace || !member) redirect('/');
@@ -64,16 +63,19 @@ export default async function TeamAnalyticsPage({
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const lastMonthEndStr = lastMonthEnd.toISOString().slice(0, 10);
 
-  const [burndownLastWeek, burndownThisMonth, burndownLastMonth] = await getMultiPeriodBurndownData(
-    workspaceId,
-    [
-      { startDate: lastMonday.toISOString().slice(0, 10), endDate: lastSunday.toISOString().slice(0, 10) },
-      { startDate: thisMonthStart, endDate: todayDate },
-      { startDate: lastMonthStart, endDate: lastMonthEndStr },
-    ],
-  );
-
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
+
+  // Derive burndown and cycle time from in-memory boardData — no extra DB queries
+  const allTicketsFlat = allTickets.map((t) => ({
+    id: t.id,
+    completedAt: t.completedAt ? new Date(t.completedAt) : null,
+    storyPoints: t.storyPoints,
+    createdAt: new Date(t.createdAt),
+  }));
+  const burndownLastWeek = computePeriodBurndown(allTicketsFlat, lastMonday.toISOString().slice(0, 10), lastSunday.toISOString().slice(0, 10));
+  const burndownThisMonth = computePeriodBurndown(allTicketsFlat, thisMonthStart, todayDate);
+  const burndownLastMonth = computePeriodBurndown(allTicketsFlat, lastMonthStart, lastMonthEndStr);
+  const cycleTime = computeCycleTimeFromTickets(boardData.board.DONE);
   const total = allTickets.length;
 
   // Single-pass stats

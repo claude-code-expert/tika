@@ -18,17 +18,17 @@ Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드
 
 ## Tech Stack
 
-| Category | Technology | Version |
-|----------|-----------|---------|
-| Framework | Next.js (App Router) | 15 |
-| Language | TypeScript (strict) | 5.7 |
-| UI | React + Tailwind CSS | 19 / 4 |
-| Drag & Drop | @dnd-kit | 6.x |
-| ORM | Drizzle ORM | 0.38 |
-| Database | PostgreSQL (Neon) | 14+ |
-| Auth | NextAuth.js (Google OAuth) | 5.x |
-| Validation | Zod | 3.24 |
-| Deploy | Vercel | — |
+| Category    | Technology                 | Version |
+| ----------- | -------------------------- | ------- |
+| Framework   | Next.js (App Router)       | 15      |
+| Language    | TypeScript (strict)        | 5.7     |
+| UI          | React + Tailwind CSS       | 19 / 4  |
+| Drag & Drop | @dnd-kit                   | 6.x     |
+| ORM         | Drizzle ORM                | 0.38    |
+| Database    | PostgreSQL (Neon)          | 14+     |
+| Auth        | NextAuth.js (Google OAuth) | 5.x     |
+| Validation  | Zod                        | 3.24    |
+| Deploy      | Vercel                     | —       |
 
 ---
 
@@ -51,7 +51,7 @@ NEXTAUTH_SECRET=          # openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-CRON_SECRET=              # openssl rand -base64 32  ← 크론 인증 토큰
+CRON_SECRET=              # openssl rand -base64 32  ← 크론 인증 토큰(알림용)
 SLACK_WEBHOOK_URL=        # 문의 폼 → Slack 알림 (선택)
 ```
 
@@ -96,17 +96,21 @@ openssl rand -base64 32
 
 1. `https://github.com/{owner}/{repo}/settings/secrets/actions` 접속
 2. **"New repository secret"** 버튼 클릭 → 첫 번째 시크릿 입력:
+
    ```
    Name:   APP_URL
    Secret: https://your-domain.vercel.app
    ```
+
    → **Add secret** 클릭
 
 3. 다시 **"New repository secret"** 버튼 클릭 → 두 번째 시크릿 입력:
+
    ```
    Name:   CRON_SECRET
    Secret: (1단계에서 생성한 값, .env.local의 CRON_SECRET과 동일)
    ```
+
    → **Add secret** 클릭
 
 4. 목록에 `APP_URL`, `CRON_SECRET` 두 개가 표시되면 완료
@@ -116,23 +120,23 @@ openssl rand -base64 32
 
 #### 수동 테스트
 
-GitHub → Actions 탭 → **Daily D-1 Notification** → **Run workflow** 버튼으로 즉시 실행 가능합니다.
+GitHub → Actions 탭 → **Daily D-1 Notification** 선택 → **Run workflow** 버튼으로 즉시 실행 가능합니다.
 
 ---
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | 개발 서버 |
-| `npm run build` | 프로덕션 빌드 |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run db:generate` | 마이그레이션 파일 생성 |
-| `npm run db:migrate` | 마이그레이션 적용 |
-| `npm run db:studio` | Drizzle Studio (DB GUI) |
-| `npm run db:seed` | 시드 데이터 삽입 |
-| `npm run test` | Jest 테스트 |
+| Command               | Description             |
+| --------------------- | ----------------------- |
+| `npm run dev`         | 개발 서버               |
+| `npm run build`       | 프로덕션 빌드           |
+| `npm run lint`        | ESLint                  |
+| `npm run format`      | Prettier                |
+| `npm run db:generate` | 마이그레이션 파일 생성  |
+| `npm run db:migrate`  | 마이그레이션 적용       |
+| `npm run db:studio`   | Drizzle Studio (DB GUI) |
+| `npm run db:seed`     | 시드 데이터 삽입        |
+| `npm run test`        | Jest 테스트             |
 
 ---
 

@@ -102,10 +102,16 @@ export default async function TeamDashboardPage({
     { key: 'FEATURE', label: 'Feature', abbr: 'F', trackBg: '#D1FAE5', fillBg: '#059669' },
     { key: 'TASK', label: 'Task', abbr: 'T', trackBg: '#F3F4F6', fillBg: '#9CA3AF' },
   ] as const;
+  const typeAcc: Record<string, { total: number; done: number }> = { GOAL: { total: 0, done: 0 }, STORY: { total: 0, done: 0 }, FEATURE: { total: 0, done: 0 }, TASK: { total: 0, done: 0 } };
+  for (const t of allTickets) {
+    if (typeAcc[t.type]) {
+      typeAcc[t.type].total++;
+      if (t.status === 'DONE') typeAcc[t.type].done++;
+    }
+  }
   const typeDist = TYPE_DIST.map((td) => {
-    const items = allTickets.filter((t) => t.type === td.key);
-    const done = items.filter((t) => t.status === 'DONE').length;
-    return { ...td, total: items.length, done, pct: items.length > 0 ? Math.round((done / items.length) * 100) : 0 };
+    const { total, done } = typeAcc[td.key];
+    return { ...td, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
   });
   const wbsTotal = allTickets.length;
 

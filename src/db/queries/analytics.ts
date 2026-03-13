@@ -222,6 +222,27 @@ export async function getVelocityData(workspaceId: number): Promise<VelocitySpri
 
 // ─── Cycle Time ───────────────────────────────────────────────────────────────
 
+function bucketCycleTime(
+  items: { completedAt: Date | string | null; createdAt: Date | string }[],
+): CycleTimeDistribution[] {
+  const distribution: Record<number, number> = {};
+  for (const t of items) {
+    if (t.completedAt) {
+      const completed = typeof t.completedAt === 'string' ? new Date(t.completedAt) : t.completedAt;
+      const created = typeof t.createdAt === 'string' ? new Date(t.createdAt) : t.createdAt;
+      const days = Math.max(
+        0,
+        Math.ceil((completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+      const bucket = Math.min(days, 30);
+      distribution[bucket] = (distribution[bucket] ?? 0) + 1;
+    }
+  }
+  return Object.entries(distribution)
+    .map(([days, count]) => ({ days: Number(days), count }))
+    .sort((a, b) => a.days - b.days);
+}
+
 export async function getCycleTimeData(workspaceId: number): Promise<CycleTimeDistribution[]> {
   const completedTickets = await db
     .select({ createdAt: tickets.createdAt, completedAt: tickets.completedAt })
@@ -234,43 +255,11 @@ export async function getCycleTimeData(workspaceId: number): Promise<CycleTimeDi
         eq(tickets.deleted, false),
       ),
     );
-
-  const distribution: Record<number, number> = {};
-
-  for (const t of completedTickets) {
-    if (t.completedAt) {
-      const days = Math.max(
-        0,
-        Math.ceil((t.completedAt.getTime() - t.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
-      );
-      const bucket = Math.min(days, 30);
-      distribution[bucket] = (distribution[bucket] ?? 0) + 1;
-    }
-  }
-
-  return Object.entries(distribution)
-    .map(([days, count]) => ({ days: Number(days), count }))
-    .sort((a, b) => a.days - b.days);
+  return bucketCycleTime(completedTickets);
 }
 
 export function computeCycleTimeFromTickets(doneTix: TicketWithMeta[]): CycleTimeDistribution[] {
-  const distribution: Record<number, number> = {};
-  for (const t of doneTix) {
-    if (t.completedAt) {
-      const days = Math.max(
-        0,
-        Math.ceil(
-          (new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      );
-      const bucket = Math.min(days, 30);
-      distribution[bucket] = (distribution[bucket] ?? 0) + 1;
-    }
-  }
-  return Object.entries(distribution)
-    .map(([days, count]) => ({ days: Number(days), count }))
-    .sort((a, b) => a.days - b.days);
+  return bucketCycleTime(doneTix);
 }
 
 // ─── Label Analytics ──────────────────────────────────────────────────────────

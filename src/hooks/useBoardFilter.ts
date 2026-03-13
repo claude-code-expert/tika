@@ -70,21 +70,25 @@ export function useBoardFilter(
     [allTickets],
   );
 
-  const weekStartStr = useMemo(() => {
+  const { weekStartStr, weekFridayStr } = useMemo(() => {
     const now = new Date();
-    const day = now.getDay();
+    const day = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1)); // Monday
-    return localDateStr(weekStart);
+    const weekFriday = new Date(weekStart);
+    weekFriday.setDate(weekStart.getDate() + 4); // Friday
+    return { weekStartStr: localDateStr(weekStart), weekFridayStr: localDateStr(weekFriday) };
   }, []);
 
   const weekDoneCount = useMemo(() => {
     return allTickets.filter((t) => {
-      if (t.status !== 'DONE' || !t.completedAt) return false;
-      const completedDate = t.completedAt.slice(0, 10);
-      return completedDate >= weekStartStr;
+      // 이번 주 완료된 티켓
+      if (t.status === 'DONE' && t.completedAt && t.completedAt.slice(0, 10) >= weekStartStr) return true;
+      // 이번 주 금요일까지 완료해야 할 티켓 (미완료)
+      if (t.status !== 'DONE' && t.plannedEndDate && t.plannedEndDate <= weekFridayStr) return true;
+      return false;
     }).length;
-  }, [allTickets, weekStartStr]);
+  }, [allTickets, weekStartStr, weekFridayStr]);
 
   const hasActiveFilters =
     activeFilter !== 'all' ||
@@ -130,8 +134,12 @@ export function useBoardFilter(
       } else if (activeFilter === 'overdue') {
         df = (t) => t.isOverdue;
       } else {
-        // week_done
-        df = (t) => t.status === 'DONE' && !!t.completedAt && t.completedAt.slice(0, 10) >= weekStartStr;
+        // week_done: 이번 주 완료 OR 이번 주 금요일까지 마감 미완료
+        df = (t) => {
+          if (t.status === 'DONE' && t.completedAt && t.completedAt.slice(0, 10) >= weekStartStr) return true;
+          if (t.status !== 'DONE' && t.plannedEndDate && t.plannedEndDate <= weekFridayStr) return true;
+          return false;
+        };
       }
       base = applyFilter(base, df);
     }
@@ -155,7 +163,7 @@ export function useBoardFilter(
 
     const total = Object.values(base.board).reduce((s, arr) => s + arr.length, 0);
     return { ...base, total };
-  }, [board, searchQuery, activeFilter, activePriorities, activeTypes, dueDateFrom, dueDateTo, todayStr, weekStartStr]);
+  }, [board, searchQuery, activeFilter, activePriorities, activeTypes, dueDateFrom, dueDateTo, todayStr, weekStartStr, weekFridayStr]);
 
   return {
     displayBoard,

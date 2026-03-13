@@ -50,11 +50,16 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
     router.push(`/workspace/${ticket.workspaceId}/${ticket.id}`);
   };
 
-  const style = useMemo(() => ({
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  }), [transform, transition, isDragging]);
+  const handleNavigateToParent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isDragging || !ticket.parent) return;
+    router.push(`/workspace/${ticket.workspaceId}/${ticket.parent.id}`);
+  };
+
+  const dndTransform = CSS.Transform.toString(transform);
+  const mergedTransition = isDragging
+    ? undefined
+    : [transition, 'box-shadow 0.15s, border-color 0.15s'].filter(Boolean).join(', ');
 
   const completedCount = useMemo(
     () => ticket.checklistItems.filter((c) => c.isCompleted).length,
@@ -85,14 +90,15 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
     <div
       ref={setNodeRef}
       style={{
-        ...style,
+        transform: dndTransform ?? undefined,
+        transition: mergedTransition,
+        opacity: isDragging ? 0.4 : 1,
         background: 'var(--color-card-bg)',
         border: ticket.isOverdue ? '2px solid #DC2626' : '1px solid var(--color-border)',
         borderRadius: 7,
         padding: 12,
         boxShadow: 'var(--shadow-card)',
         cursor: 'pointer',
-        transition: isDragging ? undefined : 'box-shadow 0.15s, border-color 0.15s',
       }}
       {...attributes}
       {...listeners}
@@ -206,6 +212,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
       {ticket.parent && parentStyle && (
         <div style={{ marginBottom: 6 }}>
           <span
+            onClick={handleNavigateToParent}
             style={{
               fontSize: 10,
               fontWeight: 600,
@@ -218,6 +225,17 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              textDecorationColor: parentStyle.color,
+              transition: 'text-decoration 0.12s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+              e.currentTarget.style.textDecorationColor = parentStyle.color;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
             }}
           >
             {ticket.parent.title}

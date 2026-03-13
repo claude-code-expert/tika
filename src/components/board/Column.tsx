@@ -1,10 +1,11 @@
 'use client';
 
-import { memo, useMemo } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { memo, useMemo, Fragment } from 'react';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { TicketStatus, TicketWithMeta } from '@/types/index';
 import { TicketCard } from './TicketCard';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 const COLUMN_HEADER_BG: Partial<Record<TicketStatus, string>> = {
   TODO: 'var(--color-col-todo)',
@@ -22,7 +23,18 @@ interface ColumnProps {
 
 function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { active, over } = useDndContext();
   const sortableItems = useMemo(() => tickets.map((t) => t.id), [tickets]);
+
+  // Determine where to show the drop indicator line
+  const dropIndicatorIdx = useMemo(() => {
+    if (!active || !over || active.id === over.id) return -1;
+    const overIdx = tickets.findIndex((t) => t.id === Number(over.id));
+    if (overIdx !== -1) return overIdx;
+    // Hovering on column itself (empty area) → show at end
+    if (over.id === status && isOver) return tickets.length;
+    return -1;
+  }, [active, over, tickets, status, isOver]);
 
   return (
     <div
@@ -47,16 +59,36 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
           background: COLUMN_HEADER_BG[status] ?? 'var(--color-col-backlog)',
         }}
       >
-        <span
-          style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-          }}
-        >
-          {label}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            {label}
+          </span>
+          {status === 'IN_PROGRESS' && tickets.length > 3 && (
+            <Tooltip
+              content={`적정 칸반 티켓수 = 3, 현재 ${tickets.length - 3}건 초과`}
+              position="bottom"
+            >
+              <span
+                title="WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다"
+                style={{
+                  fontSize: 11, fontWeight: 700, color: '#D97706',
+                  background: '#FEF3C7', borderRadius: 6,
+                  padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: 3,
+                  cursor: 'default',
+                }}
+              >
+                ⚠ {tickets.length}/3
+              </span>
+            </Tooltip>
+          )}
+        </div>
         <span
           style={{
             fontSize: 11,
@@ -88,9 +120,27 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
         }}
       >
         <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
-          {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
+          {tickets.map((ticket, idx) => (
+            <Fragment key={ticket.id}>
+              {idx === dropIndicatorIdx && Number(active?.id) !== ticket.id && (
+                <div style={{
+                  height: 3,
+                  background: 'var(--color-accent, #629584)',
+                  borderRadius: 2,
+                  transition: 'opacity 0.15s',
+                }} />
+              )}
+              <TicketCard ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
+            </Fragment>
           ))}
+          {dropIndicatorIdx === tickets.length && (
+            <div style={{
+              height: 3,
+              background: 'var(--color-accent, #629584)',
+              borderRadius: 2,
+              transition: 'opacity 0.15s',
+            }} />
+          )}
         </SortableContext>
 
         {/* Empty state */}

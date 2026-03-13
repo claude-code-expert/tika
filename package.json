@@ -4,6 +4,7 @@
   "private": true,
   "description": "Tika - Ticket-based Kanban Board TODO App",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

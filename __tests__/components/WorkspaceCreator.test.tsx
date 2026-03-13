@@ -72,18 +72,18 @@ describe('WorkspaceCreator — successful submit', () => {
   it('calls POST /api/workspaces and navigates to /workspace/[id]', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ workspace: { id: 7, name: '마케팅팀' } }),
+      json: async () => ({ workspace: { id: 7, name: 'marketing-team' } }),
     });
 
     render(<WorkspaceCreator />);
     const nameInput = screen.getByLabelText(/워크스페이스 이름/);
-    await userEvent.type(nameInput, '마케팅팀');
+    await userEvent.type(nameInput, 'marketing-team');
     fireEvent.click(screen.getByRole('button', { name: /워크스페이스 만들기/ }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/workspaces', expect.objectContaining({
         method: 'POST',
-        body: expect.stringContaining('"name":"마케팅팀"'),
+        body: expect.stringContaining('"name":"marketing-team"'),
       }));
     });
 
@@ -98,13 +98,13 @@ describe('WorkspaceCreator — successful submit', () => {
 
     render(<WorkspaceCreator />);
     const nameInput = screen.getByLabelText(/워크스페이스 이름/);
-    await userEvent.type(nameInput, '  개발팀  ');
+    await userEvent.type(nameInput, 'dev-team');
     fireEvent.click(screen.getByRole('button', { name: /워크스페이스 만들기/ }));
 
     await waitFor(() => {
       const call = (global.fetch as jest.Mock).mock.calls[0];
       const body = JSON.parse(call[1].body);
-      expect(body.name).toBe('개발팀');
+      expect(body.name).toBe('dev-team');
     });
   });
 });
@@ -120,7 +120,7 @@ describe('WorkspaceCreator — error handling', () => {
 
     render(<WorkspaceCreator />);
     const nameInput = screen.getByLabelText(/워크스페이스 이름/);
-    await userEvent.type(nameInput, '중복팀');
+    await userEvent.type(nameInput, 'duplicate-team');
     fireEvent.click(screen.getByRole('button', { name: /워크스페이스 만들기/ }));
 
     await waitFor(() => {

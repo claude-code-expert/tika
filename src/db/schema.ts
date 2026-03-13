@@ -28,14 +28,14 @@ export const users = pgTable('users', {
 // 2. workspaces
 export const workspaces = pgTable('workspaces', {
   id: serial('id').primaryKey(),
-  name: varchar('name', { length: 100 }).notNull().default('내 워크스페이스'),
+  name: varchar('name', { length: 100 }).notNull().default('My-Workspace'),
   description: text('description'),
   ownerId: text('owner_id')
     .notNull()
     .references(() => users.id),
   type: varchar('type', { length: 10 }).notNull().default('PERSONAL'), // 'PERSONAL' | 'TEAM'
   iconColor: varchar('icon_color', { length: 7 }), // HEX color for workspace icon (e.g. '#629584')
-  isSearchable: boolean('is_searchable').notNull().default(false), // false = private, true = visible in search
+  isSearchable: boolean('is_searchable').notNull().default(true), // false = private, true = visible in search
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -290,6 +290,54 @@ export const notificationSignups = pgTable(
   (table) => [
     unique('notification_signups_email_type_unique').on(table.email, table.type),
     index('idx_notification_signups_type_send').on(table.type, table.send),
+  ],
+);
+
+// 17. in_app_notifications — per-user in-app notification records
+export const inAppNotifications = pgTable(
+  'in_app_notifications',
+  {
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    workspaceId: integer('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 30 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    message: text('message').notNull(),
+    link: text('link'),
+    actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    refType: varchar('ref_type', { length: 20 }), // 'ticket' | 'sprint' | 'member' | 'invite'
+    refId: integer('ref_id'),
+    isRead: boolean('is_read').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_in_app_notifications_user_read').on(table.userId, table.isRead),
+    index('idx_in_app_notifications_user_created').on(table.userId, table.createdAt),
+    index('idx_in_app_notifications_workspace').on(table.workspaceId),
+  ],
+);
+
+// 18. notification_preferences — per-user notification type on/off settings
+export const notificationPreferences = pgTable(
+  'notification_preferences',
+  {
+    id: serial('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 30 }).notNull(),
+    inAppEnabled: boolean('in_app_enabled').notNull().default(true),
+    slackEnabled: boolean('slack_enabled').notNull().default(false),
+    telegramEnabled: boolean('telegram_enabled').notNull().default(false),
+  },
+  (table) => [
+    unique('notification_preferences_user_ws_type').on(table.userId, table.workspaceId, table.type),
+    index('idx_notification_preferences_user_workspace').on(table.userId, table.workspaceId),
   ],
 );
 

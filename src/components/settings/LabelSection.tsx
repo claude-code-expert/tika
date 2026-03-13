@@ -12,6 +12,18 @@ const PALETTE = [
   '#ffac6d', '#f7d1d1', '#f7a2ff', '#c1d1ff', '#c5dbdc',
 ];
 
+const DEFAULT_TEMPLATE_LABELS = [
+  { name: 'Plan',     color: '#2b7fff' },
+  { name: 'Frontend', color: '#615fff' },
+  { name: 'Backend',  color: '#00c950' },
+  { name: 'Analyze',  color: '#ad46ff' },
+  { name: 'Test',     color: '#ffac6d' },
+  { name: 'Debug',    color: '#fb2c36' },
+  { name: 'Design',   color: '#ff29d3' },
+  { name: 'Infra',    color: '#89d0f0' },
+  { name: 'QA',       color: '#46e264' },
+];
+
 
 function ColorSwatches({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) {
   return (
@@ -34,24 +46,35 @@ function ColorSwatches({ selected, onSelect }: { selected: string; onSelect: (c:
   );
 }
 
-function ConfirmDialog({ title, message, onConfirm, onCancel }: { title: string; message: string; onConfirm: () => void; onCancel: () => void }) {
+function ConfirmDialog({
+  title, message, onConfirm, onCancel,
+  confirmLabel = '삭제', confirmVariant = 'danger', children,
+}: {
+  title: string; message: string; onConfirm: () => void; onCancel: () => void;
+  confirmLabel?: string; confirmVariant?: 'danger' | 'primary'; children?: React.ReactNode;
+}) {
+  const confirmStyle = confirmVariant === 'primary'
+    ? { background: '#629584', border: 'none', color: '#fff' }
+    : { background: '#fff', border: '1px solid #FECACA', color: '#DC2626' };
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(9,30,66,0.54)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,.2)', padding: 24, maxWidth: 380, width: '90%' }}>
+      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,.2)', padding: 24, maxWidth: 420, width: '90%' }}>
         <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{title}</div>
-        <div style={{ fontSize: 12, color: '#5A6B7F', lineHeight: 1.6, marginBottom: 20 }}>{message}</div>
+        <div style={{ fontSize: 12, color: '#5A6B7F', lineHeight: 1.6, marginBottom: children ? 12 : 20 }}>{message}</div>
+        {children && <div style={{ marginBottom: 20 }}>{children}</div>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onCancel} style={{ height: 32, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #DFE1E6', color: '#5A6B7F' }}>취소</button>
-          <button onClick={onConfirm} style={{ height: 32, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #FECACA', color: '#DC2626' }}>삭제</button>
+          <button onClick={onConfirm} style={{ height: 32, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', ...confirmStyle }}>{confirmLabel}</button>
         </div>
       </div>
     </div>
   );
 }
 
+// workspaceId prop received but /api/labels uses session.workspaceId server-side
 export function LabelSection({ showToast }: SectionProps) {
   const [labels, setLabels] = useState<LabelWithCount[]>([]);
   const [creatorOpen, setCreatorOpen] = useState(false);
@@ -61,6 +84,11 @@ export function LabelSection({ showToast }: SectionProps) {
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState(PALETTE[0]);
   const [confirmDelete, setConfirmDelete] = useState<LabelWithCount | null>(null);
+  const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [selectedTemplateNames, setSelectedTemplateNames] = useState<Set<string>>(
+    () => new Set(DEFAULT_TEMPLATE_LABELS.map((l) => l.name)),
+  );
   const newNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -138,6 +166,34 @@ export function LabelSection({ showToast }: SectionProps) {
     }
   }
 
+  async function handleCreateTemplate() {
+    setShowTemplateConfirm(false);
+    setIsCreatingTemplate(true);
+    const existingNames = new Set(labels.map((l) => l.name.toLowerCase()));
+    const toCreate = DEFAULT_TEMPLATE_LABELS.filter(
+      (l) => selectedTemplateNames.has(l.name) && !existingNames.has(l.name.toLowerCase()),
+    );
+    if (labels.length + toCreate.length > 20) {
+      showToast('라벨 한도(20개)를 초과합니다', 'fail');
+      setIsCreatingTemplate(false);
+      return;
+    }
+    let created = 0;
+    for (const label of toCreate) {
+      const res = await fetch('/api/labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: label.name, color: label.color }),
+      });
+      if (res.ok) created++;
+    }
+    await fetchLabels();
+    mutate('/api/labels');
+    setIsCreatingTemplate(false);
+    if (created > 0) showToast(`기본 라벨 ${created}개가 생성되었습니다`, 'success');
+    else showToast('이미 모든 기본 라벨이 존재합니다', 'fail');
+  }
+
   function startEdit(label: LabelWithCount) {
     setEditingId(label.id);
     setEditName(label.name);
@@ -156,12 +212,25 @@ export function LabelSection({ showToast }: SectionProps) {
           라벨 관리
           <span style={{ fontSize: 12, fontWeight: 400, color: '#8993A4' }}>({labels.length}/20)</span>
         </h2>
-        <button
-          onClick={() => { setCreatorOpen((v) => !v); setTimeout(() => newNameRef.current?.focus(), 50); }}
-          style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-        >
-          <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> 새 라벨 추가
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => {
+              setSelectedTemplateNames(new Set(DEFAULT_TEMPLATE_LABELS.map((l) => l.name)));
+              setShowTemplateConfirm(true);
+            }}
+            disabled={isCreatingTemplate}
+            style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: isCreatingTemplate ? 'default' : 'pointer', background: '#fff', color: '#629584', border: '1px solid #629584', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: isCreatingTemplate ? 0.6 : 1 }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>⚡</span>
+            {isCreatingTemplate ? '생성 중...' : '기본 라벨 자동 생성'}
+          </button>
+          <button
+            onClick={() => { setCreatorOpen((v) => !v); setTimeout(() => newNameRef.current?.focus(), 50); }}
+            style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#629584', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> 새 라벨 추가
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 12, color: '#8993A4', marginBottom: 20, lineHeight: 1.6 }}>
         티켓에 사용할 라벨을 관리합니다. 최대 20개까지 생성할 수 있으며, 라벨 삭제 시 연결된 티켓에서 자동으로 제거됩니다.
@@ -246,6 +315,47 @@ export function LabelSection({ showToast }: SectionProps) {
           onConfirm={() => handleDelete(confirmDelete)}
           onCancel={() => setConfirmDelete(null)}
         />
+      )}
+
+      {showTemplateConfirm && (
+        <ConfirmDialog
+          title="기본 라벨 자동 생성"
+          message="생성할 라벨을 선택하세요. 이미 존재하는 라벨은 건너뜁니다."
+          confirmLabel={`생성 (${selectedTemplateNames.size}개)`}
+          confirmVariant="primary"
+          onConfirm={handleCreateTemplate}
+          onCancel={() => setShowTemplateConfirm(false)}
+        >
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {DEFAULT_TEMPLATE_LABELS.map((l) => {
+              const selected = selectedTemplateNames.has(l.name);
+              return (
+                <button
+                  key={l.name}
+                  type="button"
+                  onClick={() => setSelectedTemplateNames((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(l.name)) next.delete(l.name); else next.add(l.name);
+                    return next;
+                  })}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    height: 20, padding: '0 8px', borderRadius: 4,
+                    fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    background: selected ? 'transparent' : '#F1F3F6',
+                    color: selected ? '#2C3E50' : '#A0AEC0',
+                    border: `1px solid ${selected ? l.color : '#DFE1E6'}`,
+                    opacity: selected ? 1 : 0.5,
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {l.name}
+                </button>
+              );
+            })}
+          </div>
+        </ConfirmDialog>
       )}
     </div>
   );

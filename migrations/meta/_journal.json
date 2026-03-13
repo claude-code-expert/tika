@@ -113,6 +113,20 @@
       "when": 1772934654369,
       "tag": "0015_lively_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773105144424,
+      "tag": "0016_moaning_kingpin",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1773152914126,
+      "tag": "0017_bizarre_annihilus",
+      "breakpoints": true
     }
   ]
 }

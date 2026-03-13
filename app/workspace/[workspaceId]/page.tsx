@@ -41,6 +41,10 @@ export default async function TeamDashboardPage({
     redirect('/');
   }
 
+  if (workspace.type === 'PERSONAL') {
+    redirect('/');
+  }
+
   const role = member.role as TeamRole;
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];

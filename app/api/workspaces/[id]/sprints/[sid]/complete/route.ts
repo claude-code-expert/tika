@@ -4,6 +4,9 @@ import { requireRole, isRoleError } from '@/lib/permissions';
 import { getSprintById, completeSprint } from '@/db/queries/sprints';
 import { updateTicket } from '@/db/queries/tickets';
 import { completeSprintSchema } from '@/lib/validations';
+import { getMembersByWorkspace } from '@/db/queries/members';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildSprintCompletedMessage } from '@/lib/notifications';
 
 type RouteParams = { params: Promise<{ id: string; sid: string }> };
 
@@ -74,6 +77,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 500 },
       );
     }
+
+    // Notify all workspace members
+    const wsMembers = await getMembersByWorkspace(workspaceId);
+    const { title, message } = buildSprintCompletedMessage(sprint.name);
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.SPRINT_COMPLETED,
+      title,
+      message,
+      link: `/workspace/${workspaceId}/board`,
+      actorId: userId,
+      recipientUserIds: wsMembers.map((m) => m.userId),
+      refType: 'sprint',
+      refId: sprintId,
+    }).catch((e) => console.error('Notification error (sprint completed):', e));
 
     return NextResponse.json({ sprint: completed, movedCount });
   } catch (error) {

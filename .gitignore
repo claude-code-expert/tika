@@ -8,7 +8,6 @@ node_modules/
 out/
 # production
 build/
-docs/phase
 # env files
 .env
 .env.local
@@ -16,7 +15,7 @@ docs/phase
 .env.test.local
 .env.production.local
 
-docs/phase/
+# docs/phase/
 
 
 # debug

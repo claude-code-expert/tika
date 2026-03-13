@@ -144,7 +144,7 @@ export function buildMemberRemovedMessage(workspaceName: string) {
 export function buildJoinRequestReceivedMessage(requesterName: string, workspaceName: string) {
   return {
     title: '참여 신청',
-    message: `${requesterName}님이 '${workspaceName}' 워크스페이스에 참여를 신청했습니다`,
+    message: `${requesterName}님이 '${workspaceName}' 워크스페이스에 참여를 신청했습니다. 멤버 관리에서 승인해주세요.`,
   };
 }
 

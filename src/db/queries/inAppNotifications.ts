@@ -163,7 +163,7 @@ export async function markAllInAppNotificationsAsRead(userId: string): Promise<n
 
 // ----- Cleanup -----
 
-export async function deleteOldInAppNotifications(daysOld = 90): Promise<number> {
+export async function deleteOldInAppNotifications(daysOld = 7): Promise<number> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysOld);
 

@@ -56,10 +56,15 @@ export async function withdrawUser(userId: string): Promise<void> {
 
 export async function getLandingStats(): Promise<{
   totalUsers: number;
+  totalWorkspaces: number;
   recentUsers: { name: string; bgcolor: string | null }[];
 }> {
-  const [countResult, recentUsers] = await Promise.all([
+  const [countResult, wsCountResult, recentUsers] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(users),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(workspaces)
+      .where(eq(workspaces.type, 'TEAM')),
     db
       .select({ name: users.name, bgcolor: users.bgcolor })
       .from(users)
@@ -68,6 +73,7 @@ export async function getLandingStats(): Promise<{
   ]);
   return {
     totalUsers: countResult[0]?.count ?? 0,
+    totalWorkspaces: wsCountResult[0]?.count ?? 0,
     recentUsers,
   };
 }

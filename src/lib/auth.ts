@@ -1,8 +1,7 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { db } from '@/db/index';
-import { users, workspaces, members, labels } from '@/db/schema';
-import { DEFAULT_LABELS } from '@/lib/constants';
+import { users, workspaces, members } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 async function createPersonalWorkspace(userId: string, userName: string) {
@@ -19,14 +18,6 @@ async function createPersonalWorkspace(userId: string, userName: string) {
     role: 'OWNER',
     isPrimary: true,
   });
-
-  await db.insert(labels).values(
-    DEFAULT_LABELS.map((l) => ({
-      workspaceId: newWorkspace.id,
-      name: l.name,
-      color: l.color,
-    })),
-  );
 
   return newWorkspace;
 }

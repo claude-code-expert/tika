@@ -1,4 +1,4 @@
-import { eq, sql, desc, and } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { users, members, workspaces } from '@/db/schema';
 
@@ -61,10 +61,7 @@ export async function getLandingStats(): Promise<{
 }> {
   const [countResult, wsCountResult, recentUsers] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(users),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(workspaces)
-      .where(eq(workspaces.type, 'TEAM')),
+    db.select({ count: sql<number>`count(*)::int` }).from(workspaces),
     db
       .select({ name: users.name, bgcolor: users.bgcolor })
       .from(users)

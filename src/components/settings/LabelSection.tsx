@@ -5,23 +5,12 @@ import { mutate } from 'swr';
 import type { SectionProps } from './types';
 import type { LabelWithCount } from '@/types/index';
 import { LabelBadge } from '@/components/label/LabelBadge';
+import { DEFAULT_LABELS } from '@/lib/constants';
 
 const PALETTE = [
   '#fb2c36', '#615fff', '#00c950', '#2b7fff', '#ad46ff', '#ff29d3',
   '#a0628c', '#89d0f0', '#71e4bf', '#46e264', '#caee68', '#fffe92',
   '#ffac6d', '#f7d1d1', '#f7a2ff', '#c1d1ff', '#c5dbdc',
-];
-
-const DEFAULT_TEMPLATE_LABELS = [
-  { name: 'Plan',     color: '#2b7fff' },
-  { name: 'Frontend', color: '#615fff' },
-  { name: 'Backend',  color: '#00c950' },
-  { name: 'Analyze',  color: '#ad46ff' },
-  { name: 'Test',     color: '#ffac6d' },
-  { name: 'Debug',    color: '#fb2c36' },
-  { name: 'Design',   color: '#ff29d3' },
-  { name: 'Infra',    color: '#89d0f0' },
-  { name: 'QA',       color: '#46e264' },
 ];
 
 
@@ -87,7 +76,7 @@ export function LabelSection({ showToast }: SectionProps) {
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [selectedTemplateNames, setSelectedTemplateNames] = useState<Set<string>>(
-    () => new Set(DEFAULT_TEMPLATE_LABELS.map((l) => l.name)),
+    () => new Set(DEFAULT_LABELS.map((l) => l.name)),
   );
   const newNameRef = useRef<HTMLInputElement>(null);
 
@@ -170,7 +159,7 @@ export function LabelSection({ showToast }: SectionProps) {
     setShowTemplateConfirm(false);
     setIsCreatingTemplate(true);
     const existingNames = new Set(labels.map((l) => l.name.toLowerCase()));
-    const toCreate = DEFAULT_TEMPLATE_LABELS.filter(
+    const toCreate = DEFAULT_LABELS.filter(
       (l) => selectedTemplateNames.has(l.name) && !existingNames.has(l.name.toLowerCase()),
     );
     if (labels.length + toCreate.length > 20) {
@@ -215,7 +204,7 @@ export function LabelSection({ showToast }: SectionProps) {
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => {
-              setSelectedTemplateNames(new Set(DEFAULT_TEMPLATE_LABELS.map((l) => l.name)));
+              setSelectedTemplateNames(new Set(DEFAULT_LABELS.map((l) => l.name)));
               setShowTemplateConfirm(true);
             }}
             disabled={isCreatingTemplate}
@@ -327,7 +316,7 @@ export function LabelSection({ showToast }: SectionProps) {
           onCancel={() => setShowTemplateConfirm(false)}
         >
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {DEFAULT_TEMPLATE_LABELS.map((l) => {
+            {DEFAULT_LABELS.map((l) => {
               const selected = selectedTemplateNames.has(l.name);
               return (
                 <button

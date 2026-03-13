@@ -122,7 +122,7 @@ export default async function LoginPage({
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              총 {totalUsers.toLocaleString()}팀, {totalWorkspaces.toLocaleString()}개의 워크스페이스가 사용중
+              총 {totalUsers.toLocaleString()}명, {totalWorkspaces.toLocaleString()}개의 워크스페이스가 사용중
             </span>
           </div>
         )}

@@ -19,9 +19,10 @@ const COLUMN_LABELS: Partial<Record<TicketStatus, string>> = {
 interface BoardProps {
   board: BoardData;
   onTicketClick: (ticket: TicketWithMeta) => void;
+  currentMemberId?: number | null;
 }
 
-export function Board({ board, onTicketClick }: BoardProps) {
+export function Board({ board, onTicketClick, currentMemberId }: BoardProps) {
   return (
     <div
       style={{
@@ -41,6 +42,7 @@ export function Board({ board, onTicketClick }: BoardProps) {
           tickets={board.board[status]}
           onTicketClick={onTicketClick}
           workspaceName={board.workspaceName}
+          currentMemberId={currentMemberId}
         />
       ))}
     </div>

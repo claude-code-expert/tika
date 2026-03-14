@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { TicketForm } from '@/components/ticket/TicketForm';
 import { GeneralSection } from './GeneralSection';
 import { NotificationPreferencesSection } from './NotificationPreferencesSection';
 import { LabelSection } from './LabelSection';
 import type { SectionKey, ToastType } from './types';
+import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 
 interface ToastState {
   message: string;
@@ -50,9 +52,30 @@ const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
 
 export function SettingsShell({ workspaceId }: { workspaceId: number }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialSection = (searchParams.get('section') as SectionKey) ?? 'general';
   const [activeSection, setActiveSection] = useState<SectionKey>(initialSection);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleNewTask = useCallback(() => setIsNewTicketOpen(true), []);
+
+  const handleTicketSubmit = useCallback(
+    async (data: CreateTicketInput | UpdateTicketInput) => {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, workspaceId }),
+      });
+      if (!res.ok) {
+        showToast('업무 생성에 실패했습니다.', 'fail');
+      }
+      setIsNewTicketOpen(false);
+      router.push(`/workspace/${workspaceId}/board`);
+    },
+    [workspaceId, router],
+  );
 
   function showToast(message: string, type: ToastType = 'success') {
     setToast({ message, type });
@@ -86,7 +109,50 @@ export function SettingsShell({ workspaceId }: { workspaceId: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F8F9FB', fontFamily: "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" }}>
-      <Header />
+      <Header onNewTask={handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
+
+      {/* New ticket modal */}
+      {isNewTicketOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setIsNewTicketOpen(false); }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              width: '100%',
+              maxWidth: 800,
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.16)',
+            }}
+          >
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', fontWeight: 700, fontSize: 16, color: '#2C3E50', fontFamily: "'Plus Jakarta Sans', sans-serif", flexShrink: 0 }}>
+              새 업무 만들기
+            </div>
+            <TicketForm
+              mode="create"
+              workspaceId={workspaceId}
+              onSubmit={handleTicketSubmit}
+              onCancel={() => setIsNewTicketOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Body */}
       <div style={{ display: 'flex', flex: 1 }}>

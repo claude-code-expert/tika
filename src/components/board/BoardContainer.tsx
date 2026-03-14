@@ -85,7 +85,7 @@ export function BoardContainer({
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <Board board={board} onTicketClick={onSelectTicket} />
+        <Board board={board} onTicketClick={onSelectTicket} currentMemberId={currentMemberId} />
       </div>
 
       {/* Create modal */}

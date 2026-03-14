@@ -237,3 +237,49 @@ describe('fetchBoard', () => {
     expect(result.current.error).toBe('보드 데이터를 불러오지 못했습니다');
   });
 });
+
+describe('warningMessage', () => {
+  it('createTicket 응답에 warning 필드가 있으면 warningMessage를 설정한다', async () => {
+    const newTicket = { ...baseTicket, id: 2, title: '새 티켓' };
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ ticket: newTicket, warning: '티켓이 900개를 초과했습니다' }),
+    });
+
+    const { result } = renderHook(() => useTickets(emptyBoard));
+
+    await act(async () => { await result.current.createTicket({ title: '새 티켓' }); });
+
+    expect(result.current.warningMessage).toBe('티켓이 900개를 초과했습니다');
+  });
+
+  it('clearWarning 호출 후 warningMessage가 null이 된다', async () => {
+    const newTicket = { ...baseTicket, id: 2, title: '새 티켓' };
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ ticket: newTicket, warning: '경고 메시지' }),
+    });
+
+    const { result } = renderHook(() => useTickets(emptyBoard));
+
+    await act(async () => { await result.current.createTicket({ title: '새 티켓' }); });
+    expect(result.current.warningMessage).not.toBeNull();
+
+    act(() => { result.current.clearWarning(); });
+    expect(result.current.warningMessage).toBeNull();
+  });
+
+  it('warning 필드 없는 응답은 warningMessage를 null로 유지한다', async () => {
+    const newTicket = { ...baseTicket, id: 2, title: '새 티켓' };
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ ticket: newTicket }),
+    });
+
+    const { result } = renderHook(() => useTickets(emptyBoard));
+
+    await act(async () => { await result.current.createTicket({ title: '새 티켓' }); });
+
+    expect(result.current.warningMessage).toBeNull();
+  });
+});

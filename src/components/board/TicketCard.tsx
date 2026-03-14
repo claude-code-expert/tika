@@ -36,9 +36,10 @@ interface TicketCardProps {
   ticket: TicketWithMeta;
   onClick?: () => void;
   workspaceName?: string;
+  cardBg?: string;
 }
 
-function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
+function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardProps) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
@@ -93,7 +94,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         transform: dndTransform ?? undefined,
         transition: mergedTransition,
         opacity: isDragging ? 0.4 : 1,
-        background: 'var(--color-card-bg)',
+        background: cardBg ?? 'var(--color-card-bg)',
         border: ticket.isOverdue ? '2px solid #DC2626' : '1px solid var(--color-border)',
         borderRadius: 7,
         padding: 12,
@@ -145,6 +146,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         </span>
         <span
           onClick={handleNavigate}
+          onPointerDown={(e) => e.stopPropagation()}
           style={{
             fontSize: 13,
             fontWeight: 600,
@@ -179,7 +181,13 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         )}
         {workspaceName && (
           <span
-            onClick={handleNavigate}
+            onClick={(e) => {
+              e.stopPropagation();
+              const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
+              navigator.clipboard.writeText(url);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            title="상세 페이지 주소 복사"
             style={{
               fontSize: 11,
               fontWeight: 500,

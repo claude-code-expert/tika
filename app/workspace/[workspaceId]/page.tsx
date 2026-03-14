@@ -102,10 +102,16 @@ export default async function TeamDashboardPage({
     { key: 'FEATURE', label: 'Feature', abbr: 'F', trackBg: '#D1FAE5', fillBg: '#059669' },
     { key: 'TASK', label: 'Task', abbr: 'T', trackBg: '#F3F4F6', fillBg: '#9CA3AF' },
   ] as const;
+  const typeAcc: Record<string, { total: number; done: number }> = { GOAL: { total: 0, done: 0 }, STORY: { total: 0, done: 0 }, FEATURE: { total: 0, done: 0 }, TASK: { total: 0, done: 0 } };
+  for (const t of allTickets) {
+    if (typeAcc[t.type]) {
+      typeAcc[t.type].total++;
+      if (t.status === 'DONE') typeAcc[t.type].done++;
+    }
+  }
   const typeDist = TYPE_DIST.map((td) => {
-    const items = allTickets.filter((t) => t.type === td.key);
-    const done = items.filter((t) => t.status === 'DONE').length;
-    return { ...td, total: items.length, done, pct: items.length > 0 ? Math.round((done / items.length) * 100) : 0 };
+    const { total, done } = typeAcc[td.key];
+    return { ...td, total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
   });
   const wbsTotal = allTickets.length;
 
@@ -152,10 +158,10 @@ export default async function TeamDashboardPage({
             marginBottom: 24,
           }}
         >
-          <StatCard label="전체 티켓" value={allTickets.length} sub={`완료 ${doneTickets.length}`} color="#629584" />
-          <StatCard label="기한 초과" value={overdueTickets.length} sub="주의 필요" color={overdueTickets.length > 0 ? '#DC2626' : '#629584'} />
-          <StatCard label="이번 주 마감" value={upcomingTickets.length} sub="3일 이내" color="#F59E0B" />
-          <StatCard label="목표" value={goalTickets.length} sub={`완료 ${goalTickets.filter((t) => t.status === 'DONE').length}`} color="#8B5CF6" />
+          <StatCard label="전체 티켓" value={allTickets.length} sub={`완료 ${doneTickets.length}`} color="#629584" bg="var(--color-dash-green)" />
+          <StatCard label="기한 초과" value={overdueTickets.length} sub="주의 필요" color={overdueTickets.length > 0 ? '#DC2626' : '#629584'} bg="var(--color-dash-red)" />
+          <StatCard label="이번 주 마감" value={upcomingTickets.length} sub="3일 이내" color="#F59E0B" bg="var(--color-dash-amber)" />
+          <StatCard label="목표" value={goalTickets.length} sub={`완료 ${goalTickets.filter((t) => t.status === 'DONE').length}`} color="#8B5CF6" bg="var(--color-dash-blue)" />
           <ProgressCard pct={progressPct} counts={statusCounts} />
         </div>
 
@@ -174,6 +180,7 @@ export default async function TeamDashboardPage({
               value={myTodayDue.length}
               badge={myTodayDue.length > 0 ? { text: '⚠ 주의', type: 'warn' } : { text: '없음', type: 'neutral' }}
               sub="미완료 티켓 포함"
+              bg="var(--color-dash-amber)"
             />
             <KpiCard
               icon={<ClipboardClock size={18} stroke="#DC2626" />}
@@ -183,6 +190,7 @@ export default async function TeamDashboardPage({
               valueColor={myOverdue.length > 0 ? '#DC2626' : undefined}
               badge={myOverdue.length > 0 ? { text: '즉시 처리', type: 'down' } : { text: '없음', type: 'neutral' }}
               sub="마감 초과 미완료"
+              bg="var(--color-dash-green)"
             />
             <KpiCard
               icon={<Loader size={18} stroke="#D97706" />}
@@ -191,6 +199,7 @@ export default async function TeamDashboardPage({
               value={myInProgress.length}
               badge={{ text: 'In Progress', type: 'neutral' }}
               sub="WIP 권장: 3개 이하"
+              bg="var(--color-dash-blue)"
             />
             <KpiCard
               icon={<ListTodo size={18} stroke="#065F46" />}
@@ -199,6 +208,7 @@ export default async function TeamDashboardPage({
               value={myWeekDone.length}
               badge={weekDiff >= 0 ? { text: `↑ +${weekDiff}`, type: 'up' } : { text: `↓ ${weekDiff}`, type: 'down' }}
               sub="지난 주 대비"
+              bg="var(--color-dash-mint)"
             />
           </div>
         </div>
@@ -331,11 +341,11 @@ function Card({ title, count, children }: { title: string; count?: number; child
   );
 }
 
-function StatCard({ label, value, sub, color }: { label: string; value: number | string; sub: string; color: string }) {
+function StatCard({ label, value, sub, color, bg }: { label: string; value: number | string; sub: string; color: string; bg?: string }) {
   return (
     <div
       style={{
-        background: '#fff',
+        background: bg ?? '#fff',
         border: '1px solid #DFE1E6',
         borderRadius: 10,
         padding: '14px 16px',
@@ -367,7 +377,7 @@ function ProgressCard({ pct, counts }: { pct: number; counts: { done: number; in
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--color-dash-teal)',
         border: '1px solid #DFE1E6',
         borderRadius: 10,
         padding: '14px 16px',
@@ -423,7 +433,7 @@ const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
 };
 
 function KpiCard({
-  icon, iconBg, label, value, valueColor, badge, sub,
+  icon, iconBg, label, value, valueColor, badge, sub, bg,
 }: {
   icon: React.ReactNode;
   iconBg: string;
@@ -432,10 +442,11 @@ function KpiCard({
   valueColor?: string;
   badge: { text: string; type: string };
   sub: string;
+  bg?: string;
 }) {
   const bs = BADGE_STYLES[badge.type] ?? BADGE_STYLES.neutral;
   return (
-    <div style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ background: bg ?? '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ width: 36, height: 36, borderRadius: 6, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ width: 18, height: 18, display: 'inline-flex' }}>{icon}</span>
       </div>

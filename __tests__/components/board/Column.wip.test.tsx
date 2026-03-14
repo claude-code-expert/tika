@@ -32,6 +32,8 @@ import { render, screen } from '@testing-library/react';
 import { Column } from '@/components/board/Column';
 import type { TicketWithMeta } from '@/types/index';
 
+const MEMBER_ID = 1;
+
 function makeTicket(id: number): TicketWithMeta {
   return {
     id,
@@ -47,7 +49,7 @@ function makeTicket(id: number): TicketWithMeta {
     plannedStartDate: null,
     plannedEndDate: null,
     parentId: null,
-    assigneeId: null,
+    assigneeId: MEMBER_ID,
     sprintId: null,
     storyPoints: null,
     completedAt: null,
@@ -56,7 +58,7 @@ function makeTicket(id: number): TicketWithMeta {
     updatedAt: '2026-01-01T00:00:00.000Z',
     isOverdue: false,
     labels: [],
-    assignees: [],
+    assignees: [{ id: MEMBER_ID, displayName: 'Test', color: '#629584' } as unknown as ReturnType<typeof makeTicket>['assignees'][0]],
     assignee: null,
     checklistTotal: 0,
     checklistDone: 0,
@@ -65,26 +67,50 @@ function makeTicket(id: number): TicketWithMeta {
 }
 
 describe('Column WIP warning', () => {
-  it('WIP warning shows when IN_PROGRESS column has > 3 tickets', () => {
+  it('WIP warning shows when IN_PROGRESS column has > 3 tickets assigned to current member', () => {
     const tickets = [1, 2, 3, 4].map(makeTicket);
-    render(<Column status="IN_PROGRESS" label="진행 중" tickets={tickets} onTicketClick={jest.fn()} />);
+    render(
+      <Column
+        status="IN_PROGRESS"
+        label="진행 중"
+        tickets={tickets}
+        onTicketClick={jest.fn()}
+        currentMemberId={MEMBER_ID}
+      />,
+    );
 
     // The warning badge should be present
-    expect(screen.getByTitle('WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다')).toBeInTheDocument();
+    expect(screen.getByTitle('WIP 한도 초과: 내 진행 중 업무가 3개를 초과했습니다')).toBeInTheDocument();
     expect(screen.getByText('⚠ 4/3')).toBeInTheDocument();
   });
 
-  it('WIP warning is absent when IN_PROGRESS column has <= 3 tickets', () => {
+  it('WIP warning is absent when IN_PROGRESS column has <= 3 tickets assigned to current member', () => {
     const tickets = [1, 2, 3].map(makeTicket);
-    render(<Column status="IN_PROGRESS" label="진행 중" tickets={tickets} onTicketClick={jest.fn()} />);
+    render(
+      <Column
+        status="IN_PROGRESS"
+        label="진행 중"
+        tickets={tickets}
+        onTicketClick={jest.fn()}
+        currentMemberId={MEMBER_ID}
+      />,
+    );
 
-    expect(screen.queryByTitle('WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('WIP 한도 초과: 내 진행 중 업무가 3개를 초과했습니다')).not.toBeInTheDocument();
   });
 
   it('WIP warning does not appear for TODO column even with > 3 tickets', () => {
     const tickets = [1, 2, 3, 4].map((id) => ({ ...makeTicket(id), status: 'TODO' as const }));
-    render(<Column status="TODO" label="할 일" tickets={tickets} onTicketClick={jest.fn()} />);
+    render(
+      <Column
+        status="TODO"
+        label="할 일"
+        tickets={tickets}
+        onTicketClick={jest.fn()}
+        currentMemberId={MEMBER_ID}
+      />,
+    );
 
-    expect(screen.queryByTitle('WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('WIP 한도 초과: 내 진행 중 업무가 3개를 초과했습니다')).not.toBeInTheDocument();
   });
 });

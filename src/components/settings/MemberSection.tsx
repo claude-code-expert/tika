@@ -5,12 +5,9 @@ import { Link2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RoleBadge, ROLE_STYLES } from '@/components/ui/RoleBadge';
 import { Avatar } from '@/components/ui/Avatar';
-import { Modal } from '@/components/ui/Modal';
 import type { SectionProps } from './types';
 import { TEAM_ROLE } from '@/types/index';
 import type { MemberWithEmail, MemberRole, JoinRequestWithUser, WorkspaceWithRole } from '@/types/index';
-
-type TransferTarget = MemberWithEmail;
 
 export function MemberSection({ showToast, workspaceId }: SectionProps) {
   const [workspaces, setWorkspaces] = useState<WorkspaceWithRole[]>([]);
@@ -24,7 +21,6 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [confirmRole, setConfirmRole] = useState<{ member: MemberWithEmail; newRole: MemberRole } | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<MemberWithEmail | null>(null);
-  const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Derived — hoisted above effects so effects can use the stable boolean
@@ -333,19 +329,6 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
               </span>
               {isOwner && (
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
-                  {member.role !== 'OWNER' && (
-                    <button
-                      type="button"
-                      onClick={() => setTransferTarget(member)}
-                      style={{
-                        padding: '4px 10px', fontSize: 11, fontWeight: 600,
-                        border: '1.5px solid #DFE1E6', borderRadius: 6,
-                        background: '#fff', color: '#5A6B7F', cursor: 'pointer',
-                      }}
-                    >
-                      소유권 이전
-                    </button>
-                  )}
                   {/* Role select — visible to OWNER, hidden for self */}
                   {!isSelf && (
                     <select
@@ -404,46 +387,6 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
         onCancel={() => setConfirmRemove(null)}
       />
 
-      <Modal
-        isOpen={transferTarget !== null}
-        onClose={() => setTransferTarget(null)}
-        title="소유권 이전"
-        maxWidth={420}
-      >
-        <div style={{ padding: '20px 20px 24px' }}>
-          <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 20 }}>
-            <strong style={{ color: '#2C3E50' }}>{transferTarget?.displayName}</strong>님에게 소유권을 이전하시겠습니까?
-            이전 후 당신은 일반 멤버가 됩니다.
-          </p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={() => setTransferTarget(null)}
-              style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}>
-              취소
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                if (!selectedWsId || !transferTarget) return;
-                const res = await fetch(`/api/workspaces/${selectedWsId}/transfer`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ targetMemberId: transferTarget.id }),
-                });
-                if (res.ok) {
-                  window.location.reload();
-                } else {
-                  const data = (await res.json()) as { error?: { message?: string } };
-                  showToast(data.error?.message ?? '이전 실패', 'fail');
-                }
-                setTransferTarget(null);
-              }}
-              style={{ padding: '9px 20px', border: 'none', borderRadius: 8, background: '#629584', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              이전 확인
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

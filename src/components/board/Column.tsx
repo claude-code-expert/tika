@@ -13,15 +13,23 @@ const COLUMN_HEADER_BG: Partial<Record<TicketStatus, string>> = {
   DONE: 'var(--color-col-done)',
 };
 
+const COLUMN_CARD_BG: Record<TicketStatus, string> = {
+  BACKLOG:     'var(--color-card-bg-backlog)',
+  TODO:        'var(--color-card-bg-todo)',
+  IN_PROGRESS: 'var(--color-card-bg-in-progress)',
+  DONE:        'var(--color-card-bg-done)',
+};
+
 interface ColumnProps {
   status: TicketStatus;
   label: string;
   tickets: TicketWithMeta[];
   onTicketClick: (ticket: TicketWithMeta) => void;
   workspaceName?: string;
+  currentMemberId?: number | null;
 }
 
-function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: ColumnProps) {
+function ColumnInner({ status, label, tickets, onTicketClick, workspaceName, currentMemberId }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const { active, over } = useDndContext();
   const sortableItems = useMemo(() => tickets.map((t) => t.id), [tickets]);
@@ -35,6 +43,15 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
     if (over.id === status && isOver) return tickets.length;
     return -1;
   }, [active, over, tickets, status, isOver]);
+
+  // WIP limit: count only my tickets in IN_PROGRESS
+  const myWipCount = useMemo(() => {
+    if (status !== 'IN_PROGRESS' || !currentMemberId) return 0;
+    return tickets.filter((t) =>
+      t.assignees?.some((a) => a.id === currentMemberId) ||
+      t.assignee?.id === currentMemberId,
+    ).length;
+  }, [status, currentMemberId, tickets]);
 
   return (
     <div
@@ -70,13 +87,13 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
           >
             {label}
           </span>
-          {status === 'IN_PROGRESS' && tickets.length > 3 && (
+          {status === 'IN_PROGRESS' && myWipCount > 3 && (
             <Tooltip
-              content={`적정 칸반 티켓수 = 3, 현재 ${tickets.length - 3}건 초과`}
+              content={`내 진행 중 업무 적정 수 = 3, 현재 ${myWipCount - 3}건 초과`}
               position="bottom"
             >
               <span
-                title="WIP 한도 초과: 진행 중 업무가 3개를 초과했습니다"
+                title="WIP 한도 초과: 내 진행 중 업무가 3개를 초과했습니다"
                 style={{
                   fontSize: 11, fontWeight: 700, color: '#D97706',
                   background: '#FEF3C7', borderRadius: 6,
@@ -84,7 +101,7 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
                   cursor: 'default',
                 }}
               >
-                ⚠ {tickets.length}/3
+                ⚠ {myWipCount}/3
               </span>
             </Tooltip>
           )}
@@ -130,7 +147,7 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName }: C
                   transition: 'opacity 0.15s',
                 }} />
               )}
-              <TicketCard ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
+              <TicketCard ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} cardBg={COLUMN_CARD_BG[status]} />
             </Fragment>
           ))}
           {dropIndicatorIdx === tickets.length && (

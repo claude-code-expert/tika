@@ -21,8 +21,7 @@ const PERIOD_LABELS: Record<Period, string> = {
 export function BurndownPeriodChart({ lastWeek, thisMonth, lastMonth }: BurndownPeriodChartProps) {
   const [period, setPeriod] = useState<Period>('thisMonth');
 
-  const dataMap: Record<Period, BurndownDataPoint[]> = { lastWeek, thisMonth, lastMonth };
-  const data = dataMap[period];
+  const data = { lastWeek, thisMonth, lastMonth }[period];
 
   return (
     <div>

@@ -74,16 +74,12 @@ export function BurndownChart({ data, height = 200 }: BurndownChartProps) {
         ))}
 
         {/* X axis labels (first and last) */}
-        {data.length > 0 && (
-          <>
-            <text x={padL} y={height - 4} textAnchor="middle" fontSize={9} fill="#9CA3AF">
-              {data[0].date.slice(5)}
-            </text>
-            <text x={padL + innerW} y={height - 4} textAnchor="middle" fontSize={9} fill="#9CA3AF">
-              {data[data.length - 1].date.slice(5)}
-            </text>
-          </>
-        )}
+        <text x={padL} y={height - 4} textAnchor="middle" fontSize={9} fill="#9CA3AF">
+          {data[0].date.slice(5)}
+        </text>
+        <text x={padL + innerW} y={height - 4} textAnchor="middle" fontSize={9} fill="#9CA3AF">
+          {data[data.length - 1].date.slice(5)}
+        </text>
 
         {/* Ideal line (dashed) */}
         <path d={idealPath} fill="none" stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 3" />

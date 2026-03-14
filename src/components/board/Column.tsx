@@ -13,6 +13,13 @@ const COLUMN_HEADER_BG: Partial<Record<TicketStatus, string>> = {
   DONE: 'var(--color-col-done)',
 };
 
+const COLUMN_CARD_BG: Record<TicketStatus, string> = {
+  BACKLOG:     'var(--color-card-bg-backlog)',
+  TODO:        'var(--color-card-bg-todo)',
+  IN_PROGRESS: 'var(--color-card-bg-in-progress)',
+  DONE:        'var(--color-card-bg-done)',
+};
+
 interface ColumnProps {
   status: TicketStatus;
   label: string;
@@ -140,7 +147,7 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName, cur
                   transition: 'opacity 0.15s',
                 }} />
               )}
-              <TicketCard ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} />
+              <TicketCard ticket={ticket} onClick={() => onTicketClick(ticket)} workspaceName={workspaceName} cardBg={COLUMN_CARD_BG[status]} />
             </Fragment>
           ))}
           {dropIndicatorIdx === tickets.length && (

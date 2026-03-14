@@ -11,7 +11,7 @@ jest.mock('@/db/queries/ticketAssignees', () => ({ getAssigneesByTickets: jest.f
 jest.mock('@/db/queries/notificationChannels', () => ({
   getNotificationChannels: jest.fn(),
 }));
-jest.mock('@/db/queries/notificationLogs', () => ({ createNotificationLog: jest.fn() }));
+jest.mock('@/db/queries/notificationLogs', () => ({ bulkCreateNotificationLogs: jest.fn() }));
 jest.mock('@/lib/notifications', () => ({
   sendInAppNotification: jest.fn().mockResolvedValue(undefined),
   buildDeadlineWarningMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
@@ -23,14 +23,14 @@ import { getAllWorkspaces } from '@/db/queries/workspaces';
 import { getTicketsDueTomorrow } from '@/db/queries/tickets';
 import { getAssigneesByTickets } from '@/db/queries/ticketAssignees';
 import { getNotificationChannels } from '@/db/queries/notificationChannels';
-import { createNotificationLog } from '@/db/queries/notificationLogs';
+import { bulkCreateNotificationLogs } from '@/db/queries/notificationLogs';
 import type { Workspace, Ticket, NotificationChannel } from '@/types/index';
 
 const mockedGetWorkspaces = getAllWorkspaces as jest.Mock;
 const mockedGetDueTomorrow = getTicketsDueTomorrow as jest.Mock;
 const mockedGetAssigneesByTickets = getAssigneesByTickets as jest.Mock;
 const mockedGetChannels = getNotificationChannels as jest.Mock;
-const mockedCreateLog = createNotificationLog as jest.Mock;
+const mockedBulkCreateLog = bulkCreateNotificationLogs as jest.Mock;
 
 const CRON_SECRET = 'test-secret';
 
@@ -104,14 +104,14 @@ describe('GET /api/cron/notify-due', () => {
     const body = await res.json() as { processed: number; sent: number; failed: number };
     expect(body.sent).toBe(0);
     expect(body.failed).toBe(0);
-    expect(mockedCreateLog).not.toHaveBeenCalled();
+    expect(mockedBulkCreateLog).not.toHaveBeenCalled();
   });
 
   it('Slack 발송 성공 → SENT 로그를 생성한다', async () => {
     mockedGetWorkspaces.mockResolvedValueOnce([mockWorkspace]);
     mockedGetDueTomorrow.mockResolvedValueOnce([mockTicket]);
     mockedGetChannels.mockResolvedValueOnce([mockSlackChannel]);
-    mockedCreateLog.mockResolvedValue({});
+    mockedBulkCreateLog.mockResolvedValue({});
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, status: 200 });
 
@@ -120,8 +120,8 @@ describe('GET /api/cron/notify-due', () => {
     const body = await res.json() as { sent: number; failed: number };
     expect(body.sent).toBe(1);
     expect(body.failed).toBe(0);
-    expect(mockedCreateLog).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'SENT', channel: 'slack', ticketId: 10 }),
+    expect(mockedBulkCreateLog).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ status: 'SENT', channel: 'slack', ticketId: 10 })]),
     );
   });
 
@@ -129,7 +129,7 @@ describe('GET /api/cron/notify-due', () => {
     mockedGetWorkspaces.mockResolvedValueOnce([mockWorkspace]);
     mockedGetDueTomorrow.mockResolvedValueOnce([mockTicket]);
     mockedGetChannels.mockResolvedValueOnce([mockSlackChannel]);
-    mockedCreateLog.mockResolvedValue({});
+    mockedBulkCreateLog.mockResolvedValue({});
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 });
 
@@ -138,8 +138,8 @@ describe('GET /api/cron/notify-due', () => {
     const body = await res.json() as { sent: number; failed: number };
     expect(body.sent).toBe(0);
     expect(body.failed).toBe(1);
-    expect(mockedCreateLog).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'FAILED', channel: 'slack', ticketId: 10 }),
+    expect(mockedBulkCreateLog).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ status: 'FAILED', channel: 'slack', ticketId: 10 })]),
     );
   });
 });

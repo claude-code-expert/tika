@@ -27,6 +27,7 @@ export interface SessionUserData {
   userType: string | null;
   workspaceId: number | null;
   memberId: number | null;
+  memberColor: string | null;
 }
 
 /**
@@ -43,12 +44,12 @@ export async function buildSessionUser(tokenSub: string): Promise<SessionUserDat
       .where(eq(users.id, tokenSub))
       .limit(1),
     db
-      .select({ id: members.id, workspaceId: members.workspaceId })
+      .select({ id: members.id, workspaceId: members.workspaceId, color: members.color })
       .from(members)
       .where(and(eq(members.userId, tokenSub), eq(members.isPrimary, true)))
       .limit(1),
     db
-      .select({ id: members.id, workspaceId: members.workspaceId })
+      .select({ id: members.id, workspaceId: members.workspaceId, color: members.color })
       .from(members)
       .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
       .where(and(eq(members.userId, tokenSub), eq(workspaces.type, 'PERSONAL')))
@@ -56,7 +57,7 @@ export async function buildSessionUser(tokenSub: string): Promise<SessionUserDat
   ]);
 
   if (!dbUser) return null;
-  if (!dbUser.userType) return { id: tokenSub, userType: null, workspaceId: null, memberId: null };
+  if (!dbUser.userType) return { id: tokenSub, userType: null, workspaceId: null, memberId: null, memberColor: null };
 
   // primary wins over personal workspace fallback
   const member = primaryMember ?? personalMember;
@@ -65,6 +66,7 @@ export async function buildSessionUser(tokenSub: string): Promise<SessionUserDat
     userType: dbUser.userType,
     workspaceId: member?.workspaceId ?? null,
     memberId: member?.id ?? null,
+    memberColor: member?.color ?? null,
   };
 }
 
@@ -136,6 +138,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       sessionUser.userType = data.userType;
       sessionUser.workspaceId = data.workspaceId;
       sessionUser.memberId = data.memberId;
+      sessionUser.memberColor = data.memberColor;
 
       return session;
     },

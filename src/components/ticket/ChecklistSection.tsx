@@ -10,9 +10,10 @@ interface ChecklistSectionProps {
   onAdd: (text: string) => Promise<void>;
   onToggle: (itemId: number, isCompleted: boolean) => Promise<void>;
   onDelete: (itemId: number) => Promise<void>;
+  readOnly?: boolean;
 }
 
-export function ChecklistSection({ items, onAdd, onToggle, onDelete }: ChecklistSectionProps) {
+export function ChecklistSection({ items, onAdd, onToggle, onDelete, readOnly = false }: ChecklistSectionProps) {
   const [newText, setNewText] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -116,64 +117,67 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
             <input
               type="checkbox"
               checked={item.isCompleted}
-              onChange={(e) => onToggle(item.id, e.target.checked)}
+              onChange={readOnly ? undefined : (e) => onToggle(item.id, e.target.checked)}
+              disabled={readOnly}
               style={{
                 width: 15,
                 height: 15,
                 accentColor: 'var(--color-accent)',
-                cursor: 'pointer',
+                cursor: readOnly ? 'default' : 'pointer',
                 flexShrink: 0,
               }}
               aria-label={item.text}
             />
             <span
-              onClick={() => onToggle(item.id, !item.isCompleted)}
+              onClick={readOnly ? undefined : () => onToggle(item.id, !item.isCompleted)}
               style={{
                 flex: 1,
                 fontSize: 13,
                 color: item.isCompleted ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
                 lineHeight: 1.4,
                 textDecoration: item.isCompleted ? 'line-through' : 'none',
-                cursor: 'pointer',
+                cursor: readOnly ? 'default' : 'pointer',
               }}
             >
               {item.text}
             </span>
-            <button
-              onClick={() => onDelete(item.id)}
-              style={{
-                width: 22,
-                height: 22,
-                border: 'none',
-                background: 'transparent',
-                borderRadius: 4,
-                cursor: 'pointer',
-                color: 'var(--color-text-muted)',
-                fontSize: 13,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: hoveredId === item.id ? 1 : 0,
-                transition: 'opacity 0.1s, background 0.1s, color 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = '#FEE2E2';
-                (e.currentTarget as HTMLElement).style.color = '#DC2626';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
-              }}
-              aria-label="항목 삭제"
-            >
-              ✕
-            </button>
+            {!readOnly && (
+              <button
+                onClick={() => onDelete(item.id)}
+                style={{
+                  width: 22,
+                  height: 22,
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  color: 'var(--color-text-muted)',
+                  fontSize: 13,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: hoveredId === item.id ? 1 : 0,
+                  transition: 'opacity 0.1s, background 0.1s, color 0.1s',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = '#FEE2E2';
+                  (e.currentTarget as HTMLElement).style.color = '#DC2626';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
+                }}
+                aria-label="항목 삭제"
+              >
+                ✕
+              </button>
+            )}
           </div>
         ))}
       </div>
 
       {/* Add input */}
-      {!isAtLimit ? (
+      {!readOnly && !isAtLimit ? (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
           <input
             ref={inputRef}
@@ -237,11 +241,11 @@ export function ChecklistSection({ items, onAdd, onToggle, onDelete }: Checklist
             + 추가
           </button>
         </div>
-      ) : (
+      ) : !readOnly ? (
         <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
           최대 {CHECKLIST_MAX_ITEMS}개 제한
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

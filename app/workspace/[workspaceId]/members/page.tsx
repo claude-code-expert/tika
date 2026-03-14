@@ -48,11 +48,11 @@ export default async function TeamMembersPage({
   const totalWorkday  = totalAssigned * 2;
 
   const summaryStats = [
-    { value: String(workload.length),    label: '워크스페이스 멤버',     color: '#2C3E50' },
-    { value: String(totalAssigned),      label: '총 할당 티켓', color: '#2C3E50' },
-    { value: String(totalDone),          label: '완료 티켓',   color: '#629584' },
-    { value: `${totalWorkday}d`,         label: '총 Workday',  color: '#F59E0B' },
-    { value: `${completionPct}%`,        label: '팀 완료율',   color: '#629584' },
+    { value: String(workload.length),    label: '워크스페이스 멤버', color: '#2C3E50', bg: 'var(--color-dash-red)'   },
+    { value: String(totalAssigned),      label: '총 할당 티켓',      color: '#2C3E50', bg: 'var(--color-dash-blue)'  },
+    { value: String(totalDone),          label: '완료 티켓',         color: '#629584', bg: 'var(--color-dash-mint)'  },
+    { value: `${totalWorkday}d`,         label: '총 Workday',        color: '#F59E0B', bg: 'var(--color-dash-green)' },
+    { value: `${completionPct}%`,        label: '팀 완료율',         color: '#629584', bg: 'var(--color-dash-pink)'  },
   ];
 
   return (
@@ -76,7 +76,7 @@ export default async function TeamMembersPage({
           {summaryStats.map((s) => (
             <div
               key={s.label}
-              style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
+              style={{ background: s.bg, border: '1px solid #DFE1E6', borderRadius: 10, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}
             >
               <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
               <div style={{ fontSize: 12, color: '#8993A4', marginTop: 4 }}>{s.label}</div>

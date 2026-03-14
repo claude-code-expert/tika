@@ -6,51 +6,57 @@
 :root {
   /* Colors - Brand Accent */
   --color-accent: #629584;
-  --color-accent-hover: #527D6F;
-  --color-accent-light: #E8F5F0;
+  --color-accent-hover: #527d6f;
+  --color-accent-light: #e8f5f0;
 
   /* Colors - Background */
-  --color-board-bg: #E8EDF2;
+  --color-board-bg: #e8edf2;
   --color-header-bg: #ffffff;
-  --color-sidebar-bg: #F1F3F6;
-  --color-sidebar-hover: #E8EBF0;
-  --color-footer-bg: #F4F5F7;
-  --color-card-bg: #ffffff;
-  --color-col-bg: #F4F5F7;
+  --color-sidebar-bg: #f1f3f6;
+  --color-sidebar-hover: #e8ebf0;
+  --color-footer-bg: #f4f5f7;
+  --color-card-bg: #eff6ff;
+
+  /* 칼럼(스위밍 라인)별 티켓 카드 배경색 */
+  --color-card-bg-backlog: #eff6ff;
+  --color-card-bg-todo: #f4f9ff;
+  --color-card-bg-in-progress: #fffdf5;
+  --color-card-bg-done: #f5fff9;
+  --color-col-bg: #f4f5f7;
 
   /* Colors - Column header backgrounds */
-  --color-col-backlog: #F4F5F7;
-  --color-col-todo: #DBEAFE;
-  --color-col-in-progress: #FEF3C7;
-  --color-col-done: #D1FAE5;
+  --color-col-backlog: #f4f5f7;
+  --color-col-todo: #dbeafe;
+  --color-col-in-progress: #fef3c7;
+  --color-col-done: #d1fae5;
 
   /* Colors - Priority badges (bg / text pairs) */
-  --color-priority-critical-bg: #FEE2E2;
-  --color-priority-critical: #DC2626;
-  --color-priority-high-bg: #FFEDD5;
-  --color-priority-high: #C2410C;
-  --color-priority-medium-bg: #FEF9C3;
-  --color-priority-medium: #A16207;
-  --color-priority-low-bg: #F3F4F6;
-  --color-priority-low: #6B7280;
+  --color-priority-critical-bg: #fee2e2;
+  --color-priority-critical: #dc2626;
+  --color-priority-high-bg: #ffedd5;
+  --color-priority-high: #c2410c;
+  --color-priority-medium-bg: #fef9c3;
+  --color-priority-medium: #a16207;
+  --color-priority-low-bg: #f3f4f6;
+  --color-priority-low: #6b7280;
 
   /* Colors - Due date states */
-  --color-due-normal-bg: #F3F4F6;
-  --color-due-normal: #8993A4;
-  --color-due-soon-bg: #FEF3C7;
-  --color-due-soon: #92400E;
-  --color-overdue-bg: #FEE2E2;
-  --color-overdue: #DC2626;
+  --color-due-normal-bg: #f3f4f6;
+  --color-due-normal: #8993a4;
+  --color-due-soon-bg: #fef3c7;
+  --color-due-soon: #92400e;
+  --color-overdue-bg: #fee2e2;
+  --color-overdue: #dc2626;
 
   /* Colors - Text */
-  --color-text-primary: #2C3E50;
-  --color-text-secondary: #5A6B7F;
-  --color-text-muted: #8993A4;
+  --color-text-primary: #2c3e50;
+  --color-text-secondary: #5a6b7f;
+  --color-text-muted: #8993a4;
 
   /* Colors - Border */
-  --color-border: #DFE1E6;
-  --color-border-hover: #C4C9D1;
-  --color-divider: #DFE1E6;
+  --color-border: #dfe1e6;
+  --color-border-hover: #c4c9d1;
+  --color-divider: #dfe1e6;
   --color-focus-ring: #629584;
 
   /* Spacing */
@@ -86,7 +92,17 @@
   --column-width: 280px;
 
   /* App-level background (lighter than board bg) */
-  --color-app-bg: #F8F9FB;
+  --color-app-bg: #f8f9fb;
+
+  /* Dashboard card backgrounds — COLOR.json "dashboard" 섹션과 1:1 대응
+     색상을 바꾸려면 이 변수만 수정하면 됩니다 */
+  --color-dash-green: #f4f9f7; /* 전체 티켓, 오버듀 KPI */
+  --color-dash-teal: #f2fbfa; /* 진행률(도넛) 카드 */
+  --color-dash-blue: #eff6ff; /* 목표 통계, 진행 중 KPI */
+  --color-dash-amber: #fffbeb; /* 이번 주 마감, 오늘 마감 KPI */
+  --color-dash-mint: #ecfdf4; /* 이번 주 완료 KPI */
+  --color-dash-red: #fdf3f3; /* 기한 초과 통계 */
+  --color-dash-pink: #f9cdcd; /* WBS 전체 완료율 */
 }
 
 /* ============================================
@@ -100,7 +116,12 @@ body {
   height: 100%;
   background-color: var(--color-app-bg);
   color: var(--color-text-primary);
-  font-family: 'Noto Sans KR', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Noto Sans KR',
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -186,7 +207,9 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-.filter-bar::-webkit-scrollbar { display: none; }
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
 
 .columns-container {
   display: grid;
@@ -280,8 +303,9 @@ body.modal-open {
   padding: 12px;
   box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: box-shadow var(--transition-fast),
-              border-color var(--transition-fast);
+  transition:
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
   user-select: none;
 }
 
@@ -403,9 +427,10 @@ body.modal-open {
   border: 1px solid transparent;
   border-radius: var(--radius-button);
   cursor: pointer;
-  transition: background-color var(--transition-fast),
-              border-color var(--transition-fast),
-              opacity var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast);
   white-space: nowrap;
   line-height: 1;
 }
@@ -415,9 +440,21 @@ body.modal-open {
   cursor: not-allowed;
 }
 
-.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
-.btn-md { height: 34px; padding: 0 14px; font-size: 13px; }
-.btn-lg { height: 40px; padding: 0 18px; font-size: 14px; }
+.btn-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.btn-md {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.btn-lg {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14px;
+}
 
 .btn-primary {
   background-color: var(--color-accent);
@@ -430,7 +467,7 @@ body.modal-open {
 }
 
 .btn-secondary {
-  background-color: #F8F9FB;
+  background-color: #f8f9fb;
   color: var(--color-text-secondary);
   border-color: var(--color-border);
 }
@@ -439,13 +476,13 @@ body.modal-open {
 }
 
 .btn-danger {
-  background-color: #DC2626;
+  background-color: #dc2626;
   color: white;
-  border-color: #DC2626;
+  border-color: #dc2626;
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: #B91C1C;
-  border-color: #B91C1C;
+  background-color: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .btn-ghost {
@@ -454,7 +491,7 @@ body.modal-open {
   border-color: transparent;
 }
 .btn-ghost:hover:not(:disabled) {
-  background-color: #F1F3F6;
+  background-color: #f1f3f6;
 }
 
 /* ============================================
@@ -475,9 +512,10 @@ body.modal-open {
   color: var(--color-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color var(--transition-fast),
-              background-color var(--transition-fast),
-              color var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -502,10 +540,12 @@ body.modal-open {
   font-size: 10px;
   padding: 1px 6px;
   border-radius: 10px;
-  background-color: #F1F3F6;
-  color: #8993A4;
+  background-color: #f1f3f6;
+  color: #8993a4;
   font-weight: 600;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .chip[data-active='true'] .chip-count {
@@ -578,9 +618,15 @@ body.modal-open {
   margin-bottom: 14px;
 }
 
-.icon-danger  { background-color: #FEF2F2; }
-.icon-warning { background-color: #FEF9C3; }
-.icon-info    { background-color: #DBEAFE; }
+.icon-danger {
+  background-color: #fef2f2;
+}
+.icon-warning {
+  background-color: #fef9c3;
+}
+.icon-info {
+  background-color: #dbeafe;
+}
 
 .dialog-body {
   font-size: 13px;
@@ -654,8 +700,12 @@ body.modal-open {
    Animations
    ============================================ */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {

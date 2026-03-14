@@ -36,9 +36,10 @@ interface TicketCardProps {
   ticket: TicketWithMeta;
   onClick?: () => void;
   workspaceName?: string;
+  cardBg?: string;
 }
 
-function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
+function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardProps) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
@@ -93,7 +94,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         transform: dndTransform ?? undefined,
         transition: mergedTransition,
         opacity: isDragging ? 0.4 : 1,
-        background: 'var(--color-card-bg)',
+        background: cardBg ?? 'var(--color-card-bg)',
         border: ticket.isOverdue ? '2px solid #DC2626' : '1px solid var(--color-border)',
         borderRadius: 7,
         padding: 12,

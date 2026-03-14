@@ -129,6 +129,17 @@
     "background_hover": "#FEF2F2"
   },
 
+  "dashboard": {
+    "_comment": "대시보드 카드 배경색 — globals.css --color-dash-* 변수와 1:1 대응",
+    "green":  "#f4f9f7",
+    "teal":   "#f2fbfa",
+    "blue":   "#eff6ff",
+    "amber":  "#fffbeb",
+    "mint":   "#ecfdf4",
+    "red":    "#fdf3f3",
+    "pink":   "#f9cdcd"
+  },
+
   "notification_dot": "#EF4444",
 
   "shadows": {

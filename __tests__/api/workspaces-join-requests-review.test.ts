@@ -21,6 +21,7 @@ jest.mock('@/db/queries/joinRequests', () => ({
 }));
 jest.mock('@/db/queries/members', () => ({
   getMemberByUserId: jest.fn(),
+  getTeamWorkspaceMemberCount: jest.fn(),
 }));
 jest.mock('@/db/queries/workspaces', () => ({
   getWorkspaceById: jest.fn(),
@@ -35,7 +36,7 @@ import { PATCH } from '@/app/api/workspaces/[id]/join-requests/[reqId]/route';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
 import { getJoinRequestById, approveJoinRequest, rejectJoinRequest } from '@/db/queries/joinRequests';
-import { getMemberByUserId } from '@/db/queries/members';
+import { getMemberByUserId, getTeamWorkspaceMemberCount } from '@/db/queries/members';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 
 const mockedAuth = auth as jest.Mock;
@@ -43,6 +44,7 @@ const mockedGetJoinRequestById = getJoinRequestById as jest.Mock;
 const mockedApproveJoinRequest = approveJoinRequest as jest.Mock;
 const mockedRejectJoinRequest = rejectJoinRequest as jest.Mock;
 const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
+const mockedGetTeamWorkspaceMemberCount = getTeamWorkspaceMemberCount as jest.Mock;
 const mockedGetWorkspaceById = getWorkspaceById as jest.Mock;
 
 const mockSession = { user: { id: 'user-1' } };
@@ -93,6 +95,7 @@ function mockOwnerAndUserLookup(isOwner: boolean, userName?: string) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockedGetWorkspaceById.mockResolvedValue({ id: 5, name: '테스트 워크스페이스' });
+  mockedGetTeamWorkspaceMemberCount.mockResolvedValue(0);
 });
 
 // ─── 401 ─────────────────────────────────────────────────────────────────────

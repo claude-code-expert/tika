@@ -13,7 +13,6 @@ const PALETTE = [
   '#ffac6d', '#f7d1d1', '#f7a2ff', '#c1d1ff', '#c5dbdc',
 ];
 
-
 function ColorSwatches({ selected, onSelect }: { selected: string; onSelect: (c: string) => void }) {
   return (
     <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
@@ -42,6 +41,15 @@ function ConfirmDialog({
   title: string; message: string; onConfirm: () => void; onCancel: () => void;
   confirmLabel?: string; confirmVariant?: 'danger' | 'primary'; children?: React.ReactNode;
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onConfirm, onCancel]);
+
   const confirmStyle = confirmVariant === 'primary'
     ? { background: '#629584', border: 'none', color: '#fff' }
     : { background: '#fff', border: '1px solid #FECACA', color: '#DC2626' };

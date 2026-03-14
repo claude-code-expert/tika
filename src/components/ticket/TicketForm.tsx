@@ -346,7 +346,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
             <input
               id="ticket-title" type="text" value={title}
               onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError(''); }}
-              maxLength={TITLE_MAX_LENGTH} placeholder="업무 제목을 입력하세요" autoFocus
+              maxLength={TITLE_MAX_LENGTH} placeholder="업무 제목을 입력하세요" autoFocus aria-label="제목"
               style={{ ...inputStyle, flex: 1, borderColor: titleError || title.length >= TITLE_MAX_LENGTH ? '#DC2626' : 'var(--color-border)' }}
               onFocus={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-accent)'; }}
               onBlur={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-border)'; }}

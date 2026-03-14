@@ -9,6 +9,7 @@ import { TicketForm } from '@/components/ticket/TicketForm';
 import type { TeamRole } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 import { BoardRefreshContext } from '@/lib/board-refresh-context';
+import { SearchQueryContext } from '@/lib/search-query-context';
 
 interface TeamShellProps {
   workspaceId: number;
@@ -21,6 +22,7 @@ interface TeamShellProps {
 export function TeamShell({ workspaceId, role, workspaceName, iconColor, children }: TeamShellProps) {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
   const [warningMsg, setWarningMsg] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
   // Sync isPrimary so that navigating to "/" redirects back to this workspace
@@ -67,7 +69,7 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
         background: '#F8F9FB',
       }}
     >
-      <Header onNewTask={handleNewTask} />
+      <Header onNewTask={handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
 
       {/* Ticket limit warning banner */}
       {warningMsg && (
@@ -150,9 +152,11 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
             background: '#E8EDF2',
           }}
         >
-          <BoardRefreshContext.Provider value={boardRefreshCtx}>
-            {children}
-          </BoardRefreshContext.Provider>
+          <SearchQueryContext.Provider value={{ searchQuery }}>
+            <BoardRefreshContext.Provider value={boardRefreshCtx}>
+              {children}
+            </BoardRefreshContext.Provider>
+          </SearchQueryContext.Provider>
         </main>
       </div>
 

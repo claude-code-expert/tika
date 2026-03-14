@@ -9,7 +9,9 @@ import {
   useSensor,
   useSensors,
   useDroppable,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -28,6 +30,7 @@ import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import type { TicketWithMeta, BoardData, TeamRole } from '@/types/index';
 import { useBoardRefreshRegistry } from '@/lib/board-refresh-context';
+import { useSearchQuery } from '@/lib/search-query-context';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const BACKLOG_MIN = 180;
@@ -529,12 +532,24 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId, rol
     [board, reorder, workspaceId, isViewer],
   );
 
-  const { displayBoard, filter } = useBoardFilter(board);
+  const searchQuery = useSearchQuery();
+  const { displayBoard, filter } = useBoardFilter(board, searchQuery);
+
+  // Custom collision detection: prefer sortable items (between tickets),
+  // fall back to droppable columns (empty area at bottom)
+  const customCollision: CollisionDetection = useCallback((args) => {
+    // First try pointer-based detection for sortable items
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    // Fall back to rect intersection for column droppable zones
+    return rectIntersection(args);
+  }, []);
 
   return (
     <DndContext
+      id="team-board"
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={customCollision}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}

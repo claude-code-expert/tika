@@ -3,6 +3,77 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-03-14 VIEWER 권한 제한 단위 테스트 + 대시보드 컬러 시스템 + 수영 레인 배경 + BurndownChart UI 개선
+
+### 🎯 Prompts
+1. "@docs/front/COLOR.json 에 다음의 컬러들을 추가하는데, 대시보드 상단 박스 배경색으로 넣어줘. CSS는 한곳에서 관리해서 내가 직접 컬러를 수정할 수 있도록 해야해 #f4f9f7, #f2fbfa, #eff6ff, #fffbeb, #ecfdf4"
+2. "#fdf3f3 @StatCard 기한 초과 이 영역 컬러 교체해"
+3. "@WbsClient 이 영역도 대시보드처럼 컬러 적용해"
+4. "@WbsClient select 이 영역 최소 너비 200px이고 텍스트가 길 때 늘어나도록"
+5. "#fdf3f3 @WbsClient Goal 이 영역 배경색깔로 변경해 / #f9cdcd @WbsClient 전체 완료율 이 영역 컬러 교체해 / 전체 완료율 폰트 색깔은 블랙으로"
+6. "@TeamShell analytics 이 영역도 대시보드, WBS에 적용한 색깔 순차적으로 적용해"
+7. "@TeamShell members 이 영역 색상도 WBS랑 동일한 컬러로"
+8. "@ColumnInner 이 안에 티켓들은 #eff6ff 배경색으로 / Done 영역 내부 티켓의 배경색은 #ecfdf4 / in progress에 내부 티켓 배경색은 #fffbeb로 각 스위밍 라인별로 배경색을 다르게 줄거야"
+9. "@BurndownChart 실제/이상 이 영역과 라인이 차트 안에 침범했어. 차트 영역 밖에 우측 위로 자리하게 해"
+10. "@BurndownChart 실제/이상 이 위치는 지우고 @BurndownPeriodChart 지난주/이번달/지난달 이 위치의 우측 정렬로 해줘"
+11. "@BurndownPeriodChart 범례 크기를 지금보다 하나 더 크게 해"
+12. "@BurndownChart Y축 숫자들이랑 누적흐름도 숫자가 크기가 달라. 누적흐름도 기준으로 동일하게 맞춰"
+13. "@BurndownChart 차트 크기는 왜 줄어야 해 그냥 원래 사이즈로 맞춰 크기가 누적흐름도랑 다르잖아"
+14. "@MiniStat 33% 이 폰트색 629584로 변경해"
+15. "이제 develop에 머지해"
+16. "/simplify"
+
+### ✅ Changes
+
+#### 단위 테스트 추가
+- **Added**: VIEWER 댓글 POST 403 차단 테스트, MEMBER 201 성공, 비인증 401 (`__tests__/api/tickets-comments.test.ts`)
+- **Added**: `warningMessage` 설정/초기화/미설정 3개 테스트 케이스 (`__tests__/hooks/useTickets.test.ts`)
+
+#### 대시보드 컬러 시스템
+- **Added**: CSS 커스텀 프로퍼티 7개 (`--color-dash-green/teal/blue/amber/mint/red/pink`) + 수영 레인 4개 (`--color-card-bg-backlog/todo/in-progress/done`) (`app/globals.css`)
+- **Added**: `docs/front/COLOR.json` — `dashboard` 섹션 컬러 토큰 7개 추가
+- **Modified**: 대시보드 StatCard/KpiCard/ProgressCard에 CSS var 배경 적용 (`app/workspace/[workspaceId]/page.tsx`)
+- **Modified**: Analytics MiniStat 순차 컬러 적용, 전체완료율 폰트 `#629584` (`app/workspace/[workspaceId]/analytics/page.tsx`)
+- **Modified**: Members 요약 통계 카드 컬러 적용 (`app/workspace/[workspaceId]/members/page.tsx`)
+- **Modified**: WBS 통계 카드 컬러 적용, Goal→red, 전체완료율→pink; select 너비 max-content (`src/components/team/WbsClient.tsx`)
+
+#### 수영 레인 (Column별 카드 배경)
+- **Added**: `COLUMN_CARD_BG` 상수, `cardBg` prop 전달 (`src/components/board/Column.tsx`)
+- **Added**: `cardBg?: string` prop, `cardBg ?? 'var(--color-card-bg)'` fallback (`src/components/board/TicketCard.tsx`)
+
+#### BurndownChart UI 개선
+- **Fixed**: React duplicate key 오류 — `yTicks.map((v) =>` → `(v, i) =>` index 키 사용 (`src/components/team/charts/BurndownChart.tsx`)
+- **Fixed**: 범례가 SVG 안에서 차트를 침범하던 문제 → SVG 밖으로 이동
+- **Fixed**: 차트 크기 viewBox width=600, height=200으로 CumulativeFlowDiagram과 일치
+- **Modified**: 범례를 `BurndownPeriodChart` 툴바 우측 정렬로 이동, 폰트/라인 크기 증가 (`src/components/team/charts/BurndownPeriodChart.tsx`)
+
+#### /simplify 정리
+- **Fixed**: BurndownChart `data.length > 0 &&` 중복 가드 제거 (early return으로 이미 처리됨)
+- **Fixed**: BurndownPeriodChart `dataMap` 중간 변수 제거 → `{ lastWeek, thisMonth, lastMonth }[period]` 인라인
+
+### 📊 Test Results
+- Total: 458/458 passed (100%)
+- 신규: 7개 테스트 추가 (comments 5 + warningMessage 3, 기존 1개 대체)
+
+### 📁 Files Modified
+- `__tests__/api/tickets-comments.test.ts` (+148 lines, new)
+- `__tests__/hooks/useTickets.test.ts` (+46 lines)
+- `app/globals.css` (+170, -100 lines)
+- `docs/front/COLOR.json` (+11 lines)
+- `app/workspace/[workspaceId]/page.tsx` (+23, -18 lines)
+- `app/workspace/[workspaceId]/analytics/page.tsx` (+20, -10 lines)
+- `app/workspace/[workspaceId]/members/page.tsx` (+12, -6 lines)
+- `src/components/team/WbsClient.tsx` (+14, -8 lines)
+- `src/components/board/Column.tsx` (+9, -1 lines)
+- `src/components/board/TicketCard.tsx` (+5, -2 lines)
+- `src/components/team/charts/BurndownChart.tsx` (+45, -55 lines)
+- `src/components/team/charts/BurndownPeriodChart.tsx` (+35, -25 lines)
+
+### 🌿 Branch
+- `feature/viewer-auth` → merged into `develop` (commit: 97f4f36)
+
+---
+
 ## [develop] - 2026-03-13 성능 최적화(CRITICAL/HIGH) — buildSessionUser 병렬화, 쿼리 중복 제거, 인메모리 계산 전환, DB 인덱스 추가
 
 ### 🎯 Prompts

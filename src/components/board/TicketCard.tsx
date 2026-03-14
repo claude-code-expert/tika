@@ -145,6 +145,7 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         </span>
         <span
           onClick={handleNavigate}
+          onPointerDown={(e) => e.stopPropagation()}
           style={{
             fontSize: 13,
             fontWeight: 600,
@@ -179,7 +180,13 @@ function TicketCardInner({ ticket, onClick, workspaceName }: TicketCardProps) {
         )}
         {workspaceName && (
           <span
-            onClick={handleNavigate}
+            onClick={(e) => {
+              e.stopPropagation();
+              const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
+              navigator.clipboard.writeText(url);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            title="상세 페이지 주소 복사"
             style={{
               fontSize: 11,
               fontWeight: 500,

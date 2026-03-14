@@ -22,6 +22,7 @@ import {
   Trash2,
   Link2 as LinkIcon,
 } from 'lucide-react';
+import { Toast } from '@/components/ui/Toast';
 
 // ─── IconBtnWithTooltip ──────────────────────────────────────────────────────
 
@@ -170,6 +171,7 @@ export function TicketDetailPage({
 
   // ── UI state ──
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -278,6 +280,8 @@ export function TicketDetailPage({
         body: JSON.stringify(patch),
       });
       router.refresh();
+      setShowSaveToast(true);
+      setTimeout(() => setShowSaveToast(false), 2000);
     } finally {
       setIsSaving(false);
     }
@@ -974,6 +978,7 @@ export function TicketDetailPage({
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />
+      {showSaveToast && <Toast message="저장되었습니다" />}
     </>
   );
 }

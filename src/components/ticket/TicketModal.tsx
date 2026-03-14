@@ -23,6 +23,7 @@ import {
   Trash2,
   Copy,
 } from 'lucide-react';
+import { Toast } from '@/components/ui/Toast';
 
 // ─── constants ─────────────────────────────────────────────────────────────────
 
@@ -249,6 +250,7 @@ export function TicketModal({
 
   // ── UI state ──
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
@@ -353,7 +355,11 @@ export function TicketModal({
       const newIds = [...selectedAssigneeIds].sort().join(',');
       if (origIds !== newIds) patch.assigneeIds = selectedAssigneeIds;
       await onUpdate(ticket.id, patch);
-      onClose();
+      setShowSaveToast(true);
+      setTimeout(() => {
+        setShowSaveToast(false);
+        onClose();
+      }, 1500);
     } finally {
       setIsSaving(false);
     }
@@ -1266,6 +1272,7 @@ export function TicketModal({
         onConfirm={handleDuplicate}
         onCancel={() => setShowDuplicateConfirm(false)}
       />
+      {showSaveToast && <Toast message="저장되었습니다" />}
     </>
   );
 }

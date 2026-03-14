@@ -70,6 +70,7 @@ export default async function TicketPage({
         workspaceId={workspaceId}
         workspaceName={workspace.name}
         currentMemberId={member.id}
+        readOnly={role === 'VIEWER'}
       />
     </TeamShell>
   );

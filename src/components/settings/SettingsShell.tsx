@@ -10,6 +10,9 @@ import { GeneralSection } from './GeneralSection';
 import { NotificationPreferencesSection } from './NotificationPreferencesSection';
 import { LabelSection } from './LabelSection';
 import type { SectionKey, ToastType } from './types';
+import type { TeamRole } from '@/types/index';
+
+const VIEWER_ALLOWED_SECTIONS: SectionKey[] = ['general'];
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 
 interface ToastState {
@@ -50,10 +53,17 @@ const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
   },
 ];
 
-export function SettingsShell({ workspaceId }: { workspaceId: number }) {
+export function SettingsShell({ workspaceId, role }: { workspaceId: number; role: TeamRole }) {
+  const isViewer = role === 'VIEWER';
+  const visibleNavItems = isViewer
+    ? NAV_ITEMS.filter((item) => VIEWER_ALLOWED_SECTIONS.includes(item.key))
+    : NAV_ITEMS;
+
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialSection = (searchParams.get('section') as SectionKey) ?? 'general';
+  const rawSection = (searchParams.get('section') as SectionKey) ?? 'general';
+  const initialSection =
+    isViewer && !VIEWER_ALLOWED_SECTIONS.includes(rawSection) ? 'general' : rawSection;
   const [activeSection, setActiveSection] = useState<SectionKey>(initialSection);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
@@ -109,7 +119,7 @@ export function SettingsShell({ workspaceId }: { workspaceId: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F8F9FB', fontFamily: "'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" }}>
-      <Header onNewTask={handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
+      <Header onNewTask={isViewer ? undefined : handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
 
       {/* New ticket modal */}
       {isNewTicketOpen && (
@@ -159,7 +169,7 @@ export function SettingsShell({ workspaceId }: { workspaceId: number }) {
         {/* Side Nav */}
         <nav style={{ width: 220, background: '#F1F3F6', borderRight: '1px solid #DFE1E6', padding: '20px 0', flexShrink: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#8993A4', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 20px', marginBottom: 8 }}>설정</div>
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = activeSection === item.key;
             return (
               <button

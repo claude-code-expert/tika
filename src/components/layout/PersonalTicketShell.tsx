@@ -65,6 +65,7 @@ export function PersonalTicketShell({
       />
 
       <DndContext
+        id="personal-ticket"
         sensors={sensors}
         onDragEnd={handleDragEnd}
         accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}

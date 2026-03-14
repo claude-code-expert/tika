@@ -22,6 +22,7 @@ interface WbsClientProps {
   stats: WbsStats;
   currentMemberId: number | null;
   workspaceName: string;
+  readOnly?: boolean;
 }
 
 const LEGEND = [
@@ -75,7 +76,7 @@ function countItems(items: GanttItem[]): { total: number; done: number } {
   return { total, done };
 }
 
-export function WbsClient({ allItems, allTickets, stats, currentMemberId, workspaceName }: WbsClientProps) {
+export function WbsClient({ allItems, allTickets, stats, currentMemberId, workspaceName, readOnly = false }: WbsClientProps) {
   const router = useRouter();
   const goals  = allItems.filter((item) => item.type === 'GOAL');
 
@@ -216,6 +217,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
           onDelete={handleDelete}
           currentMemberId={currentMemberId}
           workspaceName={workspaceName}
+          readOnly={readOnly}
         />
       )}
     </div>

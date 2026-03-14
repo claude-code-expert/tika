@@ -126,6 +126,7 @@ interface TicketDetailPageProps {
   workspaceName?: string;
   currentMemberId?: number | null;
   backUrl?: string;
+  readOnly?: boolean;
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export function TicketDetailPage({
   workspaceName,
   currentMemberId = null,
   backUrl,
+  readOnly = false,
 }: TicketDetailPageProps) {
   const router = useRouter();
   const ticket = initialTicket;
@@ -573,10 +575,12 @@ export function TicketDetailPage({
                   ref={descTextareaRef}
                   value={description}
                   onChange={(e) => {
+                    if (readOnly) return;
                     setDescription(e.target.value);
                     e.target.style.height = 'auto';
                     e.target.style.height = `${e.target.scrollHeight}px`;
                   }}
+                  readOnly={readOnly}
                   maxLength={1000}
                   placeholder="티켓에 대한 설명을 입력하세요..."
                   aria-label="설명"
@@ -587,8 +591,10 @@ export function TicketDetailPage({
                     lineHeight: 1.7, background: 'var(--color-board-bg)',
                     resize: 'none', overflow: 'hidden', outline: 'none',
                     transition: 'border-color 0.15s, box-shadow 0.15s',
+                    cursor: readOnly ? 'default' : undefined,
                   }}
                   onFocus={(e) => {
+                    if (readOnly) return;
                     e.target.style.background = '#fff';
                     e.target.style.borderColor = 'var(--color-accent)';
                     e.target.style.boxShadow = '0 0 0 3px var(--color-accent-light, #E8F5F0)';
@@ -712,6 +718,7 @@ export function TicketDetailPage({
                     const res = await fetch(`/api/tickets/${ticket.id}/checklist/${itemId}`, { method: 'DELETE' });
                     if (!res.ok) setChecklistItems(snapshot);
                   }}
+                  readOnly={readOnly}
                 />
               </div>
 
@@ -721,6 +728,7 @@ export function TicketDetailPage({
                 comments={commentList}
                 currentMemberId={currentMemberId}
                 onCommentsChange={setCommentList}
+                readOnly={readOnly}
               />
 
             </div>

@@ -56,8 +56,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   const notifRef = useRef<HTMLDivElement>(null);
   const [isMemberDrawerOpen, setIsMemberDrawerOpen] = useState(false);
 
+  const sessionMemberColor = (user as Record<string, unknown> | undefined)?.memberColor as string | undefined;
   const displayName = member?.displayName ?? user?.name ?? '사용자';
-  const avatarColor = member?.color ?? '#629584';
+  const avatarColor = member?.color ?? sessionMemberColor ?? '#629584';
   const initial = displayName.slice(0, 2).toUpperCase();
 
   // Mobile detection
@@ -184,7 +185,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               </svg>
             </button>
           )}
-          <a
+          <Link
             href={logoHref}
             style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
@@ -209,7 +210,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                 Plan Simply. Ship Boldly.
               </span>
             )}
-          </a>
+          </Link>
         </div>
 
         {/* Center: Search (only when search handler provided) */}

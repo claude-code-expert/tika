@@ -828,6 +828,7 @@ export function TicketModal({
                         setChecklistItems(snapshot);
                       }
                     }}
+                    readOnly={readOnly}
                   />
                 </div>
 
@@ -837,6 +838,7 @@ export function TicketModal({
                   comments={commentList}
                   currentMemberId={currentMemberId}
                   onCommentsChange={setCommentList}
+                  readOnly={readOnly}
                 />
 
               </div>

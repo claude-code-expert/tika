@@ -37,9 +37,8 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
   );
 
   const handleNewTask = useCallback(() => {
-    if (role === 'VIEWER') return;
     setIsNewTicketOpen(true);
-  }, [role]);
+  }, []);
 
   const handleTicketSubmit = useCallback(
     async (data: CreateTicketInput | UpdateTicketInput) => {
@@ -69,7 +68,7 @@ export function TeamShell({ workspaceId, role, workspaceName, iconColor, childre
         background: '#F8F9FB',
       }}
     >
-      <Header onNewTask={handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
+      <Header onNewTask={role === 'VIEWER' ? undefined : handleNewTask} searchQuery={searchQuery} onSearch={setSearchQuery} />
 
       {/* Ticket limit warning banner */}
       {warningMsg && (

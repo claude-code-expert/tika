@@ -48,6 +48,7 @@ export default async function TeamWbsPage({
         stats={{ goal: goalCount, story: storyCount, feature: featureCount, task: taskCount, overallPct }}
         currentMemberId={member.id}
         workspaceName={workspace.name}
+        readOnly={role === 'VIEWER'}
       />
     </TeamShell>
   );

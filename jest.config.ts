@@ -31,6 +31,7 @@ const config: Config = {
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/drizzle/',
+    '<rootDir>/tests/e2e/',
   ],
 
   collectCoverageFrom: [

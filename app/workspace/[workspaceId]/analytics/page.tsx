@@ -127,14 +127,14 @@ export default async function TeamAnalyticsPage({
 
         {/* Summary stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 14, marginBottom: 24 }}>
-          <MiniStat label="Goal" value={goalCount} color="#4338CA" />
-          <MiniStat label="Story" value={storyCount} color="#1D4ED8" />
-          <MiniStat label="Feature" value={featureCount} color="#065F46" />
-          <MiniStat label="Task" value={taskCount} color="#6B7280" />
-          <MiniStat label="완료 티켓" value={doneTickets} sub={`전체 ${total}`} color="#629584" />
-          <MiniStat label="평균 Cycle Time" value={`${avgCycleTime}d`} sub="생성 → 완료" color="#629584" />
-          <MiniStat label="전체 완료율" value={`${completionRate}%`} sub={`${doneTickets} / ${total} 완료`} color="#22C55E" />
-          <MiniStat label="지연 티켓" value={overdueCount} sub="마감일 초과" color="#DC2626" />
+          <MiniStat label="Goal" value={goalCount} color="#4338CA" bg="var(--color-dash-red)" />
+          <MiniStat label="Story" value={storyCount} color="#1D4ED8" bg="var(--color-dash-blue)" />
+          <MiniStat label="Feature" value={featureCount} color="#065F46" bg="var(--color-dash-mint)" />
+          <MiniStat label="Task" value={taskCount} color="#6B7280" bg="var(--color-dash-green)" />
+          <MiniStat label="완료 티켓" value={doneTickets} sub={`전체 ${total}`} color="#629584" bg="var(--color-dash-teal)" />
+          <MiniStat label="평균 Cycle Time" value={`${avgCycleTime}d`} sub="생성 → 완료" color="#629584" bg="var(--color-dash-amber)" />
+          <MiniStat label="전체 완료율" value={`${completionRate}%`} sub={`${doneTickets} / ${total} 완료`} color="#629584" bg="var(--color-dash-pink)" />
+          <MiniStat label="지연 티켓" value={overdueCount} sub="마감일 초과" color="#DC2626" bg="var(--color-dash-red)" />
         </div>
 
         {/* Charts 2-col grid */}
@@ -190,9 +190,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function MiniStat({ label, value, sub, color }: { label: string; value: number | string; sub?: string; color: string }) {
+function MiniStat({ label, value, sub, color, bg }: { label: string; value: number | string; sub?: string; color: string; bg?: string }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '14px 16px' }}>
+    <div style={{ background: bg ?? '#fff', border: '1px solid #DFE1E6', borderRadius: 10, padding: '14px 16px' }}>
       <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{value}</div>
       <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{sub}</div>}

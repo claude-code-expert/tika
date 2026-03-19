@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BreadcrumbPicker } from './BreadcrumbPicker';
@@ -12,107 +11,18 @@ import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/components/ui/Chips';
 import { CHEVRON_SVG, metaSelectStyle, metaDateStyle as metaDateStyleShared } from '@/lib/ticketMetaStyles';
-import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
+import { LabelBadge } from '@/components/label/LabelBadge';
 import {
   FileText,
-  Users,
   UserPlus,
   Save,
   Link2,
   X,
   Trash2,
-  Copy,
 } from 'lucide-react';
 import { Toast } from '@/components/ui/Toast';
 
 // ─── constants ─────────────────────────────────────────────────────────────────
-
-// ─── UrlCopyBadge ────────────────────────────────────────────────────────────
-
-function UrlCopyBadge({ ticket, workspaceName }: { ticket: TicketWithMeta; workspaceName?: string }) {
-  const router = useRouter();
-  const [copied, setCopied] = useState(false);
-  const [hover, setHover] = useState(false);
-  const path = `/workspace/${ticket.workspaceId}/${ticket.id}`;
-  const fullUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${path}`
-    : path;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(fullUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <span
-        onClick={() => router.push(path)}
-        style={{
-          fontSize: 10,
-          color: '#8993A4',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          maxWidth: 260,
-          direction: 'rtl',
-          textAlign: 'left',
-          cursor: 'pointer',
-          transition: 'color 0.12s',
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-accent)'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8993A4'; }}
-      >
-        {fullUrl}
-      </span>
-      <button
-        onClick={handleCopy}
-        style={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 22,
-          height: 22,
-          borderRadius: 4,
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-          background: 'transparent',
-          color: copied ? '#629584' : '#8993A4',
-          transition: 'color 0.12s',
-        }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        aria-label="URL 복사"
-      >
-        <Copy size={12} />
-        {(hover || copied) && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 4px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: '#1F2937',
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 500,
-              padding: '3px 8px',
-              borderRadius: 4,
-              whiteSpace: 'nowrap',
-              pointerEvents: 'none',
-              zIndex: 50,
-            }}
-          >
-            {copied ? '복사됨' : 'URL 복사'}
-          </span>
-        )}
-      </button>
-    </div>
-  );
-}
 
 // ─── IconBtnWithTooltip ──────────────────────────────────────────────────────
 

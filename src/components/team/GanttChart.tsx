@@ -24,6 +24,7 @@ interface GanttChartProps {
 }
 
 const DAY_W = 28;
+const TODAY_COL_STYLE = { position: 'absolute', background: '#629584', zIndex: 3, pointerEvents: 'none' } as const;
 const ROW_H = 36;
 const LEFT_W = 220;
 const RIGHT_W = 260;
@@ -156,14 +157,6 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
       startClipped: startD < weekdays[0],
       endClipped:   endD   > weekdays[weekdays.length - 1],
     };
-  }
-
-  function getBorderRadius(b: NonNullable<ReturnType<typeof getBarBounds>>) {
-    const r = 10;
-    if (!b.startClipped && !b.endClipped) return r;
-    if (!b.startClipped) return `${r}px 0 0 ${r}px`;
-    if (!b.endClipped)   return `0 ${r}px ${r}px 0`;
-    return 0;
   }
 
   // ── Scroll sync ──
@@ -355,8 +348,9 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
             {/* Today column border lines */}
             {todayIdx !== -1 && (
               <>
-                <div style={{ position: 'absolute', left: todayIdx * DAY_W, top: 0, width: 1, height: rowsH, background: '#629584', zIndex: 3, pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', left: (todayIdx + 1) * DAY_W - 1, top: 0, width: 1, height: rowsH, background: '#629584', zIndex: 3, pointerEvents: 'none' }} />
+                <div style={{ ...TODAY_COL_STYLE, left: todayIdx * DAY_W, top: 0, width: 1, height: rowsH }} />
+                <div style={{ ...TODAY_COL_STYLE, left: (todayIdx + 1) * DAY_W - 1, top: 0, width: 1, height: rowsH }} />
+                <div style={{ ...TODAY_COL_STYLE, left: todayIdx * DAY_W, bottom: 0, width: DAY_W, height: 1 }} />
               </>
             )}
             {/* Monday grid lines */}

@@ -157,6 +157,16 @@ export function useTickets(initialData?: BoardData) {
     return { ...board, board: newBoard };
   }, [board, activeLabels]);
 
+  const patchTicketLocal = useCallback((id: number, patch: Partial<TicketWithMeta>) => {
+    setBoard((prev) => {
+      const newBoard = { ...prev.board };
+      for (const status of Object.keys(newBoard) as TicketStatus[]) {
+        newBoard[status] = newBoard[status].map((t) => (t.id === id ? { ...t, ...patch } : t));
+      }
+      return { ...prev, board: newBoard };
+    });
+  }, []);
+
   const toggleLabel = useCallback((labelId: number) => {
     setActiveLabels((prev) =>
       prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
@@ -176,6 +186,7 @@ export function useTickets(initialData?: BoardData) {
     fetchBoard,
     createTicket,
     updateTicket,
+    patchTicketLocal,
     deleteTicket,
     reorder,
     warningMessage,

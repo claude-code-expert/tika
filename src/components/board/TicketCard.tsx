@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, memo } from 'react';
+import { useMemo, memo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { AlertTriangle, Calendar, CheckSquare } from 'lucide-react';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PriorityBadge } from '@/components/ui/Chips';
 import { LabelBadge } from '@/components/label/LabelBadge';
+import { Toast } from '@/components/ui/Toast';
 
 const PARENT_TAG_STYLES: Record<string, { bg: string; color: string }> = {
   GOAL: { bg: '#F3E8FF', color: '#8B5CF6' },
@@ -41,6 +42,7 @@ interface TicketCardProps {
 
 function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardProps) {
   const router = useRouter();
+  const [showCopyToast, setShowCopyToast] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: ticket.id,
   });
@@ -184,7 +186,10 @@ function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardP
             onClick={(e) => {
               e.stopPropagation();
               const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
-              navigator.clipboard.writeText(url);
+              navigator.clipboard.writeText(url).then(() => {
+                setShowCopyToast(true);
+                setTimeout(() => setShowCopyToast(false), 2000);
+              });
             }}
             onPointerDown={(e) => e.stopPropagation()}
             title="상세 페이지 주소 복사"
@@ -270,6 +275,8 @@ function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardP
           {ticket.description}
         </div>
       )}
+
+      {showCopyToast && <Toast message="티켓 주소가 복사되었습니다" />}
 
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

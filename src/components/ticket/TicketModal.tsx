@@ -201,6 +201,7 @@ interface TicketModalProps {
   onUpdate: (id: number, data: UpdateTicketInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onDuplicate?: () => Promise<void>;
+  onChecklistChange?: (items: ChecklistItem[]) => void;
   currentMemberId?: number | null;
   workspaceName?: string;
   readOnly?: boolean;
@@ -215,6 +216,7 @@ export function TicketModal({
   onUpdate,
   onDelete,
   onDuplicate,
+  onChecklistChange,
   workspaceName,
   currentMemberId = null,
   readOnly = false,
@@ -798,34 +800,41 @@ export function TicketModal({
                       });
                       if (res.ok) {
                         const { item } = await res.json();
-                        setChecklistItems((prev) => [...prev, item]);
+                        const updated = [...checklistItems, item];
+                        setChecklistItems(updated);
+                        onChecklistChange?.(updated);
                       }
                     }}
                     onToggle={async (itemId, isCompleted) => {
-                      setChecklistItems((prev) =>
-                        prev.map((i) => (i.id === itemId ? { ...i, isCompleted } : i)),
+                      const updated = checklistItems.map((i) =>
+                        i.id === itemId ? { ...i, isCompleted } : i,
                       );
+                      setChecklistItems(updated);
+                      onChecklistChange?.(updated);
                       const res = await fetch(`/api/tickets/${ticket.id}/checklist/${itemId}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ isCompleted }),
                       });
                       if (!res.ok) {
-                        setChecklistItems((prev) =>
-                          prev.map((i) =>
-                            i.id === itemId ? { ...i, isCompleted: !isCompleted } : i,
-                          ),
+                        const rolled = checklistItems.map((i) =>
+                          i.id === itemId ? { ...i, isCompleted: !isCompleted } : i,
                         );
+                        setChecklistItems(rolled);
+                        onChecklistChange?.(rolled);
                       }
                     }}
                     onDelete={async (itemId) => {
                       const snapshot = checklistItems;
-                      setChecklistItems((prev) => prev.filter((i) => i.id !== itemId));
+                      const updated = checklistItems.filter((i) => i.id !== itemId);
+                      setChecklistItems(updated);
+                      onChecklistChange?.(updated);
                       const res = await fetch(`/api/tickets/${ticket.id}/checklist/${itemId}`, {
                         method: 'DELETE',
                       });
                       if (!res.ok) {
                         setChecklistItems(snapshot);
+                        onChecklistChange?.(snapshot);
                       }
                     }}
                     readOnly={readOnly}
@@ -1187,20 +1196,23 @@ export function TicketModal({
                 aria-label="저장"
                 style={{
                   ...footerBtnBase,
-                  background: isDirty && title.trim() ? 'var(--color-accent)' : 'transparent',
-                  color: isDirty && title.trim() ? '#fff' : 'var(--color-text-secondary)',
-                  border: isDirty && title.trim() ? 'none' : '1px solid #9CA3AF',
+                  background: isDirty && title.trim() ? '#EFF6FF' : 'transparent',
+                  color: isDirty && title.trim() ? '#2563EB' : 'var(--color-text-secondary)',
+                  border: isDirty && title.trim() ? '1.5px solid #3B82F6' : '1px solid #9CA3AF',
                   opacity: isSaving ? 0.7 : 1,
                   cursor: isDirty && title.trim() && !isSaving ? 'pointer' : 'default',
+                  fontWeight: isDirty && title.trim() ? 700 : 500,
                 }}
                 onMouseEnter={(e) => {
                   if (isDirty && title.trim() && !isSaving) {
-                    e.currentTarget.style.background = 'var(--color-accent-hover, #527D6F)';
+                    e.currentTarget.style.background = '#DBEAFE';
+                    e.currentTarget.style.borderColor = '#2563EB';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (isDirty && title.trim() && !isSaving) {
-                    e.currentTarget.style.background = 'var(--color-accent)';
+                    e.currentTarget.style.background = '#EFF6FF';
+                    e.currentTarget.style.borderColor = '#3B82F6';
                   }
                 }}
               >

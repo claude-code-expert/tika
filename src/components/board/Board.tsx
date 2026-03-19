@@ -1,20 +1,8 @@
 'use client';
 
-import type { BoardData, TicketStatus, TicketWithMeta } from '@/types/index';
+import type { BoardData, TicketWithMeta } from '@/types/index';
+import { COLUMN_ORDER, COLUMN_LABELS } from '@/types/index';
 import { Column } from './Column';
-import { TICKET_STATUS } from '@/types/index';
-
-const COLUMN_ORDER: TicketStatus[] = [
-  TICKET_STATUS.TODO,
-  TICKET_STATUS.IN_PROGRESS,
-  TICKET_STATUS.DONE,
-];
-
-const COLUMN_LABELS: Partial<Record<TicketStatus, string>> = {
-  TODO: 'TODO',
-  IN_PROGRESS: 'In Progress',
-  DONE: 'Done',
-};
 
 interface BoardProps {
   board: BoardData;

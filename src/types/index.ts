@@ -46,6 +46,19 @@ export const TICKET_STATUS = {
 } as const;
 export type TicketStatus = (typeof TICKET_STATUS)[keyof typeof TICKET_STATUS];
 
+// Board column constants — shared across board components (TD-101)
+export const COLUMN_ORDER: TicketStatus[] = [
+  TICKET_STATUS.TODO,
+  TICKET_STATUS.IN_PROGRESS,
+  TICKET_STATUS.DONE,
+];
+
+export const COLUMN_LABELS: Partial<Record<TicketStatus, string>> = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'In Progress',
+  DONE: 'Done',
+};
+
 export const TICKET_PRIORITY = {
   LOW: 'LOW',
   MEDIUM: 'MEDIUM',

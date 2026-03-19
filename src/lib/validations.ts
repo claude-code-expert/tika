@@ -47,7 +47,7 @@ export const createTicketSchema = z.object({
     .optional(),
   parentId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
-  assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
+  assigneeIds: z.array(z.number().int().positive()).max(3, '담당자는 최대 3명까지 배정할 수 있습니다').optional(),
   sprintId: z.number().int().positive().nullable().optional(),
   storyPoints: z.number().int().min(1).max(100).nullable().optional(),
   labelIds: z.array(z.number().int().positive()).optional(),
@@ -86,7 +86,7 @@ export const updateTicketSchema = z.object({
     .optional(),
   parentId: z.number().int().positive().nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
-  assigneeIds: z.array(z.number().int().positive()).max(5, '담당자는 최대 5명까지 배정할 수 있습니다').optional(),
+  assigneeIds: z.array(z.number().int().positive()).max(3, '담당자는 최대 3명까지 배정할 수 있습니다').optional(),
   sprintId: z.number().int().positive().nullable().optional(),
   storyPoints: z.number().int().min(1).max(100).nullable().optional(),
   labelIds: z.array(z.number().int().positive()).optional(),
@@ -115,6 +115,14 @@ export const updateLabelSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, '색상 코드가 올바르지 않습니다 (#RRGGBB)')
     .optional(),
+});
+
+export const copyLabelsSchema = z.object({
+  targetWorkspaceId: z.number().int().positive('대상 워크스페이스를 선택해주세요'),
+  labelIds: z
+    .array(z.number().int().positive())
+    .min(1, '복사할 라벨을 1개 이상 선택해주세요')
+    .max(20),
 });
 
 export const createChecklistItemSchema = z.object({

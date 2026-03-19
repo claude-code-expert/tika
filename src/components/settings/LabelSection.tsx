@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { mutate } from 'swr';
 import type { SectionProps } from './types';
-import type { LabelWithCount } from '@/types/index';
+import type { LabelWithCount, WorkspaceWithRole } from '@/types/index';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import { DEFAULT_LABELS } from '@/lib/constants';
 
@@ -72,7 +72,7 @@ function ConfirmDialog({
 }
 
 // workspaceId prop received but /api/labels uses session.workspaceId server-side
-export function LabelSection({ showToast }: SectionProps) {
+export function LabelSection({ showToast, workspaceId }: SectionProps) {
   const [labels, setLabels] = useState<LabelWithCount[]>([]);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -86,11 +86,58 @@ export function LabelSection({ showToast }: SectionProps) {
   const [selectedTemplateNames, setSelectedTemplateNames] = useState<Set<string>>(
     () => new Set(DEFAULT_LABELS.map((l) => l.name)),
   );
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [copyTargetWsId, setCopyTargetWsId] = useState<number | null>(null);
+  const [copySelectedIds, setCopySelectedIds] = useState<Set<number>>(new Set());
+  const [otherWorkspaces, setOtherWorkspaces] = useState<WorkspaceWithRole[]>([]);
+  const [isCopying, setIsCopying] = useState(false);
   const newNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchLabels();
   }, []);
+
+  async function openCopyDialog() {
+    try {
+      const res = await fetch('/api/workspaces');
+      const data = (await res.json()) as { workspaces?: WorkspaceWithRole[] };
+      const others = (data.workspaces ?? []).filter((ws) => ws.id !== workspaceId);
+      setOtherWorkspaces(others);
+      setCopyTargetWsId(others.length > 0 ? others[0].id : null);
+      setCopySelectedIds(new Set(labels.map((l) => l.id)));
+      setShowCopyDialog(true);
+    } catch {
+      showToast('워크스페이스 목록을 불러오지 못했습니다', 'fail');
+    }
+  }
+
+  async function handleCopy() {
+    if (!copyTargetWsId || copySelectedIds.size === 0) return;
+    setIsCopying(true);
+    try {
+      const res = await fetch('/api/labels/copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetWorkspaceId: copyTargetWsId, labelIds: Array.from(copySelectedIds) }),
+      });
+      const data = (await res.json()) as { copied?: number; skipped?: number; error?: { message?: string } };
+      if (!res.ok) {
+        showToast(data.error?.message ?? '복사 실패', 'fail');
+        return;
+      }
+      const { copied = 0, skipped = 0 } = data;
+      if (copied > 0) {
+        showToast(`${copied}개 라벨이 복사되었습니다${skipped > 0 ? ` (${skipped}개 중복 건너뜀)` : ''}`, 'success');
+      } else {
+        showToast('복사된 라벨이 없습니다 (중복 또는 한도 초과)', 'fail');
+      }
+      setShowCopyDialog(false);
+    } catch {
+      showToast('복사 중 오류가 발생했습니다', 'fail');
+    } finally {
+      setIsCopying(false);
+    }
+  }
 
   async function fetchLabels() {
     try {
@@ -210,6 +257,17 @@ export function LabelSection({ showToast }: SectionProps) {
           <span style={{ fontSize: 12, fontWeight: 400, color: '#8993A4' }}>({labels.length}/20)</span>
         </h2>
         <div style={{ display: 'flex', gap: 8 }}>
+          {labels.length > 0 && (
+            <button
+              onClick={openCopyDialog}
+              style={{ height: 32, padding: '0 14px', borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', color: '#5A6B7F', border: '1px solid #DFE1E6', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <rect x={9} y={9} width={13} height={13} rx={2} ry={2} /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              다른 워크스페이스로 복사
+            </button>
+          )}
           <button
             onClick={() => {
               setSelectedTemplateNames(new Set(DEFAULT_LABELS.map((l) => l.name)));
@@ -353,6 +411,99 @@ export function LabelSection({ showToast }: SectionProps) {
             })}
           </div>
         </ConfirmDialog>
+      )}
+
+      {/* Copy to workspace dialog */}
+      {showCopyDialog && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(9,30,66,0.54)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCopyDialog(false); }}
+        >
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 16px 48px rgba(0,0,0,.2)', padding: 24, maxWidth: 480, width: '90%', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 4 }}>다른 워크스페이스로 라벨 복사</div>
+            <div style={{ fontSize: 12, color: '#5A6B7F', marginBottom: 20 }}>선택한 라벨을 대상 워크스페이스에 복사합니다. 이름이 중복되는 라벨은 건너뜁니다.</div>
+
+            {/* Target workspace selector */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>대상 워크스페이스</div>
+              {otherWorkspaces.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#9CA3AF', padding: '8px 0' }}>복사 가능한 다른 워크스페이스가 없습니다.</div>
+              ) : (
+                <select
+                  value={copyTargetWsId ?? ''}
+                  onChange={(e) => setCopyTargetWsId(Number(e.target.value))}
+                  style={{ width: '100%', height: 34, padding: '0 8px', border: '1px solid #DFE1E6', borderRadius: 6, fontSize: 13, color: '#2C3E50', background: '#fff' }}
+                >
+                  {otherWorkspaces.map((ws) => (
+                    <option key={ws.id} value={ws.id}>
+                      {ws.name} ({ws.type === 'TEAM' ? '팀' : '개인'})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Label selection */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>복사할 라벨 ({copySelectedIds.size}/{labels.length})</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setCopySelectedIds(new Set(labels.map((l) => l.id)))} style={{ fontSize: 11, color: '#629584', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>전체 선택</button>
+                  <button onClick={() => setCopySelectedIds(new Set())} style={{ fontSize: 11, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>전체 해제</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {labels.map((l) => {
+                  const selected = copySelectedIds.has(l.id);
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => setCopySelectedIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(l.id)) next.delete(l.id); else next.add(l.id);
+                        return next;
+                      })}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        height: 24, padding: '0 10px', borderRadius: 4,
+                        fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                        background: selected ? 'transparent' : '#F1F3F6',
+                        color: selected ? '#2C3E50' : '#A0AEC0',
+                        border: `1px solid ${selected ? l.color : '#DFE1E6'}`,
+                        opacity: selected ? 1 : 0.5,
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                      {l.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                onClick={() => setShowCopyDialog(false)}
+                style={{ height: 32, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: '#fff', border: '1px solid #DFE1E6', color: '#5A6B7F' }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleCopy}
+                disabled={isCopying || copySelectedIds.size === 0 || !copyTargetWsId || otherWorkspaces.length === 0}
+                style={{
+                  height: 32, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                  background: '#629584', border: 'none', color: '#fff',
+                  opacity: isCopying || copySelectedIds.size === 0 || !copyTargetWsId ? 0.6 : 1,
+                }}
+              >
+                {isCopying ? '복사 중...' : `복사 (${copySelectedIds.size}개)`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

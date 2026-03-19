@@ -259,8 +259,8 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
 
     setIsSubmitting(true);
     try {
-      if (selectedAssigneeIds.length > 5) {
-        setAssigneeError('담당자는 최대 5명까지 지정할 수 있습니다');
+      if (selectedAssigneeIds.length > 3) {
+        setAssigneeError('담당자는 최대 3명까지 지정할 수 있습니다');
         return;
       }
 

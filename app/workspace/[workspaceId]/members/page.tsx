@@ -4,10 +4,11 @@ import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberByUserId, getMembersByWorkspace } from '@/db/queries/members';
 import { getMemberWorkload } from '@/db/queries/analytics';
 import { getBoardData } from '@/db/queries/tickets';
+import { getJoinRequests } from '@/db/queries/joinRequests';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { MemberDetailCard } from '@/components/team/MemberDetailCard';
-
+import { JoinRequestList } from '@/components/workspace/JoinRequestList';
 import { MemberList } from '@/components/team/MemberList';
 import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
@@ -39,6 +40,8 @@ export default async function TeamMembersPage({
   const role = currentMember.role as TeamRole;
   if (role === 'VIEWER') redirect(`/workspace/${workspaceId}`);
   const isOwner = role === 'OWNER';
+
+  const joinRequests = isOwner ? await getJoinRequests(workspaceId) : [];
 
   const allTickets = Object.values(boardData.board).flat() as TicketWithMeta[];
 
@@ -134,6 +137,11 @@ export default async function TeamMembersPage({
             workspaceId={workspaceId}
           />
         </section>
+
+        {/* Join requests — OWNER only */}
+        {isOwner && (
+          <JoinRequestList workspaceId={workspaceId} initialRequests={joinRequests} />
+        )}
       </div>
     </TeamShell>
   );

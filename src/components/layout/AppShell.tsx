@@ -29,6 +29,7 @@ export function AppShell() {
     isLoading,
     createTicket,
     updateTicket,
+    patchTicketLocal,
     deleteTicket,
     reorder,
   } = useTickets();
@@ -129,6 +130,7 @@ export function AppShell() {
               isLoading={isLoading}
               createTicket={createTicket}
               updateTicket={updateTicket}
+              patchTicketLocal={patchTicketLocal}
               deleteTicket={deleteTicket}
               onDuplicate={handleDuplicate}
               isCreating={isCreating}

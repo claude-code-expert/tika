@@ -489,7 +489,7 @@ interface TeamBoardClientProps {
 }
 
 export function TeamBoardClient({ initialData, workspaceId, currentMemberId, role }: TeamBoardClientProps) {
-  const { board, isLoading, createTicket, updateTicket, deleteTicket, reorder, fetchBoard, warningMessage, clearWarning } =
+  const { board, isLoading, createTicket, updateTicket, patchTicketLocal, deleteTicket, reorder, fetchBoard, warningMessage, clearWarning } =
     useTickets(initialData);
 
   const { register } = useBoardRefreshRegistry();
@@ -593,6 +593,7 @@ export function TeamBoardClient({ initialData, workspaceId, currentMemberId, rol
               isLoading={isLoading}
               createTicket={createTicket}
               updateTicket={updateTicket}
+              patchTicketLocal={patchTicketLocal}
               deleteTicket={deleteTicket}
               onDuplicate={handleDuplicate}
               isCreating={isCreating}

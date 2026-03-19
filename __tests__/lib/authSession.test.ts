@@ -123,7 +123,7 @@ describe('buildSessionUser — NULL type (onboarding)', () => {
       .mockReturnValueOnce(sel([]))
       .mockReturnValueOnce(selJoin([]));
     const result = await buildSessionUser('new');
-    expect(result).toEqual({ id: 'new', userType: null, workspaceId: null, memberId: null });
+    expect(result).toEqual({ id: 'new', userType: null, workspaceId: null, memberId: null, memberColor: null });
   });
 
   it('performs exactly 3 DB queries (all run in parallel)', async () => {
@@ -146,7 +146,7 @@ describe('buildSessionUser — primary member found', () => {
       .mockReturnValueOnce(selJoin([]));                        // personal ws (ignored)
 
     const result = await buildSessionUser('u1');
-    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: 10, memberId: 5 });
+    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: 10, memberId: 5, memberColor: null });
   });
 
   it('returns primary workspaceId and memberId for WORKSPACE type', async () => {
@@ -156,7 +156,7 @@ describe('buildSessionUser — primary member found', () => {
       .mockReturnValueOnce(selJoin([]));
 
     const result = await buildSessionUser('u2');
-    expect(result).toEqual({ id: 'u2', userType: 'WORKSPACE', workspaceId: 42, memberId: 7 });
+    expect(result).toEqual({ id: 'u2', userType: 'WORKSPACE', workspaceId: 42, memberId: 7, memberColor: null });
   });
 
   it('performs exactly 3 DB queries', async () => {
@@ -191,7 +191,7 @@ describe('buildSessionUser — no primary, fallback to personal workspace', () =
       .mockReturnValueOnce(selJoin([{ id: 3, workspaceId: 1 }]));     // personal ws
 
     const result = await buildSessionUser('u1');
-    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: 1, memberId: 3 });
+    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: 1, memberId: 3, memberColor: null });
   });
 
   it('returns null workspaceId and memberId when no primary and no personal workspace', async () => {
@@ -201,7 +201,7 @@ describe('buildSessionUser — no primary, fallback to personal workspace', () =
       .mockReturnValueOnce(selJoin([])); // no personal ws
 
     const result = await buildSessionUser('u1');
-    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: null, memberId: null });
+    expect(result).toEqual({ id: 'u1', userType: 'USER', workspaceId: null, memberId: null, memberColor: null });
   });
 
   it('performs exactly 3 DB queries', async () => {

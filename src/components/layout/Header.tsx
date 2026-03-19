@@ -30,7 +30,7 @@ function timeAgo(iso: string): string {
 }
 
 export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar }: HeaderProps) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const pathname = usePathname();
   const user = session?.user;
   const memberId = (user as Record<string, unknown> | undefined)?.memberId as number | undefined;
@@ -57,9 +57,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
   const [isMemberDrawerOpen, setIsMemberDrawerOpen] = useState(false);
 
   const sessionMemberColor = (user as Record<string, unknown> | undefined)?.memberColor as string | undefined;
-  const displayName = member?.displayName ?? user?.name ?? '사용자';
+  const displayName = member?.displayName ?? user?.name ?? '';
   const avatarColor = member?.color ?? sessionMemberColor ?? '#629584';
-  const initial = displayName.slice(0, 2).toUpperCase();
+  const initial = sessionStatus !== 'loading' ? displayName.slice(0, 2).toUpperCase() : '';
 
   // Mobile detection
   useEffect(() => {
@@ -426,7 +426,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                     pointerEvents: 'none',
                   }}
                 >
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>

@@ -339,14 +339,14 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
       {externalTitle === undefined && (
         <div style={{ padding: '0 24px', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ ...sectionHeaderStyle, marginBottom: 0, flexShrink: 0 }}>
+            <label htmlFor="ticket-title" style={{ ...sectionHeaderStyle, marginBottom: 0, flexShrink: 0 }}>
               <Type size={13} style={{ opacity: 0.7 }} />
               제목 <span style={{ color: '#DC2626', fontSize: 10, textTransform: 'none', letterSpacing: 0 }}>*</span>
-            </div>
+            </label>
             <input
               id="ticket-title" type="text" value={title}
               onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError(''); }}
-              maxLength={TITLE_MAX_LENGTH} placeholder="업무 제목을 입력하세요" autoFocus aria-label="제목"
+              maxLength={TITLE_MAX_LENGTH} placeholder="업무 제목을 입력하세요" autoFocus aria-label="제목" aria-describedby={titleError ? 'ticket-title-error' : undefined}
               style={{ ...inputStyle, flex: 1, borderColor: titleError || title.length >= TITLE_MAX_LENGTH ? '#DC2626' : 'var(--color-border)' }}
               onFocus={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-accent)'; }}
               onBlur={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-border)'; }}
@@ -357,7 +357,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
               제목은 {TITLE_MAX_LENGTH}자 이하여야 합니다 ({title.length}/{TITLE_MAX_LENGTH})
             </span>
           )}
-          {titleError && <span style={{ fontSize: 11, color: '#DC2626', marginLeft: 52 }}>{titleError}</span>}
+          {titleError && <span id="ticket-title-error" style={{ fontSize: 11, color: '#DC2626', marginLeft: 52 }}>{titleError}</span>}
         </div>
       )}
 

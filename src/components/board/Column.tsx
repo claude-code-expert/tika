@@ -77,16 +77,17 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName, cur
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span
+          <h3
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontSize: 14,
               fontWeight: 700,
               color: 'var(--color-text-primary)',
+              margin: 0,
             }}
           >
             {label}
-          </span>
+          </h3>
           {status === 'IN_PROGRESS' && myWipCount > 3 && (
             <Tooltip
               content={`내 진행 중 업무 적정 수 = 3, 현재 ${myWipCount - 3}건 초과`}
@@ -123,6 +124,7 @@ function ColumnInner({ status, label, tickets, onTicketClick, workspaceName, cur
       {/* Drop zone + cards */}
       <div
         ref={setNodeRef}
+        aria-label={`${label} 칼럼 드롭 영역`}
         className="[&::-webkit-scrollbar]:hidden"
         style={{
           flex: 1,

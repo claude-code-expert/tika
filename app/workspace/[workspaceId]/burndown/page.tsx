@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -11,6 +12,11 @@ import { CumulativeFlowDiagram } from '@/components/team/charts/CumulativeFlowDi
 import { DailyLogTable } from '@/components/team/charts/DailyLogTable';
 import { SprintSelector } from '@/components/team/SprintSelector';
 import type { TeamRole } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '번다운 차트',
+  description: '스프린트 번다운 차트를 확인하세요.',
+};
 
 export default async function TeamBurndownPage({
   params,

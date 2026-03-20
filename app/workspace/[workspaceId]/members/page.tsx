@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -12,6 +13,11 @@ import { JoinRequestList } from '@/components/workspace/JoinRequestList';
 import { MemberList } from '@/components/team/MemberList';
 import { InviteModalTrigger } from '@/components/team/InviteModalTrigger';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '멤버 관리',
+  description: '워크스페이스 멤버를 관리하세요.',
+};
 
 export default async function TeamMembersPage({
   params,

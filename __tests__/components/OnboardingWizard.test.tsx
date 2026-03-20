@@ -1,10 +1,8 @@
 /**
- * OnboardingWizard component tests
- * - Step 1: always creates personal workspace (PATCH /api/users/type with USER)
- * - Step 2: shows team workspace option and personal board option
- * - Team workspace: navigates to /onboarding/workspace
- * - Personal board: navigates to /
- * - Shows error message on API failure
+ * OnboardingWizard component tests — tab-based single screen
+ * - Personal tab: calls PATCH /api/users/type with USER, then navigates to /
+ * - Team tab: shows WorkspaceCreator (개설) and WorkspaceFinder (찾기) sub-tabs
+ * - Error handling: shows error on API failure, no navigation
  */
 
 jest.mock('next/navigation', () => ({
@@ -12,6 +10,12 @@ jest.mock('next/navigation', () => ({
 }));
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
+}));
+jest.mock('@/components/onboarding/WorkspaceCreator', () => ({
+  WorkspaceCreator: () => <div>WorkspaceCreator</div>,
+}));
+jest.mock('@/components/onboarding/WorkspaceFinder', () => ({
+  WorkspaceFinder: () => <div>WorkspaceFinder</div>,
 }));
 
 import React from 'react';
@@ -33,16 +37,9 @@ function renderWizard() {
 function mockFetchSuccess() {
   (global.fetch as jest.Mock).mockResolvedValue({
     ok: true,
-    json: async () => ({ user: { userType: 'USER' }, workspace: { id: 1 } }),
+    json: async () => ({ user: { userType: 'USER' } }),
   });
   mockUpdate.mockResolvedValue(null);
-}
-
-async function advanceToStep2() {
-  mockFetchSuccess();
-  const btn = screen.getByRole('button', { name: /개인 워크스페이스 생성하기/ });
-  fireEvent.click(btn);
-  await waitFor(() => expect(screen.getByText(/팀 워크스페이스를 만드시겠어요/)).toBeTruthy());
 }
 
 beforeEach(() => {
@@ -52,83 +49,69 @@ beforeEach(() => {
   global.fetch = jest.fn();
 });
 
-// ─── Rendering (Step 1) ──────────────────────────────────────────────────────
+// ─── Rendering (initial state) ───────────────────────────────────────────────
 
-describe('OnboardingWizard — rendering (step 1)', () => {
+describe('OnboardingWizard — rendering', () => {
   it('shows welcome message with user name', () => {
     renderWizard();
-    expect(screen.getByText(/홍길동/)).toBeTruthy();
-    expect(screen.getByText(/Tika에 오신 것을 환영합니다/)).toBeTruthy();
+    expect(screen.getByText(/안녕하세요, 홍길동님/)).toBeTruthy();
+    expect(screen.getByText(/Tika를 어떻게 시작할까요/)).toBeTruthy();
   });
 
-  it('shows step indicator', () => {
+  it('renders two main tab buttons', () => {
     renderWizard();
-    // step indicator has "팀 워크스페이스 (선택)" — unique to the indicator
-    expect(screen.getByText('팀 워크스페이스 (선택)')).toBeTruthy();
-    expect(screen.getAllByText('개인 워크스페이스').length).toBeGreaterThanOrEqual(1);
+    // Use getAllByRole since "개인 보드" also appears in the start button text
+    const personalButtons = screen.getAllByRole('button', { name: /개인 보드/ });
+    expect(personalButtons.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: /팀 워크스페이스/ })).toBeTruthy();
   });
 
-  it('renders 개인 워크스페이스 생성 button', () => {
+  it('shows personal tab content by default', () => {
     renderWizard();
-    expect(screen.getByText(/개인 워크스페이스 생성하기/)).toBeTruthy();
+    expect(screen.getByText(/개인 보드 시작하기/)).toBeTruthy();
+  });
+
+  it('does not show team workspace card by default', () => {
+    renderWizard();
+    expect(screen.queryByText('WorkspaceCreator')).toBeNull();
   });
 });
 
-// ─── Step 1 — personal workspace creation ────────────────────────────────────
+// ─── Personal tab ─────────────────────────────────────────────────────────────
 
-describe('OnboardingWizard — step 1 (personal workspace)', () => {
+describe('OnboardingWizard — personal tab', () => {
   it('calls PATCH /api/users/type with USER', async () => {
     mockFetchSuccess();
     renderWizard();
-    fireEvent.click(screen.getByText(/개인 워크스페이스 생성하기/));
+    fireEvent.click(screen.getByText(/개인 보드 시작하기/));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/users/type', expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({ userType: 'USER' }),
-      }));
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/users/type',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ userType: 'USER' }),
+        }),
+      );
     });
   });
 
   it('calls session.update() after successful API call', async () => {
     mockFetchSuccess();
     renderWizard();
-    fireEvent.click(screen.getByText(/개인 워크스페이스 생성하기/));
+    fireEvent.click(screen.getByText(/개인 보드 시작하기/));
 
     await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
   });
 
-  it('advances to step 2 after success', async () => {
+  it('navigates to / on success', async () => {
+    mockFetchSuccess();
     renderWizard();
-    await advanceToStep2();
-    expect(screen.getByRole('button', { name: /팀 워크스페이스 만들기/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /개인 보드로 바로 시작/ })).toBeTruthy();
-  });
-});
+    fireEvent.click(screen.getByText(/개인 보드 시작하기/));
 
-// ─── Step 2 — team workspace or personal board ────────────────────────────────
-
-describe('OnboardingWizard — step 2 (team or personal)', () => {
-  it('navigates to /onboarding/workspace when team workspace button clicked', async () => {
-    renderWizard();
-    await advanceToStep2();
-
-    fireEvent.click(screen.getByRole('button', { name: /팀 워크스페이스 만들기/ }));
-    expect(mockPush).toHaveBeenCalledWith('/onboarding/workspace');
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/'));
   });
 
-  it('navigates to / when 개인 보드로 바로 시작 clicked', async () => {
-    renderWizard();
-    await advanceToStep2();
-
-    fireEvent.click(screen.getByText(/개인 보드로 바로 시작/));
-    expect(mockPush).toHaveBeenCalledWith('/');
-  });
-});
-
-// ─── Error handling ──────────────────────────────────────────────────────────
-
-describe('OnboardingWizard — error handling', () => {
   it('shows error message on API failure', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -136,7 +119,7 @@ describe('OnboardingWizard — error handling', () => {
     });
 
     renderWizard();
-    fireEvent.click(screen.getByText(/개인 워크스페이스 생성하기/));
+    fireEvent.click(screen.getByText(/개인 보드 시작하기/));
 
     await waitFor(() => {
       expect(screen.getByText('서버 오류입니다.')).toBeTruthy();
@@ -148,23 +131,35 @@ describe('OnboardingWizard — error handling', () => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
     renderWizard();
-    fireEvent.click(screen.getByText(/개인 워크스페이스 생성하기/));
+    fireEvent.click(screen.getByText(/개인 보드 시작하기/));
 
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeTruthy();
     });
   });
+});
 
-  it('does not advance to step 2 on API failure', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      json: async () => ({ error: { message: '오류' } }),
-    });
+// ─── Team tab ─────────────────────────────────────────────────────────────────
 
+describe('OnboardingWizard — team tab', () => {
+  it('switches to team tab on click', () => {
     renderWizard();
-    fireEvent.click(screen.getByText(/개인 워크스페이스 생성하기/));
+    fireEvent.click(screen.getByRole('button', { name: /팀 워크스페이스/ }));
+    expect(screen.getByText('WorkspaceCreator')).toBeTruthy();
+  });
 
-    await waitFor(() => expect(screen.getByText('오류')).toBeTruthy());
-    expect(screen.queryByText(/팀 워크스페이스를 만드시겠어요/)).toBeNull();
+  it('shows 개설 sub-tab content by default in team tab', () => {
+    renderWizard();
+    fireEvent.click(screen.getByRole('button', { name: /팀 워크스페이스/ }));
+    expect(screen.getByText('WorkspaceCreator')).toBeTruthy();
+    expect(screen.queryByText('WorkspaceFinder')).toBeNull();
+  });
+
+  it('switches to 찾기 sub-tab', () => {
+    renderWizard();
+    fireEvent.click(screen.getByRole('button', { name: /팀 워크스페이스/ }));
+    fireEvent.click(screen.getByRole('button', { name: /찾기/ }));
+    expect(screen.getByText('WorkspaceFinder')).toBeTruthy();
+    expect(screen.queryByText('WorkspaceCreator')).toBeNull();
   });
 });

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -6,6 +7,11 @@ import { getBoardData } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { TeamBoardClient } from '@/components/team/TeamBoardClient';
 import type { TeamRole } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '칸반 보드',
+  description: '칸반 보드에서 티켓을 관리하세요.',
+};
 
 export default async function TeamBoardPage({
   params,

@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import { signIn } from '@/lib/auth';
 import { getLandingStats } from '@/db/queries/users';
 import { FaqSection } from './FaqSection';
 import { ContactModal } from '@/components/ui/ContactModal';
 import { NotifyModal } from '@/components/ui/NotifyModal';
+
+export const metadata: Metadata = {
+  title: '로그인',
+  description: '티카에 로그인하여 칸반 보드로 업무를 관리하세요.',
+};
 
 const AVATAR_COLORS = ['#7EB4A2', '#60A5FA', '#A78BFA', '#F97316', '#EC4899', '#14B8A6'];
 

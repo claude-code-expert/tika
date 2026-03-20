@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -7,6 +8,11 @@ import { TeamShell } from '@/components/layout/TeamShell';
 import { WbsClient } from '@/components/team/WbsClient';
 import type { GanttItem } from '@/components/team/GanttChart';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: 'WBS',
+  description: 'WBS와 간트 차트로 업무 계획을 시각화하세요.',
+};
 
 export default async function TeamWbsPage({
   params,

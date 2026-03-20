@@ -408,6 +408,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
               </svg>
               {unreadCount > 0 && (
                 <span
+                  aria-label={`${unreadCount}개의 읽지 않은 알림`}
                   style={{
                     position: 'absolute',
                     top: 3,
@@ -614,6 +615,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           <Tooltip content="설정" position="bottom">
           <Link
             href="/settings"
+            aria-label="설정"
             style={{
               width: 32,
               height: 32,
@@ -662,6 +664,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
                 });
               }}
               title={displayName}
+              aria-label={displayName ?? '사용자 메뉴'}
               style={{
                 width: 32,
                 height: 32,

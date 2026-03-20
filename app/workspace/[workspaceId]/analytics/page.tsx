@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -18,6 +19,11 @@ import { LabelAnalyticsCard } from '@/components/team/charts/LabelAnalyticsCard'
 import { DailyLogTable } from '@/components/team/charts/DailyLogTable';
 import { StoryScheduleTable } from '@/components/team/charts/StoryScheduleTable';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '분석',
+  description: '팀 업무 현황을 분석하세요.',
+};
 
 export default async function TeamAnalyticsPage({
   params,

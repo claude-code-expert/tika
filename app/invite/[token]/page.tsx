@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { InviteAcceptClient } from './InviteAcceptClient';
+
+export const metadata: Metadata = {
+  title: '초대 수락',
+  description: '팀 워크스페이스 초대를 수락하세요.',
+};
 
 interface InvitePreview {
   workspaceName: string;

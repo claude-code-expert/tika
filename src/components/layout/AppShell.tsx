@@ -122,7 +122,7 @@ export function AppShell() {
             onMobileClose={() => setIsMobileSidebarOpen(false)}
           />
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'auto' }}>
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'auto' }}>
             <BoardFilterBar filter={filter} />
 
             <BoardContainer
@@ -139,7 +139,7 @@ export function AppShell() {
               onSelectTicket={setSelectedTicket}
               currentMemberId={currentMemberId}
             />
-          </div>
+          </main>
         </div>
 
         <DragOverlay>

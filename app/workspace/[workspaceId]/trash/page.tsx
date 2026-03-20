@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -6,6 +7,11 @@ import { getDeletedTickets } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { TrashClient } from '@/components/team/TrashClient';
 import type { TeamRole } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '휴지통',
+  description: '삭제된 티켓을 복원하거나 영구 삭제하세요.',
+};
 
 export default async function TrashPage({
   params,

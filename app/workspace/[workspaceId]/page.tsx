@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -12,6 +13,11 @@ import { GoalProgressRow } from '@/components/team/GoalProgressRow';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { CalendarOff, ClipboardClock, Loader, ListTodo } from 'lucide-react';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '대시보드',
+  description: '팀 워크스페이스 대시보드입니다.',
+};
 
 export default async function TeamDashboardPage({
   params,

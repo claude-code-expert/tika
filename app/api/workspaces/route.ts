@@ -8,7 +8,7 @@ import {
 import { createMember, setPrimaryWorkspace } from '@/db/queries/members';
 import { createWorkspaceSchema } from '@/lib/validations';
 import { db } from '@/db/index';
-import { workspaces } from '@/db/schema';
+import { workspaces, users } from '@/db/schema';
 import { ilike, eq, and } from 'drizzle-orm';
 
 // GET /api/workspaces — list all workspaces where user is a member (PERSONAL + TEAM)
@@ -108,6 +108,16 @@ export async function POST(request: NextRequest) {
       joinedAt: null,
     });
     await setPrimaryWorkspace(userId, workspace.id);
+
+    // Mark onboarding complete if user hasn't completed it yet (team tab flow)
+    const [dbUser] = await db
+      .select({ userType: users.userType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!dbUser?.userType) {
+      await db.update(users).set({ userType: 'USER' }).where(eq(users.id, userId));
+    }
 
     return NextResponse.json({ workspace }, { status: 201 });
   } catch (error) {

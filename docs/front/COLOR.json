@@ -1,9 +1,10 @@
 {
   "meta": {
     "name": "Tika Design System Colors",
-    "version": "2.0.0",
-    "updated": "2026-02-21",
-    "description": "Complete color token set for Tika kanban board application"
+    "version": "3.0.0",
+    "updated": "2026-03-20",
+    "description": "Complete color token set for Tika kanban board application",
+    "source": "app/globals.css :root variables"
   },
 
   "brand": {
@@ -16,9 +17,14 @@
     "app": "#F8F9FB",
     "header": "#FFFFFF",
     "sidebar": "#F1F3F6",
+    "sidebar_hover": "#E8EBF0",
     "board": "#E8EDF2",
     "footer": "#F4F5F7",
-    "card": "#FFFFFF",
+    "card": "#EFF6FF",
+    "card_backlog": "#EFF6FF",
+    "card_todo": "#F4F9FF",
+    "card_in_progress": "#FFFDF5",
+    "card_done": "#F5FFF9",
     "column": "#F4F5F7"
   },
 
@@ -30,10 +36,15 @@
 
   "border": {
     "light": "#DFE1E6",
-    "medium": "#C4C9D1"
+    "medium": "#C4C9D1",
+    "focus_ring": "#629584"
   },
 
   "lane_headers": {
+    "backlog": {
+      "background": "#F4F5F7",
+      "text": "#2C3E50"
+    },
     "todo": {
       "background": "#DBEAFE",
       "text": "#2C3E50"
@@ -131,13 +142,13 @@
 
   "dashboard": {
     "_comment": "대시보드 카드 배경색 — globals.css --color-dash-* 변수와 1:1 대응",
-    "green":  "#f4f9f7",
-    "teal":   "#f2fbfa",
-    "blue":   "#eff6ff",
-    "amber":  "#fffbeb",
-    "mint":   "#ecfdf4",
-    "red":    "#fdf3f3",
-    "pink":   "#f9cdcd"
+    "green":  "#F4F9F7",
+    "teal":   "#F2FBFA",
+    "blue":   "#EFF6FF",
+    "amber":  "#FFFBEB",
+    "mint":   "#ECFDF4",
+    "red":    "#FDF3F3",
+    "pink":   "#F9CDCD"
   },
 
   "notification_dot": "#EF4444",
@@ -146,6 +157,7 @@
     "card":         "0 1px 2px rgba(9,30,66,0.12)",
     "card_hover":   "0 3px 8px rgba(9,30,66,0.18)",
     "card_drag":    "0 5px 10px rgba(9,30,66,0.25)",
+    "modal":        "0 16px 48px rgba(0,0,0,0.2)",
     "header":       "0 1px 3px rgba(0,0,0,0.08)",
     "dropdown":     "0 8px 24px rgba(0,0,0,0.12)"
   }

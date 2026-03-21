@@ -128,6 +128,7 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
   const [requestedIds, setRequestedIds] = useState<Set<number>>(new Set());
   const [joiningId, setJoiningId] = useState<number | null>(null);
   const [inviteWorkspaceId, setInviteWorkspaceId] = useState<number | null>(null);
+  const [goingPersonal, setGoingPersonal] = useState(false);
 
   const handleSearch = async () => {
     const trimmed = input.trim();
@@ -227,6 +228,20 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
       setErrorMsg('가입 신청 중 오류가 발생했습니다.');
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleGoPersonal = async () => {
+    setGoingPersonal(true);
+    try {
+      await fetch('/api/users/type', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userType: 'USER' }),
+      });
+      router.push('/');
+    } catch {
+      setGoingPersonal(false);
     }
   };
 
@@ -344,21 +359,44 @@ export function WorkspaceFinder({}: WorkspaceFinderProps) {
 
       {/* Invite success */}
       {state === 'invite-success' && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: 'var(--color-accent, #629584)',
-            fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          <CheckCircle size={18} />
-          {inviteWorkspaceId
-            ? '✅ 워크스페이스에 참여했습니다! 이동 중...'
-            : '✅ 가입 신청이 완료되었습니다.'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: 'var(--color-accent, #629584)',
+              fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            <CheckCircle size={18} />
+            {inviteWorkspaceId
+              ? '✅ 워크스페이스에 참여했습니다! 이동 중...'
+              : '✅ 가입 신청이 완료되었습니다.'}
+          </div>
+          {!inviteWorkspaceId && (
+            <button
+              onClick={handleGoPersonal}
+              disabled={goingPersonal}
+              style={{
+                padding: '9px 16px',
+                background: 'transparent',
+                color: 'var(--color-text-muted, #6B7280)',
+                border: '1px solid #E5E7EB',
+                borderRadius: 8,
+                fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: goingPersonal ? 'not-allowed' : 'pointer',
+                opacity: goingPersonal ? 0.7 : 1,
+                alignSelf: 'flex-start',
+              }}
+            >
+              {goingPersonal ? '이동 중...' : '개인 보드로 이동 →'}
+            </button>
+          )}
         </div>
       )}
 

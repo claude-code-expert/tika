@@ -35,9 +35,8 @@ export default async function OnboardingPage() {
     userType = dbUser?.userType ?? null;
   }
 
-  // Already completed onboarding — route to appropriate destination
-  if (userType === 'USER') redirect('/');
-  if (userType === 'WORKSPACE') redirect('/onboarding/workspace');
+  // Already completed onboarding — route to home
+  if (userType !== null) redirect('/');
 
   return (
     <OnboardingWizard

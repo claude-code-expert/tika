@@ -3,97 +3,27 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { User, Building2, Check } from 'lucide-react';
+import { User, Building2, Plus, Search } from 'lucide-react';
+import { WorkspaceCreator } from './WorkspaceCreator';
+import { WorkspaceFinder } from './WorkspaceFinder';
 
 interface OnboardingWizardProps {
   userId: string;
   userName: string;
 }
 
-type Step = 1 | 2;
+type MainTab = 'personal' | 'team';
+type TeamTab = 'create' | 'find';
 
-function StepIndicator({ step }: { step: Step }) {
-  const steps = [
-    { label: '개인 워크스페이스' },
-    { label: '팀 워크스페이스 (선택)' },
-  ];
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0,
-        marginBottom: 40,
-      }}
-    >
-      {steps.map((s, i) => {
-        const idx = i + 1;
-        const isDone = idx < step;
-        const isActive = idx === step;
-        return (
-          <div key={s.label} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: isDone
-                    ? 'var(--color-accent, #629584)'
-                    : isActive
-                      ? 'var(--color-accent, #629584)'
-                      : '#E5E7EB',
-                  color: isDone || isActive ? '#fff' : '#9CA3AF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  transition: 'background 0.2s',
-                }}
-              >
-                {isDone ? <Check size={16} /> : idx}
-              </div>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                  color: isActive ? 'var(--color-accent, #629584)' : isDone ? '#374151' : '#9CA3AF',
-                  fontWeight: isActive ? 700 : 500,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                style={{
-                  width: 80,
-                  height: 2,
-                  background: isDone ? 'var(--color-accent, #629584)' : '#E5E7EB',
-                  margin: '0 8px',
-                  marginBottom: 24,
-                  transition: 'background 0.2s',
-                }}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function OnboardingWizard({ userName }: OnboardingWizardProps) {
+export function OnboardingWizard({ userId, userName }: OnboardingWizardProps) {
   const router = useRouter();
   const { update } = useSession();
-  const [step, setStep] = useState<Step>(1);
+  const [activeTab, setActiveTab] = useState<MainTab>('personal');
+  const [teamTab, setTeamTab] = useState<TeamTab>('create');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createPersonalWorkspace = async () => {
+  const startPersonal = async () => {
     if (loading) return;
     setLoading(true);
     setError(null);
@@ -116,7 +46,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
       }
 
       await update();
-      setStep(2);
+      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
@@ -124,13 +54,38 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
     }
   };
 
-  const goToTeamWorkspace = () => {
-    router.push('/onboarding/workspace');
-  };
+  const mainTabStyle = (tab: MainTab): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 28px',
+    background: activeTab === tab ? 'var(--color-accent, #629584)' : '#ffffff',
+    color: activeTab === tab ? '#ffffff' : 'var(--color-text-muted, #6B7280)',
+    border: `2px solid ${activeTab === tab ? 'var(--color-accent, #629584)' : '#E5E7EB'}`,
+    borderRadius: 8,
+    fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  });
 
-  const goToPersonalBoard = () => {
-    router.push('/');
-  };
+  const teamTabStyle = (tab: TeamTab): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 20px',
+    background: 'none',
+    border: 'none',
+    borderBottom: `2px solid ${teamTab === tab ? 'var(--color-accent, #629584)' : 'transparent'}`,
+    color: teamTab === tab ? 'var(--color-accent, #629584)' : 'var(--color-text-muted, #6B7280)',
+    fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+    fontSize: 14,
+    fontWeight: teamTab === tab ? 700 : 500,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    transition: 'color 0.15s, border-color 0.15s',
+  });
 
   return (
     <>
@@ -147,7 +102,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
         }}
       >
         {/* Logo */}
-        <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 40 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/icon/tika-logo-header.png" alt="Tika" style={{ height: 40, objectFit: 'contain' }} />
         </div>
@@ -163,27 +118,34 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
               margin: 0,
             }}
           >
-            {step === 1 ? `👋 ${userName}님, Tika에 오신 것을 환영합니다!` : '팀 워크스페이스를 만드시겠어요?'}
+            안녕하세요, {userName}님!
           </h1>
           <p
             style={{
               fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
               fontSize: 16,
               color: 'var(--color-text-muted, #6B7280)',
-              marginTop: 10,
+              margin: '10px 0 0',
             }}
           >
-            {step === 1
-              ? '먼저 개인 워크스페이스를 생성합니다.'
-              : '개인 워크스페이스가 생성되었습니다. 팀 협업 공간도 만들어 보세요.'}
+            Tika를 어떻게 시작할까요?
           </p>
         </div>
 
-        {/* Step indicator */}
-        <StepIndicator step={step} />
+        {/* Main tab selector */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 32 }}>
+          <button onClick={() => setActiveTab('personal')} style={mainTabStyle('personal')}>
+            <User size={16} />
+            개인 보드
+          </button>
+          <button onClick={() => setActiveTab('team')} style={mainTabStyle('team')}>
+            <Building2 size={16} />
+            팀 워크스페이스
+          </button>
+        </div>
 
-        {/* Step 1 content */}
-        {step === 1 && (
+        {/* Personal tab content */}
+        {activeTab === 'personal' && (
           <div
             style={{
               background: '#ffffff',
@@ -207,7 +169,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                 margin: '0 0 8px',
               }}
             >
-              개인 워크스페이스
+              개인 보드
             </h2>
             <p
               style={{
@@ -217,28 +179,39 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                 margin: '0 0 20px',
               }}
             >
-              나 혼자 사용하는 칸반 보드
+              혼자 업무를 관리하는 개인 칸반 보드입니다.
             </p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {['개인 칸반 보드', '총 300개의 티켓 생성 가능', 'Goal > Story > Feature > Task 4단계 이슈 생성'].map((f) => (
-                <li
-                  key={f}
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                    fontSize: 13,
-                    color: 'var(--color-text-primary, #2C3E50)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <span style={{ color: 'var(--color-accent, #629584)', fontWeight: 600 }}>✓</span>
-                  {f}
-                </li>
-              ))}
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: '0 0 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}
+            >
+              {['개인 칸반 보드', '총 300개의 티켓 생성 가능', 'Goal > Story > Feature > Task 4단계 이슈 생성'].map(
+                (f) => (
+                  <li
+                    key={f}
+                    style={{
+                      fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+                      fontSize: 13,
+                      color: 'var(--color-text-primary, #2C3E50)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-accent, #629584)', fontWeight: 600 }}>✓</span>
+                    {f}
+                  </li>
+                ),
+              )}
             </ul>
             <button
-              onClick={createPersonalWorkspace}
+              onClick={startPersonal}
               disabled={loading}
               style={{
                 width: '100%',
@@ -275,170 +248,64 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                   처리 중...
                 </>
               ) : (
-                <>개인 워크스페이스 생성하기 →</>
+                <>개인 보드 시작하기 →</>
               )}
             </button>
-          </div>
-        )}
-
-        {/* Step 2 content */}
-        {step === 2 && (
-          <div
-            style={{
-              display: 'flex',
-              gap: 20,
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              maxWidth: 720,
-              width: '100%',
-            }}
-          >
-            {/* Skip card */}
-            <div
-              style={{
-                background: '#ffffff',
-                border: '2px solid var(--color-border, #E5E7EB)',
-                borderRadius: 12,
-                padding: '28px 24px',
-                flex: '1 1 260px',
-                maxWidth: 320,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ color: '#9CA3AF', marginBottom: 14 }}>
-                  <User size={28} />
-                </div>
-                <h2
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: 'var(--color-text-primary, #2C3E50)',
-                    margin: '0 0 6px',
-                  }}
-                >
-                  개인 보드로 시작
-                </h2>
-                <p
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                    fontSize: 13,
-                    color: 'var(--color-text-muted, #6B7280)',
-                    margin: '0 0 16px',
-                  }}
-                >
-                  지금 바로 개인 보드에서 작업을 시작합니다. 팀 워크스페이스는 언제든지 나중에 만들 수 있습니다.
-                </p>
-              </div>
-              <button
-                onClick={goToPersonalBoard}
-                style={{
-                  width: '100%',
-                  padding: '9px 16px',
-                  background: 'transparent',
-                  color: 'var(--color-text-muted, #6B7280)',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 8,
-                  fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                개인 보드로 바로 시작
-              </button>
-            </div>
-
-            {/* Team workspace card */}
-            <div
-              style={{
-                background: '#ffffff',
-                border: '2px solid var(--color-border, #E5E7EB)',
-                borderRadius: 12,
-                padding: '28px 24px',
-                flex: '1 1 260px',
-                maxWidth: 320,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              }}
-            >
-              <div style={{ color: 'var(--color-accent, #629584)', marginBottom: 14 }}>
-                <Building2 size={28} />
-              </div>
-              <h2
-                style={{
-                  fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: 'var(--color-text-primary, #2C3E50)',
-                  margin: '0 0 6px',
-                }}
-              >
-                팀 워크스페이스 만들기
-              </h2>
+            {error && (
               <p
                 style={{
+                  marginTop: 12,
+                  color: '#EF4444',
                   fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
                   fontSize: 13,
-                  color: 'var(--color-text-muted, #6B7280)',
-                  margin: '0 0 16px',
+                  textAlign: 'center',
                 }}
               >
-                팀과 함께 협업하는 공간
+                {error}
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {['멤버 초대 & 협업', '팀 전용 대시보드', '번다운, 간트 차트 제공'].map((f) => (
-                  <li
-                    key={f}
-                    style={{
-                      fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                      fontSize: 12,
-                      color: 'var(--color-text-primary, #2C3E50)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <span style={{ color: 'var(--color-accent, #629584)', fontWeight: 600 }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={goToTeamWorkspace}
-                style={{
-                  width: '100%',
-                  padding: '9px 16px',
-                  background: 'var(--color-accent, #629584)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                팀 워크스페이스 만들기 →
-              </button>
-            </div>
+            )}
           </div>
         )}
 
-        {error && (
-          <p
+        {/* Team tab content */}
+        {activeTab === 'team' && (
+          <div
             style={{
-              marginTop: 24,
-              color: '#EF4444',
-              fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
-              fontSize: 14,
+              background: '#ffffff',
+              border: '1px solid var(--color-border, #E5E7EB)',
+              borderRadius: 12,
+              width: '100%',
+              maxWidth: 520,
+              overflow: 'hidden',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             }}
           >
-            {error}
-          </p>
+            {/* Sub-tabs: create / find */}
+            <div
+              style={{
+                display: 'flex',
+                borderBottom: '1px solid var(--color-border, #E5E7EB)',
+                padding: '0 8px',
+              }}
+            >
+              <button onClick={() => setTeamTab('create')} style={teamTabStyle('create')}>
+                <Plus size={16} />
+                개설
+              </button>
+              <button onClick={() => setTeamTab('find')} style={teamTabStyle('find')}>
+                <Search size={16} />
+                찾기
+              </button>
+            </div>
+
+            <div style={{ padding: '28px 32px', minHeight: 340 }}>
+              {teamTab === 'create' ? (
+                <WorkspaceCreator />
+              ) : (
+                <WorkspaceFinder userId={userId} userName={userName} />
+              )}
+            </div>
+          </div>
         )}
       </div>
     </>

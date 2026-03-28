@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { WithdrawDialog } from '@/components/layout/WithdrawDialog';
+import type { TeamRole } from '@/types/index';
 
 const COLOR_SWATCHES = [
   '#629584',
@@ -21,6 +22,12 @@ const COLOR_SWATCHES = [
   '#5A5898',
 ];
 
+const ROLE_CONFIG: Record<TeamRole, { label: string; bg: string; color: string }> = {
+  OWNER: { label: '오너', bg: '#DCFCE7', color: '#16A34A' },
+  MEMBER: { label: '멤버', bg: '#DBEAFE', color: '#2563EB' },
+  VIEWER: { label: '뷰어', bg: '#F3F4F6', color: '#6B7280' },
+};
+
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,6 +36,7 @@ interface ProfileModalProps {
   initialColor: string;
   onSaved: (data: { displayName: string; color: string }) => void;
   userEmail?: string;
+  role?: TeamRole;
 }
 
 export function ProfileModal({
@@ -39,6 +47,7 @@ export function ProfileModal({
   initialColor,
   onSaved,
   userEmail,
+  role,
 }: ProfileModalProps) {
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [color, setColor] = useState(initialColor);
@@ -81,7 +90,7 @@ export function ProfileModal({
     <Modal isOpen={isOpen} onClose={onClose} title="프로필 설정" maxWidth={400}>
       <div style={{ padding: '24px' }}>
         {/* Avatar Preview */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, gap: 10 }}>
           <div
             style={{
               width: 56,
@@ -99,6 +108,23 @@ export function ProfileModal({
           >
             {initials}
           </div>
+          {role && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '3px 10px',
+                borderRadius: 99,
+                fontSize: 12,
+                fontWeight: 600,
+                background: ROLE_CONFIG[role].bg,
+                color: ROLE_CONFIG[role].color,
+              }}
+            >
+              {ROLE_CONFIG[role].label}
+            </span>
+          )}
         </div>
 
         {/* Display Name Input */}

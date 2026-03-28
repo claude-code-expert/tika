@@ -112,6 +112,15 @@ export async function removeLabelFromTicket(ticketId: number, labelId: number): 
     .where(and(eq(ticketLabels.ticketId, ticketId), eq(ticketLabels.labelId, labelId)));
 }
 
+export async function getLabelsByTicketId(ticketId: number): Promise<Label[]> {
+  const rows = await db
+    .select({ label: labels })
+    .from(ticketLabels)
+    .innerJoin(labels, eq(ticketLabels.labelId, labels.id))
+    .where(eq(ticketLabels.ticketId, ticketId));
+  return rows.map((r) => toLabel(r.label));
+}
+
 export async function setTicketLabels(ticketId: number, labelIds: number[]): Promise<void> {
   await db.delete(ticketLabels).where(eq(ticketLabels.ticketId, ticketId));
   if (labelIds.length > 0) {

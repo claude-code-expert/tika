@@ -13,6 +13,7 @@ import { GoalProgressRow } from '@/components/team/GoalProgressRow';
 import { WorkloadHeatmap } from '@/components/team/WorkloadHeatmap';
 import { CalendarOff, ClipboardClock, Loader, ListTodo } from 'lucide-react';
 import type { TeamRole, TicketWithMeta } from '@/types/index';
+import { nowKST } from '@/lib/date';
 
 export const metadata: Metadata = {
   title: '대시보드',
@@ -56,13 +57,12 @@ export default async function TeamDashboardPage({
   const doneTickets = boardData.board.DONE;
   const goalTickets = allTickets.filter((t) => t.type === 'GOAL');
   const overdueTickets = allTickets.filter((t) => t.isOverdue);
-  const today = new Date();
+  const today = nowKST();
   const todayStr = today.toISOString().slice(0, 10);
-  const threeDays = new Date(today.getTime() + 3 * 86400000);
+  const threeDaysStr = new Date(today.getTime() + 3 * 86400000).toISOString().slice(0, 10);
   const upcomingTickets = allTickets.filter((t) => {
     if (!t.plannedEndDate || t.isOverdue || t.status === 'DONE') return false;
-    const due = new Date(t.plannedEndDate);
-    return due >= today && due <= threeDays;
+    return t.plannedEndDate >= todayStr && t.plannedEndDate <= threeDaysStr;
   });
 
   // Progress rate — status counts for donut
@@ -83,7 +83,7 @@ export default async function TeamDashboardPage({
   const myInProgress = myTickets.filter((t) => t.status === 'IN_PROGRESS');
   // This week completed
   const weekStart = new Date(today);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
+  weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1); // Monday (Sunday fix: getDay()=0 → treat as 7)
   weekStart.setHours(0, 0, 0, 0);
   const myWeekDone = myTickets.filter((t) => t.status === 'DONE' && t.completedAt && new Date(t.completedAt) >= weekStart);
   // Last week completed (for comparison)
@@ -124,9 +124,7 @@ export default async function TeamDashboardPage({
   // Trend data from CFD — 워킹데이(월~금) 기준 최근 7일치
   const allTrendData = cfdData.map((d, i, arr) => ({
     date: d.date,
-    created: i > 0
-      ? Math.max(0, (d.backlog + d.todo + d.inProgress + d.done) - (arr[i - 1].backlog + arr[i - 1].todo + arr[i - 1].inProgress + arr[i - 1].done))
-      : 0,
+    created: d.created,
     resolved: i > 0 ? Math.max(0, d.done - arr[i - 1].done) : 0,
   }));
   // 워킹데이(월~금)만 필터 후 마지막 7개

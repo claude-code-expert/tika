@@ -15,6 +15,11 @@ psql -h <host> -p <port> -U <user> -d <database>
 # 기본 접속 (현재 OS 사용자)
 psql postgres
 
+
+# 슈퍼 유저 
+psql -U postgres  
+password 입력 
+
 # 종료
 \q
 ```
@@ -60,6 +65,8 @@ CREATE DATABASE tika;
 -- 소유자 지정
 CREATE DATABASE tika OWNER tika_user;
 
+CREATE DATABASE markdown_web OWNER markdown;
+
 -- 인코딩 지정
 CREATE DATABASE tika
   OWNER tika_user
@@ -96,14 +103,18 @@ dropdb -U postgres tika
 -- 유저 생성 (비밀번호 포함)
 CREATE USER tika_user WITH PASSWORD 'your_password';
 
+CREATE USER markdown WITH PASSWORD 'password';
 -- 롤 생성 (로그인 권한 포함)
 CREATE ROLE tika_user WITH LOGIN PASSWORD 'your_password';
+
 
 -- 슈퍼유저 생성
 CREATE USER admin_user WITH SUPERUSER PASSWORD 'admin_pass';
 
 -- DB 생성 권한 부여
 CREATE USER tika_user WITH CREATEDB PASSWORD 'your_password';
+
+CREATE ROLE markdown WITH CREATEDB PASSWORD 'password';
 ```
 
 ### 수정
@@ -138,6 +149,8 @@ DROP USER IF EXISTS tika_user;
 ```sql
 -- DB 전체 권한 부여
 GRANT ALL PRIVILEGES ON DATABASE tika TO tika_user;
+
+GRANT ALL PRIVILEGES ON DATABASE markdown_web TO markdown;
 
 -- 접속 권한만 부여
 GRANT CONNECT ON DATABASE tika TO tika_user;

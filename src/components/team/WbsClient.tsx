@@ -7,6 +7,7 @@ import { TicketModal } from '@/components/ticket/TicketModal';
 import type { GanttItem } from '@/components/team/GanttChart';
 import type { TicketWithMeta } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
+import { getAllDates, getDateRange, getActualDateRange, countItems } from '@/lib/wbsUtils';
 
 export interface WbsStats {
   goal: number;
@@ -33,48 +34,6 @@ const LEGEND = [
   { label: '지연',   bg: '#FCA5A5', border: '#EF4444' },
 ];
 
-function getAllDates(items: GanttItem[]): string[] {
-  const dates: string[] = [];
-  for (const item of items) {
-    if (item.startDate) dates.push(item.startDate);
-    if (item.endDate)   dates.push(item.endDate);
-    if (item.children)  dates.push(...getAllDates(item.children));
-  }
-  return dates;
-}
-
-function getDateRange(items: GanttItem[]): { start: string; end: string } {
-  const dates = getAllDates(items).sort();
-  if (dates.length === 0) {
-    const t = new Date().toISOString().slice(0, 10);
-    return { start: t, end: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) };
-  }
-  const s = new Date(dates[0]);
-  s.setDate(s.getDate() - 3);
-  const e = new Date(dates[dates.length - 1]);
-  e.setDate(e.getDate() + 7);
-  return { start: s.toISOString().slice(0, 10), end: e.toISOString().slice(0, 10) };
-}
-
-function getActualDateRange(items: GanttItem[]): { start: string | null; end: string | null } {
-  const dates = getAllDates(items).sort();
-  if (dates.length === 0) return { start: null, end: null };
-  return { start: dates[0], end: dates[dates.length - 1] };
-}
-
-function countItems(items: GanttItem[]): { total: number; done: number } {
-  let total = 0, done = 0;
-  for (const item of items) {
-    total++;
-    if (item.status === 'DONE') done++;
-    if (item.children) {
-      const sub = countItems(item.children);
-      total += sub.total;
-      done  += sub.done;
-    }
-  }
-  return { total, done };
-}
 
 export function WbsClient({ allItems, allTickets, stats, currentMemberId, workspaceName, readOnly = false }: WbsClientProps) {
   const router = useRouter();

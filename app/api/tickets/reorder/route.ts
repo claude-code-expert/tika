@@ -5,6 +5,10 @@ import { db } from '@/db/index';
 import { tickets, members } from '@/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { POSITION_GAP, REBALANCE_THRESHOLD } from '@/lib/constants';
+import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { sendInAppNotification, buildDeadlineTodayMessage, buildOverdueWarningMessage } from '@/lib/notifications';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { nowKST } from '@/lib/date';
 
 async function rebalanceColumn(workspaceId: number, status: string): Promise<void> {
   const columnTickets = await db
@@ -138,22 +142,29 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Handle startDate (auto-set when moving out of BACKLOG)
+    const isEnteringInProgress = targetStatus === 'IN_PROGRESS' && ticket.status !== 'IN_PROGRESS';
+
+    // Handle startDate: leaving BACKLOG or entering IN_PROGRESS (if not already set)
     let startDate: string | null | undefined = undefined;
     if (
-      targetStatus !== 'BACKLOG' &&
-      ticket.status === 'BACKLOG' &&
-      !ticket.startDate
+      !ticket.startDate &&
+      ((targetStatus !== 'BACKLOG' && ticket.status === 'BACKLOG') || isEnteringInProgress)
     ) {
-      startDate = new Date().toISOString().slice(0, 10);
+      startDate = nowKST().toISOString().slice(0, 10);
+    }
+
+    // Auto-set dueDate = plannedEndDate when entering IN_PROGRESS (if dueDate is not set)
+    let dueDate: string | null | undefined = undefined;
+    if (isEnteringInProgress && !ticket.dueDate && ticket.plannedEndDate) {
+      dueDate = ticket.plannedEndDate;
     }
 
     // Handle completedAt
     let completedAt: Date | null = ticket.completedAt;
     if (targetStatus === 'DONE' && ticket.status !== 'DONE') {
-      completedAt = new Date();
+      completedAt = nowKST();
       if (!ticket.startDate && startDate === undefined) {
-        startDate = new Date().toISOString().slice(0, 10);
+        startDate = nowKST().toISOString().slice(0, 10);
       }
     } else if (targetStatus !== 'DONE' && ticket.status === 'DONE') {
       completedAt = null;
@@ -166,9 +177,38 @@ export async function PATCH(request: NextRequest) {
         position: newPosition,
         completedAt,
         ...(startDate !== undefined ? { startDate } : {}),
+        ...(dueDate !== undefined ? { dueDate } : {}),
       })
       .where(eq(tickets.id, ticketId))
       .returning();
+
+    // Deadline notifications when entering IN_PROGRESS via drag-and-drop
+    if (isEnteringInProgress) {
+      const finalDueDate = dueDate ?? updated.dueDate;
+      if (finalDueDate) {
+        const today = nowKST().toISOString().slice(0, 10);
+        if (finalDueDate < today || finalDueDate === today) {
+          const assignees = await getAssigneesByTicket(ticketId);
+          if (assignees.length > 0) {
+            const isOverdue = finalDueDate < today;
+            const { title, message } = isOverdue
+              ? buildOverdueWarningMessage(updated.title, finalDueDate)
+              : buildDeadlineTodayMessage(updated.title, finalDueDate);
+            sendInAppNotification({
+              workspaceId: effectiveWorkspaceId,
+              type: isOverdue ? NOTIFICATION_TYPE.OVERDUE_WARNING : NOTIFICATION_TYPE.DEADLINE_TODAY,
+              title,
+              message,
+              link: `/workspace/${effectiveWorkspaceId}/${ticketId}`,
+              actorId: userId,
+              recipientUserIds: assignees.map((a) => a.userId),
+              refType: 'ticket',
+              refId: ticketId,
+            }).catch((e) => console.error('Notification error (deadline/overdue on reorder):', e));
+          }
+        }
+      }
+    }
 
     return NextResponse.json({ ticket: updated });
   } catch (error) {

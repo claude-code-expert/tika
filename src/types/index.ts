@@ -307,6 +307,7 @@ export interface CfdDataPoint {
   todo: number;
   inProgress: number;
   done: number;
+  created: number;
 }
 
 export interface VelocitySprint {
@@ -349,6 +350,8 @@ export const NOTIFICATION_TYPE = {
   TICKET_UNASSIGNED: 'TICKET_UNASSIGNED',
   TICKET_DELETED: 'TICKET_DELETED',
   DEADLINE_WARNING: 'DEADLINE_WARNING',
+  DEADLINE_TODAY: 'DEADLINE_TODAY',
+  OVERDUE_WARNING: 'OVERDUE_WARNING',
   INVITE_RECEIVED: 'INVITE_RECEIVED',
   ROLE_CHANGED: 'ROLE_CHANGED',
   MEMBER_JOINED: 'MEMBER_JOINED',

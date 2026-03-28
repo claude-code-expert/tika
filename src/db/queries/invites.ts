@@ -1,4 +1,5 @@
 import { eq, and, lt } from 'drizzle-orm';
+import { nowKST } from '@/lib/date';
 import { db } from '@/db/index';
 import { workspaceInvites, members } from '@/db/schema';
 import type { WorkspaceInvite, InviteStatus, Member } from '@/types/index';
@@ -152,7 +153,7 @@ export async function acceptInvite(data: {
         color,
         role: invite.role,
         invitedBy: invite.invitedBy,
-        joinedAt: new Date(),
+        joinedAt: nowKST(),
       })
       .returning();
 
@@ -182,7 +183,7 @@ export async function acceptInvite(data: {
 
 /** Expire all PENDING invites that are past their expiry date. Returns expired count. */
 export async function expireStaleInvites(): Promise<number> {
-  const now = new Date();
+  const now = nowKST();
   const result = await db
     .update(workspaceInvites)
     .set({ status: 'EXPIRED' })

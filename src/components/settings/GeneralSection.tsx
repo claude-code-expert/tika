@@ -38,6 +38,7 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
   const [showNoMemberWarning, setShowNoMemberWarning] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [selectedTransferMemberId, setSelectedTransferMemberId] = useState<number | null>(null);
+  const [transferConfirmText, setTransferConfirmText] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
 
   const isOwner = workspace?.role === 'OWNER';
@@ -125,6 +126,7 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
 
   async function handleTransfer() {
     if (!workspace || selectedTransferMemberId === null) return;
+    const targetMember = nonOwnerMembers.find((m) => m.id === selectedTransferMemberId);
     setIsTransferring(true);
     try {
       const res = await fetch(`/api/workspaces/${workspace.id}/transfer`, {
@@ -137,7 +139,10 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
         showToast(data.error?.message ?? '오너 변경 실패', 'fail');
         return;
       }
-      window.location.reload();
+      setShowTransferDialog(false);
+      setTransferConfirmText('');
+      showToast(`${targetMember?.displayName ?? '선택한 멤버'} 계정에게 오너 권한을 부여하였습니다`, 'success');
+      setTimeout(() => window.location.reload(), 1500);
     } catch {
       showToast('오너 변경 중 오류가 발생했습니다', 'fail');
     } finally {
@@ -436,17 +441,24 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
       {showTransferDialog && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}
-          onClick={() => { setShowTransferDialog(false); }}
+          onClick={() => { setShowTransferDialog(false); setTransferConfirmText(''); }}
         >
           <div
             style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>오너 변경</div>
-            <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 16 }}>
-              오너 권한을 이전할 멤버를 선택하세요. 이전 후 당신은 일반 멤버가 됩니다.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20, maxHeight: 220, overflowY: 'auto' }}>
+            {/* Warning */}
+            <div style={{ display: 'flex', gap: 10, background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '12px 14px', marginBottom: 16 }}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <path d="M12 9v4" /><path d="M12 17h.01" />
+              </svg>
+              <p style={{ fontSize: 12, color: '#92400E', lineHeight: 1.6, margin: 0 }}>
+                오너는 한명만 존재하게 되므로 변경시 멤버 등급으로 자동 조정됩니다. 오너를 변경하겠습니까? 변경하시려면 <strong>confirm</strong>을 입력하세요.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16, maxHeight: 200, overflowY: 'auto' }}>
               {nonOwnerMembers.map((m) => (
                 <label
                   key={m.id}
@@ -474,21 +486,29 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
                 </label>
               ))}
             </div>
+            <input
+              type="text"
+              value={transferConfirmText}
+              onChange={(e) => setTransferConfirmText(e.target.value)}
+              placeholder="confirm 입력"
+              autoComplete="off"
+              style={{ width: '100%', border: '1.5px solid #DFE1E6', borderRadius: 8, padding: '9px 12px', fontSize: 13, marginBottom: 16, boxSizing: 'border-box', fontFamily: 'inherit' }}
+            />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 type="button"
-                onClick={() => setShowTransferDialog(false)}
+                onClick={() => { setShowTransferDialog(false); setTransferConfirmText(''); }}
                 style={{ padding: '9px 20px', border: '1.5px solid #DFE1E6', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}
               >취소</button>
               <button
                 type="button"
                 onClick={handleTransfer}
-                disabled={isTransferring || selectedTransferMemberId === null}
+                disabled={isTransferring || selectedTransferMemberId === null || transferConfirmText !== 'confirm'}
                 style={{
                   padding: '9px 20px', border: 'none', borderRadius: 8,
-                  background: isTransferring || selectedTransferMemberId === null ? '#9BA8B4' : '#DC2626',
+                  background: isTransferring || selectedTransferMemberId === null || transferConfirmText !== 'confirm' ? '#9BA8B4' : '#DC2626',
                   color: '#fff', fontSize: 13, fontWeight: 600,
-                  cursor: isTransferring || selectedTransferMemberId === null ? 'not-allowed' : 'pointer',
+                  cursor: isTransferring || selectedTransferMemberId === null || transferConfirmText !== 'confirm' ? 'not-allowed' : 'pointer',
                 }}
               >{isTransferring ? '변경 중...' : '오너 변경'}</button>
             </div>
@@ -552,7 +572,7 @@ export function GeneralSection({ showToast, workspaceId }: SectionProps) {
           >
             <div style={{ fontSize: 17, fontWeight: 800, color: '#2C3E50', marginBottom: 8 }}>데이터 초기화</div>
             <p style={{ fontSize: 13, color: '#5A6B7F', marginBottom: 16 }}>
-              모든 티켓, 라벨, 스프린트가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.{' '}
+              모든 티켓, 라벨, 댓글 등 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.{' '}
               확인하려면 워크스페이스 이름 <strong style={{ color: '#2C3E50' }}>{workspace?.name}</strong>을(를) 입력하세요.
             </p>
             <input

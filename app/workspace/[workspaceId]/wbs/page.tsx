@@ -6,8 +6,8 @@ import { getMemberByUserId } from '@/db/queries/members';
 import { getWbsTickets } from '@/db/queries/tickets';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { WbsClient } from '@/components/team/WbsClient';
-import type { GanttItem } from '@/components/team/GanttChart';
-import type { TeamRole, TicketWithMeta } from '@/types/index';
+import type { TeamRole } from '@/types/index';
+import { buildGanttItems } from '@/lib/wbsUtils';
 
 export const metadata: Metadata = {
   title: 'WBS',
@@ -60,32 +60,3 @@ export default async function TeamWbsPage({
   );
 }
 
-function buildGanttItems(wbsTickets: TicketWithMeta[]): GanttItem[] {
-  const map = new Map<number, GanttItem>();
-
-  for (const t of wbsTickets) {
-    map.set(t.id, {
-      id: t.id,
-      type: t.type,
-      name: t.title,
-      status: t.status,
-      priority: t.priority,
-      assignees: t.assignees,
-      startDate: t.plannedStartDate ?? null,
-      endDate: t.plannedEndDate ?? null,
-      children: [],
-    });
-  }
-
-  const roots: GanttItem[] = [];
-  for (const t of wbsTickets) {
-    const node = map.get(t.id)!;
-    if (t.parentId && map.has(t.parentId)) {
-      map.get(t.parentId)!.children!.push(node);
-    } else {
-      roots.push(node);
-    }
-  }
-
-  return roots;
-}

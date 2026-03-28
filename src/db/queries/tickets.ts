@@ -3,6 +3,7 @@ import { db } from '@/db/index';
 import { tickets, checklistItems, ticketLabels, labels, members, ticketAssignees, workspaces } from '@/db/schema';
 import type { Ticket, TicketWithMeta, BoardData, TicketStatus } from '@/types/index';
 import { isOverdue } from '@/lib/utils';
+import { nowKST } from '@/lib/date';
 import { POSITION_GAP } from '@/lib/constants';
 
 function toTicket(row: typeof tickets.$inferSelect): Ticket {
@@ -561,7 +562,7 @@ export async function bulkPermanentDeleteTickets(ids: number[], workspaceId: num
 }
 
 export async function getTicketsDueTomorrow(workspaceId: number): Promise<Ticket[]> {
-  const tomorrow = new Date();
+  const tomorrow = nowKST();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0]; // 'YYYY-MM-DD'
 

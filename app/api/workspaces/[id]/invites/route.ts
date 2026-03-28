@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { getInvitesByWorkspace, createInvite } from '@/db/queries/invites';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { createInviteSchema } from '@/lib/validations';
+import { nowKST } from '@/lib/date';
 import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
 import { sendInAppNotification, buildInviteReceivedMessage } from '@/lib/notifications';
 import { db } from '@/db/index';
@@ -85,7 +86,7 @@ export async function POST(
 
     const { role } = result.data;
 
-    const expiresAt = new Date();
+    const expiresAt = nowKST();
     expiresAt.setHours(expiresAt.getHours() + 24); // 24-hour expiry
 
     const invite = await createInvite({

@@ -92,7 +92,7 @@ export async function PATCH(
         type: NOTIFICATION_TYPE.ROLE_CHANGED,
         title,
         message,
-        link: `/workspace/${workspaceId}`,
+        link: undefined,
         actorId: userId,
         recipientUserIds: [updated.userId],
         refType: 'member',

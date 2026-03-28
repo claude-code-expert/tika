@@ -47,16 +47,19 @@ function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardP
     id: ticket.id,
   });
 
+  const ticketSlug = (id: number) =>
+    workspaceName ? `${workspaceName.toLowerCase()}-${id}` : id;
+
   const handleNavigate = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isDragging) return;
-    router.push(`/workspace/${ticket.workspaceId}/${ticket.id}`);
+    router.push(`/workspace/${ticket.workspaceId}/${ticketSlug(ticket.id)}`);
   };
 
   const handleNavigateToParent = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isDragging || !ticket.parent) return;
-    router.push(`/workspace/${ticket.workspaceId}/${ticket.parent.id}`);
+    router.push(`/workspace/${ticket.workspaceId}/${ticketSlug(ticket.parent.id)}`);
   };
 
   const dndTransform = CSS.Transform.toString(transform);
@@ -185,7 +188,7 @@ function TicketCardInner({ ticket, onClick, workspaceName, cardBg }: TicketCardP
           <span
             onClick={(e) => {
               e.stopPropagation();
-              const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
+              const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticketSlug(ticket.id)}`;
               navigator.clipboard.writeText(url).then(() => {
                 setShowCopyToast(true);
                 setTimeout(() => setShowCopyToast(false), 2000);

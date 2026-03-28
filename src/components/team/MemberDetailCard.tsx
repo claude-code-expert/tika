@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { MemberWorkload, TicketWithMeta, TeamRole } from '@/types/index';
+import { nowKST } from '@/lib/date';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import { IssueTypeBadge, StatusBadge } from '@/components/ui/Chips';
 import { Modal } from '@/components/ui/Modal';
@@ -82,7 +83,7 @@ export function MemberDetailCard({ member, tickets }: MemberDetailCardProps) {
       {memberTickets.length > 0 && (
         <div style={{ maxHeight: 200, overflowY: 'auto' }}>
           {memberTickets.slice(0, 8).map((t) => {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = nowKST().toISOString().slice(0, 10);
             const isOverdue = t.plannedEndDate && t.status !== 'DONE' && t.plannedEndDate < today;
             return (
               <div

@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import type { SectionProps } from './types';
 import { TEAM_ROLE } from '@/types/index';
 import type { MemberWithEmail, MemberRole, JoinRequestWithUser, WorkspaceWithRole } from '@/types/index';
+import { toKSTDateString } from '@/lib/date';
 
 export function MemberSection({ showToast, workspaceId }: SectionProps) {
   const [workspaces, setWorkspaces] = useState<WorkspaceWithRole[]>([]);
@@ -247,7 +248,7 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
                   )}
                 </div>
                 <span style={{ fontSize: 11, color: '#8993A4', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  {req.createdAt.slice(0, 10)}
+                  {toKSTDateString(req.createdAt)}
                 </span>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button
@@ -317,15 +318,18 @@ export function MemberSection({ showToast, workspaceId }: SectionProps) {
           const isSelf = member.userId === currentUserId;
 
           return (
-            <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6 }}>
+            <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: isSelf ? '#EEF6F3' : '#fff', border: `1px solid ${isSelf ? '#629584' : '#DFE1E6'}`, borderRadius: 6 }}>
               <Avatar displayName={member.displayName} color={member.color} size="md" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500 }}>{member.displayName}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {member.displayName}
+                  {isSelf && <span style={{ fontSize: 10, fontWeight: 600, color: '#629584', background: '#C6E3DC', borderRadius: 4, padding: '1px 5px' }}>나</span>}
+                </div>
                 <div style={{ fontSize: 11, color: '#8993A4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
               </div>
               <RoleBadge role={member.role} size="sm" />
               <span style={{ fontSize: 11, color: '#8993A4', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {member.createdAt.slice(0, 10)}
+                {toKSTDateString(member.createdAt)}
               </span>
               {isOwner && (
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>

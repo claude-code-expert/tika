@@ -113,6 +113,20 @@ export function buildDeadlineWarningMessage(ticketTitle: string, dueDate: string
   };
 }
 
+export function buildDeadlineTodayMessage(ticketTitle: string, dueDate: string) {
+  return {
+    title: '오늘 마감',
+    message: `'${ticketTitle}' 티켓의 마감일이 오늘(${dueDate})입니다`,
+  };
+}
+
+export function buildOverdueWarningMessage(ticketTitle: string, dueDate: string) {
+  return {
+    title: '마감 초과',
+    message: `'${ticketTitle}' 티켓의 마감일(${dueDate})이 이미 지났습니다`,
+  };
+}
+
 export function buildInviteReceivedMessage(actorName: string, workspaceName: string) {
   return {
     title: '워크스페이스 초대',

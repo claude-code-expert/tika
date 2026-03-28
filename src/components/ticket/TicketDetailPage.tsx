@@ -10,6 +10,7 @@ import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } fr
 import { TICKET_STATUS, TICKET_PRIORITY } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { TICKET_TYPE_META } from '@/lib/constants';
+import { toKSTDateString } from '@/lib/date';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
 import { CHEVRON_SVG, metaSelectStyle, metaDateStyle } from '@/lib/ticketMetaStyles';
 import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
@@ -151,11 +152,9 @@ export function TicketDetailPage({
   const [startDate, setStartDate] = useState(ticket.plannedStartDate ?? '');
   const [dueDate, setDueDate] = useState(ticket.plannedEndDate ?? '');
   const [selectedParentId, setSelectedParentId] = useState<number | null>(ticket.parentId ?? null);
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(() => {
-    const ids = new Set(ticket.assignees.map((a) => a.id));
-    if (ticket.assignee) ids.add(ticket.assignee.id);
-    return [...ids];
-  });
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(
+    ticket.assignees.map((a) => a.id),
+  );
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(ticket.checklistItems);
   const [commentList, setCommentList] = useState<Comment[]>([]);
 
@@ -298,7 +297,8 @@ export function TicketDetailPage({
 
   // ── copy link ──
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/workspace/${workspaceId}/${ticket.id}`;
+    const slug = workspaceName ? `${workspaceName.toLowerCase()}-${ticket.id}` : ticket.id;
+    const url = `${window.location.origin}/workspace/${workspaceId}/${slug}`;
     navigator.clipboard.writeText(url).then(() => {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
@@ -901,11 +901,11 @@ export function TicketDetailPage({
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>수정일</span>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.updatedAt.slice(0, 10)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{toKSTDateString(ticket.updatedAt)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>생성일</span>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.createdAt.slice(0, 10)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{toKSTDateString(ticket.createdAt)}</span>
                 </div>
               </div>
             </div>

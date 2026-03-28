@@ -100,19 +100,9 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
     });
   }, [user]);
 
-  // Close notif dropdown on outside click → mark as read
   const handleNotifClose = useCallback(() => {
     setIsNotifOpen(false);
-    if (unreadCount > 0) {
-      fetch('/api/notifications/in-app/read-all', { method: 'PATCH' })
-        .then(() => {
-          setUnreadCount(0);
-          setMemberAlertCount(0);
-          setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-        })
-        .catch(() => {});
-    }
-  }, [unreadCount]);
+  }, []);
 
   useOutsideClick(notifRef, isNotifOpen, handleNotifClose);
   useOutsideClick(dropdownRef, isDropdownOpen, () => setIsDropdownOpen(false));
@@ -824,6 +814,7 @@ export function Header({ onNewTask, searchQuery = '', onSearch, onToggleSidebar 
           initialColor={avatarColor}
           onSaved={handleProfileSaved}
           userEmail={user?.email ?? undefined}
+          role={member?.role}
         />
       )}
 

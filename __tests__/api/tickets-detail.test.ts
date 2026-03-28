@@ -11,6 +11,7 @@ jest.mock('@/lib/auth', () => ({
 
 jest.mock('@/db/queries/tickets', () => ({
   getTicketById: jest.fn(),
+  getTicketWorkspaceId: jest.fn(),
   updateTicket: jest.fn(),
   deleteTicket: jest.fn(),
 }));
@@ -20,14 +21,32 @@ jest.mock('@/db/queries/ticketAssignees', () => ({
   getAssigneesByTicket: jest.fn(),
 }));
 
+jest.mock('@/lib/permissions', () => ({
+  requireRole: jest.fn(),
+  isRoleError: jest.fn(),
+}));
+
+jest.mock('@/lib/notifications', () => ({
+  sendInAppNotification: jest.fn().mockResolvedValue(undefined),
+  buildTicketStatusChangedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+  buildTicketAssignedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+  buildTicketUnassignedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+  buildTicketDeletedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '@/app/api/tickets/[id]/route';
 import { auth } from '@/lib/auth';
-import { getTicketById, updateTicket, deleteTicket } from '@/db/queries/tickets';
+import { getTicketById, getTicketWorkspaceId, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { requireRole, isRoleError } from '@/lib/permissions';
+
+const mockedRequireRole = requireRole as jest.Mock;
+const mockedIsRoleError = isRoleError as jest.Mock;
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetTicketById = getTicketById as jest.Mock;
+const mockedGetTicketWorkspaceId = getTicketWorkspaceId as jest.Mock;
 const mockedUpdateTicket = updateTicket as jest.Mock;
 const mockedDeleteTicket = deleteTicket as jest.Mock;
 const mockedGetAssigneesByTicket = getAssigneesByTicket as jest.Mock;
@@ -59,6 +78,11 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default: assignees query returns empty array
   mockedGetAssigneesByTicket.mockResolvedValue([]);
+  // Default: workspace resolved from ticket
+  mockedGetTicketWorkspaceId.mockResolvedValue(1);
+  // Default: RBAC passes (MEMBER role)
+  mockedRequireRole.mockResolvedValue({ member: { role: 'MEMBER', id: 1 } });
+  mockedIsRoleError.mockReturnValue(false);
 });
 
 describe('GET /api/tickets/:id', () => {

@@ -22,6 +22,7 @@ interface WbsClientProps {
   stats: WbsStats;
   currentMemberId: number | null;
   workspaceName: string;
+  readOnly?: boolean;
 }
 
 const LEGEND = [
@@ -75,7 +76,7 @@ function countItems(items: GanttItem[]): { total: number; done: number } {
   return { total, done };
 }
 
-export function WbsClient({ allItems, allTickets, stats, currentMemberId, workspaceName }: WbsClientProps) {
+export function WbsClient({ allItems, allTickets, stats, currentMemberId, workspaceName, readOnly = false }: WbsClientProps) {
   const router = useRouter();
   const goals  = allItems.filter((item) => item.type === 'GOAL');
 
@@ -129,15 +130,15 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
       {/* ── Summary stats (5 cards) ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
         {[
-          { label: 'Goal',     value: stats.goal,       color: '#4338CA' },
-          { label: 'Story',    value: stats.story,      color: '#1D4ED8' },
-          { label: 'Feature',  value: stats.feature,    color: '#065F46' },
-          { label: 'Task',     value: stats.task,       color: '#6B7280' },
-          { label: '전체 완료율', value: `${stats.overallPct}%`, color: '#629584' },
+          { label: 'Goal',     value: stats.goal,       color: '#4338CA', bg: 'var(--color-dash-red)'   },
+          { label: 'Story',    value: stats.story,      color: '#1D4ED8', bg: 'var(--color-dash-blue)'  },
+          { label: 'Feature',  value: stats.feature,    color: '#065F46', bg: 'var(--color-dash-mint)'  },
+          { label: 'Task',     value: stats.task,       color: '#6B7280', bg: 'var(--color-dash-green)' },
+          { label: '전체 완료율', value: `${stats.overallPct}%`, color: '#000000', bg: 'var(--color-dash-pink)' },
         ].map((s) => (
           <div
             key={s.label}
-            style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,.04)', textAlign: 'center' }}
+            style={{ background: s.bg, border: '1px solid #DFE1E6', borderRadius: 8, padding: '12px 16px', boxShadow: '0 1px 3px rgba(0,0,0,.04)', textAlign: 'center' }}
           >
             <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
             <div style={{ fontSize: 11, color: '#8993A4', marginTop: 2 }}>{s.label}</div>
@@ -146,7 +147,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
       </div>
 
       {/* ── Gantt card ── */}
-      <div style={{ background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,.04)',  }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
 
         {/* Toolbar */}
         <div style={{ padding: '10px 16px', borderBottom: '1px solid #DFE1E6', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', background: '#fff' }}>
@@ -157,7 +158,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
               <select
                 value={selectedGoalId === 'all' ? 'all' : String(selectedGoalId)}
                 onChange={(e) => setSelectedGoalId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                style={{ height: 34, paddingLeft: 12, paddingRight: 32, fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, color: '#2C3E50', background: '#F8F9FB', border: '1px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', transition: 'border-color .15s' }}
+                style={{ height: 34, minWidth: 200, width: 'max-content', maxWidth: 360, paddingLeft: 12, paddingRight: 32, fontFamily: 'inherit', fontSize: '12px', fontWeight: 600, color: '#2C3E50', background: '#F8F9FB', border: '1px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', transition: 'border-color .15s' }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = '#629584')}
                 onBlur={(e)  => (e.currentTarget.style.borderColor = '#DFE1E6')}
               >
@@ -216,6 +217,7 @@ export function WbsClient({ allItems, allTickets, stats, currentMemberId, worksp
           onDelete={handleDelete}
           currentMemberId={currentMemberId}
           workspaceName={workspaceName}
+          readOnly={readOnly}
         />
       )}
     </div>

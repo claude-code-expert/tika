@@ -1,0 +1,1 @@
+ALTER TABLE "workspaces" ALTER COLUMN "is_searchable" SET DEFAULT true;

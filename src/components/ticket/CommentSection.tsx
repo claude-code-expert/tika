@@ -10,6 +10,7 @@ interface CommentSectionProps {
   comments: Comment[];
   currentMemberId: number | null;
   onCommentsChange: (comments: Comment[]) => void;
+  readOnly?: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -27,6 +28,7 @@ export function CommentSection({
   comments,
   currentMemberId,
   onCommentsChange,
+  readOnly = false,
 }: CommentSectionProps) {
   const [newText, setNewText] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -112,52 +114,54 @@ export function CommentSection({
       </div>
 
       {/* New comment input */}
-      <div style={{ marginBottom: 16 }}>
-        <textarea
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          placeholder="댓글을 입력하세요..."
-          rows={2}
-          maxLength={500}
-          style={inputStyle}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-              e.preventDefault();
-              handleAdd();
-            }
-          }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-            {newText.length}/500
-          </span>
-          <button
-            onClick={handleAdd}
-            disabled={!newText.trim() || isSubmitting}
-            style={{
-              padding: '5px 14px',
-              background: newText.trim() ? 'var(--color-accent)' : 'var(--color-board-bg)',
-              color: newText.trim() ? '#fff' : 'var(--color-text-muted)',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: newText.trim() && !isSubmitting ? 'pointer' : 'default',
-              fontFamily: 'inherit',
-              transition: 'background 0.15s',
+      {!readOnly && (
+        <div style={{ marginBottom: 16 }}>
+          <textarea
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            placeholder="댓글을 입력하세요..."
+            rows={2}
+            maxLength={500}
+            style={inputStyle}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                handleAdd();
+              }
             }}
-          >
-            {isSubmitting ? '등록 중...' : '등록'}
-          </button>
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+              {newText.length}/500
+            </span>
+            <button
+              onClick={handleAdd}
+              disabled={!newText.trim() || isSubmitting}
+              style={{
+                padding: '5px 14px',
+                background: newText.trim() ? 'var(--color-accent)' : 'var(--color-board-bg)',
+                color: newText.trim() ? '#fff' : 'var(--color-text-muted)',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: newText.trim() && !isSubmitting ? 'pointer' : 'default',
+                fontFamily: 'inherit',
+                transition: 'background 0.15s',
+              }}
+            >
+              {isSubmitting ? '등록 중...' : '등록'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Comment list */}
       {comments.length === 0 ? (
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', padding: '8px 0' }}>
-          첫 댓글을 남겨보세요
+          {readOnly ? '댓글이 없습니다' : '첫 댓글을 남겨보세요'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -208,8 +212,8 @@ export function CommentSection({
                   </span>
                 </div>
 
-                {/* Actions (only for own comments) */}
-                {currentMemberId && comment.memberId === currentMemberId && (
+                {/* Actions (only for own comments, not in readOnly mode) */}
+                {!readOnly && currentMemberId && comment.memberId === currentMemberId && (
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button
                       onClick={() => {

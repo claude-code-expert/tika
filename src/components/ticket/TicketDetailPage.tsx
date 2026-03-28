@@ -11,6 +11,7 @@ import { TICKET_STATUS, TICKET_PRIORITY } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { TICKET_TYPE_META } from '@/lib/constants';
 import { PRIORITY_CONFIG } from '@/components/ui/Chips';
+import { CHEVRON_SVG, metaSelectStyle, metaDateStyle } from '@/lib/ticketMetaStyles';
 import { LabelBadge, labelTextColor } from '@/components/label/LabelBadge';
 import {
   FileText,
@@ -21,6 +22,7 @@ import {
   Trash2,
   Link2 as LinkIcon,
 } from 'lucide-react';
+import { Toast } from '@/components/ui/Toast';
 
 // ─── IconBtnWithTooltip ──────────────────────────────────────────────────────
 
@@ -116,8 +118,6 @@ const TYPE_BADGE_STYLES: Record<string, { bg: string; color: string }> = {
   TASK: { bg: '#FEF3C7', color: '#92400E' },
 };
 
-const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
-
 // ─── types ────────────────────────────────────────────────────────────────────
 
 interface TicketDetailPageProps {
@@ -126,6 +126,7 @@ interface TicketDetailPageProps {
   workspaceName?: string;
   currentMemberId?: number | null;
   backUrl?: string;
+  readOnly?: boolean;
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export function TicketDetailPage({
   workspaceName,
   currentMemberId = null,
   backUrl,
+  readOnly = false,
 }: TicketDetailPageProps) {
   const router = useRouter();
   const ticket = initialTicket;
@@ -171,6 +173,7 @@ export function TicketDetailPage({
 
   // ── UI state ──
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -179,6 +182,7 @@ export function TicketDetailPage({
 
   // ── refs ──
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
   const labelAreaRef = useRef<HTMLDivElement>(null);
   const assigneeAreaRef = useRef<HTMLDivElement>(null);
 
@@ -193,6 +197,14 @@ export function TicketDetailPage({
   useEffect(() => {
     autoResizeTitle();
   }, [title, autoResizeTitle]);
+
+  // ── auto-resize description textarea ──
+  useEffect(() => {
+    const el = descTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [description]);
 
   // ── fetch parents, members, comments ──
   useEffect(() => {
@@ -270,6 +282,8 @@ export function TicketDetailPage({
         body: JSON.stringify(patch),
       });
       router.refresh();
+      setShowSaveToast(true);
+      setTimeout(() => setShowSaveToast(false), 2000);
     } finally {
       setIsSaving(false);
     }
@@ -358,35 +372,6 @@ export function TicketDetailPage({
     whiteSpace: 'nowrap',
   };
 
-  const metaSelectStyle: React.CSSProperties = {
-    width: '100%',
-    height: 28,
-    padding: '0 24px 0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: `var(--color-board-bg) ${CHEVRON_SVG}`,
-    outline: 'none',
-    cursor: 'pointer',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-  };
-
-  const metaDateStyle: React.CSSProperties = {
-    width: '100%',
-    height: 28,
-    padding: '0 8px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    fontFamily: 'inherit',
-    fontSize: 12,
-    color: 'var(--color-text-primary)',
-    background: 'var(--color-board-bg)',
-    outline: 'none',
-    cursor: 'pointer',
-  };
 
   // ──────────────────────────────────────────────────────────────────────────
   return (
@@ -406,7 +391,8 @@ export function TicketDetailPage({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '6px 20px',
+            padding: '0 20px',
+            height: 48,
             borderBottom: '1px solid var(--color-border)',
             background: '#fff',
             flexShrink: 0,
@@ -586,10 +572,16 @@ export function TicketDetailPage({
                   설명
                 </div>
                 <textarea
+                  ref={descTextareaRef}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    if (readOnly) return;
+                    setDescription(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  readOnly={readOnly}
                   maxLength={1000}
-                  rows={4}
                   placeholder="티켓에 대한 설명을 입력하세요..."
                   aria-label="설명"
                   style={{
@@ -597,10 +589,12 @@ export function TicketDetailPage({
                     border: '1px solid var(--color-border)', borderRadius: 8,
                     fontFamily: 'inherit', fontSize: 14, color: 'var(--color-text-primary)',
                     lineHeight: 1.7, background: 'var(--color-board-bg)',
-                    resize: 'vertical', outline: 'none',
+                    resize: 'none', overflow: 'hidden', outline: 'none',
                     transition: 'border-color 0.15s, box-shadow 0.15s',
+                    cursor: readOnly ? 'default' : undefined,
                   }}
                   onFocus={(e) => {
+                    if (readOnly) return;
                     e.target.style.background = '#fff';
                     e.target.style.borderColor = 'var(--color-accent)';
                     e.target.style.boxShadow = '0 0 0 3px var(--color-accent-light, #E8F5F0)';
@@ -724,6 +718,7 @@ export function TicketDetailPage({
                     const res = await fetch(`/api/tickets/${ticket.id}/checklist/${itemId}`, { method: 'DELETE' });
                     if (!res.ok) setChecklistItems(snapshot);
                   }}
+                  readOnly={readOnly}
                 />
               </div>
 
@@ -733,6 +728,7 @@ export function TicketDetailPage({
                 comments={commentList}
                 currentMemberId={currentMemberId}
                 onCommentsChange={setCommentList}
+                readOnly={readOnly}
               />
 
             </div>
@@ -990,6 +986,7 @@ export function TicketDetailPage({
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />
+      {showSaveToast && <Toast message="저장되었습니다" />}
     </>
   );
 }

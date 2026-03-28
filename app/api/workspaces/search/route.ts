@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         id: workspaces.id,
         name: workspaces.name,
         description: workspaces.description,
+        iconColor: workspaces.iconColor,
         memberCount: sql<number>`cast(count(${members.id}) as int)`,
       })
       .from(workspaces)

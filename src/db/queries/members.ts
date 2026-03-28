@@ -1,4 +1,4 @@
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, ne } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { members, users, workspaces } from '@/db/schema';
 import type { Member, MemberRole, MemberWithEmail, WorkspaceWithRole, TeamRole, WorkspaceType } from '@/types/index';
@@ -98,6 +98,16 @@ export async function removeMember(id: number, workspaceId: number): Promise<boo
   return result.length > 0;
 }
 
+/** Counts how many TEAM workspaces this user is currently a member of. */
+export async function getTeamWorkspaceMemberCount(userId: string): Promise<number> {
+  const [{ cnt }] = await db
+    .select({ cnt: count() })
+    .from(members)
+    .innerJoin(workspaces, eq(workspaces.id, members.workspaceId))
+    .where(and(eq(members.userId, userId), eq(workspaces.type, 'TEAM')));
+  return Number(cnt);
+}
+
 export async function getOwnerCount(workspaceId: number): Promise<number> {
   const [{ cnt }] = await db
     .select({ cnt: count() })
@@ -136,6 +146,7 @@ export async function createMember(data: {
   role: string;
   invitedBy?: number | null;
   joinedAt?: Date | null;
+  isPrimary?: boolean;
 }): Promise<Member> {
   const [row] = await db
     .insert(members)
@@ -147,9 +158,51 @@ export async function createMember(data: {
       role: data.role,
       invitedBy: data.invitedBy ?? null,
       joinedAt: data.joinedAt ?? null,
+      isPrimary: data.isPrimary ?? false,
     })
     .returning();
   return toMember(row);
+}
+
+/** Sets isPrimary=true for the given workspace member, clears it for all other workspaces of the same user. */
+export async function setPrimaryWorkspace(userId: string, workspaceId: number): Promise<void> {
+  await db
+    .update(members)
+    .set({ isPrimary: false })
+    .where(and(eq(members.userId, userId), ne(members.workspaceId, workspaceId)));
+  await db
+    .update(members)
+    .set({ isPrimary: true })
+    .where(and(eq(members.userId, userId), eq(members.workspaceId, workspaceId)));
+}
+
+export async function transferOwnership(
+  workspaceId: number,
+  currentOwnerUserId: string,
+  targetMemberId: number,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    // Find current owner member record
+    const [currentMember] = await tx
+      .select()
+      .from(members)
+      .where(and(eq(members.userId, currentOwnerUserId), eq(members.workspaceId, workspaceId)));
+    if (!currentMember) throw new Error('Current owner member not found');
+
+    // Find target member record (must be in same workspace)
+    const [targetMember] = await tx
+      .select()
+      .from(members)
+      .where(and(eq(members.id, targetMemberId), eq(members.workspaceId, workspaceId)));
+    if (!targetMember) throw new Error('Target member not found');
+
+    // Demote current owner to MEMBER
+    await tx.update(members).set({ role: 'MEMBER' }).where(eq(members.id, currentMember.id));
+    // Promote target to OWNER
+    await tx.update(members).set({ role: 'OWNER' }).where(eq(members.id, targetMemberId));
+    // Update workspace ownerId
+    await tx.update(workspaces).set({ ownerId: targetMember.userId }).where(eq(workspaces.id, workspaceId));
+  });
 }
 
 export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRole[]> {
@@ -160,6 +213,8 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
       description: workspaces.description,
       ownerId: workspaces.ownerId,
       type: workspaces.type,
+      iconColor: workspaces.iconColor,
+      isSearchable: workspaces.isSearchable,
       createdAt: workspaces.createdAt,
       role: members.role,
     })
@@ -173,6 +228,8 @@ export async function getUserWorkspaces(userId: string): Promise<WorkspaceWithRo
     description: row.description,
     ownerId: row.ownerId,
     type: row.type as WorkspaceType,
+    iconColor: row.iconColor ?? null,
+    isSearchable: row.isSearchable,
     createdAt: row.createdAt.toISOString(),
     role: row.role as TeamRole,
   }));

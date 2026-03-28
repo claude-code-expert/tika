@@ -1,8 +1,8 @@
 @startuml Tika_Database_ERD
 ' ─────────────────────────────────────────────────────────
 ' Tika — Database ER Diagram (PlantUML)
-' 소스: docs/TABLE_DEFINITION.md / src/db/schema.ts
-' 최종수정: 2026-03-07
+' 소스: src/db/schema.ts
+' 최종수정: 2026-03-20
 ' ─────────────────────────────────────────────────────────
 
 ' ── Skin / Theme ─────────────────────────────────────────
@@ -49,6 +49,8 @@ entity "**users**" as users {
     user_type      : VARCHAR(20)
   .. NULL | 'USER' | 'WORKSPACE' ..
     bg_color       : VARCHAR(7)
+    withdrawn_at   : TIMESTAMPTZ
+  .. null = active, set = withdrawn ..
   * created_at     : TIMESTAMPTZ
 }
 
@@ -56,12 +58,13 @@ entity "**users**" as users {
 entity "**workspaces**" as workspaces {
   * id             : SERIAL       <<PK>>
   --
-  * name           : VARCHAR(100) DEFAULT '내 워크스페이스'
+  * name           : VARCHAR(100) DEFAULT 'My-Workspace'
     description    : TEXT
   * owner_id       : TEXT         <<FK → users.id>>
   * type           : VARCHAR(10)  DEFAULT 'PERSONAL'
   .. 'PERSONAL' | 'TEAM' ..
-  * is_searchable  : BOOLEAN      DEFAULT false
+    icon_color     : VARCHAR(7)
+  * is_searchable  : BOOLEAN      DEFAULT true
   * created_at     : TIMESTAMPTZ
 }
 
@@ -75,11 +78,14 @@ entity "**members**" as members {
   * color          : VARCHAR(7)   DEFAULT '#7EB4A2'
   * role           : VARCHAR(10)  DEFAULT 'MEMBER'
   .. 'OWNER' | 'MEMBER' | 'VIEWER' ..
+  * is_primary     : BOOLEAN      DEFAULT false
+  .. 기본 이동 대상 워크스페이스 ..
     invited_by     : INT          <<FK → members.id (self-ref)>>
     joined_at      : TIMESTAMPTZ
   * created_at     : TIMESTAMPTZ
   --
   UK: (user_id, workspace_id)
+  IDX: (workspace_id, role)
 }
 
 ' ── 4. sprints ───────────────────────────────────────────
@@ -248,6 +254,7 @@ entity "**ticket_assignees**" as ticket_assignees #FAFBFF {
 }
 
 ' ── 14. workspace_join_requests ──────────────────────────
+
 entity "**workspace_join_requests**" as workspace_join_requests {
   * id             : SERIAL       <<PK>>
   --
@@ -262,6 +269,57 @@ entity "**workspace_join_requests**" as workspace_join_requests {
   --
   UK: (workspace_id, user_id)
   IDX: (workspace_id, status)
+}
+
+' ── 15. notification_signups ─────────────────────────────
+entity "**notification_signups**" as notification_signups {
+  * id             : SERIAL       <<PK>>
+  --
+  * email          : VARCHAR(255)
+  * type           : VARCHAR(50)
+  .. 'team-pro' | 'enterprise' | etc. ..
+  * send           : BOOLEAN      DEFAULT false
+  * created_at     : TIMESTAMPTZ
+  --
+  UK: (email, type)
+  IDX: (type, send)
+}
+
+' ── 16. in_app_notifications ─────────────────────────────
+entity "**in_app_notifications**" as in_app_notifications {
+  * id             : SERIAL       <<PK>>
+  --
+  * user_id        : TEXT         <<FK → users.id, CASCADE>>
+    workspace_id   : INT          <<FK → workspaces.id, CASCADE>>
+  * type           : VARCHAR(30)
+  * title          : VARCHAR(200)
+  * message        : TEXT
+    link           : TEXT
+    actor_id       : TEXT         <<FK → users.id, ON DELETE SET NULL>>
+    ref_type       : VARCHAR(20)
+  .. 'ticket' | 'sprint' | 'member' | 'invite' ..
+    ref_id         : INT
+  * is_read        : BOOLEAN      DEFAULT false
+  * created_at     : TIMESTAMPTZ
+  --
+  IDX: (user_id, is_read)
+  IDX: (user_id, created_at)
+  IDX: (workspace_id)
+}
+
+' ── 17. notification_preferences ─────────────────────────
+entity "**notification_preferences**" as notification_preferences {
+  * id             : SERIAL       <<PK>>
+  --
+  * user_id        : TEXT         <<FK → users.id, CASCADE>>
+  * workspace_id   : INT          <<FK → workspaces.id, CASCADE>>
+  * type           : VARCHAR(30)
+  * in_app_enabled : BOOLEAN      DEFAULT true
+  * slack_enabled  : BOOLEAN      DEFAULT false
+  * telegram_enabled : BOOLEAN    DEFAULT false
+  --
+  UK: (user_id, workspace_id, type)
+  IDX: (user_id, workspace_id)
 }
 
 ' ═══════════════════════════════════════════════════════════
@@ -337,6 +395,21 @@ labels               ||--o{ ticket_labels         : "applied to\n(label_id)"
 ' tickets ↔ members  (M:N via ticket_assignees)
 tickets              ||--o{ ticket_assignees      : "assigned\n(ticket_id)"
 members              ||--o{ ticket_assignees      : "handles\n(member_id)"
+
+' users → in_app_notifications  (1:N via user_id)
+users                ||--o{ in_app_notifications   : "receives\n(user_id)"
+
+' users → in_app_notifications  (1:N via actor_id, optional)
+users                |o--o{ in_app_notifications   : "triggers as actor\n(actor_id)"
+
+' workspaces → in_app_notifications  (1:N, optional)
+workspaces           |o--o{ in_app_notifications   : "scoped to\n(workspace_id)"
+
+' users → notification_preferences  (1:N)
+users                ||--o{ notification_preferences : "configures\n(user_id)"
+
+' workspaces → notification_preferences  (1:N)
+workspaces           ||--o{ notification_preferences : "configures\n(workspace_id)"
 
 ' ─────────────────────────────────────────────────────────
 ' NOTES

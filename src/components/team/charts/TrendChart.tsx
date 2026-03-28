@@ -29,7 +29,7 @@ export function TrendChart({ data, height = 160 }: TrendChartProps) {
     );
   }
 
-  const viewW = 400;
+  const viewW = 600;
   const viewH = height;
   const padL = 40;
   const padR = 20;
@@ -60,6 +60,23 @@ export function TrendChart({ data, height = 160 }: TrendChartProps) {
   const gridValues = [0, Math.round(maxVal / 2), maxVal];
 
   return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg width="18" height="4" style={{ display: 'block', overflow: 'visible' }}>
+              <line x1="0" x2="18" y1="2" y2="2" stroke="#3B82F6" strokeWidth="2" />
+            </svg>
+            <span style={{ fontSize: 12, color: '#5A6B7F' }}>생성</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg width="18" height="4" style={{ display: 'block', overflow: 'visible' }}>
+              <line x1="0" x2="18" y1="2" y2="2" stroke="#629584" strokeWidth="2.5" />
+            </svg>
+            <span style={{ fontSize: 12, color: '#5A6B7F' }}>완료</span>
+          </div>
+        </div>
+      </div>
     <svg
       width="100%"
       viewBox={`0 0 ${viewW} ${viewH}`}
@@ -160,15 +177,7 @@ export function TrendChart({ data, height = 160 }: TrendChartProps) {
         strokeDasharray="3"
       />
 
-      {/* Legend */}
-      <line x1={viewW - 120} y1={8} x2={viewW - 102} y2={8} stroke="#3B82F6" strokeWidth={2} />
-      <text x={viewW - 98} y={12} fill="#3B82F6" fontSize={9}>
-        생성
-      </text>
-      <line x1={viewW - 70} y1={8} x2={viewW - 52} y2={8} stroke="#629584" strokeWidth={2.5} />
-      <text x={viewW - 48} y={12} fill="#629584" fontSize={9}>
-        완료
-      </text>
     </svg>
+    </div>
   );
 }

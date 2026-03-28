@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWorkspaceById } from '@/db/queries/workspaces';
@@ -7,6 +8,11 @@ import { TeamShell } from '@/components/layout/TeamShell';
 import { PersonalTicketShell } from '@/components/layout/PersonalTicketShell';
 import { TicketDetailPage } from '@/components/ticket/TicketDetailPage';
 import type { TeamRole } from '@/types/index';
+
+export const metadata: Metadata = {
+  title: '티켓 상세',
+  description: '티켓 상세 정보를 확인하세요.',
+};
 
 export default async function TicketPage({
   params,
@@ -70,6 +76,7 @@ export default async function TicketPage({
         workspaceId={workspaceId}
         workspaceName={workspace.name}
         currentMemberId={member.id}
+        readOnly={role === 'VIEWER'}
       />
     </TeamShell>
   );

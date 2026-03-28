@@ -29,6 +29,7 @@ export function AppShell() {
     isLoading,
     createTicket,
     updateTicket,
+    patchTicketLocal,
     deleteTicket,
     reorder,
   } = useTickets();
@@ -103,7 +104,7 @@ export function AppShell() {
         onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}>
+      <DndContext id="personal-board" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} accessibility={{ container: typeof document !== 'undefined' ? document.body : undefined }}>
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <Sidebar
             backlogTickets={displayBoard.board.BACKLOG}
@@ -121,7 +122,7 @@ export function AppShell() {
             onMobileClose={() => setIsMobileSidebarOpen(false)}
           />
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'auto' }}>
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'auto' }}>
             <BoardFilterBar filter={filter} />
 
             <BoardContainer
@@ -129,6 +130,7 @@ export function AppShell() {
               isLoading={isLoading}
               createTicket={createTicket}
               updateTicket={updateTicket}
+              patchTicketLocal={patchTicketLocal}
               deleteTicket={deleteTicket}
               onDuplicate={handleDuplicate}
               isCreating={isCreating}
@@ -137,7 +139,7 @@ export function AppShell() {
               onSelectTicket={setSelectedTicket}
               currentMemberId={currentMemberId}
             />
-          </div>
+          </main>
         </div>
 
         <DragOverlay>

@@ -12,6 +12,7 @@ jest.mock('@/db/index', () => ({
 }));
 jest.mock('@/db/schema', () => ({
   members: {},
+  users: {},
 }));
 jest.mock('@/db/queries/joinRequests', () => ({
   getJoinRequestById: jest.fn(),
@@ -20,6 +21,14 @@ jest.mock('@/db/queries/joinRequests', () => ({
 }));
 jest.mock('@/db/queries/members', () => ({
   getMemberByUserId: jest.fn(),
+  getTeamWorkspaceMemberCount: jest.fn(),
+}));
+jest.mock('@/db/queries/workspaces', () => ({
+  getWorkspaceById: jest.fn(),
+}));
+jest.mock('@/lib/notifications', () => ({
+  sendInAppNotification: jest.fn().mockResolvedValue(undefined),
+  buildJoinRequestResolvedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
 }));
 
 import { NextRequest } from 'next/server';
@@ -27,13 +36,16 @@ import { PATCH } from '@/app/api/workspaces/[id]/join-requests/[reqId]/route';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
 import { getJoinRequestById, approveJoinRequest, rejectJoinRequest } from '@/db/queries/joinRequests';
-import { getMemberByUserId } from '@/db/queries/members';
+import { getMemberByUserId, getTeamWorkspaceMemberCount } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
 
 const mockedAuth = auth as jest.Mock;
 const mockedGetJoinRequestById = getJoinRequestById as jest.Mock;
 const mockedApproveJoinRequest = approveJoinRequest as jest.Mock;
 const mockedRejectJoinRequest = rejectJoinRequest as jest.Mock;
 const mockedGetMemberByUserId = getMemberByUserId as jest.Mock;
+const mockedGetTeamWorkspaceMemberCount = getTeamWorkspaceMemberCount as jest.Mock;
+const mockedGetWorkspaceById = getWorkspaceById as jest.Mock;
 
 const mockSession = { user: { id: 'user-1' } };
 const WORKSPACE_ID = '5';
@@ -61,8 +73,29 @@ function mockOwnerCheck(isOwner: boolean) {
   });
 }
 
+// For APPROVE path: handles both owner check (1st call) and user name lookup (2nd call)
+function mockOwnerAndUserLookup(isOwner: boolean, userName?: string) {
+  let callCount = 0;
+  (db.select as jest.Mock).mockImplementation(() => {
+    callCount++;
+    const rows =
+      callCount === 1
+        ? isOwner ? [{ id: 1 }] : []
+        : userName ? [{ name: userName }] : [];
+    return {
+      from: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockResolvedValue(rows),
+        }),
+      }),
+    };
+  });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  mockedGetWorkspaceById.mockResolvedValue({ id: 5, name: '테스트 워크스페이스' });
+  mockedGetTeamWorkspaceMemberCount.mockResolvedValue(0);
 });
 
 // ─── 401 ─────────────────────────────────────────────────────────────────────
@@ -166,10 +199,9 @@ describe('PATCH /api/workspaces/[id]/join-requests/[reqId] — APPROVE', () => {
   beforeEach(() => mockedAuth.mockResolvedValue(mockSession));
 
   it('approves a PENDING request and returns member', async () => {
-    mockOwnerCheck(true);
+    mockOwnerAndUserLookup(true, undefined); // 1st: owner check, 2nd: no name → '멤버'
     const pendingRequest = { id: 10, userId: 'user-2', workspaceId: 5, status: 'PENDING' };
     mockedGetJoinRequestById.mockResolvedValue(pendingRequest);
-    mockedGetMemberByUserId.mockResolvedValue(null); // not a member yet
     const updatedRequest = { ...pendingRequest, status: 'APPROVED' };
     const newMember = { id: 99, userId: 'user-2', workspaceId: 5, role: 'MEMBER' };
     mockedApproveJoinRequest.mockResolvedValue({ joinRequest: updatedRequest, member: newMember });
@@ -187,11 +219,10 @@ describe('PATCH /api/workspaces/[id]/join-requests/[reqId] — APPROVE', () => {
     );
   });
 
-  it('uses existing member displayName when available', async () => {
-    mockOwnerCheck(true);
+  it('uses user name as displayName when available', async () => {
+    mockOwnerAndUserLookup(true, '김철수'); // 1st: owner, 2nd: name = '김철수'
     const pendingRequest = { id: 10, userId: 'user-2', workspaceId: 5, status: 'PENDING' };
     mockedGetJoinRequestById.mockResolvedValue(pendingRequest);
-    mockedGetMemberByUserId.mockResolvedValue({ id: 99, displayName: '김철수' });
     mockedApproveJoinRequest.mockResolvedValue({
       joinRequest: { ...pendingRequest, status: 'APPROVED' },
       member: { id: 99 },

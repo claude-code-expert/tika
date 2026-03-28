@@ -4,7 +4,10 @@ import { auth } from '@/lib/auth';
 import { createTicketSchema } from '@/lib/validations';
 import { getBoardData, createTicket, getTicketCount, getWbsTickets } from '@/db/queries/tickets';
 import { setAssignees } from '@/db/queries/ticketAssignees';
-import { TICKET_MAX_PER_WORKSPACE } from '@/lib/constants';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { TICKET_MAX_PER_WORKSPACE, TICKET_MAX_TEAM_WORKSPACE, TICKET_WARNING_TEAM, TICKET_WARNING_PERSONAL } from '@/lib/constants';
+import { requireRole, isRoleError } from '@/lib/permissions';
+import { TEAM_ROLE } from '@/types/index';
 
 function getWorkspaceId(session: Session | null): number | null {
   return ((session?.user as Record<string, unknown> | undefined)?.workspaceId as number) ?? null;
@@ -20,16 +23,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const workspaceId = getWorkspaceId(session);
-    if (!workspaceId) {
+    const { searchParams } = new URL(request.url);
+
+    // Accept explicit workspaceId query param (for cross-workspace access)
+    const wsParam = searchParams.get('workspaceId');
+    const workspaceId = wsParam ? Number(wsParam) : getWorkspaceId(session);
+    if (!workspaceId || Number.isNaN(workspaceId)) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
         { status: 401 },
       );
     }
 
+    // RBAC check when explicit workspaceId is provided
+    if (wsParam) {
+      const userId = (session.user as unknown as Record<string, unknown>).id as string;
+      const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.VIEWER);
+      if (isRoleError(roleCheck)) return roleCheck;
+    }
+
     // ?types=GOAL,STORY,FEATURE → return flat ticket list filtered by type
-    const { searchParams } = new URL(request.url);
     const typesParam = searchParams.get('types');
     if (typesParam) {
       const allowedTypes = typesParam.split(',').map((t) => t.trim().toUpperCase());
@@ -67,6 +80,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userId = (session.user as unknown as Record<string, unknown>).id as string;
+
+    // RBAC: VIEWER cannot create tickets
+    const roleCheck = await requireRole(userId, workspaceId, TEAM_ROLE.MEMBER);
+    if (isRoleError(roleCheck)) return roleCheck;
+
     const body = await request.json();
     const result = createTicketSchema.safeParse(body);
     if (!result.success) {
@@ -76,13 +95,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ticketCount = await getTicketCount(workspaceId);
-    if (ticketCount >= TICKET_MAX_PER_WORKSPACE) {
+    const workspace = await getWorkspaceById(workspaceId);
+    const isTeam = workspace?.type === 'TEAM';
+    const maxTickets = isTeam ? TICKET_MAX_TEAM_WORKSPACE : TICKET_MAX_PER_WORKSPACE;
+    const warningThreshold = isTeam ? TICKET_WARNING_TEAM : TICKET_WARNING_PERSONAL;
+
+    const currentCount = await getTicketCount(workspaceId);
+    if (currentCount >= maxTickets) {
       return NextResponse.json(
         {
           error: {
             code: 'TICKET_LIMIT_EXCEEDED',
-            message: `워크스페이스당 최대 ${TICKET_MAX_PER_WORKSPACE}개의 티켓만 생성할 수 있습니다`,
+            message: `티켓 한도(${maxTickets}개)에 도달했습니다`,
           },
         },
         { status: 400 },
@@ -103,7 +127,16 @@ export async function POST(request: NextRequest) {
       await setAssignees(ticket.id, assigneeIds);
     }
 
-    return NextResponse.json({ ticket }, { status: 201 });
+    const approachingLimit = currentCount + 1 >= warningThreshold;
+    return NextResponse.json(
+      {
+        ticket,
+        ...(approachingLimit && {
+          warning: `티켓이 ${currentCount + 1}/${maxTickets}개입니다. 한도에 가까워지고 있습니다.`,
+        }),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('POST /api/tickets error:', error);
     return NextResponse.json(

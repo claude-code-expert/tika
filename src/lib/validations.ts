@@ -312,7 +312,7 @@ const notificationTypeValues = Object.values(NOTIFICATION_TYPE) as [string, ...s
 
 export const inAppNotificationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(20),
   workspaceId: z.coerce.number().int().positive().optional(),
   unreadOnly: z
     .string()

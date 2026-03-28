@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import type { TicketWithMeta, Ticket, Label, Member, Sprint } from '@/types/index';
 import { TICKET_TYPE, TICKET_PRIORITY, TICKET_STATUS } from '@/types/index';
@@ -8,7 +9,7 @@ import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS, TICKET_TYPE_META, TITLE_MAX_LENGTH } from '@/lib/constants';
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/components/ui/Chips';
 import { labelTextColor } from '@/components/label/LabelBadge';
-import { FileText, Users, Tag, CheckSquare, Type, UserPlus } from 'lucide-react';
+import { FileText, Users, Tag, CheckSquare, Type, UserPlus, Check } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { CHEVRON_SVG, metaSelectStyle, metaDateStyle } from '@/lib/ticketMetaStyles';
 
@@ -47,9 +48,9 @@ function getParentIssueTypes(ticketType: string): string[] {
     case 'STORY':
       return ['GOAL'];
     case 'FEATURE':
-      return ['STORY'];
+      return ['STORY', 'GOAL'];
     case 'TASK':
-      return ['FEATURE'];
+      return ['FEATURE', 'STORY', 'GOAL'];
     default:
       return [];
   }
@@ -76,6 +77,9 @@ interface TicketFormProps {
 }
 
 export function TicketForm({ mode = 'create', initialData, workspaceId, externalTitle, onTitleChange, onSubmit, onCancel }: TicketFormProps) {
+  const { data: session } = useSession();
+  const currentMemberId = (session?.user as Record<string, unknown> | undefined)?.memberId as number | null | undefined;
+
   /* ── Form state ── */
   const [type, setType] = useState<string>(initialData?.type ?? 'TASK');
   const [internalTitle, setInternalTitle] = useState(initialData?.title ?? '');
@@ -147,12 +151,8 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     const members = membersData?.members;
     if (!members?.length) return;
     setAllMembers(members);
-    if (selectedAssigneeIds.length === 0 && mode === 'create') {
-      const self = members[0];
-      setSelectedAssigneeIds([self.id]);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [membersData]);
+  }, [membersData, currentMemberId]);
 
   useEffect(() => {
     const sprints = sprintsData?.sprints ?? [];
@@ -208,13 +208,17 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
 
   /* ── Filtered parents for parent selection ── */
   const parentIssueTypes = getParentIssueTypes(type);
-  const filteredParents = allParents
-    .filter((t) => parentIssueTypes.includes(t.type))
-    .filter((t) => {
-      if (!parentSearch.trim()) return true;
-      const q = parentSearch.toLowerCase();
-      return t.title.toLowerCase().includes(q) || String(t.id).includes(q);
-    });
+  const parentSearchTrimmed = parentSearch.trim();
+  const isNumericSearch = /^\d+$/.test(parentSearchTrimmed);
+  const isParentSearchActive = parentSearchTrimmed.length >= 2 || (isNumericSearch && parentSearchTrimmed.length >= 1);
+  const filteredParents = isParentSearchActive
+    ? allParents
+        .filter((t) => parentIssueTypes.includes(t.type))
+        .filter((t) => {
+          const q = parentSearchTrimmed.toLowerCase();
+          return t.title.toLowerCase().includes(q) || String(t.id).includes(q);
+        })
+    : [];
 
   const selectedParent = parentId ? allParents.find((t) => t.id === parentId) : null;
 
@@ -272,7 +276,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         plannedEndDate: dueDate || null,
         description: description || null,
         parentId: parentId ?? null,
-        assigneeId: selectedAssigneeIds[0] ?? null,
         assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
         storyPoints: null,
         sprintId: sprintId ?? null,
@@ -304,7 +307,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
           <label style={{ ...fieldLabelStyle, marginBottom: 0, flexShrink: 0 }}>
             이슈 타입 <span style={{ color: '#DC2626', marginLeft: 2 }}>*</span>
           </label>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {TYPE_CONFIG.map((t) => {
               const isSelected = type === t.value;
               return (
@@ -314,20 +317,23 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
                   onClick={() => setType(t.value)}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '5px 12px 5px 6px',
-                    border: `1.5px solid ${isSelected ? t.color : t.color + '55'}`,
+                    padding: '3px 10px 3px 5px',
+                    border: `2px solid ${isSelected ? t.color : t.color + '40'}`,
                     borderRadius: 20,
-                    background: isSelected ? `${t.color}18` : `${t.color}08`,
-                    cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s',
+                    background: isSelected ? `${t.color}22` : 'transparent',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'background 0.15s, border-color 0.15s',
+                    boxShadow: isSelected ? `0 0 0 3px ${t.color}20` : 'none',
                   }}
                   aria-label={`${t.label} 타입 선택`}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: t.color, fontFamily: "'Plus Jakarta Sans', sans-serif", flexShrink: 0 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 4, fontSize: 10, fontWeight: 800, color: '#fff', background: t.color, fontFamily: "'Plus Jakarta Sans', sans-serif", flexShrink: 0 }}>
                     {t.abbr}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: isSelected ? t.color : 'var(--color-text-secondary)' }}>
+                  <span style={{ fontSize: 11, fontWeight: isSelected ? 700 : 500, color: isSelected ? t.color : 'var(--color-text-secondary)' }}>
                     {t.label}
                   </span>
+                  <Check size={11} strokeWidth={3} style={{ color: t.color, flexShrink: 0, visibility: isSelected ? 'visible' : 'hidden' }} />
                 </button>
               );
             })}
@@ -390,7 +396,9 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
               )}
               {showParentDropdown && !selectedParent && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto', zIndex: 100, marginTop: 4 }}>
-                  {filteredParents.length === 0 ? (
+                  {!isParentSearchActive ? (
+                    <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--color-text-muted)' }}>이름(2자 이상) 또는 번호를 입력하세요</div>
+                  ) : filteredParents.length === 0 ? (
                     <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--color-text-muted)' }}>검색 결과가 없습니다</div>
                   ) : filteredParents.map((parent) => (
                     <button key={parent.id} type="button"
@@ -580,8 +588,21 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
 
           {/* Assignee — TicketModal style */}
           <div ref={assigneeDropdownRef} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, position: 'relative' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-              담당자
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                담당자
+              </span>
+              {currentMemberId && !selectedAssigneeIds.includes(currentMemberId) && selectedAssigneeIds.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAssigneeIds((prev) => [...prev, currentMemberId])}
+                  style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-accent-light, #E8F5F0)', border: 'none', borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.12s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.75'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                >
+                  나에게 할당
+                </button>
+              )}
             </div>
             {selectedAssigneeIds.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>

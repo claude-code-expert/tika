@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
+import { nowKST } from '@/lib/date';
 import { db } from '@/db/index';
 import { users } from '@/db/schema';
 import { getInviteByToken, acceptInvite } from '@/db/queries/invites';
@@ -43,7 +44,7 @@ export async function POST(
       );
     }
 
-    if (new Date(invite.expiresAt) < new Date()) {
+    if (new Date(invite.expiresAt) < nowKST()) {
       return NextResponse.json(
         { error: { code: 'INVITE_EXPIRED', message: '초대 링크가 만료되었습니다' } },
         { status: 400 },

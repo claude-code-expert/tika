@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInviteByToken } from '@/db/queries/invites';
+import { nowKST } from '@/lib/date';
 import { getWorkspaceById } from '@/db/queries/workspaces';
 import { getMemberById } from '@/db/queries/members';
 
@@ -35,7 +36,7 @@ export async function GET(
       );
     }
 
-    if (new Date(invite.expiresAt) < new Date()) {
+    if (new Date(invite.expiresAt) < nowKST()) {
       return NextResponse.json(
         { error: { code: 'INVITE_EXPIRED', message: '초대 링크가 만료되었습니다' }, status: 'EXPIRED' },
         { status: 400 },

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import type { InAppNotification, WorkspaceWithRole } from '@/types/index';
+import { toKSTString } from '@/lib/date';
 
 type ReadFilter = 'all' | 'unread' | 'read';
 
@@ -20,10 +21,6 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}일 전`;
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 const TYPE_LABELS: Record<string, string> = {
   TICKET_STATUS_CHANGED: '상태 변경',
@@ -459,7 +456,7 @@ function NotifItem({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{timeAgo(notif.createdAt)}</span>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>·</span>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{formatDate(notif.createdAt)}</span>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{toKSTString(notif.createdAt)}</span>
           {notif.actorName && (
             <>
               <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>·</span>

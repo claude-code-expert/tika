@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         type: NOTIFICATION_TYPE.DEADLINE_WARNING,
         title,
         message: nMsg,
-        link: `/workspace/${workspace.id}/${ticket.id}`,
+        link: `/workspace/${workspace.id}/${workspace.name.toLowerCase()}-${ticket.id}`,
         actorId: null,
         recipientUserIds: ticketAssignees.map((a) => a.userId),
         refType: 'ticket',

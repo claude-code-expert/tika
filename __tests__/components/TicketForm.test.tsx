@@ -1,3 +1,7 @@
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),
+}));
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TicketForm } from '@/components/ticket/TicketForm';

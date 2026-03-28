@@ -12,6 +12,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { nowKST } from '@/lib/date';
 
 // 1. users — Google OAuth (NextAuth manages)
 export const users = pgTable('users', {
@@ -112,7 +113,7 @@ export const tickets = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => nowKST()),
   },
   (table) => [
     index('idx_tickets_workspace_status_position').on(
@@ -175,7 +176,7 @@ export const notificationChannels = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => nowKST()),
   },
   (table) => [
     unique('notification_channels_workspace_type_unique').on(table.workspaceId, table.type),
@@ -196,7 +197,7 @@ export const comments = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => nowKST()),
   },
   (table) => [
     index('idx_comments_ticket_id').on(table.ticketId),

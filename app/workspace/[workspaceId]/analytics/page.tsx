@@ -10,6 +10,7 @@ import {
   computePeriodBurndown,
   computeCycleTimeFromTickets,
 } from '@/db/queries/analytics';
+import { nowKST } from '@/lib/date';
 import { TeamShell } from '@/components/layout/TeamShell';
 import { BurndownPeriodChart } from '@/components/team/charts/BurndownPeriodChart';
 import { CumulativeFlowDiagram } from '@/components/team/charts/CumulativeFlowDiagram';
@@ -50,7 +51,7 @@ export default async function TeamAnalyticsPage({
   const role = member.role as TeamRole;
 
   // Burndown periods
-  const now = new Date();
+  const now = nowKST();
   const todayDate = now.toISOString().slice(0, 10);
 
   // 지난주: 지난 월요일 ~ 지난 일요일

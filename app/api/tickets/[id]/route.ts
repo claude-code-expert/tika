@@ -3,14 +3,18 @@ import { auth } from '@/lib/auth';
 import { updateTicketSchema } from '@/lib/validations';
 import { getTicketById, getTicketWorkspaceId, updateTicket, deleteTicket } from '@/db/queries/tickets';
 import { setAssignees, getAssigneesByTicket } from '@/db/queries/ticketAssignees';
+import { getLabelsByTicketId } from '@/db/queries/labels';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
+import { nowKST } from '@/lib/date';
 import {
   sendInAppNotification,
   buildTicketStatusChangedMessage,
   buildTicketAssignedMessage,
   buildTicketUnassignedMessage,
   buildTicketDeletedMessage,
+  buildDeadlineTodayMessage,
+  buildOverdueWarningMessage,
 } from '@/lib/notifications';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -105,9 +109,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Handle status change side effects (startDate, completedAt)
+    // Handle status change side effects (startDate, dueDate, completedAt)
     let completedAt: Date | null | undefined = undefined;
     let startDate: string | null | undefined = undefined;
+    let dueDate: string | null | undefined = undefined;
+    let isEnteringInProgress = false;
     let existing: Awaited<ReturnType<typeof getTicketById>> | null = null;
 
     const { assigneeIds, ...restData } = result.data;
@@ -125,18 +131,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       existing = await getTicketById(ticketId, workspaceId);
     }
 
-    if (result.data.status !== undefined) {
-      if (existing) {
-        // Auto-set startDate when moving out of BACKLOG (to TODO/IN_PROGRESS/DONE)
-        if (
-          result.data.status !== 'BACKLOG' &&
-          existing.status === 'BACKLOG' &&
-          !existing.startDate
-        ) {
-          startDate = new Date().toISOString().slice(0, 10);
+    if (result.data.status !== undefined && existing) {
+      isEnteringInProgress = result.data.status === 'IN_PROGRESS' && existing.status !== 'IN_PROGRESS';
+
+      // Auto-set startDate: leaving BACKLOG or entering IN_PROGRESS (if not already set)
+      if (
+        !existing.startDate &&
+        ((result.data.status !== 'BACKLOG' && existing.status === 'BACKLOG') || isEnteringInProgress)
+      ) {
+        startDate = nowKST().toISOString().slice(0, 10);
+      }
+
+      // Auto-set dueDate = plannedEndDate when entering IN_PROGRESS (if dueDate is not set)
+      if (isEnteringInProgress && result.data.dueDate === undefined && !existing.dueDate) {
+        const effectivePlannedEnd = result.data.plannedEndDate ?? existing.plannedEndDate;
+        if (effectivePlannedEnd) {
+          dueDate = effectivePlannedEnd;
         }
       }
-      completedAt = result.data.status === 'DONE' ? new Date() : null;
+
+      completedAt = result.data.status === 'DONE' ? nowKST() : null;
     }
 
     // updateTicket and setAssignees are independent — run in parallel
@@ -145,6 +159,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         ...restData,
         completedAt,
         ...(startDate !== undefined ? { startDate } : {}),
+        ...(dueDate !== undefined ? { dueDate } : {}),
       }),
       assigneeIds !== undefined ? setAssignees(ticketId, assigneeIds) : Promise.resolve(),
     ]);
@@ -159,7 +174,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     // Reuse existing data for prevAssignees — avoids a redundant DB call
     const prevAssignees = assigneeIds !== undefined ? (existing?.assignees ?? []) : [];
 
-    const assignees = await getAssigneesByTicket(ticketId);
+    const [assignees, ticketLabels] = await Promise.all([
+      getAssigneesByTicket(ticketId),
+      getLabelsByTicketId(ticketId),
+    ]);
     const actorName = (session.user.name as string | null) ?? '사용자';
     const ticketLink = `/workspace/${workspaceId}/${ticketId}`;
 
@@ -183,7 +201,42 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }).catch((e) => console.error('Notification error (status changed):', e));
     }
 
-    // 2. Assignees changed → notify added/removed
+    // 2. IN_PROGRESS 진입 시 마감일 기반 알림 (overdue / 오늘 마감)
+    if (isEnteringInProgress && assignees.length > 0) {
+      const finalDueDate = dueDate ?? ticket.dueDate;
+      if (finalDueDate) {
+        const today = nowKST().toISOString().slice(0, 10);
+        if (finalDueDate < today) {
+          const { title, message } = buildOverdueWarningMessage(ticket.title, finalDueDate);
+          sendInAppNotification({
+            workspaceId,
+            type: NOTIFICATION_TYPE.OVERDUE_WARNING,
+            title,
+            message,
+            link: ticketLink,
+            actorId: null,
+            recipientUserIds: assignees.map((a) => a.userId),
+            refType: 'ticket',
+            refId: ticketId,
+          }).catch((e) => console.error('Notification error (overdue warning):', e));
+        } else if (finalDueDate === today) {
+          const { title, message } = buildDeadlineTodayMessage(ticket.title, finalDueDate);
+          sendInAppNotification({
+            workspaceId,
+            type: NOTIFICATION_TYPE.DEADLINE_TODAY,
+            title,
+            message,
+            link: ticketLink,
+            actorId: null,
+            recipientUserIds: assignees.map((a) => a.userId),
+            refType: 'ticket',
+            refId: ticketId,
+          }).catch((e) => console.error('Notification error (deadline today):', e));
+        }
+      }
+    }
+
+    // 3. Assignees changed → notify added/removed
     if (assigneeIds !== undefined) {
       const prevUserIds = new Set(prevAssignees.map((a) => a.userId));
       const newUserIds = new Set(assignees.map((a) => a.userId));
@@ -222,7 +275,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
     }
 
-    return NextResponse.json({ ticket: { ...ticket, assignees } });
+    return NextResponse.json({ ticket: { ...ticket, assignees, labels: ticketLabels } });
   } catch (error) {
     console.error('PATCH /api/tickets/:id error:', error);
     return NextResponse.json(

@@ -1,4 +1,5 @@
 import { eq, and } from 'drizzle-orm';
+import { nowKST } from '@/lib/date';
 import { db } from '@/db/index';
 import { workspaceJoinRequests, members, users } from '@/db/schema';
 import type { JoinRequest, JoinRequestWithUser, JoinRequestStatus } from '@/types/index';
@@ -122,7 +123,7 @@ export async function approveJoinRequest(
   newMemberData: { userId: string; displayName: string },
 ): Promise<{ joinRequest: JoinRequest; member: typeof members.$inferSelect }> {
   return await db.transaction(async (tx) => {
-    const now = new Date();
+    const now = nowKST();
 
     const [updatedReq] = await tx
       .update(workspaceJoinRequests)
@@ -156,7 +157,7 @@ export async function rejectJoinRequest(
 ): Promise<JoinRequest> {
   const [row] = await db
     .update(workspaceJoinRequests)
-    .set({ status: 'REJECTED', reviewedBy: reviewerMemberId, reviewedAt: new Date() })
+    .set({ status: 'REJECTED', reviewedBy: reviewerMemberId, reviewedAt: nowKST() })
     .where(
       and(eq(workspaceJoinRequests.id, reqId), eq(workspaceJoinRequests.workspaceId, workspaceId)),
     )

@@ -32,6 +32,12 @@ jest.mock('@/lib/notifications', () => ({
   buildTicketAssignedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
   buildTicketUnassignedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
   buildTicketDeletedMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+  buildDeadlineTodayMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+  buildOverdueWarningMessage: jest.fn().mockReturnValue({ title: '', message: '' }),
+}));
+
+jest.mock('@/db/queries/labels', () => ({
+  getLabelsByTicketId: jest.fn().mockResolvedValue([]),
 }));
 
 import { NextRequest } from 'next/server';
@@ -182,6 +188,8 @@ describe('PATCH /api/tickets/:id', () => {
   it('status를 DONE으로 변경 시 completedAt이 설정된다', async () => {
     const updatedTicket = { ...mockTicket, status: 'DONE', completedAt: new Date().toISOString() };
     mockedAuth.mockResolvedValueOnce(mockSession);
+    // 라우트가 기존 상태 조회 후 completedAt을 계산하므로 existing 티켓 mock 필요
+    mockedGetTicketById.mockResolvedValueOnce({ ...mockTicket, status: 'TODO', assignees: [] });
     mockedUpdateTicket.mockResolvedValueOnce(updatedTicket);
 
     const response = await PATCH(makePatchRequest('1', { status: 'DONE' }), makeContext('1'));

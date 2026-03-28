@@ -10,6 +10,7 @@ import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } fr
 import { TICKET_STATUS, TICKET_PRIORITY, TICKET_TYPE } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/components/ui/Chips';
+import { toKSTDateString } from '@/lib/date';
 import { CHEVRON_SVG, metaSelectStyle, metaDateStyle as metaDateStyleShared } from '@/lib/ticketMetaStyles';
 import { LabelBadge } from '@/components/label/LabelBadge';
 import {
@@ -140,11 +141,9 @@ export function TicketModal({
   const [startDate, setStartDate] = useState(ticket.plannedStartDate ?? '');
   const [dueDate, setDueDate] = useState(ticket.plannedEndDate ?? '');
   const [selectedParentId, setSelectedParentId] = useState<number | null>(ticket.parentId ?? null);
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(() => {
-    const ids = new Set(ticket.assignees.map((a) => a.id));
-    if (ticket.assignee) ids.add(ticket.assignee.id);
-    return [...ids];
-  });
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<number[]>(
+    ticket.assignees.map((a) => a.id),
+  );
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(ticket.checklistItems);
   const [commentList, setCommentList] = useState<Comment[]>([]);
 
@@ -155,6 +154,7 @@ export function TicketModal({
   );
   const [labelsLoaded, setLabelsLoaded] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [pendingLabelIds, setPendingLabelIds] = useState<number[] | null>(null);
 
   // ── parent / member state ──
   const [allParents, setAllParents] = useState<Ticket[]>([]);
@@ -218,6 +218,7 @@ export function TicketModal({
     const handleClick = (e: MouseEvent) => {
       if (labelAreaRef.current && !labelAreaRef.current.contains(e.target as Node)) {
         setShowLabelPicker(false);
+        setPendingLabelIds(null);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -247,7 +248,9 @@ export function TicketModal({
     dueDate !== (ticket.plannedEndDate ?? '') ||
     selectedParentId !== (ticket.parentId ?? null) ||
     JSON.stringify([...selectedAssigneeIds].sort()) !==
-      JSON.stringify([...ticket.assignees.map((a) => a.id)].sort());
+      JSON.stringify([...ticket.assignees.map((a) => a.id)].sort()) ||
+    JSON.stringify([...selectedLabelIds].sort()) !==
+      JSON.stringify([...ticket.labels.map((l) => l.id)].sort());
 
   // ── save ──
   const handleSave = async () => {
@@ -266,6 +269,9 @@ export function TicketModal({
       const origIds = [...ticket.assignees.map((a) => a.id)].sort().join(',');
       const newIds = [...selectedAssigneeIds].sort().join(',');
       if (origIds !== newIds) patch.assigneeIds = selectedAssigneeIds;
+      const origLabelIds = [...ticket.labels.map((l) => l.id)].sort().join(',');
+      const currLabelIds = [...selectedLabelIds].sort().join(',');
+      if (origLabelIds !== currLabelIds) patch.labelIds = selectedLabelIds;
       await onUpdate(ticket.id, patch);
       setShowSaveToast(true);
       setTimeout(() => {
@@ -298,16 +304,9 @@ export function TicketModal({
   };
 
   // ── label helpers ──
-  const handleLabelToggle = async (labelId: number) => {
-    const newIds = selectedLabelIds.includes(labelId)
-      ? selectedLabelIds.filter((id) => id !== labelId)
-      : [...selectedLabelIds, labelId];
-    setSelectedLabelIds(newIds);
-    await fetch(`/api/tickets/${ticket.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ labelIds: newIds }),
-    });
+  // Called only from badge × button — removes from committed state, deferred to save
+  const handleLabelRemove = (labelId: number) => {
+    setSelectedLabelIds((prev) => prev.filter((id) => id !== labelId));
   };
 
   const handleLabelAddClick = async () => {
@@ -319,7 +318,13 @@ export function TicketModal({
         setLabelsLoaded(true);
       }
     }
-    setShowLabelPicker((prev) => !prev);
+    if (!showLabelPicker) {
+      setPendingLabelIds([...selectedLabelIds]);
+      setShowLabelPicker(true);
+    } else {
+      setPendingLabelIds(null);
+      setShowLabelPicker(false);
+    }
   };
 
   // ── assignee helpers ──
@@ -409,7 +414,8 @@ export function TicketModal({
                 label="URL 복사"
                 icon={<Link2 size={15} />}
                 onClick={() => {
-                  const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${ticket.id}`;
+                  const slug = workspaceName ? `${workspaceName.toLowerCase()}-${ticket.id}` : ticket.id;
+                  const url = `${window.location.origin}/workspace/${ticket.workspaceId}/${slug}`;
                   navigator.clipboard.writeText(url);
                 }}
               />
@@ -633,7 +639,7 @@ export function TicketModal({
                         key={label.id}
                         label={label}
                         size="sm"
-                        onRemove={readOnly ? undefined : () => handleLabelToggle(label.id)}
+                        onRemove={readOnly ? undefined : () => handleLabelRemove(label.id)}
                       />
                     ))}
                     {/* Label picker dropdown */}
@@ -653,20 +659,25 @@ export function TicketModal({
                         }}
                       >
                         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 8 }}>
-                          라벨 선택
+                          라벨 선택{pendingLabelIds && ` (${pendingLabelIds.length}/3)`}
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
                           {allLabels.map((label) => {
-                            const isUsed = selectedLabelIds.includes(label.id);
+                            const pending = pendingLabelIds ?? selectedLabelIds;
+                            const isSelected = pending.includes(label.id);
+                            const isDisabled = !isSelected && pending.length >= 3;
                             return (
                               <button
                                 key={label.id}
                                 onClick={() => {
-                                  if (!isUsed) {
-                                    handleLabelToggle(label.id);
-                                    setShowLabelPicker(false);
+                                  if (!pendingLabelIds) return;
+                                  if (isSelected) {
+                                    setPendingLabelIds(pendingLabelIds.filter((id) => id !== label.id));
+                                  } else if (pendingLabelIds.length < 3) {
+                                    setPendingLabelIds([...pendingLabelIds, label.id]);
                                   }
                                 }}
+                                disabled={isDisabled}
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -675,14 +686,15 @@ export function TicketModal({
                                   borderRadius: 4,
                                   fontSize: 11,
                                   fontWeight: 500,
-                                  cursor: isUsed ? 'default' : 'pointer',
+                                  cursor: isDisabled ? 'default' : 'pointer',
                                   border: `1px solid ${label.color}`,
-                                  background: isUsed ? `${label.color}18` : 'transparent',
+                                  background: isSelected ? `${label.color}30` : 'transparent',
                                   color: '#2C3E50',
                                   fontFamily: 'inherit',
-                                  opacity: isUsed ? 0.5 : 1,
-                                  transition: 'opacity 0.12s',
-                                  pointerEvents: isUsed ? 'none' : 'auto',
+                                  opacity: isDisabled ? 0.35 : 1,
+                                  outline: isSelected ? `2px solid ${label.color}` : 'none',
+                                  outlineOffset: 1,
+                                  transition: 'all 0.12s',
                                 }}
                               >
                                 {label.name}
@@ -692,6 +704,29 @@ export function TicketModal({
                           {allLabels.length === 0 && (
                             <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>라벨이 없습니다</p>
                           )}
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => {
+                              if (pendingLabelIds !== null) setSelectedLabelIds(pendingLabelIds);
+                              setPendingLabelIds(null);
+                              setShowLabelPicker(false);
+                            }}
+                            style={{
+                              height: 26,
+                              padding: '0 12px',
+                              borderRadius: 5,
+                              border: 'none',
+                              background: 'var(--color-accent)',
+                              color: '#fff',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            적용
+                          </button>
                         </div>
                       </div>
                     )}
@@ -988,8 +1023,20 @@ export function TicketModal({
 
                 {/* 담당자 section */}
                 <div ref={assigneeAreaRef} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, position: 'relative' }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
-                    담당자
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      담당자
+                    </span>
+                    {!readOnly && currentMemberId && !selectedAssigneeIds.includes(currentMemberId) && selectedAssigneeIds.length < 3 && (
+                      <button
+                        onClick={() => addAssignee(currentMemberId)}
+                        style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-accent-light, #E8F5F0)', border: 'none', borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.12s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.75'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      >
+                        나에게 할당
+                      </button>
+                    )}
                   </div>
                   {currentAssignees.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
@@ -1071,11 +1118,11 @@ export function TicketModal({
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>수정일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.updatedAt.slice(0, 10)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{toKSTDateString(ticket.updatedAt)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>생성일</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{ticket.createdAt.slice(0, 10)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{toKSTDateString(ticket.createdAt)}</span>
                   </div>
                 </div>
               </div>

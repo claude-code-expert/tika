@@ -8,7 +8,13 @@ import {
 } from '@/db/queries/members';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { updateMemberRoleSchema } from '@/lib/validations';
-import { TEAM_ROLE } from '@/types/index';
+import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import {
+  sendInAppNotification,
+  buildRoleChangedMessage,
+  buildMemberRemovedMessage,
+} from '@/lib/notifications';
 
 // PATCH /api/workspaces/:id/members/:memberId — update member role (RBAC: OWNER)
 export async function PATCH(
@@ -64,12 +70,34 @@ export async function PATCH(
       }
     }
 
+    // Capture old role before update
+    const allMembersForRole = await getMembersWithEmailByWorkspace(workspaceId);
+    const targetForRole = allMembersForRole.find((m) => m.id === memberId);
+    const oldRole = targetForRole?.role;
+
     const updated = await updateMemberRole(memberId, workspaceId, role);
     if (!updated) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: '멤버를 찾을 수 없습니다' } },
         { status: 404 },
       );
+    }
+
+    // Notify the target member about role change
+    if (oldRole && oldRole !== role) {
+      const workspace = await getWorkspaceById(workspaceId);
+      const { title, message } = buildRoleChangedMessage(workspace?.name ?? '워크스페이스', oldRole, role);
+      sendInAppNotification({
+        workspaceId,
+        type: NOTIFICATION_TYPE.ROLE_CHANGED,
+        title,
+        message,
+        link: `/workspace/${workspaceId}`,
+        actorId: userId,
+        recipientUserIds: [updated.userId],
+        refType: 'member',
+        refId: memberId,
+      }).catch((e) => console.error('Notification error (role changed):', e));
     }
 
     return NextResponse.json({ member: updated });
@@ -139,6 +167,21 @@ export async function DELETE(
     }
 
     await removeMember(memberId, workspaceId);
+
+    // Notify the removed member
+    const workspace = await getWorkspaceById(workspaceId);
+    const { title, message } = buildMemberRemovedMessage(workspace?.name ?? '워크스페이스');
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.MEMBER_REMOVED,
+      title,
+      message,
+      actorId: userId,
+      recipientUserIds: [targetMember.userId],
+      refType: 'member',
+      refId: memberId,
+    }).catch((e) => console.error('Notification error (member removed):', e));
+
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('DELETE /api/workspaces/:id/members/:memberId error:', error);

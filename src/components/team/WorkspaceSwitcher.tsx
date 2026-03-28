@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import type { WorkspaceWithRole } from '@/types/index';
 
 interface WorkspaceSwitcherProps {
@@ -11,9 +12,12 @@ interface WorkspaceSwitcherProps {
 
 export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: WorkspaceSwitcherProps) {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [workspaces, setWorkspaces] = useState<WorkspaceWithRole[]>([]);
   const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     fetch('/api/workspaces')
@@ -32,13 +36,42 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Close on scroll or resize
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [open]);
+
   const current = workspaces.find((w) => w.id === currentWorkspaceId);
-  // Use server-provided name as fallback to avoid flash of '워크스페이스' before API loads
   const currentName = current?.name ?? currentWorkspaceName ?? '워크스페이스';
   const currentIconColor = current?.iconColor ?? '#629584';
 
-  function handleSelect(ws: WorkspaceWithRole) {
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 220) });
+    }
+    setOpen((p) => !p);
+  }
+
+  async function setPrimary(workspaceId: number) {
+    try {
+      await fetch(`/api/workspaces/${workspaceId}/primary`, { method: 'PATCH' });
+      await updateSession();
+    } catch {
+      // non-critical
+    }
+  }
+
+  async function handleSelect(ws: WorkspaceWithRole) {
     setOpen(false);
+    await setPrimary(ws.id);
     if (ws.type === 'TEAM') {
       router.push(`/workspace/${ws.id}`);
     } else {
@@ -49,7 +82,8 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
   return (
     <div ref={ref} style={{ position: 'relative', flex: 1 }}>
       <button
-        onClick={() => setOpen((p) => !p)}
+        ref={btnRef}
+        onClick={handleToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -104,19 +138,18 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
         </svg>
       </button>
 
-      {open && (
+      {open && dropdownPos && (
         <div
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: 4,
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
             background: '#fff',
             border: '1px solid #DFE1E6',
             borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,.12)',
-            zIndex: 200,
+            zIndex: 9999,
             overflow: 'hidden',
           }}
         >
@@ -173,7 +206,12 @@ export function WorkspaceSwitcher({ currentWorkspaceId, currentWorkspaceName }: 
 
           <div style={{ borderTop: '1px solid #DFE1E6', padding: '6px 8px' }}>
             <button
-              onClick={() => { setOpen(false); router.push('/'); }}
+              onClick={async () => {
+                setOpen(false);
+                const personalWs = workspaces.find((w) => w.type === 'PERSONAL');
+                if (personalWs) await setPrimary(personalWs.id);
+                router.push('/');
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',

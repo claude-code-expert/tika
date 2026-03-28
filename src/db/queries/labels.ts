@@ -1,4 +1,4 @@
-import { eq, and, count, sql } from 'drizzle-orm';
+import { eq, and, count, sql, inArray } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { labels, ticketLabels } from '@/db/schema';
 import type { Label, LabelWithCount } from '@/types/index';
@@ -117,4 +117,45 @@ export async function setTicketLabels(ticketId: number, labelIds: number[]): Pro
   if (labelIds.length > 0) {
     await db.insert(ticketLabels).values(labelIds.map((labelId) => ({ ticketId, labelId })));
   }
+}
+
+export async function copyLabelsToWorkspace(
+  sourceLabelIds: number[],
+  sourceWorkspaceId: number,
+  targetWorkspaceId: number,
+): Promise<{ copied: number; skipped: number }> {
+  if (sourceLabelIds.length === 0) return { copied: 0, skipped: 0 };
+
+  const sourceLabels = await db
+    .select()
+    .from(labels)
+    .where(and(eq(labels.workspaceId, sourceWorkspaceId), inArray(labels.id, sourceLabelIds)));
+
+  if (sourceLabels.length === 0) return { copied: 0, skipped: 0 };
+
+  const [{ cnt }] = await db
+    .select({ cnt: count() })
+    .from(labels)
+    .where(eq(labels.workspaceId, targetWorkspaceId));
+
+  const availableSlots = LABEL_MAX_PER_WORKSPACE - Number(cnt);
+  if (availableSlots <= 0) return { copied: 0, skipped: sourceLabels.length };
+
+  const existingRows = await db
+    .select({ name: labels.name })
+    .from(labels)
+    .where(eq(labels.workspaceId, targetWorkspaceId));
+
+  const existingNameSet = new Set(existingRows.map((r) => r.name.toLowerCase()));
+  const toInsert = sourceLabels
+    .filter((l) => !existingNameSet.has(l.name.toLowerCase()))
+    .slice(0, availableSlots);
+
+  if (toInsert.length > 0) {
+    await db
+      .insert(labels)
+      .values(toInsert.map((l) => ({ workspaceId: targetWorkspaceId, name: l.name, color: l.color })));
+  }
+
+  return { copied: toInsert.length, skipped: sourceLabels.length - toInsert.length };
 }

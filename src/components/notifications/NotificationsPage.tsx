@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import type { NotificationLog } from '@/types/index';
+import type { InAppNotification, WorkspaceWithRole } from '@/types/index';
 
-type ChannelFilter = 'all' | 'slack' | 'telegram';
-type StatusFilter = 'all' | 'SENT' | 'FAILED';
+type ReadFilter = 'all' | 'unread' | 'read';
 
 const PAGE_SIZE = 10;
 
@@ -25,30 +25,80 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  TICKET_STATUS_CHANGED: '상태 변경',
+  TICKET_COMMENTED: '댓글',
+  TICKET_ASSIGNED: '배정',
+  TICKET_UNASSIGNED: '배정 해제',
+  TICKET_DELETED: '티켓 삭제',
+  DEADLINE_WARNING: '마감 임박',
+  INVITE_RECEIVED: '초대',
+  ROLE_CHANGED: '역할 변경',
+  MEMBER_JOINED: '멤버 참여',
+  MEMBER_REMOVED: '멤버 제거',
+  JOIN_REQUEST_RECEIVED: '참여 신청',
+  JOIN_REQUEST_RESOLVED: '신청 결과',
+  SPRINT_STARTED: '스프린트 시작',
+  SPRINT_COMPLETED: '스프린트 완료',
+};
+
+const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
+  TICKET_STATUS_CHANGED: { bg: '#DBEAFE', color: '#2563EB' },
+  TICKET_COMMENTED: { bg: '#E0E7FF', color: '#4338CA' },
+  TICKET_ASSIGNED: { bg: '#D1FAE5', color: '#059669' },
+  TICKET_UNASSIGNED: { bg: '#FEE2E2', color: '#DC2626' },
+  TICKET_DELETED: { bg: '#FEE2E2', color: '#DC2626' },
+  DEADLINE_WARNING: { bg: '#FEF3C7', color: '#B45309' },
+  INVITE_RECEIVED: { bg: '#F3E8FF', color: '#7C3AED' },
+  ROLE_CHANGED: { bg: '#FCE7F3', color: '#DB2777' },
+  MEMBER_JOINED: { bg: '#D1FAE5', color: '#059669' },
+  MEMBER_REMOVED: { bg: '#FEE2E2', color: '#DC2626' },
+  JOIN_REQUEST_RECEIVED: { bg: '#F3E8FF', color: '#7C3AED' },
+  JOIN_REQUEST_RESOLVED: { bg: '#E0E7FF', color: '#4338CA' },
+  SPRINT_STARTED: { bg: '#DBEAFE', color: '#2563EB' },
+  SPRINT_COMPLETED: { bg: '#D1FAE5', color: '#059669' },
+};
+
 export function NotificationsPage() {
-  const [logs, setLogs] = useState<NotificationLog[]>([]);
+  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [readFilter, setReadFilter] = useState<ReadFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [workspaces, setWorkspaces] = useState<{ id: number; name: string }[]>([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | null>(null);
+  const router = useRouter();
 
-  // Fetch all logs on mount
+  // Fetch workspaces for filter dropdown
+  useEffect(() => {
+    fetch('/api/workspaces')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { workspaces?: WorkspaceWithRole[] } | null) => {
+        if (data?.workspaces) {
+          setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch notifications (re-fetch when workspace filter changes)
   useEffect(() => {
     setIsLoading(true);
-    fetch('/api/notifications/logs?limit=200')
+    const params = new URLSearchParams({ limit: '200' });
+    if (selectedWorkspaceId !== null) params.set('workspaceId', String(selectedWorkspaceId));
+    fetch(`/api/notifications/in-app?${params}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { logs?: NotificationLog[] } | null) => {
-        if (data?.logs) setLogs(data.logs);
+      .then((data: { notifications?: InAppNotification[] } | null) => {
+        if (data?.notifications) setNotifications(data.notifications);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [selectedWorkspaceId]);
 
   // Filtered list
-  const filtered = logs.filter((log) => {
-    if (channelFilter !== 'all' && log.channel !== channelFilter) return false;
-    if (statusFilter !== 'all' && log.status !== statusFilter) return false;
+  const filtered = notifications.filter((n) => {
+    if (readFilter === 'unread' && n.isRead) return false;
+    if (readFilter === 'read' && !n.isRead) return false;
     return true;
   });
 
@@ -56,29 +106,32 @@ export function NotificationsPage() {
   const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  // Count per filter chip
-  const slackCount = logs.filter((l) => l.channel === 'slack').length;
-  const telegramCount = logs.filter((l) => l.channel === 'telegram').length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Click on item → mark as read (local)
-  const handleItemClick = useCallback((id: number) => {
-    setLogs((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, isRead: true } : l)),
-    );
-  }, []);
+  // Mark single as read + navigate
+  const handleItemClick = useCallback((notif: InAppNotification) => {
+    if (!notif.isRead) {
+      fetch(`/api/notifications/in-app/${notif.id}/read`, { method: 'PATCH' })
+        .then(() => {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)),
+          );
+        })
+        .catch(() => {});
+    }
+    if (notif.link) {
+      router.push(notif.link);
+    }
+  }, [router]);
 
   // Mark all as read
   const handleMarkAllRead = useCallback(async () => {
     if (isMarkingRead) return;
     setIsMarkingRead(true);
     try {
-      const res = await fetch('/api/notifications/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAllRead' }),
-      });
+      const res = await fetch('/api/notifications/in-app/read-all', { method: 'PATCH' });
       if (res.ok) {
-        setLogs((prev) => prev.map((l) => ({ ...l, isRead: true })));
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       }
     } finally {
       setIsMarkingRead(false);
@@ -86,16 +139,10 @@ export function NotificationsPage() {
   }, [isMarkingRead]);
 
   // Reset page when filter changes
-  const applyChannelFilter = (f: ChannelFilter) => {
-    setChannelFilter(f);
+  const applyReadFilter = (f: ReadFilter) => {
+    setReadFilter(f);
     setCurrentPage(1);
   };
-  const applyStatusFilter = (f: StatusFilter) => {
-    setStatusFilter(f);
-    setCurrentPage(1);
-  };
-
-  const unreadCount = logs.filter((l) => !l.isRead).length;
 
   return (
     <div
@@ -132,7 +179,7 @@ export function NotificationsPage() {
           알림 내역
         </h1>
         <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 20 }}>
-          발송된 알림의 이력을 확인하고 관련 티켓으로 이동할 수 있습니다.
+          알림을 확인하고 관련 항목으로 이동할 수 있습니다.
         </p>
 
         {/* ─── Filter bar ─── */}
@@ -145,18 +192,18 @@ export function NotificationsPage() {
             alignItems: 'center',
           }}
         >
-          {/* Channel filter */}
+          {/* Read/Unread filter */}
           <div style={{ display: 'flex', gap: 4 }}>
             {([
-              { value: 'all', label: '전체', count: logs.length },
-              { value: 'slack', label: 'Slack', count: slackCount },
-              { value: 'telegram', label: 'Telegram', count: telegramCount },
-            ] as { value: ChannelFilter; label: string; count: number }[]).map(({ value, label, count }) => (
+              { value: 'all', label: '전체', count: notifications.length },
+              { value: 'unread', label: '미읽음', count: unreadCount },
+              { value: 'read', label: '읽음', count: notifications.length - unreadCount },
+            ] as { value: ReadFilter; label: string; count: number }[]).map(({ value, label, count }) => (
               <button
                 key={value}
                 className="chip"
-                data-active={channelFilter === value ? 'true' : undefined}
-                onClick={() => applyChannelFilter(value)}
+                data-active={readFilter === value ? 'true' : undefined}
+                onClick={() => applyReadFilter(value)}
               >
                 {label}
                 <span className="chip-count">{count}</span>
@@ -164,34 +211,36 @@ export function NotificationsPage() {
             ))}
           </div>
 
-          {/* Divider */}
-          <div
-            style={{
-              width: 1,
-              height: 20,
-              background: 'var(--color-border)',
-              margin: '0 6px',
-              flexShrink: 0,
-            }}
-          />
-
-          {/* Status filter */}
-          <div style={{ display: 'flex', gap: 4 }}>
-            {([
-              { value: 'all', label: '전체' },
-              { value: 'SENT', label: '성공' },
-              { value: 'FAILED', label: '실패' },
-            ] as { value: StatusFilter; label: string }[]).map(({ value, label }) => (
-              <button
-                key={value}
-                className="chip"
-                data-active={statusFilter === value ? 'true' : undefined}
-                onClick={() => applyStatusFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Workspace filter */}
+          {workspaces.length > 1 && (
+            <select
+              value={selectedWorkspaceId ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedWorkspaceId(val === '' ? null : Number(val));
+                setCurrentPage(1);
+              }}
+              style={{
+                height: 30,
+                padding: '0 8px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 20,
+                fontSize: 12,
+                color: 'var(--color-text-secondary)',
+                background: '#fff',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+            >
+              <option value="">전체 워크스페이스</option>
+              {workspaces.map((ws) => (
+                <option key={ws.id} value={ws.id}>
+                  {ws.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Mark all read */}
           {unreadCount > 0 && (
@@ -239,13 +288,12 @@ export function NotificationsPage() {
               fontSize: 13,
             }}
           >
-            <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.5 }}>🔔</div>
             해당 조건의 알림이 없습니다.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {pageItems.map((log) => (
-              <NotifItem key={log.id} log={log} onRead={handleItemClick} />
+            {pageItems.map((notif) => (
+              <NotifItem key={notif.id} notif={notif} onRead={handleItemClick} />
             ))}
           </div>
         )}
@@ -267,7 +315,6 @@ export function NotificationsPage() {
               label="◀"
             />
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-              // Show: first 2, last 2, current ±1, with ellipsis
               const show =
                 p <= 2 ||
                 p >= totalPages - 1 ||
@@ -308,27 +355,29 @@ export function NotificationsPage() {
 /* ─── Sub-components ─── */
 
 function NotifItem({
-  log,
+  notif,
   onRead,
 }: {
-  log: NotificationLog;
-  onRead: (id: number) => void;
+  notif: InAppNotification;
+  onRead: (notif: InAppNotification) => void;
 }) {
+  const typeStyle = TYPE_COLORS[notif.type] ?? { bg: '#F1F3F6', color: '#5A6B7F' };
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onRead(log.id)}
-      onKeyDown={(e) => e.key === 'Enter' && onRead(log.id)}
+      onClick={() => onRead(notif)}
+      onKeyDown={(e) => e.key === 'Enter' && onRead(notif)}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
         gap: 12,
         padding: '14px 16px',
-        background: log.status === 'FAILED' ? '#FEF2F2' : '#fff',
+        background: notif.isRead ? '#fff' : '#F0FDF4',
         border: '1px solid var(--color-border)',
         borderRadius: 8,
-        cursor: 'pointer',
+        cursor: notif.link ? 'pointer' : 'default',
         transition: 'all 0.15s',
         position: 'relative',
       }}
@@ -340,73 +389,84 @@ function NotifItem({
         (e.currentTarget as HTMLElement).style.boxShadow = 'none';
         (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
       }}
-      aria-label={`알림: ${log.message.split('\n')[0]}`}
+      aria-label={`알림: ${notif.title}`}
     >
-      {/* Status dot */}
-      <span
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: '50%',
-          background: log.status === 'SENT' ? '#22C55E' : '#EF4444',
-          flexShrink: 0,
-          marginTop: 4,
-        }}
-      />
+      {/* Unread dot */}
+      {!notif.isRead && (
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: 'var(--color-accent)',
+            flexShrink: 0,
+            marginTop: 5,
+          }}
+        />
+      )}
 
       {/* Body */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Top row: channel badge + message title */}
+        {/* Top row: type badge + title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-          <ChannelBadge channel={log.channel} />
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 20,
+              padding: '0 7px',
+              borderRadius: 4,
+              fontSize: 10,
+              fontWeight: 600,
+              background: typeStyle.bg,
+              color: typeStyle.color,
+              flexShrink: 0,
+            }}
+          >
+            {TYPE_LABELS[notif.type] ?? notif.type}
+          </span>
           <span
             style={{
               fontSize: 14,
+              fontWeight: 600,
               color: 'var(--color-text-primary)',
-              lineHeight: 1.4,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: 480,
             }}
           >
-            {log.message.split('\n')[0]}
+            {notif.title}
           </span>
+        </div>
+
+        {/* Message */}
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--color-text-secondary)',
+            lineHeight: 1.5,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            marginBottom: 4,
+          }}
+        >
+          {notif.message}
         </div>
 
         {/* Meta row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{timeAgo(log.sentAt)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{timeAgo(notif.createdAt)}</span>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>·</span>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{formatDate(log.sentAt)}</span>
-          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>·</span>
-          <span
-            style={{
-              fontSize: 11,
-              color: log.status === 'SENT' ? '#16A34A' : 'var(--color-text-muted)',
-              fontWeight: log.status === 'SENT' ? 600 : 400,
-            }}
-          >
-            {log.status === 'SENT' ? '발송 성공' : '발송 실패'}
-          </span>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{formatDate(notif.createdAt)}</span>
+          {notif.actorName && (
+            <>
+              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>·</span>
+              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{notif.actorName}</span>
+            </>
+          )}
         </div>
-
-        {/* Error message */}
-        {log.status === 'FAILED' && log.errorMessage && (
-          <div
-            style={{
-              fontSize: 11,
-              color: '#DC2626',
-              marginTop: 6,
-              padding: '4px 8px',
-              background: '#FEE2E2',
-              borderRadius: 4,
-              display: 'inline-block',
-            }}
-          >
-            ⚠ {log.errorMessage}
-          </div>
-        )}
       </div>
 
       {/* Read chip */}
@@ -422,37 +482,13 @@ function NotifItem({
           flexShrink: 0,
           whiteSpace: 'nowrap',
           marginTop: 2,
-          background: log.isRead ? 'var(--color-sidebar-bg)' : '#FEF3C7',
-          color: log.isRead ? 'var(--color-text-muted)' : '#B45309',
+          background: notif.isRead ? 'var(--color-sidebar-bg)' : '#FEF3C7',
+          color: notif.isRead ? 'var(--color-text-muted)' : '#B45309',
         }}
       >
-        {log.isRead ? '확인' : '미확인'}
+        {notif.isRead ? '확인' : '미확인'}
       </span>
     </div>
-  );
-}
-
-function ChannelBadge({ channel }: { channel: string }) {
-  const isSlack = channel === 'slack';
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        height: 20,
-        padding: '0 7px',
-        borderRadius: 4,
-        fontSize: 10,
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.3px',
-        background: isSlack ? '#F3E8FF' : '#DBEAFE',
-        color: isSlack ? '#7C3AED' : '#2563EB',
-        flexShrink: 0,
-      }}
-    >
-      {isSlack ? 'Slack' : 'Telegram'}
-    </span>
   );
 }
 

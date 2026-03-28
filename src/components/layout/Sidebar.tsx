@@ -347,7 +347,7 @@ export function Sidebar({
               textOverflow: 'ellipsis',
             }}
           >
-            내 워크스페이스
+            {workspaceName || 'My-Workspace'}
           </span>
           {/* Mobile close button */}
           {isMobile ? (
@@ -522,17 +522,18 @@ export function Sidebar({
             padding: '8px 8px 4px',
           }}
         >
-          <span
+          <h3
             style={{
               fontSize: 11,
               fontWeight: 600,
               color: 'var(--color-text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
+              margin: 0,
             }}
           >
             내 업무
-          </span>
+          </h3>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
             {backlogTickets.length}건
           </span>

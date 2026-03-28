@@ -1,220 +1,178 @@
 # Tika
 
-> Ticket-based Kanban Board for Personal Task Management
-
-Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드에서 드래그 앤 드롭으로 관리하는 할 일 관리 앱.
+Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드에서 드래그 앤 드롭으로 관리하는 티켓 기반 협업 도구.
 
 ---
 
 ## Features
 
-### Kanban Board
-- 3칼럼 보드 (TODO / In Progress / Done) + 사이드바 Backlog
-- @dnd-kit 기반 드래그 앤 드롭 — 칼럼 간 이동, 칼럼 내 순서 변경
-- 사이드바 ↔ 보드 양방향 드래그
-- 사이드바 접기/펼치기 + 드래그 리사이즈 (200~400px)
-
-### Ticket Management
-- 티켓 CRUD (생성 / 조회 / 수정 / 삭제 / 복제)
-- 4가지 타입: Goal, Story, Feature, Task
-- 4단계 우선순위: Low, Medium, High, Critical
-- 시작일 / 마감일 + 마감 초과 시각적 경고
-- 체크리스트 (티켓당 최대 20개)
-- 라벨/태그 (워크스페이스당 20개, 티켓당 5개)
-- 이슈 계층 연결 (Goal > Story > Feature > Task)
-- 담당자 배정, 완료 시 자동 시각 기록
-
-### Search & Filter
-- 헤더 실시간 검색 (제목/설명 필터링)
-- 필터 칩 — 전체 / 이번 주 업무 / 일정 초과
-- 라벨 기반 필터링
-- 우선순위 + 날짜 범위 고급 필터
-
-### Notifications
-- Slack / Telegram 알림 채널 설정
-- 마감일 D-1 자동 알림
-- 알림 내역 페이지 + 읽음 처리
-- 헤더 알림 벨 드롭다운 (미읽음 카운트 뱃지)
-
-### Comments
-- 티켓 내 댓글 작성 / 수정 / 삭제
-- 멤버 아바타 표시
-
-### User & Workspace
-- Google OAuth 로그인 (NextAuth.js v5)
-- 첫 로그인 시 워크스페이스 + 멤버 + 기본 라벨 자동 생성
-- 프로필 설정 (이니셜 입력 + 아바타 색상 선택)
-- 워크스페이스 설정 (이름 / 설명)
-- 멤버 역할 관리 (admin / member)
-
-### Responsive
-- 모바일 사이드바 드로어 (슬라이드인 + 백드롭)
-- 768px 미만 햄버거 메뉴
-- 모달 Bottom Sheet (모바일)
-- 보드 가로 스크롤
+- **칸반 보드** — Backlog 사이드바 + TODO / In Progress / Done 3칼럼, 드래그 앤 드롭
+- **티켓 관리** — CRUD, 4가지 타입(Goal/Story/Feature/Task), 우선순위, 시작·마감일, 체크리스트, 라벨, 댓글, 담당자 배정
+- **이슈 계층** — Goal → Story → Feature → Task 상하위 연결
+- **팀 협업** — 워크스페이스 초대 링크(24h 만료), 역할 관리(OWNER/MEMBER/VIEWER), WBS/간트 차트, 팀 대시보드(번다운·워크로드·통계)
+- **알림** — Slack / Telegram 채널 연동, 마감일 D-1 자동 알림, 헤더 벨 드롭다운
+- **검색 & 필터** — 실시간 검색, 필터 칩, 라벨·우선순위·날짜 범위 고급 필터
+- **인증** — Google OAuth (NextAuth.js v5), 온보딩 워크스페이스 선택
 
 ---
 
 ## Tech Stack
 
-| Category | Technology | Version |
-|----------|-----------|---------|
-| Framework | Next.js (App Router) | 15 |
-| Language | TypeScript (strict) | 5.7 |
-| UI | React + Tailwind CSS | 19 / 4 |
-| Drag & Drop | @dnd-kit | 6.x |
-| ORM | Drizzle ORM | 0.38 |
-| Database | PostgreSQL (Neon) | 14+ |
-| Auth | NextAuth.js (Google OAuth) | 5.x |
-| Validation | Zod | 3.24 |
-| Test | Jest + Testing Library | 29 |
-| Deploy | Vercel | — |
+| Category    | Technology                 | Version |
+| ----------- | -------------------------- | ------- |
+| Framework   | Next.js (App Router)       | 15      |
+| Language    | TypeScript (strict)        | 5.7     |
+| UI          | React + Tailwind CSS       | 19 / 4  |
+| Drag & Drop | @dnd-kit                   | 6.x     |
+| ORM         | Drizzle ORM                | 0.38    |
+| Database    | PostgreSQL (Neon)          | 14+     |
+| Auth        | NextAuth.js (Google OAuth) | 5.x     |
+| Validation  | Zod                        | 3.24    |
+| Deploy      | Vercel                     | —       |
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 14+
-- Google OAuth Client ID / Secret ([설정 가이드](#google-oauth-setup))
-
-### Setup
-
 ```bash
 npm install
 cp .env.example .env.local
+npm run db:migrate   # DB 마이그레이션 적용
+npm run dev          # http://localhost:3000
 ```
 
-`.env.local` 편집:
+> 셀프 호스팅 전체 설치 절차(DB, OAuth, Cron, Vercel 배포)는 **[docs/INSTALL.md](docs/INSTALL.md)** 를 참고하세요.
+
+### 필수 환경변수 (`.env.local`)
 
 ```env
-POSTGRES_URL=postgresql://username:password@localhost:5432/tika_dev
-NEXTAUTH_SECRET=your-secret-here       # openssl rand -base64 32
+POSTGRES_URL=postgresql://...
+NEXTAUTH_SECRET=          # openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+CRON_SECRET=              # openssl rand -base64 32  ← 크론 인증 토큰(알림용)
+SLACK_WEBHOOK_URL=        # 문의 폼 → Slack 알림 (선택)
 ```
 
-```bash
-npm run db:migrate    # 마이그레이션 적용
-npm run db:seed       # (선택) 시드 데이터
-npm run dev           # http://localhost:3000
-```
-
-### Google OAuth Setup
+### Google OAuth
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
 2. OAuth 2.0 Client ID 생성 (Web application)
-3. Authorized redirect URI 추가: `http://localhost:3000/api/auth/callback/google`
-4. Client ID / Secret을 `.env.local`에 입력
+3. Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+
+### 마감일 D-1 자동 알림 (GitHub Actions Cron)
+
+매일 **KST 09:00** (UTC 00:00)에 내일 마감인 티켓 담당자에게 인앱 알림을 자동 발송합니다.
+워크플로우 파일: `.github/workflows/daily-notify.yml`
+
+#### 동작 방식
+
+```
+매일 KST 09:00
+      ↓
+GitHub Actions 실행
+      ↓
+curl GET https://[APP_URL]/api/cron/notify-due
+     Authorization: Bearer [CRON_SECRET]
+      ↓
+내일 마감 티켓 담당자에게 인앱 알림 발송
+```
+
+`CRON_SECRET`은 외부에서 이 API를 무단 호출하지 못하도록 막는 인증 토큰입니다.
+`.env.local`, Vercel 환경변수, GitHub Secret **세 곳의 값이 모두 동일**해야 합니다.
+
+#### 1단계 — CRON_SECRET 생성
+
+아직 값이 없다면 터미널에서 생성합니다:
+
+```bash
+openssl rand -base64 32
+```
+
+출력된 값을 복사해 `.env.local`과 Vercel 환경변수에 `CRON_SECRET`으로 등록합니다.
+
+#### 2단계 — GitHub Repository Secrets 등록
+
+1. `https://github.com/{owner}/{repo}/settings/secrets/actions` 접속
+2. **"New repository secret"** 버튼 클릭 → 첫 번째 시크릿 입력:
+
+   ```
+   Name:   APP_URL
+   Secret: https://your-domain.vercel.app
+   ```
+
+   → **Add secret** 클릭
+
+3. 다시 **"New repository secret"** 버튼 클릭 → 두 번째 시크릿 입력:
+
+   ```
+   Name:   CRON_SECRET
+   Secret: (1단계에서 생성한 값, .env.local의 CRON_SECRET과 동일)
+   ```
+
+   → **Add secret** 클릭
+
+4. 목록에 `APP_URL`, `CRON_SECRET` 두 개가 표시되면 완료
+
+> ⚠️ **Environment secrets가 아닌 Repository secrets**에 추가해야 합니다.
+> Settings → Secrets and variables → Actions 페이지의 **"Repository secrets"** 섹션을 확인하세요.
+
+#### 수동 테스트
+
+GitHub → Actions 탭 → **Daily D-1 Notification** 선택 → **Run workflow** 버튼으로 즉시 실행 가능합니다.
 
 ---
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | 개발 서버 |
-| `npm run build` | 프로덕션 빌드 |
-| `npm run start` | 프로덕션 서버 |
-| `npm run test` | 테스트 실행 |
-| `npm run test:coverage` | 커버리지 리포트 |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run db:generate` | 마이그레이션 파일 생성 |
-| `npm run db:migrate` | 마이그레이션 적용 |
-| `npm run db:studio` | Drizzle Studio (DB GUI) |
-| `npm run db:seed` | 시드 데이터 삽입 |
-
----
-
-## Project Structure
-
-```
-tika/
-├── app/                        # Next.js App Router
-│   ├── api/
-│   │   ├── tickets/            # 티켓 CRUD + reorder + checklist + complete
-│   │   ├── labels/             # 라벨 CRUD
-│   │   ├── issues/             # 이슈 계층 CRUD
-│   │   ├── members/            # 멤버 관리
-│   │   ├── workspaces/         # 워크스페이스 설정
-│   │   ├── notifications/      # 알림 채널 + 로그
-│   │   └── auth/               # NextAuth 핸들러
-│   ├── login/                  # 로그인 페이지
-│   ├── settings/               # 설정 페이지
-│   ├── notifications/          # 알림 내역 페이지
-│   └── page.tsx                # 메인 보드
-├── src/
-│   ├── components/
-│   │   ├── board/              # Board, Column, TicketCard
-│   │   ├── ticket/             # TicketForm, TicketModal, ChecklistSection
-│   │   ├── label/              # LabelBadge, LabelSelector
-│   │   ├── issue/              # IssueBreadcrumb
-│   │   ├── layout/             # Header, Sidebar, AppShell, Footer, ProfileModal
-│   │   ├── settings/           # 설정 섹션 컴포넌트
-│   │   └── ui/                 # Button, Badge, Modal, Avatar, FilterBar 등
-│   ├── db/
-│   │   ├── schema.ts           # 11개 테이블 정의
-│   │   ├── queries/            # DB 쿼리 함수
-│   │   └── seed.ts             # 시드 스크립트
-│   ├── hooks/                  # useTickets, useLabels, useIssues
-│   ├── lib/                    # auth, constants, validations, utils
-│   └── types/                  # 공유 타입
-├── migrations/                 # Drizzle 마이그레이션 SQL
-├── __tests__/                  # Jest 테스트
-└── docs/                       # 프로젝트 문서
-```
-
----
-
-## Database
-
-11개 테이블: `users` · `workspaces` · `issues` · `members` · `tickets` · `checklist_items` · `labels` · `ticket_labels` · `notification_channels` · `notification_logs` · `comments`
-
-상세 스키마: [docs/TABLE_DEFINITION.md](docs/TABLE_DEFINITION.md)
+| Command               | Description             |
+| --------------------- | ----------------------- |
+| `npm run dev`         | 개발 서버               |
+| `npm run build`       | 프로덕션 빌드           |
+| `npm run lint`        | ESLint                  |
+| `npm run format`      | Prettier                |
+| `npm run db:generate` | 마이그레이션 파일 생성  |
+| `npm run db:migrate`  | 마이그레이션 적용       |
+| `npm run db:studio`   | Drizzle Studio (DB GUI) |
+| `npm run db:seed`     | 시드 데이터 삽입        |
+| `npm run test`        | Jest 테스트             |
 
 ---
 
 ## Deploy (Vercel)
 
-1. GitHub에 Push
-2. [Vercel](https://vercel.com)에서 Import
-3. Environment Variables 등록:
-
-| 변수 | 설명 |
-|------|------|
-| `POSTGRES_URL` | Neon / Vercel Postgres 연결 문자열 |
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32`로 생성 |
-| `NEXTAUTH_URL` | 프로덕션 도메인 (예: `https://tika.example.com`) |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
-
-4. Google Cloud Console에 프로덕션 redirect URI 추가:
-   ```
-   https://your-domain.com/api/auth/callback/google
-   ```
-5. Deploy + `npm run db:migrate` (프로덕션 DB 대상)
+1. GitHub에 Push → Vercel Import
+2. Environment Variables 등록 (위 `.env.local` 항목 동일)
+3. Google Cloud Console에 프로덕션 redirect URI 추가:
+   `https://your-domain.com/api/auth/callback/google`
 
 ---
 
-## Documentation
+## Bug Report
 
-| 문서 | 설명 |
-|------|------|
-| [TABLE_DEFINITION.md](docs/TABLE_DEFINITION.md) | 테이블 정의서 |
-| [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) | 구현 현황 및 남은 업무 |
-| [REQUIREMENTS.md](docs/REQUIREMENTS.md) | 상세 요구사항 명세 |
-| [API_SPEC.md](docs/API_SPEC.md) | API 명세서 |
-| [DATA_MODEL.md](docs/DATA_MODEL.md) | 데이터 모델 |
-| [COMPONENT_SPEC.md](docs/COMPONENT_SPEC.md) | 컴포넌트 명세 |
-| [DESIGN_SYSTEM.md](docs/front/DESIGN_SYSTEM.md) | 디자인 시스템 |
-| [PRD.md](docs/PRD.md) | 제품 요구사항 |
-| [TRD.md](docs/TRD.md) | 기술 요구사항 |
+버그를 발견했다면 [GitHub Issues](../../issues)에 등록해 주세요.
+
+### 이슈 등록 방법
+
+1. **[Issues 탭](../../issues)** → **"New issue"** 클릭
+2. 아래 항목을 포함해 작성합니다:
+
+   | 항목 | 설명 |
+   | ---- | ---- |
+   | **제목** | 버그를 한 줄로 요약 (예: `칸반 보드에서 드래그 후 카드가 사라짐`) |
+   | **재현 방법** | 버그가 발생하는 단계별 순서 |
+   | **기대 동작** | 원래 어떻게 동작해야 하는지 |
+   | **실제 동작** | 실제로 어떻게 동작했는지 |
+   | **환경** | OS, 브라우저, 버전 등 |
+   | **스크린샷** | 가능하면 화면 캡처 첨부 |
+
+3. **Labels** 에서 `bug` 를 선택하고 제출합니다.
+
+> 보안 취약점은 이슈 대신 이메일로 직접 제보해 주세요.
 
 ---
 
 ## License
 
-MIT
+Apache 2.0

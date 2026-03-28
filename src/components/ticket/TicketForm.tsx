@@ -5,11 +5,12 @@ import useSWR from 'swr';
 import type { TicketWithMeta, Ticket, Label, Member, Sprint } from '@/types/index';
 import { TICKET_TYPE, TICKET_PRIORITY, TICKET_STATUS } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
-import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS, TICKET_TYPE_META } from '@/lib/constants';
-import { PRIORITY_CONFIG } from '@/components/ui/Chips';
+import { LABEL_MAX_PER_TICKET, CHECKLIST_MAX_ITEMS, TICKET_TYPE_META, TITLE_MAX_LENGTH } from '@/lib/constants';
+import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/components/ui/Chips';
 import { labelTextColor } from '@/components/label/LabelBadge';
-import { FileText, Users, Tag, CheckSquare } from 'lucide-react';
+import { FileText, Users, Tag, CheckSquare, Type, UserPlus } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
+import { CHEVRON_SVG, metaSelectStyle, metaDateStyle } from '@/lib/ticketMetaStyles';
 
 /* ── Type badge config (breadcrumb.html large style) ── */
 const TYPE_CONFIG = [
@@ -115,6 +116,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     initialData?.assignees?.map((a) => a.id) ?? [],
   );
   const [assigneeError, setAssigneeError] = useState('');
+  const [dateError, setDateError] = useState('');
   const [assigneeInputText, setAssigneeInputText] = useState('');
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const assigneeInputRef = useRef<HTMLInputElement>(null);
@@ -148,9 +150,6 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     if (selectedAssigneeIds.length === 0 && mode === 'create') {
       const self = members[0];
       setSelectedAssigneeIds([self.id]);
-      setAssigneeInputText(self.displayName);
-    } else if (initialData?.assignees?.length) {
-      setAssigneeInputText(initialData.assignees.map((a) => a.displayName).join(', '));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [membersData]);
@@ -247,10 +246,21 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
       return;
     }
     setTitleError('');
+    setDateError('');
+
+    if (mode === 'create' && dueDate && dueDate < todayLocal) {
+      setDateError('종료 예정일은 오늘 이전일 수 없습니다');
+      return;
+    }
+    if (startDate && dueDate && dueDate < startDate) {
+      setDateError('종료 예정일은 시작 예정일 이후여야 합니다');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      if (selectedAssigneeIds.length > 5) {
-        setAssigneeError('담당자는 최대 5명까지 지정할 수 있습니다');
+      if (selectedAssigneeIds.length > 3) {
+        setAssigneeError('담당자는 최대 3명까지 지정할 수 있습니다');
         return;
       }
 
@@ -276,27 +286,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
     }
   };
 
-  /* ── Meta panel styles (mirrors TicketModal) ── */
-  const CHEVRON_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") no-repeat right 6px center`;
-  const metaSelectStyle: React.CSSProperties = {
-    width: '100%', height: 28, padding: '0 24px 0 8px',
-    border: '1px solid var(--color-border)', borderRadius: 6,
-    fontFamily: 'inherit', fontSize: 12, color: 'var(--color-text-primary)',
-    background: `var(--color-board-bg) ${CHEVRON_SVG}`,
-    outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
-  };
-  const metaDateStyle: React.CSSProperties = {
-    width: '100%', height: 28, padding: '0 8px',
-    border: '1px solid var(--color-border)', borderRadius: 6,
-    fontFamily: 'inherit', fontSize: 12, color: 'var(--color-text-primary)',
-    background: 'var(--color-board-bg)', outline: 'none', cursor: 'pointer',
-  };
-  const STATUS_META: Record<string, { bg: string; color: string }> = {
-    BACKLOG: { bg: '#F1F3F6', color: '#5A6B7F' },
-    TODO: { bg: '#DBEAFE', color: '#1E40AF' },
-    IN_PROGRESS: { bg: '#FEF3C7', color: '#92400E' },
-    DONE: { bg: '#D1FAE5', color: '#065F46' },
-  };
+  const todayLocal = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
   const sectionHeaderStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 6,
     fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)',
@@ -345,28 +335,37 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
         </div>
       </div>
 
+      {/* Title — single row: label + input inline */}
+      {externalTitle === undefined && (
+        <div style={{ padding: '0 24px', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label htmlFor="ticket-title" style={{ ...sectionHeaderStyle, marginBottom: 0, flexShrink: 0 }}>
+              <Type size={13} style={{ opacity: 0.7 }} />
+              제목 <span style={{ color: '#DC2626', fontSize: 10, textTransform: 'none', letterSpacing: 0 }}>*</span>
+            </label>
+            <input
+              id="ticket-title" type="text" value={title}
+              onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError(''); }}
+              maxLength={TITLE_MAX_LENGTH} placeholder="업무 제목을 입력하세요" autoFocus aria-label="제목" aria-describedby={titleError ? 'ticket-title-error' : undefined}
+              style={{ ...inputStyle, flex: 1, borderColor: titleError || title.length >= TITLE_MAX_LENGTH ? '#DC2626' : 'var(--color-border)' }}
+              onFocus={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-accent)'; }}
+              onBlur={(e) => { if (!titleError && title.length < TITLE_MAX_LENGTH) (e.target as HTMLElement).style.borderColor = 'var(--color-border)'; }}
+            />
+          </div>
+          {title.length >= TITLE_MAX_LENGTH && (
+            <span style={{ fontSize: 11, color: '#DC2626', marginLeft: 52 }}>
+              제목은 {TITLE_MAX_LENGTH}자 이하여야 합니다 ({title.length}/{TITLE_MAX_LENGTH})
+            </span>
+          )}
+          {titleError && <span id="ticket-title-error" style={{ fontSize: 11, color: '#DC2626', marginLeft: 52 }}>{titleError}</span>}
+        </div>
+      )}
+
       {/* Two-panel grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* LEFT: main content */}
         <div style={{ padding: '20px 24px', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto' }}>
-          {/* Title */}
-          {externalTitle === undefined && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label htmlFor="ticket-title" style={fieldLabelStyle}>
-                제목 <span style={{ color: '#DC2626', marginLeft: 2 }}>*</span>
-              </label>
-              <input
-                id="ticket-title" type="text" value={title}
-                onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError(''); }}
-                maxLength={200} placeholder="업무 제목을 입력하세요" autoFocus
-                style={{ ...inputStyle, borderColor: titleError ? '#DC2626' : 'var(--color-border)' }}
-                onFocus={(e) => { if (!titleError) (e.target as HTMLElement).style.borderColor = 'var(--color-accent)'; }}
-                onBlur={(e) => { if (!titleError) (e.target as HTMLElement).style.borderColor = 'var(--color-border)'; }}
-              />
-              {titleError && <span style={{ fontSize: 11, color: '#DC2626' }}>{titleError}</span>}
-            </div>
-          )}
 
           {/* Parent Ticket */}
           {parentIssueTypes.length > 0 && (
@@ -507,7 +506,7 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               aria-label="상태"
-              style={{ ...metaSelectStyle, background: `${STATUS_META[status]?.bg ?? '#F1F3F6'} ${CHEVRON_SVG}`, color: STATUS_META[status]?.color ?? '#5A6B7F', fontWeight: 600, border: 'none' }}
+              style={{ ...metaSelectStyle, background: `${STATUS_CONFIG[status]?.bg ?? '#F1F3F6'} ${CHEVRON_SVG}`, color: STATUS_CONFIG[status]?.color ?? '#5A6B7F', fontWeight: 600, border: 'none' }}
             >
               {Object.values(TICKET_STATUS).map((s) => (
                 <option key={s} value={s}>
@@ -539,8 +538,9 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
           <MetaRow label="시작 예정일">
             <input
               type="date" value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => { setStartDate(e.target.value); setDateError(''); }}
               aria-label="시작 예정일"
+              max={`${new Date().getFullYear() + 5}-12-31`}
               style={metaDateStyle}
               onFocus={(e) => { e.target.style.borderColor = 'var(--color-accent)'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px var(--color-accent-light, #E8F5F0)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; e.target.style.background = 'var(--color-board-bg)'; e.target.style.boxShadow = 'none'; }}
@@ -550,13 +550,18 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
           <MetaRow label="종료 예정일">
             <input
               type="date" value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(e) => { setDueDate(e.target.value); setDateError(''); }}
               aria-label="종료 예정일"
+              min={mode === 'create' ? todayLocal : undefined}
+              max={`${new Date().getFullYear() + 5}-12-31`}
               style={metaDateStyle}
               onFocus={(e) => { e.target.style.borderColor = 'var(--color-accent)'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px var(--color-accent-light, #E8F5F0)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; e.target.style.background = 'var(--color-board-bg)'; e.target.style.boxShadow = 'none'; }}
             />
           </MetaRow>
+          {dateError && (
+            <div style={{ padding: '4px 0', fontSize: 11, color: '#DC2626', fontWeight: 500 }}>{dateError}</div>
+          )}
 
           {activeSprints.length > 0 && (
             <MetaRow label="스프린트">
@@ -573,53 +578,81 @@ export function TicketForm({ mode = 'create', initialData, workspaceId, external
             </MetaRow>
           )}
 
-          {/* Assignee */}
-          <div ref={assigneeDropdownRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 0', borderBottom: '1px solid var(--color-border)', position: 'relative' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {/* Assignee — TicketModal style */}
+          <div ref={assigneeDropdownRef} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, position: 'relative' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
               담당자
             </div>
             {selectedAssigneeIds.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
-                {allMembers.filter((m) => selectedAssigneeIds.includes(m.id)).map((m) => (
-                  <span key={m.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 12, background: m.color + '22', border: `1px solid ${m.color}55`, fontSize: 12, color: 'var(--color-text-primary)' }}>
-                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {m.displayName.charAt(0).toUpperCase()}
-                    </span>
-                    {m.displayName}
-                    <button type="button"
-                      onClick={() => setSelectedAssigneeIds((prev) => prev.filter((id) => id !== m.id))}
-                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'var(--color-text-muted)', lineHeight: 1, fontSize: 12 }}
-                      aria-label={`${m.displayName} 담당자 제거`}>×</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+                {allMembers.filter((m) => selectedAssigneeIds.includes(m.id)).map((member) => (
+                  <span
+                    key={member.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
+                      height: 28, padding: '0 8px', borderRadius: 5, width: '100%',
+                      background: 'transparent', border: `1.5px solid ${member.color}`,
+                      color: member.color, fontSize: 11, fontWeight: 600,
+                    }}
+                  >
+                    {member.displayName}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAssigneeIds((prev) => prev.filter((id) => id !== member.id))}
+                      aria-label={`${member.displayName} 담당자 제거`}
+                      style={{ width: 12, height: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 10, lineHeight: 1, padding: 0, opacity: 0.6, transition: 'opacity 0.12s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
+                    >×</button>
                   </span>
                 ))}
               </div>
             )}
-            <input ref={assigneeInputRef} type="text" value={assigneeInputText}
-              placeholder="담당자 이름 입력..."
-              onClick={() => { setAssigneeInputText(''); setShowAssigneeDropdown(true); }}
-              onChange={(e) => { setAssigneeInputText(e.target.value); setShowAssigneeDropdown(true); }}
-              style={{ ...metaDateStyle }}
-              onFocus={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-accent)')}
-              onBlur={(e) => ((e.target as HTMLElement).style.borderColor = 'var(--color-border)')}
-            />
-            {showAssigneeDropdown && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, boxShadow: 'var(--shadow-card)', maxHeight: 160, overflowY: 'auto', marginTop: 2 }}>
-                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).map((m) => (
-                  <button key={m.id} type="button"
-                    onMouseDown={(e) => { e.preventDefault(); setSelectedAssigneeIds([m.id]); setAssigneeInputText(m.displayName); setShowAssigneeDropdown(false); }}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--color-sidebar-bg)')}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'none')}
-                  >
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {m.displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>{m.displayName}</span>
-                  </button>
-                ))}
-                {allMembers.filter((m) => m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).length === 0 && (
-                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--color-text-muted)' }}>일치하는 멤버 없음</div>
-                )}
+            {!showAssigneeDropdown ? (
+              <button
+                type="button"
+                onClick={() => { setShowAssigneeDropdown(true); setAssigneeInputText(''); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, border: '1px dashed #9CA3AF', cursor: 'pointer', transition: 'all 0.15s', fontSize: 12, color: 'var(--color-text-muted)', background: 'transparent', fontFamily: 'inherit', width: '100%' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-accent-light, #E8F5F0)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#9CA3AF'; e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+              >
+                <UserPlus size={12} />
+                담당자 추가
+              </button>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <input
+                  ref={assigneeInputRef}
+                  type="text" value={assigneeInputText}
+                  onChange={(e) => { setAssigneeInputText(e.target.value); }}
+                  placeholder="이름으로 검색..."
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') { setShowAssigneeDropdown(false); setAssigneeInputText(''); }
+                  }}
+                  style={{ width: '100%', padding: '5px 10px', border: '1px solid var(--color-accent)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', color: 'var(--color-text-primary)', background: '#fff', outline: 'none', boxShadow: '0 0 0 3px var(--color-accent-light, #E8F5F0)' }}
+                />
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid var(--color-border)', borderRadius: 8, boxShadow: 'var(--shadow-dropdown)', zIndex: 200, padding: 4, maxHeight: 180, overflowY: 'auto' }}>
+                  {allMembers.filter((m) => !selectedAssigneeIds.includes(m.id) && m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 8px' }}>검색 결과 없음</p>
+                  ) : (
+                    allMembers.filter((m) => !selectedAssigneeIds.includes(m.id) && m.displayName.toLowerCase().includes(assigneeInputText.toLowerCase())).map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); setSelectedAssigneeIds((prev) => [...prev, member.id]); setShowAssigneeDropdown(false); setAssigneeInputText(''); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', width: '100%', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', textAlign: 'left' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-board-bg)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: member.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>
+                          {member.displayName.charAt(0)}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)' }}>{member.displayName}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             )}
             {assigneeError && <span style={{ fontSize: 11, color: '#DC2626' }}>{assigneeError}</span>}

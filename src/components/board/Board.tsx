@@ -1,27 +1,16 @@
 'use client';
 
-import type { BoardData, TicketStatus, TicketWithMeta } from '@/types/index';
+import type { BoardData, TicketWithMeta } from '@/types/index';
+import { COLUMN_ORDER, COLUMN_LABELS } from '@/types/index';
 import { Column } from './Column';
-import { TICKET_STATUS } from '@/types/index';
-
-const COLUMN_ORDER: TicketStatus[] = [
-  TICKET_STATUS.TODO,
-  TICKET_STATUS.IN_PROGRESS,
-  TICKET_STATUS.DONE,
-];
-
-const COLUMN_LABELS: Partial<Record<TicketStatus, string>> = {
-  TODO: 'TODO',
-  IN_PROGRESS: 'In Progress',
-  DONE: 'Done',
-};
 
 interface BoardProps {
   board: BoardData;
   onTicketClick: (ticket: TicketWithMeta) => void;
+  currentMemberId?: number | null;
 }
 
-export function Board({ board, onTicketClick }: BoardProps) {
+export function Board({ board, onTicketClick, currentMemberId }: BoardProps) {
   return (
     <div
       style={{
@@ -41,6 +30,7 @@ export function Board({ board, onTicketClick }: BoardProps) {
           tickets={board.board[status]}
           onTicketClick={onTicketClick}
           workspaceName={board.workspaceName}
+          currentMemberId={currentMemberId}
         />
       ))}
     </div>

@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#F0F7F4"/>
+      <stop offset="55%"  stop-color="#F8F9FB"/>
+      <stop offset="100%" stop-color="#EAF0F6"/>
+    </linearGradient>
+
+    <!-- Accent gradient for headline -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#629584"/>
+      <stop offset="100%" stop-color="#4A7A69"/>
+    </linearGradient>
+
+    <!-- Card shadow -->
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#091E42" flood-opacity="0.10"/>
+    </filter>
+
+    <!-- Board shadow -->
+    <filter id="boardShadow" x="-5%" y="-5%" width="115%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#091E42" flood-opacity="0.12"/>
+    </filter>
+
+    <!-- Dot grid pattern -->
+    <pattern id="dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#C8D6E0" opacity="0.5"/>
+    </pattern>
+
+    <!-- Clip for board -->
+    <clipPath id="boardClip">
+      <rect x="0" y="0" width="580" height="420" rx="16"/>
+    </clipPath>
+
+    <style>
+      .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+      .font-body    { font-family: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif; }
+    </style>
+  </defs>
+
+  <!-- ─── Background ─── -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#dots)" opacity="0.6"/>
+
+  <!-- Background decorative circles -->
+  <circle cx="80"  cy="80"  r="180" fill="#629584" opacity="0.04"/>
+  <circle cx="1150" cy="580" r="220" fill="#3B82F6" opacity="0.04"/>
+  <circle cx="620" cy="320" r="300" fill="#629584" opacity="0.025"/>
+
+  <!-- ─── LEFT SIDE — Copy ─── -->
+
+  <!-- Logo — tika-logo-header@2x.png 임베드 -->
+  <image x="60" y="58" width="145" height="52"
+    href="data:image/png;base64,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"
+    preserveAspectRatio="xMinYMid meet"/>
+
+  <!-- Eyebrow label -->
+  <rect x="60" y="138" width="192" height="26" rx="13" fill="#E8F5F0"/>
+  <circle cx="78" cy="151" r="5" fill="#629584"/>
+  <text x="90" y="156" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="12" fill="#629584" letter-spacing="0.5">Ticket-based Kanban Board</text>
+
+  <!-- Main headline line 1 -->
+  <text x="60" y="234" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" letter-spacing="-1.5">
+    <tspan fill="#2C3E50">Plan </tspan><tspan fill="url(#accentGrad)">Simply.</tspan>
+  </text>
+
+  <!-- Main headline line 2 -->
+  <text x="60" y="305" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="58" letter-spacing="-1.5">
+    <tspan fill="#2C3E50">Ship </tspan><tspan fill="url(#accentGrad)">Boldly.</tspan>
+  </text>
+
+  <!-- Subscription text -->
+  <text x="60" y="354" font-family="'Noto Sans KR', 'Plus Jakarta Sans', sans-serif" font-weight="400" font-size="16" fill="#5A6B7F">Ticket-based Kanban Board for Goal-driven Task Management</text>
+
+  <!-- Divider line under copy -->
+  <rect x="60" y="332" width="48" height="3" rx="2" fill="#629584"/>
+
+  <!-- CTA Buttons -->
+  <rect x="60" y="408" width="158" height="46" rx="8" fill="#629584"/>
+  <text x="139" y="436" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="14" fill="white">무료로 시작하기</text>
+
+  <rect x="232" y="408" width="134" height="46" rx="8" fill="none" stroke="#629584" stroke-width="1.5"/>
+  <text x="299" y="436" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="14" fill="#629584">데모 보기</text>
+
+
+  <!-- ─── RIGHT SIDE — Kanban Board Mockup ─── -->
+  <g transform="translate(568, 70)" filter="url(#boardShadow)">
+
+    <!-- Board container -->
+    <rect width="580" height="490" rx="16" fill="#FFFFFF" clip-path="url(#boardClip)"/>
+
+    <!-- Board header bar -->
+    <rect width="580" height="52" rx="0" fill="#F8F9FB"/>
+    <rect width="580" height="1"  y="52" fill="#DFE1E6"/>
+
+    <!-- Window dots -->
+    <circle cx="22" cy="26" r="6" fill="#FC5F57"/>
+    <circle cx="42" cy="26" r="6" fill="#FDBC2C"/>
+    <circle cx="62" cy="26" r="6" fill="#2BC840"/>
+
+    <!-- Board title in header -->
+    <rect x="88" y="16" width="22" height="22" rx="5" fill="#629584"/>
+    <text x="99" y="30" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="11" fill="white">T</text>
+    <text x="118" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="13" fill="#2C3E50">Tika</text>
+    <text x="160" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" fill="#8993A4">/ MVP 출시</text>
+
+    <!-- "+ 새 업무" button -->
+    <rect x="480" y="13" width="80" height="28" rx="6" fill="#629584"/>
+    <text x="520" y="31" text-anchor="middle" font-family="'Noto Sans KR', sans-serif" font-weight="600" font-size="11" fill="white">+ 새 업무</text>
+
+    <!-- Board columns area -->
+    <rect y="52" width="580" height="438" fill="#E8EDF2"/>
+
+    <!-- ─ Column 1: Backlog ─ -->
+    <g transform="translate(10, 62)">
+      <rect width="128" height="420" rx="10" fill="#F4F5F7"/>
+      <!-- Header -->
+      <rect width="128" height="40" rx="10" fill="#F4F5F7"/>
+      <rect y="30" width="128" height="10" fill="#F4F5F7"/>
+      <text x="14" y="25" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="13" fill="#2C3E50">Backlog</text>
+      <rect x="90" y="13" width="26" height="16" rx="8" fill="rgba(0,0,0,0.08)"/>
+      <text x="103" y="25" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="500" font-size="10" fill="#2C3E50">4</text>
+
+      <!-- Card 1 -->
+      <g transform="translate(8, 48)" filter="url(#cardShadow)">
+        <rect width="112" height="76" rx="6" fill="white"/>
+        <rect x="8" y="10" width="36" height="14" rx="3" fill="#EDE9FE"/>
+        <text x="26" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#7C3AED">GOAL</text>
+        <text x="8" y="44" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#2C3E50">MVP 출시 계획</text>
+        <rect x="8" y="54" width="30" height="14" rx="3" fill="#FEF9C3"/>
+        <text x="23" y="65" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#A16207">중간</text>
+        <circle cx="96" cy="61" r="10" fill="#7EB4A2"/>
+        <text x="96" y="65" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="8" font-weight="600" fill="white">홍</text>
+      </g>
+
+      <!-- Card 2 -->
+      <g transform="translate(8, 132)" filter="url(#cardShadow)">
+        <rect width="112" height="68" rx="6" fill="white"/>
+        <rect x="8" y="10" width="44" height="14" rx="3" fill="#DBEAFE"/>
+        <text x="30" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#1E40AF">STORY</text>
+        <text x="8" y="44" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#2C3E50">인증 시스템</text>
+        <rect x="8" y="52" width="38" height="14" rx="3" fill="#FFEDD5"/>
+        <text x="27" y="63" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#C2410C">높음</text>
+      </g>
+    </g>
+
+    <!-- ─ Column 2: TODO ─ -->
+    <g transform="translate(148, 62)">
+      <rect width="128" height="420" rx="10" fill="#F4F5F7"/>
+      <rect width="128" height="40" rx="10" fill="#DBEAFE"/>
+      <rect y="30" width="128" height="10" fill="#F4F5F7"/>
+      <text x="14" y="25" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="13" fill="#2C3E50">TODO</text>
+      <rect x="92" y="13" width="26" height="16" rx="8" fill="rgba(0,0,0,0.08)"/>
+      <text x="105" y="25" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="500" font-size="10" fill="#2C3E50">3</text>
+
+      <!-- Card 1 -->
+      <g transform="translate(8, 48)" filter="url(#cardShadow)">
+        <rect width="112" height="82" rx="6" fill="white"/>
+        <rect x="8" y="10" width="50" height="14" rx="3" fill="#D1FAE5"/>
+        <text x="33" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#065F46">FEATURE</text>
+        <text x="8" y="40" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#2C3E50">드래그앤드롭</text>
+        <text x="8" y="55" font-family="'Noto Sans KR', sans-serif" font-size="10" fill="#8993A4">dnd-kit 구현</text>
+        <rect x="8" y="62" width="38" height="14" rx="3" fill="#FEE2E2"/>
+        <text x="27" y="73" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#DC2626">긴급</text>
+        <circle cx="96" cy="69" r="10" fill="#60A5FA"/>
+        <text x="96" y="73" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="8" font-weight="600" fill="white">김</text>
+      </g>
+
+      <!-- Card 2 -->
+      <g transform="translate(8, 138)" filter="url(#cardShadow)">
+        <rect width="112" height="74" rx="6" fill="white"/>
+        <rect x="8" y="10" width="36" height="14" rx="3" fill="#FEF3C7"/>
+        <text x="26" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#92400E">TASK</text>
+        <text x="8" y="42" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#2C3E50">API 엔드포인트</text>
+        <!-- checklist progress -->
+        <text x="8" y="58" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" fill="#8993A4">✓ 3/5</text>
+        <rect x="8" y="62" width="60" height="4" rx="2" fill="#F4F5F7"/>
+        <rect x="8" y="62" width="36" height="4" rx="2" fill="#629584"/>
+      </g>
+    </g>
+
+    <!-- ─ Column 3: In Progress ─ -->
+    <g transform="translate(286, 62)">
+      <rect width="128" height="420" rx="10" fill="#F4F5F7"/>
+      <rect width="128" height="40" rx="10" fill="#FEF3C7"/>
+      <rect y="30" width="128" height="10" fill="#F4F5F7"/>
+      <text x="14" y="25" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="12" fill="#2C3E50">In Progress</text>
+      <rect x="95" y="13" width="24" height="16" rx="8" fill="rgba(0,0,0,0.08)"/>
+      <text x="107" y="25" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="500" font-size="10" fill="#2C3E50">2</text>
+
+      <!-- Card 1 — highlighted/active -->
+      <g transform="translate(8, 48)" filter="url(#cardShadow)">
+        <rect width="112" height="90" rx="6" fill="white" stroke="#629584" stroke-width="1.5"/>
+        <rect x="8" y="10" width="50" height="14" rx="3" fill="#D1FAE5"/>
+        <text x="33" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#065F46">FEATURE</text>
+        <text x="8" y="40" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#2C3E50">칸반 보드 UI</text>
+        <text x="8" y="55" font-family="'Noto Sans KR', sans-serif" font-size="10" fill="#8993A4">4칼럼 레이아웃</text>
+        <!-- Label tags -->
+        <rect x="8" y="62" width="32" height="14" rx="3" fill="#2b7fff"/>
+        <text x="24" y="73" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" fill="white">FE</text>
+        <rect x="44" y="62" width="40" height="14" rx="3" fill="#ad46ff"/>
+        <text x="64" y="73" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" fill="white">Design</text>
+        <circle cx="96" cy="79" r="10" fill="#A78BFA"/>
+        <text x="96" y="83" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="8" font-weight="600" fill="white">이</text>
+      </g>
+    </g>
+
+    <!-- ─ Column 4: Done ─ -->
+    <g transform="translate(424, 62)">
+      <rect width="128" height="420" rx="10" fill="#F4F5F7"/>
+      <rect width="128" height="40" rx="10" fill="#D1FAE5"/>
+      <rect y="30" width="128" height="10" fill="#F4F5F7"/>
+      <text x="14" y="25" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="13" fill="#2C3E50">Done</text>
+      <rect x="90" y="13" width="26" height="16" rx="8" fill="rgba(0,0,0,0.08)"/>
+      <text x="103" y="25" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="500" font-size="10" fill="#2C3E50">5</text>
+
+      <!-- Card 1 — done style -->
+      <g transform="translate(8, 48)" filter="url(#cardShadow)">
+        <rect width="112" height="72" rx="6" fill="white" opacity="0.75"/>
+        <rect x="8" y="10" width="36" height="14" rx="3" fill="#FEF3C7"/>
+        <text x="26" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#92400E">TASK</text>
+        <text x="8" y="42" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#8993A4" text-decoration="line-through">DB 스키마 설계</text>
+        <rect x="8" y="52" width="44" height="14" rx="3" fill="#D1FAE5"/>
+        <text x="30" y="63" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#065F46">✓ 완료</text>
+      </g>
+
+      <!-- Card 2 — done style -->
+      <g transform="translate(8, 128)" filter="url(#cardShadow)">
+        <rect width="112" height="68" rx="6" fill="white" opacity="0.75"/>
+        <rect x="8" y="10" width="36" height="14" rx="3" fill="#FEF3C7"/>
+        <text x="26" y="21" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="500" fill="#92400E">TASK</text>
+        <text x="8" y="42" font-family="'Noto Sans KR', sans-serif" font-size="11" font-weight="500" fill="#8993A4" text-decoration="line-through">ERD 확정</text>
+        <rect x="8" y="50" width="44" height="14" rx="3" fill="#D1FAE5"/>
+        <text x="30" y="61" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#065F46">✓ 완료</text>
+      </g>
+    </g>
+
+    <!-- Board bottom fade -->
+    <rect y="440" width="580" height="50" rx="0" fill="url(#boardFade)" opacity="0.6"/>
+  </g>
+
+  <!-- Floating badge — Goal progress -->
+  <g transform="translate(545, 320)" filter="url(#cardShadow)">
+    <rect width="150" height="68" rx="10" fill="white"/>
+    <text x="14" y="22" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="11" fill="#2C3E50">MVP 출시 진척률</text>
+    <rect x="14" y="32" width="122" height="6" rx="3" fill="#F4F5F7"/>
+    <rect x="14" y="32" width="85" height="6" rx="3" fill="#629584"/>
+    <text x="14" y="56" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" fill="#5A6B7F">34 / 48 완료</text>
+    <text x="126" y="56" text-anchor="end" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="11" fill="#629584">71%</text>
+  </g>
+
+  <!-- Floating badge — overdue warning -->
+  <g transform="translate(545, 426)" filter="url(#cardShadow)">
+    <rect width="150" height="50" rx="10" fill="white"/>
+    <rect x="14" y="13" width="20" height="20" rx="4" fill="#FEE2E2"/>
+    <text x="24" y="27" text-anchor="middle" font-size="12" fill="#DC2626">⚠</text>
+    <text x="42" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="11" fill="#2C3E50">오버듀 2건</text>
+    <text x="42" y="37" font-family="'Plus Jakarta Sans', sans-serif" font-size="10" fill="#8993A4">즉시 확인 필요</text>
+  </g>
+
+  <!-- Bottom strip -->
+  <rect y="600" width="1200" height="30" fill="#F0F4F0" opacity="0.6"/>
+  <text x="600" y="620" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" fill="#8993A4">© 2025 Tika · Plan Simply. Ship Boldly.</text>
+</svg>

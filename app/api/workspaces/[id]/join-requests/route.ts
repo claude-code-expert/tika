@@ -10,6 +10,10 @@ import {
   getPendingRequestByUser,
 } from '@/db/queries/joinRequests';
 import type { JoinRequestStatus } from '@/types/index';
+import { NOTIFICATION_TYPE } from '@/types/index';
+import { getMembersByWorkspace, getTeamWorkspaceMemberCount } from '@/db/queries/members';
+import { getWorkspaceById } from '@/db/queries/workspaces';
+import { sendInAppNotification, buildJoinRequestReceivedMessage } from '@/lib/notifications';
 
 // POST /api/workspaces/[id]/join-requests — submit a join request
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -68,6 +72,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
+    // Check if user has already reached the 3 TEAM workspace limit
+    const memberCount = await getTeamWorkspaceMemberCount(userId);
+    if (memberCount >= 3) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'WORKSPACE_MEMBER_LIMIT_EXCEEDED',
+            message: '더 이상 워크스페이스에 참여할 수 없습니다. 팀 워크스페이스는 최대 3개까지 참여할 수 있습니다.',
+          },
+        },
+        { status: 409 },
+      );
+    }
+
     // Check for existing PENDING request
     const existingRequest = await getPendingRequestByUser(workspaceId, userId);
     if (existingRequest) {
@@ -88,6 +106,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const joinRequest = await createJoinRequest(workspaceId, userId, message);
+
+    // Notify workspace owners about the join request
+    const [wsData, wsMembers] = await Promise.all([
+      getWorkspaceById(workspaceId),
+      getMembersByWorkspace(workspaceId),
+    ]);
+    const ownerUserIds = wsMembers.filter((m) => m.role === 'OWNER').map((m) => m.userId);
+    const requesterName = (session.user.name as string | null) ?? '사용자';
+    const { title: nTitle, message: nMessage } = buildJoinRequestReceivedMessage(
+      requesterName, wsData?.name ?? '워크스페이스',
+    );
+    sendInAppNotification({
+      workspaceId,
+      type: NOTIFICATION_TYPE.JOIN_REQUEST_RECEIVED,
+      title: nTitle,
+      message: nMessage,
+      link: `/workspace/${workspaceId}/members`,
+      actorId: userId,
+      recipientUserIds: ownerUserIds,
+    }).catch((e) => console.error('Notification error (join request):', e));
 
     return NextResponse.json({ joinRequest }, { status: 201 });
   } catch (err) {

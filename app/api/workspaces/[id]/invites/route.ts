@@ -3,7 +3,11 @@ import { auth } from '@/lib/auth';
 import { getInvitesByWorkspace, createInvite } from '@/db/queries/invites';
 import { requireRole, isRoleError } from '@/lib/permissions';
 import { createInviteSchema } from '@/lib/validations';
-import { TEAM_ROLE } from '@/types/index';
+import { TEAM_ROLE, NOTIFICATION_TYPE } from '@/types/index';
+import { sendInAppNotification, buildInviteReceivedMessage } from '@/lib/notifications';
+import { db } from '@/db/index';
+import { users, workspaces } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // GET /api/workspaces/:id/invites — list invites (RBAC: OWNER)
 export async function GET(
@@ -92,6 +96,36 @@ export async function POST(
     });
 
     const inviteUrl = `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/invite/${invite.token}`;
+
+    // Send INVITE_RECEIVED notification to the invitee (if they exist as a user)
+    if (invite.email) {
+      const [invitedUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, invite.email));
+
+      if (invitedUser) {
+        const [ws] = await db
+          .select({ name: workspaces.name })
+          .from(workspaces)
+          .where(eq(workspaces.id, workspaceId));
+
+        const inviterName = (session.user.name as string | null) ?? '사용자';
+        const { title, message } = buildInviteReceivedMessage(inviterName, ws?.name ?? '워크스페이스');
+
+        sendInAppNotification({
+          workspaceId,
+          type: NOTIFICATION_TYPE.INVITE_RECEIVED,
+          title,
+          message,
+          link: `/invite/${invite.token}`,
+          actorId: userId,
+          recipientUserIds: [invitedUser.id],
+          refType: 'invite',
+          refId: invite.id,
+        }).catch((e) => console.error('Notification error (invite received):', e));
+      }
+    }
 
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });
   } catch (error) {

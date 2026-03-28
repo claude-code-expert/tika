@@ -5,6 +5,7 @@ import { Button } from './Button';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
+  title?: string;
   message?: string;
   confirmLabel?: string;
   confirmVariant?: 'danger' | 'primary';
@@ -14,6 +15,7 @@ interface ConfirmDialogProps {
 
 export function ConfirmDialog({
   isOpen,
+  title,
   message = '정말 삭제하시겠습니까?',
   confirmLabel = '삭제',
   confirmVariant = 'danger',
@@ -45,6 +47,7 @@ export function ConfirmDialog({
     >
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        {title && <p className="mb-2 text-base font-semibold text-gray-900">{title}</p>}
         <p className="mb-6 text-sm text-gray-700">{message}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel}>

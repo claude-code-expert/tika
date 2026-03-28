@@ -52,7 +52,7 @@ export function WorkspaceOnboarding({ userId, userName }: WorkspaceOnboardingPro
         {/* Logo — heading 바로 위, 중앙 */}
         <div style={{ marginBottom: 20 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/tika-logo-combo.png" alt="Tika" style={{ height: 36, objectFit: 'contain' }} />
+          <img src="/images/icon/tika-logo-header.png" alt="Tika" style={{ height: 36, objectFit: 'contain' }} />
         </div>
 
         {/* Heading */}
@@ -119,6 +119,25 @@ export function WorkspaceOnboarding({ userId, userName }: WorkspaceOnboardingPro
             )}
           </div>
         </div>
+
+        {/* 메인 페이지 이동 */}
+        <button
+          onClick={() => window.location.href = '/'}
+          style={{
+            marginTop: 32,
+            padding: '8px 20px',
+            background: 'transparent',
+            border: 'none',
+            fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+            fontSize: 13,
+            color: '#8993A4',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            textUnderlineOffset: 3,
+          }}
+        >
+          메인 페이지로 이동
+        </button>
       </div>
     </>
   );

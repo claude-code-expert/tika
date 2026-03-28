@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { reorderSchema } from '@/lib/validations';
 import { db } from '@/db/index';
-import { tickets } from '@/db/schema';
+import { tickets, members } from '@/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { POSITION_GAP, REBALANCE_THRESHOLD } from '@/lib/constants';
-
-function getWorkspaceId(session: Session | null): number | null {
-  return ((session?.user as Record<string, unknown> | undefined)?.workspaceId as number) ?? null;
-}
 
 async function rebalanceColumn(workspaceId: number, status: string): Promise<void> {
   const columnTickets = await db
@@ -37,7 +32,9 @@ export async function PATCH(request: NextRequest) {
         { status: 401 },
       );
     }
-    const workspaceId = getWorkspaceId(session);
+    const sessionUser = session.user as unknown as Record<string, unknown>;
+    const userId = sessionUser.id as string;
+    const workspaceId = (sessionUser.workspaceId as number) ?? null;
     if (!workspaceId) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: '워크스페이스를 찾을 수 없습니다' } },
@@ -54,13 +51,31 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { ticketId, targetStatus, targetIndex } = result.data;
+    const { ticketId, targetStatus, targetIndex, workspaceId: bodyWorkspaceId } = result.data;
 
-    // Fetch ticket and verify ownership
+    // Determine effective workspaceId: prefer body (team board) over session (personal board)
+    let effectiveWorkspaceId = workspaceId;
+    if (bodyWorkspaceId && bodyWorkspaceId !== workspaceId) {
+      // Verify the user is a member of the requested workspace
+      const [membership] = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(and(eq(members.userId, userId), eq(members.workspaceId, bodyWorkspaceId)))
+        .limit(1);
+      if (!membership) {
+        return NextResponse.json(
+          { error: { code: 'FORBIDDEN', message: '해당 워크스페이스에 접근 권한이 없습니다' } },
+          { status: 403 },
+        );
+      }
+      effectiveWorkspaceId = bodyWorkspaceId;
+    }
+
+    // Fetch ticket and verify it belongs to the effective workspace
     const [ticket] = await db
       .select()
       .from(tickets)
-      .where(and(eq(tickets.id, ticketId), eq(tickets.workspaceId, workspaceId), eq(tickets.deleted, false)))
+      .where(and(eq(tickets.id, ticketId), eq(tickets.workspaceId, effectiveWorkspaceId), eq(tickets.deleted, false)))
       .limit(1);
 
     if (!ticket) {
@@ -76,7 +91,7 @@ export async function PATCH(request: NextRequest) {
       .from(tickets)
       .where(
         and(
-          eq(tickets.workspaceId, workspaceId),
+          eq(tickets.workspaceId, effectiveWorkspaceId),
           eq(tickets.status, targetStatus),
           eq(tickets.deleted, false),
           // Exclude the moving ticket itself
@@ -101,13 +116,13 @@ export async function PATCH(request: NextRequest) {
       newPosition = Math.floor((above + below) / 2);
       // Check if gap is too small — trigger rebalance
       if (Math.abs((below as number) - (above as number)) <= REBALANCE_THRESHOLD) {
-        await rebalanceColumn(workspaceId, targetStatus);
+        await rebalanceColumn(effectiveWorkspaceId, targetStatus);
         // Recalculate after rebalance
         const rebalanced = await db
           .select({ id: tickets.id, position: tickets.position })
           .from(tickets)
           .where(
-            and(eq(tickets.workspaceId, workspaceId), eq(tickets.status, targetStatus), eq(tickets.deleted, false)),
+            and(eq(tickets.workspaceId, effectiveWorkspaceId), eq(tickets.status, targetStatus), eq(tickets.deleted, false)),
           )
           .orderBy(asc(tickets.position));
         const rebalancedFiltered = rebalanced.filter((t) => t.id !== ticketId);

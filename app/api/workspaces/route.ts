@@ -5,8 +5,11 @@ import {
   createWorkspace,
   getTeamWorkspaceCountByOwner,
 } from '@/db/queries/workspaces';
-import { createMember } from '@/db/queries/members';
+import { createMember, setPrimaryWorkspace } from '@/db/queries/members';
 import { createWorkspaceSchema } from '@/lib/validations';
+import { db } from '@/db/index';
+import { workspaces, users } from '@/db/schema';
+import { ilike, eq, and } from 'drizzle-orm';
 
 // GET /api/workspaces — list all workspaces where user is a member (PERSONAL + TEAM)
 export async function GET() {
@@ -20,9 +23,9 @@ export async function GET() {
     }
 
     const userId = session.user.id as string;
-    const workspaces = await getWorkspacesByMemberId(userId);
+    const userWorkspaces = await getWorkspacesByMemberId(userId);
 
-    return NextResponse.json({ workspaces });
+    return NextResponse.json({ workspaces: userWorkspaces });
   } catch (error) {
     console.error('GET /api/workspaces error:', error);
     return NextResponse.json(
@@ -60,14 +63,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enforce max 1 TEAM workspace per owner
+    // Enforce unique name across all TEAM workspaces (case-insensitive)
+    const [existing] = await db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(and(eq(workspaces.type, 'TEAM'), ilike(workspaces.name, result.data.name)))
+      .limit(1);
+    if (existing) {
+      return NextResponse.json(
+        { error: { code: 'DUPLICATE_NAME', message: '이미 사용 중인 워크스페이스 이름입니다' } },
+        { status: 409 },
+      );
+    }
+
+    // Enforce max 3 TEAM workspaces per owner
     const teamCount = await getTeamWorkspaceCountByOwner(userId);
-    if (teamCount >= 1) {
+    if (teamCount >= 3) {
       return NextResponse.json(
         {
           error: {
             code: 'WORKSPACE_LIMIT_EXCEEDED',
-            message: '팀 워크스페이스는 1개까지만 생성할 수 있습니다',
+            message: '팀 워크스페이스는 최대 3개까지 생성할 수 있습니다',
           },
         },
         { status: 409 },
@@ -81,7 +97,7 @@ export async function POST(request: NextRequest) {
       type: 'TEAM',
     });
 
-    // Auto-create OWNER member record for the workspace creator
+    // Auto-create OWNER member record for the workspace creator, and make it the primary workspace
     await createMember({
       userId,
       workspaceId: workspace.id,
@@ -91,6 +107,17 @@ export async function POST(request: NextRequest) {
       invitedBy: null,
       joinedAt: null,
     });
+    await setPrimaryWorkspace(userId, workspace.id);
+
+    // Mark onboarding complete if user hasn't completed it yet (team tab flow)
+    const [dbUser] = await db
+      .select({ userType: users.userType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!dbUser?.userType) {
+      await db.update(users).set({ userType: 'USER' }).where(eq(users.id, userId));
+    }
 
     return NextResponse.json({ workspace }, { status: 201 });
   } catch (error) {

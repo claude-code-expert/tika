@@ -5,7 +5,7 @@ import { Board } from './Board';
 import { Modal } from '@/components/ui/Modal';
 import { TicketForm } from '@/components/ticket/TicketForm';
 import { TicketModal } from '@/components/ticket/TicketModal';
-import type { TicketWithMeta, BoardData } from '@/types/index';
+import type { TicketWithMeta, BoardData, ChecklistItem } from '@/types/index';
 import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 
 interface BoardContainerProps {
@@ -13,6 +13,7 @@ interface BoardContainerProps {
   isLoading: boolean;
   createTicket: (data: CreateTicketInput) => Promise<unknown>;
   updateTicket: (id: number, data: UpdateTicketInput) => Promise<unknown>;
+  patchTicketLocal: (id: number, patch: Partial<TicketWithMeta>) => void;
   deleteTicket: (id: number) => Promise<void>;
   onDuplicate?: (ticket: TicketWithMeta) => Promise<void>;
   isCreating: boolean;
@@ -20,6 +21,7 @@ interface BoardContainerProps {
   selectedTicket: TicketWithMeta | null;
   onSelectTicket: (ticket: TicketWithMeta | null) => void;
   currentMemberId?: number | null;
+  readOnly?: boolean;
 }
 
 export function BoardContainer({
@@ -27,6 +29,7 @@ export function BoardContainer({
   isLoading,
   createTicket,
   updateTicket,
+  patchTicketLocal,
   deleteTicket,
   onDuplicate,
   isCreating,
@@ -34,6 +37,7 @@ export function BoardContainer({
   selectedTicket,
   onSelectTicket,
   currentMemberId = null,
+  readOnly = false,
 }: BoardContainerProps) {
   const [createTitle, setCreateTitle] = useState('');
 
@@ -83,7 +87,7 @@ export function BoardContainer({
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <Board board={board} onTicketClick={onSelectTicket} />
+        <Board board={board} onTicketClick={onSelectTicket} currentMemberId={currentMemberId} />
       </div>
 
       {/* Create modal */}
@@ -148,8 +152,12 @@ export function BoardContainer({
           onDuplicate={
             onDuplicate ? async () => onDuplicate(selectedTicket) : undefined
           }
+          onChecklistChange={(items: ChecklistItem[]) =>
+            patchTicketLocal(selectedTicket.id, { checklistItems: items })
+          }
           currentMemberId={currentMemberId}
           workspaceName={board.workspaceName}
+          readOnly={readOnly}
         />
       )}
     </>

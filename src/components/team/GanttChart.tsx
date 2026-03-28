@@ -24,6 +24,7 @@ interface GanttChartProps {
 }
 
 const DAY_W = 28;
+const TODAY_COL_STYLE = { position: 'absolute', background: '#629584', zIndex: 3, pointerEvents: 'none' } as const;
 const ROW_H = 36;
 const LEFT_W = 220;
 const RIGHT_W = 260;
@@ -158,14 +159,6 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
     };
   }
 
-  function getBorderRadius(b: NonNullable<ReturnType<typeof getBarBounds>>) {
-    const r = 10;
-    if (!b.startClipped && !b.endClipped) return r;
-    if (!b.startClipped) return `${r}px 0 0 ${r}px`;
-    if (!b.endClipped)   return `0 ${r}px ${r}px 0`;
-    return 0;
-  }
-
   // ── Scroll sync ──
   const handleCenterBodyScroll = useCallback(() => {
     // Sync header horizontal scroll
@@ -259,7 +252,6 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
     );
   }
 
-  const containerH = Math.min(612, HEADER_H + rowsH + 12);
   const hRow = (i: number): React.CSSProperties =>
     hoveredRow === i ? { background: '#F1F3F6' } : {};
 
@@ -270,7 +262,8 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
         border: '1px solid #DFE1E6',
         borderRadius: 8,
         overflow: 'hidden',
-        height: containerH,
+        flex: 1,
+        minHeight: 0,
         background: '#fff',
         fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
       }}
@@ -336,7 +329,7 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
                 const isToday  = dateKey(d) === todayStr;
                 const isMonday = d.getDay() === 1;
                 return (
-                  <div key={i} style={{ width: DAY_W, minWidth: DAY_W, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? '#629584' : '#9CA3AF', borderRight: isToday ? '2px solid #629584' : '1px solid rgba(223,225,230,.5)', borderLeft: isToday ? '2px solid #629584' : (isMonday ? '1px solid #DFE1E6' : undefined), borderTop: isToday ? '2px solid #629584' : undefined, background: isToday ? 'rgba(98,149,132,.15)' : undefined, position: 'relative', flexShrink: 0, boxSizing: 'border-box' }}>
+                  <div key={i} style={{ width: DAY_W, minWidth: DAY_W, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? '#629584' : '#9CA3AF', borderRight: isToday ? '1px solid #629584' : '1px solid rgba(223,225,230,.5)', borderLeft: isToday ? '1px solid #629584' : (isMonday ? '1px solid #DFE1E6' : undefined), borderTop: isToday ? '1px solid #629584' : undefined, position: 'relative', flexShrink: 0, boxSizing: 'border-box' }}>
                     {d.getDate()}
                     {isToday && <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#629584' }} />}
                   </div>
@@ -352,9 +345,13 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
           style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', cursor: 'grab', minHeight: 0 }}
         >
           <div style={{ position: 'relative', width: timelineW, height: rowsH }}>
-            {/* Today column highlight */}
+            {/* Today column border lines */}
             {todayIdx !== -1 && (
-              <div style={{ position: 'absolute', left: todayIdx * DAY_W, top: 0, width: DAY_W, height: rowsH, background: 'rgba(98,149,132,.04)', zIndex: 0, pointerEvents: 'none' }} />
+              <>
+                <div style={{ ...TODAY_COL_STYLE, left: todayIdx * DAY_W, top: 0, width: 1, height: rowsH }} />
+                <div style={{ ...TODAY_COL_STYLE, left: (todayIdx + 1) * DAY_W - 1, top: 0, width: 1, height: rowsH }} />
+                <div style={{ ...TODAY_COL_STYLE, left: todayIdx * DAY_W, bottom: 0, width: DAY_W, height: 1 }} />
+              </>
             )}
             {/* Monday grid lines */}
             {weekdays.map((d, i) =>

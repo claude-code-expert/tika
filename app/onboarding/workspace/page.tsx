@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { WorkspaceOnboarding } from '@/components/onboarding/WorkspaceOnboarding';
 import { db } from '@/db/index';
-import { members, workspaces } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,35 +15,22 @@ export default async function WorkspaceOnboardingPage() {
   }
   if (!session?.user) redirect('/login');
 
-  const sessionUser = session.user as {
-    id?: string;
-    userType?: string | null;
-  };
+  const userId = (session.user as { id?: string }).id;
+  let userType = (session.user as { userType?: string | null }).userType ?? null;
 
-  const userType = sessionUser.userType ?? null;
-  const userId = sessionUser.id;
-
-  // Null type (onboarding not completed) — route to wizard first
-  if (userType === null) redirect('/onboarding');
-
-  // If user's primary is already a team workspace, skip this page
-  if (userId) {
-    const [primary] = await db
-      .select({ workspaceId: members.workspaceId, type: workspaces.type })
-      .from(members)
-      .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
-      .where(and(eq(members.userId, userId), eq(members.isPrimary, true)))
+  // JWT may be stale — check DB directly
+  if (userType === null && userId) {
+    const [dbUser] = await db
+      .select({ userType: users.userType })
+      .from(users)
+      .where(eq(users.id, userId))
       .limit(1);
-
-    if (primary?.type === 'TEAM') {
-      redirect(`/workspace/${primary.workspaceId}`);
-    }
+    userType = dbUser?.userType ?? null;
   }
 
-  return (
-    <WorkspaceOnboarding
-      userId={userId ?? ''}
-      userName={(session.user as { name?: string | null }).name ?? '사용자'}
-    />
-  );
+  // Onboarding complete — go home (app/page.tsx handles routing to personal/team board)
+  if (userType !== null) redirect('/');
+
+  // Onboarding not started — go to unified onboarding page
+  redirect('/onboarding');
 }

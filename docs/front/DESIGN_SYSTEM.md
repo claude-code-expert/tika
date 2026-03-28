@@ -1,7 +1,7 @@
-# Tika Design System v2.0
+# Tika Design System v3.0
 
-> Last updated: 2026-02-21
-> Single-file HTML implementation — zero external dependencies (except Google Fonts)
+> Last updated: 2026-03-20
+> Source of truth: `app/globals.css` `:root` variables
 
 ---
 
@@ -41,40 +41,51 @@ Base unit: **4px**
 | `--sp-lg`  | 16px  | Header padding, section gaps   |
 | `--sp-xl`  | 24px  | Modal padding, large sections  |
 
+CSS vars (globals.css):
+
+| Variable                | Value | Usage                    |
+|-------------------------|-------|--------------------------|
+| `--spacing-card-gap`    | 8px   | Gap between ticket cards |
+| `--spacing-column-gap`  | 16px  | Gap between columns      |
+
 ### 1.3 Border Radius
 
 | Token              | Value | Usage                           |
 |--------------------|-------|---------------------------------|
-| `--radius-card`    | 8px   | Cards, modals, popovers        |
+| `--radius-card`    | 8px   | Cards, popovers                 |
+| `--radius-modal`   | 12px  | Modals                          |
 | `--radius-column`  | 12px  | Lane containers                 |
-| `--radius-button`  | 6px   | Buttons, inputs, dropdowns      |
-| `--radius-tag`     | 4px   | Tags, badges, category crumbs   |
+| `--radius-button`  | 6px   | Buttons                         |
+| `--radius-input`   | 6px   | Inputs, dropdowns               |
+| `--radius-badge`   | 4px   | Priority/status badges          |
+| `--radius-tag`     | 4px   | Tags, category crumbs           |
 
 ### 1.4 Shadows
 
-| Token                  | Value                              | Usage             |
-|------------------------|------------------------------------|-------------------|
-| `--shadow-card`        | 0 1px 2px rgba(9,30,66,0.12)      | Card resting      |
-| `--shadow-card-hover`  | 0 3px 8px rgba(9,30,66,0.18)      | Card hover        |
-| `--shadow-card-drag`   | 0 5px 10px rgba(9,30,66,0.25)     | Card dragging     |
-| `--shadow-header`      | 0 1px 3px rgba(0,0,0,0.08)        | Header            |
-| `--shadow-dropdown`    | 0 8px 24px rgba(0,0,0,0.12)       | Dropdowns, modals |
+| Token                    | Value                                    | Usage              |
+|--------------------------|------------------------------------------|--------------------|
+| `--shadow-card`          | `0 1px 2px rgba(9,30,66,0.12)`          | Card resting       |
+| `--shadow-card-hover`    | `0 3px 8px rgba(9,30,66,0.18)`          | Card hover         |
+| `--shadow-card-dragging` | `0 5px 10px rgba(9,30,66,0.25)`         | Card dragging      |
+| `--shadow-modal`         | `0 16px 48px rgba(0,0,0,0.2)`           | Modals             |
+| `--shadow-header`        | `0 1px 3px rgba(0,0,0,0.08)`            | Header bar         |
+| `--shadow-dropdown`      | `0 8px 24px rgba(0,0,0,0.12)`           | Dropdowns          |
 
 ### 1.5 Z-Index Layers
 
-| Token         | Value | Usage                                |
-|---------------|-------|--------------------------------------|
-| `--z-sidebar` | 10    | Sidebar, expand button               |
-| `--z-header`  | 50    | Header bar                           |
-| `--z-modal`   | 200   | Modals, dropdown menus               |
-| Modal overlay | 300   | `.modal-overlay` (blocks all below)  |
+| Token         | Value | Usage                                        |
+|---------------|-------|----------------------------------------------|
+| `--z-sidebar` | 10    | Sidebar (desktop)                            |
+| Sidebar (mobile) | 40 | Fixed sidebar overlay (< 1024px)           |
+| `--z-header`  | 50    | Header bar                                   |
+| `--z-modal`   | 200   | Modals, modal overlay, dropdown menus        |
 
 ### 1.6 Layout Dimensions
 
 | Token                 | Value | Description          |
 |-----------------------|-------|----------------------|
 | `--header-height`     | 60px  | Fixed top header     |
-| `--footer-height`     | 55px  | Fixed bottom footer  |
+| `--footer-height`     | 40px  | Fixed bottom footer  |
 | `--sidebar-width`     | 260px | Default sidebar      |
 | Sidebar min           | 200px | Minimum resize       |
 | Sidebar max           | 400px | Maximum resize       |
@@ -87,41 +98,54 @@ Base unit: **4px**
 
 ### 2.1 Brand
 
-| Name             | Hex       | Usage                             |
-|------------------|-----------|-----------------------------------|
-| Accent Primary   | `#629584` | CTA buttons, active states, links |
-| Accent Hover     | `#527D6F` | Hover on accent elements          |
-| Accent Light     | `#E8F5F0` | Focus rings, light backgrounds    |
+| Name             | Hex       | CSS Variable              | Usage                             |
+|------------------|-----------|---------------------------|-----------------------------------|
+| Accent Primary   | `#629584` | `--color-accent`          | CTA buttons, active states, links |
+| Accent Hover     | `#527D6F` | `--color-accent-hover`    | Hover on accent elements          |
+| Accent Light     | `#E8F5F0` | `--color-accent-light`    | Focus rings, light backgrounds    |
 
 ### 2.2 Backgrounds
 
-| Name       | Hex       | Usage                 |
-|------------|-----------|----------------------|
-| App        | `#F8F9FB` | Page background       |
-| Header     | `#FFFFFF` | Header bar            |
-| Sidebar    | `#F1F3F6` | Sidebar, hover states |
-| Board      | `#E8EDF2` | Board area            |
-| Footer     | `#F4F5F7` | Footer bar            |
-| Card       | `#FFFFFF` | Cards, modals         |
-| Column     | `#F4F5F7` | Lane containers       |
+| Name            | Hex       | CSS Variable               | Usage                     |
+|-----------------|-----------|----------------------------|---------------------------|
+| App             | `#F8F9FB` | `--color-app-bg`           | Page background           |
+| Header          | `#FFFFFF` | `--color-header-bg`        | Header bar                |
+| Sidebar         | `#F1F3F6` | `--color-sidebar-bg`       | Sidebar background        |
+| Sidebar Hover   | `#E8EBF0` | `--color-sidebar-hover`    | Sidebar item hover        |
+| Board           | `#E8EDF2` | `--color-board-bg`         | Board area                |
+| Footer          | `#F4F5F7` | `--color-footer-bg`        | Footer bar                |
+| Card (default)  | `#EFF6FF` | `--color-card-bg`          | Cards (fallback)          |
+| Column          | `#F4F5F7` | `--color-col-bg`           | Lane containers           |
+
+#### Per-Column Card Backgrounds
+
+Cards take different background tints based on their column:
+
+| Column      | Hex       | CSS Variable                    |
+|-------------|-----------|---------------------------------|
+| Backlog     | `#EFF6FF` | `--color-card-bg-backlog`       |
+| TODO        | `#F4F9FF` | `--color-card-bg-todo`          |
+| In Progress | `#FFFDF5` | `--color-card-bg-in-progress`   |
+| Done        | `#F5FFF9` | `--color-card-bg-done`          |
 
 ### 2.3 Text
 
-| Name      | Hex       | Usage                        |
-|-----------|-----------|------------------------------|
-| Primary   | `#2C3E50` | Headings, card titles, body  |
-| Secondary | `#5A6B7F` | Descriptions, labels         |
-| Muted     | `#8993A4` | Timestamps, placeholders     |
+| Name      | Hex       | CSS Variable              | Usage                        |
+|-----------|-----------|---------------------------|------------------------------|
+| Primary   | `#2C3E50` | `--color-text-primary`    | Headings, card titles, body  |
+| Secondary | `#5A6B7F` | `--color-text-secondary`  | Descriptions, labels         |
+| Muted     | `#8993A4` | `--color-text-muted`      | Timestamps, placeholders     |
 
 ### 2.4 Lane Header Colors
 
-All lane header text uses `--text-primary` (#2C3E50) for readability.
+All lane header text uses `--color-text-primary` (#2C3E50) for readability.
 
-| Lane        | Background | CSS Class  |
-|-------------|------------|------------|
-| TODO        | `#DBEAFE`  | `.todo`    |
-| In Progress | `#FEF3C7`  | `.inp`     |
-| Done        | `#D1FAE5`  | `.done`    |
+| Lane        | Background | CSS Variable              |
+|-------------|------------|---------------------------|
+| Backlog     | `#F4F5F7`  | `--color-col-backlog`     |
+| TODO        | `#DBEAFE`  | `--color-col-todo`        |
+| In Progress | `#FEF3C7`  | `--color-col-in-progress` |
+| Done        | `#D1FAE5`  | `--color-col-done`        |
 
 ### 2.5 Tag/Label Colors
 
@@ -151,13 +175,12 @@ All lane header text uses `--text-primary` (#2C3E50) for readability.
 
 ### 2.6 Priority Badge Colors
 
-| Priority | Korean | Background | Text      | CSS Class |
-|----------|--------|------------|-----------|-----------|
-| Critical | 긴급   | `#FEE2E2`  | `#DC2626` | `.b-crit` |
-| High     | 높음   | `#FFEDD5`  | `#C2410C` | `.b-high` |
-| Medium   | 중간   | `#FEF9C3`  | `#A16207` | `.b-med`  |
-| Low      | 낮음   | `#F3F4F6`  | `#6B7280` | `.b-low`  |
-| Done     | 완료   | `#D1FAE5`  | `#065F46` | `.b-done` |
+| Priority | Korean | Background | Text      | CSS Variable                              |
+|----------|--------|------------|-----------|-------------------------------------------|
+| Critical | 긴급   | `#FEE2E2`  | `#DC2626` | `--color-priority-critical-bg` / `--color-priority-critical` |
+| High     | 높음   | `#FFEDD5`  | `#C2410C` | `--color-priority-high-bg` / `--color-priority-high`         |
+| Medium   | 중간   | `#FEF9C3`  | `#A16207` | `--color-priority-medium-bg` / `--color-priority-medium`     |
+| Low      | 낮음   | `#F3F4F6`  | `#6B7280` | `--color-priority-low-bg` / `--color-priority-low`           |
 
 ### 2.7 Category Hierarchy Type Colors
 
@@ -195,34 +218,75 @@ All icons are **inline SVGs** with the `.ic` utility class:
 
 Standard sizes: 12px, 14px, 16px, 18px (set via inline `style="width:Npx;height:Npx"`).
 
-Zero external icon libraries — all icons from Lucide icon set reproduced as inline SVG paths.
+**아이콘 라이브러리:** `lucide-react` 패키지를 공식 아이콘 소스로 사용한다.
+React 컴포넌트에서는 `import { IconName } from 'lucide-react'`로 직접 임포트하거나,
+인라인 SVG가 필요한 경우 Lucide 아이콘셋의 SVG path를 복사하여 사용한다.
+
+### 공식 아이콘 지정 목록
+
+| 용도 | 아이콘 이름 | lucide-react import |
+|------|------------|---------------------|
+| 링크 / 초대 링크 | `Link2` | `import { Link2 } from 'lucide-react'` |
+| 멤버 / 팀 | `Users` | `import { Users } from 'lucide-react'` |
+| 닫기 | `X` | `import { X } from 'lucide-react'` |
+| 더 보기 이동 | `ArrowRight` | `import { ArrowRight } from 'lucide-react'` |
+
+> 새로운 아이콘을 도입할 때는 이 목록에 추가한다.
 
 ---
 
 ## 4. Animation & Transitions
 
-| Property         | Duration | Easing     | Usage                          |
-|------------------|----------|------------|--------------------------------|
-| Background       | 0.15s    | ease       | Buttons, nav items hover       |
-| Box shadow       | 0.2s     | ease       | Card hover/drag                |
-| Transform        | 0.15s    | ease       | Card lift, dropdown appear     |
-| Modal appear     | 0.2s     | ease-out   | `modalIn` keyframe animation   |
-| Sidebar toggle   | 0.3s    | ease       | Width transition               |
-| Expand button    | 0.3s    | —          | Delayed show after collapse    |
+### 4.1 Transition Variables
+
+| Variable              | Value       | Usage                              |
+|-----------------------|-------------|------------------------------------|
+| `--transition-fast`   | `150ms ease`| Buttons, hover, border color       |
+| `--transition-normal` | `200ms ease`| Modals appear, overlay fade        |
+
+### 4.2 Keyframe Animations
 
 ```css
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+/* Modal overlay fade */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal panel slide up */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 ```
+
+| Animation    | Used On              | Duration / Variable    |
+|--------------|----------------------|------------------------|
+| `fade-in`    | `.modal-overlay`     | `--transition-normal`  |
+| `slide-up`   | `.modal-content`     | `--transition-normal`  |
+
+### 4.3 Common Transition Timings
+
+| Property         | Duration | Easing | Usage                          |
+|------------------|----------|--------|--------------------------------|
+| Background       | 150ms    | ease   | Buttons, nav items hover       |
+| Box shadow       | 150ms    | ease   | Card hover/drag                |
+| Transform        | 150ms    | ease   | Card lift, dropdown appear     |
+| Modal appear     | 200ms    | ease   | `fade-in` / `slide-up`        |
+| Sidebar toggle   | 300ms    | ease   | Width transition               |
 
 ---
 
 ## 5. Responsive Behavior
 
+| Breakpoint | Behavior                                              |
+|------------|-------------------------------------------------------|
+| ≥ 1024px   | Full layout: sidebar 260px + 3-column board           |
+| 768–1023px | Sidebar hidden; toggleable fixed overlay (z:40); 2-column board |
+| < 768px    | Single column; sidebar overlay; full-width modals     |
+
 - Sidebar: Resizable 200px–400px via drag handle
-- Sidebar collapse: Width → 0, expand button appears at top-left (top: 12px)
 - Board: Horizontal scroll for overflow lanes
 - Cards: Fixed 280px column width, vertical scroll within lanes
-- Modals: max-width 560px (new task) / 720px (detail), centered flex
+- Modals: `max-width: 560px` (centered flex); `max-width: 100%` on mobile
+- Filter bar chips: `height: 36px; min-width: 44px` touch target on mobile

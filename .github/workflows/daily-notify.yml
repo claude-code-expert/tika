@@ -13,3 +13,7 @@ jobs:
         run: |
           curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/notify-due" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+      - name: Cleanup old notifications (7 days)
+        run: |
+          curl -sf -X GET "${{ secrets.APP_URL }}/api/cron/cleanup-notifications" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

@@ -1,9 +1,15 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+
+export const metadata: Metadata = {
+  title: '온보딩',
+  description: '워크스페이스 설정을 시작하세요.',
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +35,8 @@ export default async function OnboardingPage() {
     userType = dbUser?.userType ?? null;
   }
 
-  // Already completed onboarding — route to appropriate destination
-  if (userType === 'USER') redirect('/');
-  if (userType === 'WORKSPACE') redirect('/onboarding/workspace');
+  // Already completed onboarding — route to home
+  if (userType !== null) redirect('/');
 
   return (
     <OnboardingWizard

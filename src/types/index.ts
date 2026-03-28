@@ -34,6 +34,7 @@ export interface WorkspaceSearchResult {
   id: number;
   name: string;
   description: string | null;
+  iconColor: string | null;
   memberCount: number;
 }
 
@@ -44,6 +45,19 @@ export const TICKET_STATUS = {
   DONE: 'DONE',
 } as const;
 export type TicketStatus = (typeof TICKET_STATUS)[keyof typeof TICKET_STATUS];
+
+// Board column constants — shared across board components (TD-101)
+export const COLUMN_ORDER: TicketStatus[] = [
+  TICKET_STATUS.TODO,
+  TICKET_STATUS.IN_PROGRESS,
+  TICKET_STATUS.DONE,
+];
+
+export const COLUMN_LABELS: Partial<Record<TicketStatus, string>> = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'In Progress',
+  DONE: 'Done',
+};
 
 export const TICKET_PRIORITY = {
   LOW: 'LOW',
@@ -170,6 +184,7 @@ export interface Workspace {
   ownerId: string;
   type: WorkspaceType; // Phase 4
   iconColor: string | null;
+  isSearchable: boolean;
   createdAt: string;
 }
 
@@ -324,6 +339,59 @@ export interface MemberWorkload {
   completed: number;
   overdue: number;
   byStatus: Record<TicketStatus, number>;
+}
+
+// In-App Notification types
+export const NOTIFICATION_TYPE = {
+  TICKET_STATUS_CHANGED: 'TICKET_STATUS_CHANGED',
+  TICKET_COMMENTED: 'TICKET_COMMENTED',
+  TICKET_ASSIGNED: 'TICKET_ASSIGNED',
+  TICKET_UNASSIGNED: 'TICKET_UNASSIGNED',
+  TICKET_DELETED: 'TICKET_DELETED',
+  DEADLINE_WARNING: 'DEADLINE_WARNING',
+  INVITE_RECEIVED: 'INVITE_RECEIVED',
+  ROLE_CHANGED: 'ROLE_CHANGED',
+  MEMBER_JOINED: 'MEMBER_JOINED',
+  MEMBER_REMOVED: 'MEMBER_REMOVED',
+  JOIN_REQUEST_RECEIVED: 'JOIN_REQUEST_RECEIVED',
+  JOIN_REQUEST_RESOLVED: 'JOIN_REQUEST_RESOLVED',
+  SPRINT_STARTED: 'SPRINT_STARTED',
+  SPRINT_COMPLETED: 'SPRINT_COMPLETED',
+} as const;
+export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
+
+export const NOTIFICATION_REF_TYPE = {
+  TICKET: 'ticket',
+  SPRINT: 'sprint',
+  MEMBER: 'member',
+  INVITE: 'invite',
+} as const;
+export type NotificationRefType = (typeof NOTIFICATION_REF_TYPE)[keyof typeof NOTIFICATION_REF_TYPE];
+
+export interface InAppNotification {
+  id: number;
+  userId: string;
+  workspaceId: number | null;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string | null;
+  actorId: string | null;
+  actorName: string | null;
+  refType: string | null;
+  refId: number | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationPreference {
+  id: number;
+  userId: string;
+  workspaceId: number;
+  type: NotificationType;
+  inAppEnabled: boolean;
+  slackEnabled: boolean;
+  telegramEnabled: boolean;
 }
 
 // Phase 4: Gantt chart item

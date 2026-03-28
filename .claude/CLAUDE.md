@@ -1,30 +1,33 @@
-# Tika - Claude Code 프로젝트 가이드
+# Tika — Claude Code 프로젝트 가이드
+
+> 버전: 0.3.0 | 최종 수정: 2026-03-28
+
+---
+
+## ⚙️ 운영 규칙 (Meta Rules)
+
+**반복 문제 재발 시**: 단순 재시도 금지. 관련 소스 코드를 반드시 직접 읽고 근본 원인을 파악한 뒤 응답한다.
+
+**세션 재시작 후**: `/compact` 완료 및 새 세션 시작 시 반드시 이 파일을 먼저 다시 읽어 프로젝트 컨텍스트를 복원한다.
+
+---
 
 ## 1. 프로젝트 개요
 
-Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개인 사용자가 할 일을 티켓으로 생성하고, 4단계 워크플로우(Backlog → TODO → In Progress → Done)의 칸반 보드에서 드래그 앤 드롭으로 관리할 수 있다. Phase1의 가장 큰 기능은 업무의 크기에 따라 Goal>(User) Story>Feature>Task로 Goal 을 이루기 위한 더 작은 단위의 action item 티켓을 만들고 계획대로 실행하는것에 초첨을 둔다.
+Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개인 사용자가 할 일을 티켓으로 생성하고, 4단계 워크플로우(Backlog → TODO → In Progress → Done)의 칸반 보드에서 드래그 앤 드롭으로 관리한다.
+
+Phase 1의 핵심: 업무 크기에 따라 **Goal → Story → Feature → Task** 계층으로 분해하고, Goal을 이루기 위한 최소 단위 action item을 계획·실행하는 것에 집중한다.
 
 **주요 기능:**
 
 - 티켓 CRUD (생성, 조회, 수정, 삭제)
 - 칸반 보드 4개 고정 칼럼 (Backlog, TODO, In Progress, Done)
 - 드래그 앤 드롭 칼럼 간 이동 및 순서 변경
-- 우선순위(LOW/MEDIUM/HIGH/CRITICAL) 및 마감일 관리
+- 우선순위(LOW / MEDIUM / HIGH / CRITICAL) 및 마감일 관리
 - 마감일 초과 시각적 경고 표시
 - 완료 시간 자동 기록
 
-**현재 버전:** 0.1.0 (MVP, 단일 사용자)
-
-> 주요 문서 참고 /docs 하위
-
-## Investigation Rules
-
-- When the same problem recurs and resolution is requested again, always perform a thorough source-level deep dive before responding.
-- Never claim to have confirmed a fix without actually reading the relevant source code.
-
-## Session Continuity
-
-- After /compact completes and a new session context begins, always re-read CLAUDE.md to re-establish project context before proceeding.
+**현재 버전:** 0.2.0 (SaaS — Google OAuth 인증, 알림, 댓글, 검색 완료)
 
 ---
 
@@ -45,9 +48,9 @@ Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개
 
 | 기술                   | 버전 | 용도                         |
 | ---------------------- | ---- | ---------------------------- |
-| Next.js Route Handlers | -    | REST API                     |
+| Next.js Route Handlers | —    | REST API                     |
 | Drizzle ORM            | 0.38 | ORM 및 쿼리 빌더             |
-| Vercel Postgres (Neon) | -    | PostgreSQL 데이터베이스      |
+| Vercel Postgres (Neon) | —    | PostgreSQL 데이터베이스      |
 | drizzle-kit            | 0.30 | 마이그레이션 도구            |
 | NextAuth.js            | 5.x  | Google OAuth 인증, 세션 관리 |
 
@@ -67,7 +70,7 @@ Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개
 - **환경변수:**
   - `POSTGRES_URL` — Vercel Postgres 연결 문자열
   - `NEXTAUTH_SECRET` — NextAuth 비밀 키
-  - `NEXTAUTH_URL` — NextAuth 콜백 URL (예: https://tika.vercel.app)
+  - `NEXTAUTH_URL` — NextAuth 콜백 URL (예: `https://tika-app.vercel.app`)
   - `GOOGLE_CLIENT_ID` — Google OAuth 클라이언트 ID
   - `GOOGLE_CLIENT_SECRET` — Google OAuth 클라이언트 시크릿
 
@@ -78,261 +81,86 @@ Tika는 티켓 기반 칸반 보드 할 일 관리 애플리케이션이다. 개
 ### 개발 서버
 
 ```bash
-npm run dev              # http://localhost:3000 에서 개발 서버 실행
+npm run dev        # http://localhost:3000
 ```
 
 ### 빌드 및 프로덕션
 
 ```bash
-npm run build            # 프로덕션 빌드
-npm run start            # 프로덕션 서버 실행
+npm run build      # 프로덕션 빌드
+npm run start      # 프로덕션 서버 실행
 ```
 
 ### 테스트
 
 ```bash
-npm run test             # Jest 테스트 1회 실행
-npm run test:watch       # Jest 감시 모드
-npm run test:coverage    # 테스트 커버리지 리포트 생성
+npm run test             # Jest 1회 실행
+npm run test:watch       # 감시 모드
+npm run test:coverage    # 커버리지 리포트
 ```
 
 ### 린트 및 포맷팅
 
 ```bash
-npm run lint             # ESLint 검사
-npm run format           # Prettier 코드 포맷팅
+npm run lint       # ESLint 검사
+npm run format     # Prettier 포맷팅
 ```
 
 ### 데이터베이스
 
 ```bash
-npm run db:generate      # Drizzle 마이그레이션 파일 생성 (스키마 변경 후)
-npm run db:migrate       # 마이그레이션 적용
-npm run db:push          # 스키마 직접 Push (마이그레이션 파일 없이)
-npm run db:studio        # Drizzle Studio (DB GUI) 실행
-npm run db:seed          # 시드 데이터 삽입
+npm run db:generate    # 마이그레이션 파일 생성 (스키마 변경 후)
+npm run db:migrate     # 마이그레이션 적용
+npm run db:push        # 스키마 직접 Push (마이그레이션 없이)
+npm run db:studio      # Drizzle Studio (DB GUI)
+npm run db:seed        # 시드 데이터 삽입
 ```
+
+> ⚠️ `db:generate`, `db:migrate`, `db:push`는 **사용자 명시적 요청 없이 절대 실행 금지**
+> → 상세 규칙: [SAFETY_RULES.md](.claude/SAFETY_RULES.md)
 
 ### 초기 세팅 순서
 
 ```bash
-npm install                    # 의존성 설치
-cp .env.example .env.local     # 환경변수 파일 생성
-# .env.local에 POSTGRES_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET 설정
-npm run db:generate            # 마이그레이션 생성
-npm run db:migrate             # 마이그레이션 적용
-npm run db:seed                # (선택) 시드 데이터
-npm run dev                    # 개발 서버 시작
+npm install
+cp .env.example .env.local
+# .env.local에 환경변수 5개 설정 (위 목록 참고)
+npm run db:generate
+npm run db:migrate
+npm run db:seed        # (선택)
+npm run dev
 ```
 
 ---
 
-### 코드 배치 규칙
+## 4. 디렉토리 구조 & Path Alias
 
-- **라우팅/API:** `app/` 디렉토리에 배치 (Next.js App Router 규칙)
-- **비즈니스 로직:** `src/` 디렉토리 하위에 배치
-- **컴포넌트:** `src/components/{도메인}/` 형태로 그룹핑
-- **공통 UI:** `src/components/ui/` 에 재사용 가능한 컴포넌트 배치
-- **DB 관련:** `src/db/` 에 스키마, 쿼리, 시드 데이터 집중
-- **타입:** `src/types/index.ts` 에 공유 타입 중앙 관리
-- **유틸리티:** `src/lib/` 에 상수, 검증, 헬퍼 함수 배치
-- **테스트:** `__tests__/` 하위에 소스 구조를 미러링하여 배치
+> 전체 디렉토리 구조: [TRD.md](docs/TRD.md) 참조
 
-### Path Alias
+**Path Alias:**
 
 ```typescript
-@/*     → ./src/*       // 예: @/components/board/Board
-@/app/* → ./app/*       // 예: @/app/api/tickets/route
+@/*     → ./src/*    // 예: @/components/board/Board
 ```
+
+**코드 배치 핵심 원칙:**
+
+- 라우팅/API → `app/`
+- 비즈니스 로직 → `src/`
+- 공유 타입 → `src/types/index.ts` (중앙 관리)
+- DB 관련 → `src/db/` (스키마, 쿼리, 시드)
 
 ---
 
-## 4. 코딩 규칙
+## 5. 데이터베이스 스키마
 
-### 네이밍 컨벤션
-
-| 대상            | 규칙                     | 예시                                |
-| --------------- | ------------------------ | ----------------------------------- |
-| 컴포넌트        | PascalCase               | `BoardContainer`, `TicketCard`      |
-| 컴포넌트 파일   | PascalCase.tsx           | `BoardContainer.tsx`                |
-| 훅              | camelCase + `use` 접두사 | `useTickets`                        |
-| 훅 파일         | camelCase.ts             | `useTickets.ts`                     |
-| 함수/변수       | camelCase                | `groupTicketsByStatus`, `isOverdue` |
-| 상수            | UPPER_SNAKE_CASE         | `POSITION_GAP`, `TITLE_MAX_LENGTH`  |
-| 타입/인터페이스 | PascalCase               | `TicketStatus`, `BoardData`         |
-| DB 칼럼         | snake_case               | `due_date`, `created_at`            |
-| API 응답 필드   | camelCase                | `dueDate`, `createdAt`              |
-
-### Prettier 설정 (`.prettierrc`)
-
-```json
-{
-  "semi": true,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "all",
-  "printWidth": 100,
-  "plugins": ["prettier-plugin-tailwindcss"]
-}
-```
-
-### TypeScript 규칙
-
-- **Strict 모드** 활성화 (`"strict": true`)
-- 공유 타입은 `src/types/index.ts`에 중앙 관리
-- `as const` 단언으로 enum 대체 (예: `TICKET_STATUS`)
-- Zod로 런타임 유효성 검증 (API 입력)
-- 타입 추론 가능한 곳에서는 명시적 타입 생략, API 계약에는 명시적 타입 사용
-
-### React 패턴
-
-- 클라이언트 컴포넌트에 `'use client'` 디렉티브 명시
-- 서버 컴포넌트에서 초기 데이터 fetch → 클라이언트 컴포넌트로 전달
-- 상태 관리는 커스텀 훅(`useTickets`)으로 중앙화
-- Optimistic UI 업데이트 + 실패 시 롤백 패턴 적용
-
-### Tailwind CSS 규칙
-
-- 유틸리티 퍼스트 방식, 별도 CSS 파일 사용 지양
-- `prettier-plugin-tailwindcss`로 클래스 자동 정렬
-- 반응형: 모바일 퍼스트 (`sm`, `lg` 브레이크포인트)
-
-### Git 커밋 메시지
-
-- 한국어 또는 영어 사용 가능
-- 변경 목적을 간결하게 기술 (1-2문장)
+> 전체 스키마 및 ERD: [DATA_MODEL.md](docs/DATA_MODEL.md) 참조
 
 ---
 
-## 5. 금지 사항과 예외 규칙
+## 6. API 엔드포인트
 
-## 🚨 절대 금지 사항 (CRITICAL - 반드시 준수)
-
-### 🔴 데이터베이스 관련 절대 금지 사항
-
-```bash
-# 데이터베이스 파괴적 명령어 - 절대 사용 금지 (사용자 명시적 요청 없이)
-
-# SQL 파괴적 명령어 - 절대 금지
-DROP TABLE                 # ❌ 절대 금지
-DROP DATABASE             # ❌ 절대 금지
-DELETE FROM               # ⚠️ WHERE 절 없이 사용 금지
-TRUNCATE                  # ❌ 절대 금지
-ALTER TABLE DROP          # ⚠️ 사용자 허가 필요
-```
-
-### 🔴 데이터베이스 작업 필수 규칙
-
-1. **데이터 삭제/리셋 전 반드시 사용자에게 명시적 허가 요청**
-2. **백업 없이 데이터 삭제 절대 금지**
-3. **테스트 데이터가 있는 상태에서 리셋 금지**
-4. **SQL 수정으로 해결 가능한 문제는 데이터베이스 리셋 금지**
-5. **프로덕션 데이터베이스는 어떤 경우에도 자동 수정 금지**
-6. **`db:generate` / `db:migrate` / `db:push`는 사용자 명시적 요청 없이 절대 실행 금지** — 스키마 변경 내용을 먼저 설명하고, 마이그레이션 실행 여부를 반드시 확인받을 것
-
-### 🔴 Git 위험 명령어 - 절대 사용 금지
-
-```bash
-git push --force          # ❌ 절대 금지
-git reset --hard          # ❌ 절대 금지
-git commit --no-verify    # ❌ 절대 금지
-```
-
-### 🔴 Git 커밋/푸시 - 사용자 명시적 요청 없이 절대 금지
-
-- **`git commit`은 사용자가 명시적으로 요청한 경우에만 실행한다**
-- **`git push`는 사용자가 명시적으로 요청한 경우에만 실행한다**
-- 작업 완료 후 커밋이 필요하다고 판단되면, 실행하지 말고 사용자에게 먼저 물어볼 것
-- "커밋해줘", "commit해줘" 등 명시적 지시가 없으면 커밋하지 않는다
-
-### 🔴 npm 위험 명령어
-
-```bash
-npm audit fix --force     # ❌ 절대 금지
-```
-
-### 라이브러리 버전 고정 (변경 금지)
-
-- 합당한 이유 없이 자주 라이브러리를 변경하면 안됌. 초기 셋팅 후 문제가 있을 경우에 허가 요청 후 변경 가능
-
-### 기본 기술 스택 이외의 라이브러리, 프레임워크, 언어 도입은 지양
-
-- 어쩔수 없이 해야 할 경우 해야 하는 이유와 검토 의견을 낸 뒤 명시적으로 허가 요청할것
-
-### 파일 수정/삭제 관련 규칙
-
-- **`src/db/schema.ts` 수정 시 반드시 사용자 확인 후 진행** (DB 스키마 변경은 마이그레이션에 영향)
-- **`drizzle.config.ts`, `next.config.ts` 등 핵심 설정 파일 수정 시 사용자 확인 필수**
-- **`package.json`의 dependencies 변경 시 사용자 허가 필요**
-- **`.env.local` 파일 직접 수정/생성 금지** (환경변수는 사용자가 직접 관리)
-- **`migrations/` 디렉토리 내 파일 수동 편집 금지** (drizzle-kit으로만 생성)
-- **`docs/` 문서 삭제 금지** (수정은 가능하나 삭제 시 사용자 확인 필요)
-
----
-
-## 8. 개발 작업 원칙 (작업 진행 방식)
-
-### 분석 → 구현 분리 원칙
-
-탐색/분석 작업과 실제 코드 변경 작업은 **반드시 단계를 분리**하고, 각 단계 전환 시 사용자 승인을 받는다.
-
-```
-[분석 단계] → 보고서/플랜 제시 → [사용자 승인] → [구현 단계]
-```
-
-- 분석 결과를 제시할 때는 **우선순위(CRITICAL/HIGH/MEDIUM/LOW)와 영향 범위**를 명시한다
-- 분석 결과를 제시한 뒤, "구현할까요?" 등 명시적 승인 없이 바로 코드를 수정하지 않는다
-- **"정리해", "구현해"처럼 구체적인 지시가 있을 때만** 해당 범위의 코드를 변경한다
-
-### 단계별 승인 원칙
-
-멀티-스텝 작업(예: CRITICAL → HIGH → MEDIUM)은 **단계마다 별도로 승인**을 받는다.
-
-- ❌ 잘못된 예: "CRITICAL 정리해"라는 지시에 HIGH까지 함께 구현
-- ✅ 올바른 예: CRITICAL 완료 후 "HIGH도 진행할까요?" 라고 물어보고 대기
-
-### DB 스키마 변경 승인 원칙
-
-성능 최적화, 기능 추가 등 어떤 목적이든 **스키마 변경과 마이그레이션은 독립적인 승인**이 필요하다.
-
-- 인덱스 추가라도 `src/db/schema.ts` 수정 전에 변경 내용을 먼저 설명하고 확인받는다
-- `db:generate`와 `db:migrate`는 사용자가 명시적으로 "마이그레이션 해줘" 또는 "적용해줘"라고 말할 때만 실행한다
-- 스키마 변경이 포함된 구현 플랜 제시 시, **스키마 변경 항목을 별도로 표시**하여 인지시킨다
-
-  ```
-  예시 플랜 제시 형식:
-  1. auth.ts — buildSessionUser 병렬화 (코드 변경)
-  2. analytics.ts — 함수 추가 (코드 변경)
-  3. ⚠️ schema.ts — 인덱스 2개 추가 (스키마 변경 → 별도 승인 필요)
-  ```
-
-### 범위 준수 원칙
-
-사용자가 요청한 작업의 범위를 정확히 지키고, 요청하지 않은 추가 개선은 하지 않는다.
-
-- "A를 고쳐줘"라는 요청에 B, C도 함께 수정하지 않는다
-- 작업 중 발견한 개선 사항은 현재 작업 완료 후 **별도로 보고**하고 지시를 기다린다
-- 단, 발견한 문제가 현재 작업의 직접적인 원인인 경우 수정 전 사용자에게 알린다
-
-### 구현 전 파일 읽기 원칙
-
-코드를 수정하기 전에 반드시 해당 파일을 읽고, 현재 구현 상태를 파악한다.
-
-- 이미 구현된 항목을 중복 구현하지 않는다
-- 파일을 읽지 않고 "아마 이렇게 되어있을 것"이라고 추정하여 수정하지 않는다
-- 특히 QA 체크리스트나 플랜 항목 구현 시, **먼저 현재 코드 상태를 확인**하고 실제 미구현 항목만 작업한다
-
----
-
-## 6. 데이터베이스 스키마 참고
-
-> ERD.md 참고
-
----
-
-## 7. API 엔드포인트 요약
-
-> 상세 요청/응답 사양: API_SPEC.md 참조
+> 상세 요청/응답 사양: [API_SPEC.md](docs/API_SPEC.md) 참조
 
 **에러 응답 형식:**
 
@@ -347,21 +175,30 @@ npm audit fix --force     # ❌ 절대 금지
 
 **에러 코드:** `UNAUTHORIZED` (401), `VALIDATION_ERROR` (400), `TICKET_NOT_FOUND` (404), `INTERNAL_ERROR` (500)
 
-## Language Policy
+---
 
-- Internal reasoning and planning: English
-- Code and technical artifacts: English (variable names, comments, logs, error messages)
-- Git commits: English, follow Conventional Commits (e.g., feat:, fix:, refactor:)
-- User-facing responses: Korean (한국어)
-  - Task summaries, explanations, and clarifying questions in Korean
-  - When reporting errors or issues, describe the problem in Korean but keep the original error message in English
+## 7. 문서 참조 표
 
-## Response Format
-
-When completing a task, always end with a Korean summary:
-
-- 무엇을 변경했는지
-- 왜 그렇게 했는지
-- 주의할 점이 있는지
+> → 문서 목록: [DOC_REFERENCE.md](.claude/DOC_REFERENCE.md)
 
 ---
+
+## 8. Language & Response Policy
+
+### 언어 사용 기준
+
+| 대상                                  | 언어                                                            |
+| ------------------------------------- | --------------------------------------------------------------- |
+| 내부 추론 및 계획                     | English                                                         |
+| 코드, 변수명, 주석, 로그, 에러 메시지 | English                                                         |
+| Git 커밋 메시지                       | English (Conventional Commits: `feat:`, `fix:`, `refactor:` 등) |
+| 사용자 응답 (설명, 요약, 질문)        | 한국어                                                          |
+| 에러 보고 시                          | 한국어 설명 + 원문 에러 메시지는 English 유지                   |
+
+### 작업 완료 후 응답 형식
+
+작업을 완료한 뒤 반드시 한국어로 다음 항목을 요약한다:
+
+1. **무엇을 변경했는지**
+2. **왜 그렇게 했는지**
+3. **주의할 점이 있는지**

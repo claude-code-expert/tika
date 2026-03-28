@@ -40,18 +40,18 @@ const TYPE_BADGE: Record<string, { bg: string; color: string; abbr: string }> = 
 };
 
 
-function parseDateStr(s: string | null): Date | null {
+export function parseDateStr(s: string | null): Date | null {
   if (!s) return null;
   const parts = s.split('-').map(Number);
   if (parts.length !== 3 || parts.some(isNaN)) return null;
   return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
-function dateKey(d: Date): string {
+export function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function getWeekdays(start: Date, end: Date): Date[] {
+export function getWeekdays(start: Date, end: Date): Date[] {
   const days: Date[] = [];
   const d = new Date(start);
   d.setHours(0, 0, 0, 0);
@@ -65,7 +65,7 @@ function getWeekdays(start: Date, end: Date): Date[] {
   return days;
 }
 
-function flattenItems(items: GanttItem[], depth = 0): GanttItem[] {
+export function flattenItems(items: GanttItem[], depth = 0): GanttItem[] {
   const result: GanttItem[] = [];
   for (const item of items) {
     result.push({ ...item, depth });
@@ -74,7 +74,7 @@ function flattenItems(items: GanttItem[], depth = 0): GanttItem[] {
   return result;
 }
 
-function buildMonthGroups(weekdays: Date[]): { label: string; count: number }[] {
+export function buildMonthGroups(weekdays: Date[]): { label: string; count: number }[] {
   const groups: { label: string; count: number }[] = [];
   let curKey = '';
   for (const d of weekdays) {
@@ -89,7 +89,7 @@ function buildMonthGroups(weekdays: Date[]): { label: string; count: number }[] 
   return groups;
 }
 
-function getBarColor(item: GanttItem, todayStr: string) {
+export function getBarColor(item: GanttItem, todayStr: string) {
   if (item.status === 'DONE') return { bg: '#86EFAC', border: '#22C55E' };
   if (item.endDate && item.endDate < todayStr) return { bg: '#FCA5A5', border: '#EF4444' };
   if (item.status === 'IN_PROGRESS') return { bg: '#FCD34D', border: '#F59E0B' };
@@ -471,7 +471,7 @@ export function GanttChart({ items, dateRange, onItemClick }: GanttChartProps) {
                     <span style={{ fontSize: 10, color: '#C4C9D4' }}>—</span>
                   ) : (
                     <>
-                      <div style={{ position: 'relative', flexShrink: 0, width: 18, height: 18 }}>
+                      <div style={{ position: 'relative', flexShrink: 0, width: 18, height: 18, ...(extra > 0 ? { marginRight: 5 } : {}) }}>
                         <div style={{ width: 18, height: 18, borderRadius: '50%', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: first.color }}>
                           {first.displayName.charAt(0).toUpperCase()}
                         </div>

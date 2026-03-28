@@ -1,4 +1,5 @@
 import { eq, sql, desc } from 'drizzle-orm';
+import { nowKST } from '@/lib/date';
 import { db } from '@/db/index';
 import { users, members, workspaces } from '@/db/schema';
 
@@ -30,7 +31,7 @@ export async function getSoleOwnerWorkspaces(userId: string): Promise<string[]> 
  * - members: displayName → '탈퇴한 사용자' for all memberships
  */
 export async function withdrawUser(userId: string): Promise<void> {
-  const now = new Date();
+  const now = nowKST();
   const anonymizedEmail = `withdrawn_${now.getTime()}@withdrawn.local`;
 
   await db.transaction(async (tx) => {

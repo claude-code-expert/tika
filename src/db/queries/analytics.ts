@@ -1,4 +1,5 @@
 import { eq, and, count, gte, isNotNull, inArray, sql, lt, ne } from 'drizzle-orm';
+import { nowKST } from '@/lib/date';
 import { db } from '@/db/index';
 import { tickets, sprints, labels, ticketLabels, members, ticketAssignees, users } from '@/db/schema';
 import type {
@@ -43,19 +44,18 @@ export function computePeriodBurndown(
   startDate: string,
   endDate: string,
 ): BurndownDataPoint[] {
-  const periodStart = new Date(startDate);
-  periodStart.setHours(0, 0, 0, 0);
-  const periodEnd = new Date(endDate);
-  periodEnd.setHours(23, 59, 59, 999);
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const periodStart = new Date(startDate + 'T00:00:00.000Z');
+  const periodEnd = new Date(endDate + 'T23:59:59.999Z');
+  const todayUtcStr = nowKST().toISOString().slice(0, 10);
+  const today = new Date(todayUtcStr + 'T23:59:59.999Z');
   const lastDay = periodEnd < today ? periodEnd : today;
 
   const relevantTickets = allTickets.filter((t) => t.createdAt.getTime() <= lastDay.getTime());
   const total = relevantTickets.length;
   const totalPoints = relevantTickets.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
 
-  const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
+  const totalDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY));
 
   // Pre-sort by completedAt for efficient cumulative counting
   const completed = relevantTickets
@@ -67,10 +67,8 @@ export function computePeriodBurndown(
   let completedCount = 0;
   let completedPoints = 0;
 
-  for (let d = new Date(periodStart); d.getTime() <= lastDay.getTime(); d.setDate(d.getDate() + 1)) {
-    const dayEnd = new Date(d);
-    dayEnd.setHours(23, 59, 59, 999);
-    const dayEndMs = dayEnd.getTime();
+  for (let dMs = periodStart.getTime(); dMs <= lastDay.getTime(); dMs += MS_PER_DAY) {
+    const dayEndMs = dMs + MS_PER_DAY - 1;
 
     while (completedIdx < completed.length && completed[completedIdx].completedAt.getTime() <= dayEndMs) {
       completedCount++;
@@ -78,11 +76,11 @@ export function computePeriodBurndown(
       completedIdx++;
     }
 
-    const dayIndex = Math.ceil((d.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+    const dayIndex = Math.round((dMs - periodStart.getTime()) / MS_PER_DAY);
     const idealTickets = Math.max(0, total - Math.round((total / totalDays) * dayIndex));
 
     result.push({
-      date: d.toISOString().slice(0, 10),
+      date: new Date(dMs).toISOString().slice(0, 10),
       remainingTickets: total - completedCount,
       remainingPoints: totalPoints - completedPoints,
       idealTickets,
@@ -138,19 +136,31 @@ export async function getCfdData(
     currentCounts[row.status] = Number(row.cnt);
   }
 
-  // Completed tickets in the period (to approximate DONE trend)
-  const completedTickets = await db
-    .select({ completedAt: tickets.completedAt })
-    .from(tickets)
-    .where(
-      and(
-        eq(tickets.workspaceId, workspaceId),
-        eq(tickets.status, 'DONE'),
-        isNotNull(tickets.completedAt),
-        gte(tickets.completedAt, cutoff),
-        eq(tickets.deleted, false),
+  // Completed tickets and created tickets in the period
+  const [completedTickets, createdTickets] = await Promise.all([
+    db
+      .select({ completedAt: tickets.completedAt })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.workspaceId, workspaceId),
+          eq(tickets.status, 'DONE'),
+          isNotNull(tickets.completedAt),
+          gte(tickets.completedAt, cutoff),
+          eq(tickets.deleted, false),
+        ),
       ),
-    );
+    db
+      .select({ createdAt: tickets.createdAt })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.workspaceId, workspaceId),
+          gte(tickets.createdAt, cutoff),
+          eq(tickets.deleted, false),
+        ),
+      ),
+  ]);
 
   const doneCounts: Record<string, number> = {};
   for (const t of completedTickets) {
@@ -158,6 +168,12 @@ export async function getCfdData(
       const day = t.completedAt.toISOString().split('T')[0];
       doneCounts[day] = (doneCounts[day] ?? 0) + 1;
     }
+  }
+
+  const createdCounts: Record<string, number> = {};
+  for (const t of createdTickets) {
+    const day = t.createdAt.toISOString().split('T')[0];
+    createdCounts[day] = (createdCounts[day] ?? 0) + 1;
   }
 
   // Build cumulative DONE (starting from total DONE minus those in the period)
@@ -178,6 +194,7 @@ export async function getCfdData(
       todo: currentCounts['TODO'] ?? 0,
       inProgress: currentCounts['IN_PROGRESS'] ?? 0,
       done: Math.max(0, cumulativeDone),
+      created: createdCounts[day] ?? 0,
     });
   }
 

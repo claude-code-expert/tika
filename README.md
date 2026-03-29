@@ -1,5 +1,8 @@
 # Tika
 
+> **이 프로젝트가 도움이 되었다면, Star를 눌러 마음을 표현해 주세요!**
+> **If you find this project helpful, please give it a Star to show your support!**
+
 Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드에서 드래그 앤 드롭으로 관리하는 티켓 기반 협업 도구.
 
 ---

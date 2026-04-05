@@ -4,8 +4,9 @@ import { SessionProvider } from 'next-auth/react';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tika.vercel.app'),
   title: { default: 'Tika', template: '%s | Tika' },
-  description: '티켓 기반 칸반 보드 TODO 앱 — Tika로 업무를 체계적으로 관리하세요.',
+  description: '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요. 개인 플랜 영구 무료.',
   icons: {
     icon: [
       { url: '/images/icon/favicon.ico', sizes: 'any' },
@@ -16,17 +17,50 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Tika',
-    description: '티켓 기반 칸반 보드 TODO 앱',
+    description: '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요.',
     siteName: 'Tika',
     locale: 'ko_KR',
     type: 'website',
+    images: [
+      {
+        url: '/images/tika-hero.png',
+        width: 1376,
+        height: 768,
+        alt: 'Tika 칸반 보드 — Plan Simply. Ship Boldly.',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Tika',
-    description: '티켓 기반 칸반 보드 TODO 앱',
+    description: '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요.',
+    images: ['/images/tika-hero.png'],
   },
 };
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Tika',
+    url: 'https://tika.vercel.app',
+    description: '티켓 기반 칸반 보드 프로젝트 관리 앱',
+    applicationCategory: 'ProductivityApplication',
+    operatingSystem: 'Web',
+    inLanguage: 'ko-KR',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Tika',
+    url: 'https://tika.vercel.app',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://tika.vercel.app/images/icon/favicon-32.png',
+    },
+  },
+];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -48,6 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

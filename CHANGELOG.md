@@ -3,6 +3,64 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [develop] - 2026-04-05 SEO 최적화 전체 적용 + settings.json 훅 버그 수정
+
+### 🎯 Prompts
+1. "docs/seo 문서의 README.md 와 SEO_GUIDE.md seo-sample.tsx, page.tsx 를 참고해서 이 코드베이스의 검색엔진 최적화를 진행해"
+2. "@.claude/settings.json 제대로 구성된건지 오류없는지 검사해"
+3. "이 수정과 관련해서 훅 설정을 어떻게 해야 하는지 settings.json 상단에 주석으로 달아줘"
+4. "전체 테스트 돌려서 에러 검증해"
+
+### ✅ Changes
+- **Added**: `metadataBase` 전역 설정 → OG/Twitter 이미지 URL 크롤러 전달 정상화 (`app/layout.tsx`)
+- **Added**: Open Graph 이미지 (`/images/tika-hero.png`, 1376×768) 전역 적용 (`app/layout.tsx`)
+- **Added**: Twitter Card `summary` → `summary_large_image` 업그레이드 (`app/layout.tsx`)
+- **Added**: JSON-LD 구조화 데이터 — `WebApplication` + `Organization` 스키마 (`app/layout.tsx`)
+- **Added**: 랜딩 페이지 SEO 전면 개선 — 키워드 중심 title, CTA 포함 description, canonical (`app/login/page.tsx`)
+- **Added**: JSON-LD `FAQPage` 스키마 — 6개 FAQ 인라인 삽입, 구글 리치 스니펫 대응 (`app/login/page.tsx`)
+- **Fixed**: 홈 페이지 title "로그인" → `{ absolute: 'Tika' }` (리다이렉트 페이지에 잘못된 title) (`app/page.tsx`)
+- **Modified**: Sitemap 우선순위 재조정 — `/login` priority 1, `/` priority 0.5 (`app/sitemap.ts`)
+- **Modified**: 팀 초대 페이지 title·description 개선 + OG 이미지 추가 (`app/invite/[token]/page.tsx`)
+- **Modified**: 온보딩 title "온보딩" → "시작하기", description 개선 (`app/onboarding/page.tsx`)
+- **Added**: 워크스페이스 생성 페이지 Metadata 신규 선언 (`app/onboarding/workspace/page.tsx`)
+- **Fixed**: 알림 페이지 `Metadata` 타입 누락 + title 중복 (`| Tika`) 제거 (`app/notifications/page.tsx`)
+- **Modified**: 설정·워크스페이스 전체 8개 페이지 description 구체화
+- **Fixed**: `.claude/settings.json` 훅 3개 버그 수정
+  - matcher 오류: `"bash"` → `"Bash"`, `"write_file|edit_file"` → `"Write|Edit"`
+  - 입력 방식: `$CLAUDE_TOOL_INPUT` → `jq -r '.tool_input.command'` (stdin JSON)
+  - git commit 우회 패턴: `^git commit` → `(^|\|\||&&|;)\s*git\s+(commit|push)`
+- **Added**: settings.json 훅 작성 규칙 주석 (matcher 명명, stdin 읽기, 차단 방법 등)
+- **Added**: SEO 설계 문서 (`docs/superpowers/specs/2026-04-05-seo-design.md`)
+- **Added**: SEO 구현 계획 (`docs/superpowers/plans/2026-04-05-seo-implementation.md`)
+
+### 📊 Test Results
+- Total: 766/766 passed (100%)
+- Suites: 51/51 passed
+
+### 📁 Files Modified
+- `app/layout.tsx` (+42, -4)
+- `app/login/page.tsx` (+85, -2)
+- `app/page.tsx` (+1, -2)
+- `app/sitemap.ts` (+2, -3)
+- `app/invite/[token]/page.tsx` (+5, -2)
+- `app/onboarding/page.tsx` (+2, -2)
+- `app/onboarding/workspace/page.tsx` (+6, -0)
+- `app/notifications/page.tsx` (+3, -2)
+- `app/settings/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/board/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/members/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/analytics/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/wbs/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/burndown/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/trash/page.tsx` (+1, -1)
+- `app/workspace/[workspaceId]/[ticketId]/page.tsx` (+1, -1)
+- `.claude/settings.json` (훅 버그 수정 + 주석 추가)
+- `docs/superpowers/specs/2026-04-05-seo-design.md` (+172, -0)
+- `docs/superpowers/plans/2026-04-05-seo-implementation.md` (신규)
+
+---
+
 ## [develop] - 2026-03-14 VIEWER 권한 제한 단위 테스트 + 대시보드 컬러 시스템 + 수영 레인 배경 + BurndownChart UI 개선
 
 ### 🎯 Prompts

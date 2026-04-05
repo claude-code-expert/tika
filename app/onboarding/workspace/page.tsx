@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/db/index';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+
+export const metadata: Metadata = {
+  title: '워크스페이스 만들기',
+  description: '새 워크스페이스를 만들고 팀원을 초대해 협업을 시작하세요.',
+};
 
 export const dynamic = 'force-dynamic';
 

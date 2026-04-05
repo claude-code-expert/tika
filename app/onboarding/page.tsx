@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 
 export const metadata: Metadata = {
-  title: '온보딩',
-  description: '워크스페이스 설정을 시작하세요.',
+  title: '시작하기',
+  description: 'Tika 워크스페이스를 설정하고 칸반 보드로 업무 관리를 시작하세요.',
 };
 
 export const dynamic = 'force-dynamic';

@@ -16,7 +16,7 @@ import type { TeamRole, TicketWithMeta } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '멤버 관리',
-  description: '워크스페이스 멤버를 관리하세요.',
+  description: '워크스페이스 멤버를 초대·관리하고 역할 및 권한을 설정하세요.',
 };
 
 export default async function TeamMembersPage({

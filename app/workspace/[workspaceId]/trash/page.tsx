@@ -10,7 +10,7 @@ import type { TeamRole } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '휴지통',
-  description: '삭제된 티켓을 복원하거나 영구 삭제하세요.',
+  description: '삭제된 티켓을 30일 이내 복원하거나 영구 삭제하세요.',
 };
 
 export default async function TrashPage({

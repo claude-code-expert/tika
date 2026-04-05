@@ -11,7 +11,7 @@ import type { TeamRole } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '티켓 상세',
-  description: '티켓 상세 정보를 확인하세요.',
+  description: '티켓 설명, 우선순위, 담당자, 체크리스트, 댓글을 확인하고 관리하세요.',
 };
 
 export default async function TicketPage({

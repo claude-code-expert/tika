@@ -17,7 +17,7 @@ import { nowKST } from '@/lib/date';
 
 export const metadata: Metadata = {
   title: '대시보드',
-  description: '팀 워크스페이스 대시보드입니다.',
+  description: '팀 진행 현황, 목표 달성률, 멤버 워크로드를 한눈에 파악하세요.',
 };
 
 export default async function TeamDashboardPage({

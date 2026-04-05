@@ -8,7 +8,7 @@ import type { TeamRole } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '설정',
-  description: '프로필 및 워크스페이스 설정을 관리하세요.',
+  description: '계정 프로필, 워크스페이스, 알림 설정을 한 곳에서 관리하세요.',
 };
 
 export default async function SettingsPage() {

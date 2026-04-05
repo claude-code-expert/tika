@@ -64,7 +64,7 @@ export function useTickets(initialData?: BoardData) {
         board: {
           ...prev.board,
           BACKLOG: [
-            { ...ticket, isOverdue: false, labels: [], checklistItems: [], parent: null, assignee: null },
+            { ...ticket, isOverdue: false, labels: ticket.labels ?? [], checklistItems: ticket.checklistItems ?? [], assignees: ticket.assignees ?? [], parent: ticket.parent ?? null, assignee: ticket.assignee ?? null },
             ...prev.board.BACKLOG,
           ],
         },

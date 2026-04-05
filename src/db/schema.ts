@@ -346,6 +346,24 @@ export const notificationPreferences = pgTable(
   ],
 );
 
+// 16. attachments — file attachments linked to tickets (Vercel Blob)
+export const attachments = pgTable(
+  'attachments',
+  {
+    id: serial('id').primaryKey(),
+    ticketId: integer('ticket_id')
+      .notNull()
+      .references(() => tickets.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    size: integer('size').notNull(), // bytes
+    mimeType: varchar('mime_type', { length: 100 }),
+    uploadedBy: integer('uploaded_by').references(() => members.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('idx_attachments_ticket_id').on(table.ticketId)],
+);
+
 // 15. workspace_join_requests — join request from user to workspace (onboarding flow)
 export const workspaceJoinRequests = pgTable(
   'workspace_join_requests',

@@ -275,6 +275,17 @@ export interface Comment {
   updatedAt: string;
 }
 
+export interface Attachment {
+  id: number;
+  ticketId: number;
+  url: string;
+  name: string;
+  size: number; // bytes
+  mimeType: string | null;
+  uploadedBy: number | null;
+  createdAt: string; // ISO 8601
+}
+
 export const NOTIFICATION_STATUS = {
   SENT: 'SENT',
   FAILED: 'FAILED',

@@ -119,7 +119,7 @@ export default async function LoginPage({
         }}
       >
         {/* Hero SVG */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#F8F9FB' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/tika-hero3.svg"

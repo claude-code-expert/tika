@@ -1,7 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from "next/script";
 import { SessionProvider } from 'next-auth/react';
 import './globals.css';
+
+// Prevents browser Auto Dark Mode from inverting/darkening the hero image.
+// Without this, Chrome applies dark-mode heuristics during the CSS loading gap
+// after a fresh deployment, causing the SVG container to appear black.
+export const viewport: Viewport = {
+  colorScheme: 'light',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tika.vercel.app'),

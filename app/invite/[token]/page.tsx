@@ -5,8 +5,11 @@ import { auth } from '@/lib/auth';
 import { InviteAcceptClient } from './InviteAcceptClient';
 
 export const metadata: Metadata = {
-  title: '초대 수락',
-  description: '팀 워크스페이스 초대를 수락하세요.',
+  title: '팀 초대',
+  description: 'Tika 팀 워크스페이스에 초대받았습니다. 수락하고 바로 협업을 시작하세요.',
+  openGraph: {
+    images: [{ url: '/images/tika-hero.png', width: 1376, height: 768, alt: 'Tika 팀 초대' }],
+  },
 };
 
 interface InvitePreview {

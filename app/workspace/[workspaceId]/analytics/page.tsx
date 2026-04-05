@@ -23,7 +23,7 @@ import type { TeamRole, TicketWithMeta } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '분석',
-  description: '팀 업무 현황을 분석하세요.',
+  description: '속도 지표, CFD, 사이클 타임 등 팀 업무 데이터를 분석해 생산성을 개선하세요.',
 };
 
 export default async function TeamAnalyticsPage({

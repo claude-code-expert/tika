@@ -15,7 +15,7 @@ import type { TeamRole } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '번다운 차트',
-  description: '스프린트 번다운 차트를 확인하세요.',
+  description: '스프린트 번다운 차트로 남은 작업량과 팀 속도를 추적하세요.',
 };
 
 export default async function TeamBurndownPage({

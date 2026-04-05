@@ -7,8 +7,8 @@ import { users, members, workspaces } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export const metadata: Metadata = {
-  title: '로그인',
-  description: '티카에 로그인하여 칸반 보드로 업무를 관리하세요.',
+  title: { absolute: 'Tika' },
+  description: '칸반 보드로 업무를 체계적으로 관리하세요.',
 };
 
 export const dynamic = 'force-dynamic';

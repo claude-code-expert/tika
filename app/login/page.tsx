@@ -6,11 +6,90 @@ import { ContactModal } from '@/components/ui/ContactModal';
 import { NotifyModal } from '@/components/ui/NotifyModal';
 
 export const metadata: Metadata = {
-  title: '로그인',
-  description: '티카에 로그인하여 칸반 보드로 업무를 관리하세요.',
+  title: { absolute: 'Tika — 칸반 보드 프로젝트 관리 앱' },
+  description:
+    '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요. 개인 플랜 영구 무료 — 지금 시작하세요.',
+  alternates: {
+    canonical: 'https://tika.vercel.app/login',
+  },
+  openGraph: {
+    title: 'Tika — 칸반 보드 프로젝트 관리 앱',
+    description:
+      '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요. 개인 플랜 영구 무료.',
+    type: 'website',
+    images: [
+      {
+        url: '/images/tika-hero.png',
+        width: 1376,
+        height: 768,
+        alt: 'Tika 칸반 보드 — Plan Simply. Ship Boldly.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tika — 칸반 보드 프로젝트 관리 앱',
+    description: '티켓 기반 칸반 보드로 목표를 분해하고 팀과 함께 실행하세요.',
+    images: ['/images/tika-hero.png'],
+  },
 };
 
 const AVATAR_COLORS = ['#7EB4A2', '#60A5FA', '#A78BFA', '#F97316', '#EC4899', '#14B8A6'];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: '무료로 계속 쓸 수 있나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Personal 플랜은 영구 무료이며 개인 할 일 관리에 필요한 핵심 기능을 모두 제공합니다. Workspace 플랜도 계정당 워크스페이스 3건은 무료로 이용하실 수 있습니다.(총 티켓수 제한 1000개)',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '개인 정보는 어떻게 관리 되나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Tika는 구글 OAuth 로그인 이외에 별도의 개인정보를 저장하지 않습니다. 로그인 시 유니크한 값으로 치환하여 관리하고 있으므로 유출의 위험에서 안전합니다.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '팀원을 몇 명까지 초대할 수 있나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '현재 Workspace 플랜에서는 워크스페이스당 팀원 초대에 별도 제한이 없습니다. Team Pro 출시 이후 플랜별 정책이 확정될 예정입니다.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'MCP는 어떤 AI와 연동되나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Team Pro 플랜에서 Tika MCP 서버(@tika/mcp-server)를 제공합니다. Claude Code, Cursor 등 MCP를 지원하는 AI 개발 도구에서 PAT 인증으로 연결하면, 개발 툴에서 Tika 티켓을 직접 조회·생성·수정·삭제 등 티켓 관리를 할 수 있습니다.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '데이터는 어디에 저장되나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '클라우드 플랜은 Vercel + Neon(PostgreSQL) 인프라에 안전하게 저장됩니다. Enterprise 버전은 온프레미스 설치용으로 고객사 서버에만 데이터가 저장되며 외부 전송이 없습니다.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Enterprise 도입 절차는 어떻게 되나요?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '도입 문의하기 버튼이나 brewnet.dev@gmail.com으로 문의 주시면 영업일 1일 이내 담당자가 연락드립니다. 요구사항 파악 → 데모 → 계약 → 설치 지원 순서로 진행됩니다.',
+      },
+    },
+  ],
+};
 
 export default async function LoginPage({
   searchParams,
@@ -25,6 +104,10 @@ export default async function LoginPage({
       className="min-h-screen bg-[#F8F9FB]"
       style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif" }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Hero */}
       <section
         className="relative"
@@ -36,7 +119,7 @@ export default async function LoginPage({
         }}
       >
         {/* Hero SVG */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#F8F9FB' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/tika-hero3.svg"

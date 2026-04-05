@@ -10,7 +10,7 @@ import type { TeamRole } from '@/types/index';
 
 export const metadata: Metadata = {
   title: '칸반 보드',
-  description: '칸반 보드에서 티켓을 관리하세요.',
+  description: 'BACKLOG · TODO · IN PROGRESS · DONE 4단계 칸반 보드에서 티켓을 드래그 앤 드롭으로 관리하세요.',
 };
 
 export default async function TeamBoardPage({

@@ -11,7 +11,7 @@ import { buildGanttItems } from '@/lib/wbsUtils';
 
 export const metadata: Metadata = {
   title: 'WBS',
-  description: 'WBS와 간트 차트로 업무 계획을 시각화하세요.',
+  description: 'Goal→Story→Feature→Task 계층 구조로 업무를 분해하고 간트 차트로 일정을 시각화하세요.',
 };
 
 export default async function TeamWbsPage({

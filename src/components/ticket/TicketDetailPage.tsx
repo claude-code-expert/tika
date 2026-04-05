@@ -6,7 +6,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BreadcrumbPicker } from './BreadcrumbPicker';
 import { ChecklistSection } from './ChecklistSection';
 import { CommentSection } from './CommentSection';
-import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment } from '@/types/index';
+import { AttachmentSection } from './AttachmentSection';
+import type { TicketWithMeta, Ticket, ChecklistItem, Label, Member, Comment, Attachment } from '@/types/index';
 import { TICKET_STATUS, TICKET_PRIORITY } from '@/types/index';
 import type { UpdateTicketInput } from '@/lib/validations';
 import { TICKET_TYPE_META } from '@/lib/constants';
@@ -157,6 +158,7 @@ export function TicketDetailPage({
   );
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(ticket.checklistItems);
   const [commentList, setCommentList] = useState<Comment[]>([]);
+  const [attachmentList, setAttachmentList] = useState<Attachment[]>([]);
 
   // ── label state ──
   const [allLabels, setAllLabels] = useState<Label[]>([]);
@@ -213,10 +215,12 @@ export function TicketDetailPage({
       fetch('/api/tickets?types=GOAL,STORY,FEATURE', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch('/api/members', { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`/api/tickets/${ticket.id}/comments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([parentsData, membersData, commentsData]) => {
+      fetch(`/api/tickets/${ticket.id}/attachments`, { signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([parentsData, membersData, commentsData, attachmentsData]) => {
       if (parentsData?.tickets) setAllParents(parentsData.tickets);
       if (membersData?.members) setAllMembers(membersData.members);
       if (commentsData?.comments) setCommentList(commentsData.comments);
+      if (attachmentsData?.attachments) setAttachmentList(attachmentsData.attachments);
     });
     return () => controller.abort();
   }, [ticket.id]);
@@ -728,6 +732,14 @@ export function TicketDetailPage({
                 comments={commentList}
                 currentMemberId={currentMemberId}
                 onCommentsChange={setCommentList}
+                readOnly={readOnly}
+              />
+
+              {/* 첨부파일 section */}
+              <AttachmentSection
+                ticketId={ticket.id}
+                attachments={attachmentList}
+                onAttachmentsChange={setAttachmentList}
                 readOnly={readOnly}
               />
 

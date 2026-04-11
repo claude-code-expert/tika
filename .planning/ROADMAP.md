@@ -21,7 +21,11 @@
   2. 저장된 키는 "앞 5자 + *** + 뒤 5자" 마스킹 형태로만 화면에 표시되고, API 응답에 ciphertext/iv/tag가 절대 반환되지 않는다
   3. OWNER는 저장된 키를 교체(수정)하거나 삭제할 수 있다
   4. MEMBER 또는 VIEWER로 로그인한 사용자는 API 키 설정 페이지 URL에 직접 접근해도 403이 반환된다
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Foundation: encryption service, DB schema, query layer, Zod validation
+- [ ] 01-02-PLAN.md — API routes: GET/POST/DELETE handlers with RBAC and Gemini probe
+- [ ] 01-03-PLAN.md — UI: SettingsShell extension + GeminiKeySection component
 **UI hint**: yes
 
 ### Phase 2: AI Import Pipeline
@@ -51,6 +55,6 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure Key Management | 0/? | Not started | - |
+| 1. Secure Key Management | 0/3 | Planning complete | - |
 | 2. AI Import Pipeline | 0/? | Not started | - |
 | 3. Navigation Integration | 0/? | Not started | - |

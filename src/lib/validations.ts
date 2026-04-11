@@ -333,3 +333,14 @@ export type PatchUserTypeInput = z.infer<typeof patchUserTypeSchema>;
 export type PostJoinRequestInput = z.infer<typeof postJoinRequestSchema>;
 export type PatchJoinRequestInput = z.infer<typeof patchJoinRequestSchema>;
 export type WithdrawAccountInput = z.infer<typeof withdrawAccountSchema>;
+
+// ── Gemini API key validation ──
+export const saveGeminiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .min(1, 'API 키를 입력해주세요')
+    .max(256, 'API 키가 너무 깁니다')
+    .refine((v) => v.trim().length > 0, 'API 키를 입력해주세요'),
+});
+
+export type SaveGeminiKeyInput = z.infer<typeof saveGeminiKeySchema>;

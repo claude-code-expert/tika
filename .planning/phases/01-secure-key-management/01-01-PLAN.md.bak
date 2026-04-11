@@ -212,8 +212,6 @@ export function maskApiKey(key: string): string {
 
 **3. Add `workspace_settings` table to `src/db/schema.ts`** — Per D-01/D-02:
 
-> ⚠️ **사용자 확인 필수 (safety.md):** src/db/schema.ts 수정 전, 추가할 테이블 정의를 사용자에게 보여주고 명시적 승인을 받을 것. `autonomous: false` 설정에 따라 실행자는 이 단계에서 반드시 멈추고 사용자 확인을 구해야 한다.
-
 Append after the last table definition (before end of file). Follow existing pattern (serial id, integer workspace FK, cascade delete, unique on workspaceId):
 
 ```typescript

@@ -1,0 +1,572 @@
+---
+phase: 01-secure-key-management
+plan: 03
+type: execute
+wave: 3
+depends_on: ["01-02"]
+files_modified:
+  - src/components/settings/types.ts
+  - src/components/settings/SettingsShell.tsx
+  - src/components/settings/GeminiKeySection.tsx
+autonomous: false
+requirements:
+  - KEY-01
+  - KEY-04
+  - KEY-05
+  - KEY-07
+  - NAV-02
+
+must_haves:
+  truths:
+    - "OWNER sees 'AI 설정' nav item in settings sidebar"
+    - "MEMBER does not see 'AI 설정' nav item"
+    - "VIEWER does not see 'AI 설정' nav item"
+    - "Direct URL /settings?section=ai-key redirects non-OWNER to ?section=general"
+    - "OWNER with no key sees empty state with input form"
+    - "OWNER with existing key sees masked key card with '키 교체' and 'API 키 삭제' buttons"
+    - "Save success shows toast with '복사' action button, 8s duration"
+    - "Delete shows ConfirmDialog with exact copy from UI-SPEC"
+    - "Input field has show/hide toggle for plaintext visibility"
+    - "Probe failure shows inline error below input"
+  artifacts:
+    - path: "src/components/settings/types.ts"
+      provides: "Extended SectionKey union with 'ai-key'"
+      contains: "'ai-key'"
+    - path: "src/components/settings/SettingsShell.tsx"
+      provides: "AI 설정 nav item (OWNER only), toast with action support"
+      contains: "ai-key"
+    - path: "src/components/settings/GeminiKeySection.tsx"
+      provides: "Full GeminiKey management UI component"
+      min_lines: 150
+  key_links:
+    - from: "src/components/settings/GeminiKeySection.tsx"
+      to: "/api/settings/gemini-key"
+      via: "fetch calls for GET/POST/DELETE"
+      pattern: "fetch.*api/settings/gemini-key"
+    - from: "src/components/settings/SettingsShell.tsx"
+      to: "src/components/settings/GeminiKeySection.tsx"
+      via: "sectionRenderers['ai-key']"
+      pattern: "ai-key.*GeminiKeySection"
+    - from: "src/components/settings/SettingsShell.tsx"
+      to: "role === 'OWNER'"
+      via: "nav item visibility filter"
+      pattern: "role.*OWNER"
+---
+
+<objective>
+UI layer: Extend SettingsShell with OWNER-only AI 설정 tab and create GeminiKeySection component with full state machine.
+
+Purpose: Delivers the user-facing interface for Gemini API key management. OWNER can register, view (masked), replace, and delete keys. Non-OWNER roles are completely blocked at both nav and URL level.
+
+Output: Updated `types.ts`, extended `SettingsShell.tsx` (nav item + toast action + RBAC), new `GeminiKeySection.tsx`.
+</objective>
+
+<execution_context>
+@$HOME/.claude/get-shit-done/workflows/execute-plan.md
+@$HOME/.claude/get-shit-done/templates/summary.md
+</execution_context>
+
+<context>
+@.planning/PROJECT.md
+@.planning/ROADMAP.md
+@.planning/STATE.md
+@.planning/phases/01-secure-key-management/01-CONTEXT.md
+@.planning/phases/01-secure-key-management/01-RESEARCH.md
+@.planning/phases/01-secure-key-management/01-UI-SPEC.md
+@.planning/phases/01-secure-key-management/01-01-SUMMARY.md
+@.planning/phases/01-secure-key-management/01-02-SUMMARY.md
+
+<interfaces>
+<!-- Existing patterns and types the executor needs -->
+
+From src/components/settings/types.ts (current state):
+```typescript
+export type SectionKey = 'general' | 'notification-preferences' | 'labels';
+export type ToastType = 'success' | 'fail' | 'info';
+
+export interface SectionProps {
+  showToast: (message: string, type?: ToastType) => void;
+  workspaceId: number;
+}
+```
+
+From src/components/settings/SettingsShell.tsx (key patterns):
+```typescript
+// NAV_ITEMS array with {key, label, icon} — add new item
+// visibleNavItems = filter based on role
+// sectionRenderers: Record<SectionKey, ReactNode>
+// ToastState: { message: string; type: ToastType }
+// showToast(message, type): sets toast + 3s timeout
+
+// Existing VIEWER_ALLOWED_SECTIONS = ['general']
+```
+
+From src/components/ui/ConfirmDialog.tsx (existing component for delete confirmation):
+```typescript
+// Usage: <ConfirmDialog isOpen onClose onConfirm title description confirmText cancelText variant="danger" />
+```
+
+From API (Plan 02):
+```
+GET  /api/settings/gemini-key → { data: { maskedKey, updatedAt } | null }
+POST /api/settings/gemini-key body: { apiKey } → { data: { maskedKey, saved } } | { error: { code, message } }
+DELETE /api/settings/gemini-key → 204
+```
+</interfaces>
+</context>
+
+<tasks>
+
+<task type="auto">
+  <name>Task 1: Extend types.ts, SettingsShell with OWNER nav + toast action support</name>
+  <files>
+    src/components/settings/types.ts
+    src/components/settings/SettingsShell.tsx
+  </files>
+  <read_first>
+    src/components/settings/types.ts
+    src/components/settings/SettingsShell.tsx
+    src/components/settings/GeneralSection.tsx
+    .planning/phases/01-secure-key-management/01-UI-SPEC.md
+    .claude/rules/component-rules.md
+  </read_first>
+  <action>
+**1. Update `src/components/settings/types.ts`**:
+
+```typescript
+export type SectionKey = 'general' | 'notification-preferences' | 'labels' | 'ai-key';
+export type ToastType = 'success' | 'fail' | 'info';
+
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+export interface SectionProps {
+  showToast: (message: string, type?: ToastType, action?: ToastAction, duration?: number) => void;
+  workspaceId: number;
+}
+```
+
+Add `'ai-key'` to `SectionKey` union. Add `ToastAction` interface. Extend `showToast` signature with optional `action` and `duration` parameters.
+
+**2. Update `src/components/settings/SettingsShell.tsx`** — Multiple changes:
+
+**2a. Import GeminiKeySection** (lazy-loaded to avoid loading encryption on non-OWNER pages):
+```typescript
+import { GeminiKeySection } from './GeminiKeySection';
+import type { ToastAction } from './types';
+```
+
+**2b. Add AI 설정 nav item** to `NAV_ITEMS` array (append as last item):
+```typescript
+{
+  key: 'ai-key' as SectionKey,
+  label: 'AI 설정',
+  icon: (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+    </svg>
+  ),
+},
+```
+
+**2c. Extend `ToastState` interface** (inside SettingsShell.tsx):
+```typescript
+interface ToastState {
+  message: string;
+  type: ToastType;
+  action?: ToastAction;
+}
+```
+
+**2d. Replace `showToast` function** with version supporting actions:
+```typescript
+function showToast(message: string, type: ToastType = 'success', action?: ToastAction, duration?: number) {
+  setToast({ message, type, action });
+  setTimeout(() => setToast(null), duration ?? (action ? 8000 : 3000));
+}
+```
+
+When `action` is provided and no explicit duration: use 8000ms (D-07). Default without action: 3000ms.
+
+**2e. Update `visibleNavItems` filtering** — OWNER-only for `ai-key`:
+
+Replace current filtering logic:
+```typescript
+const isOwner = role === 'OWNER';
+const visibleNavItems = NAV_ITEMS.filter((item) => {
+  if (item.key === 'ai-key') return isOwner;
+  if (isViewer) return VIEWER_ALLOWED_SECTIONS.includes(item.key);
+  return true;
+});
+```
+
+**2f. Update `initialSection` guard** — non-OWNER ai-key URL redirect:
+```typescript
+const initialSection =
+  (!isOwner && rawSection === 'ai-key') ? 'general' :
+  (isViewer && !VIEWER_ALLOWED_SECTIONS.includes(rawSection)) ? 'general' :
+  rawSection;
+```
+
+Note: the `isOwner` check MUST come before the `isViewer` check to handle MEMBER correctly (MEMBER is not viewer but also not owner).
+
+**2g. Update `sectionRenderers`** — add ai-key with OWNER guard:
+```typescript
+const sectionRenderers: Record<SectionKey, ReactNode> = {
+  general: <GeneralSection showToast={showToast} workspaceId={workspaceId} />,
+  'notification-preferences': <NotificationPreferencesSection showToast={showToast} workspaceId={workspaceId} />,
+  labels: <LabelSection showToast={showToast} workspaceId={workspaceId} />,
+  'ai-key': isOwner ? <GeminiKeySection showToast={showToast} workspaceId={workspaceId} /> : null,
+};
+```
+
+**2h. Extend toast rendering** — add action button:
+
+In the `toastEl` block, add an action button next to the message icon+text:
+```typescript
+const toastEl = toast ? (
+  <div
+    role="status"
+    aria-live="polite"
+    style={{
+      position: 'fixed', top: 80, right: 20, padding: '10px 16px', borderRadius: 6,
+      fontSize: 14, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 500,
+      display: 'flex', alignItems: 'center', gap: 6, animation: 'toastIn 0.2s ease',
+      ...(toast.type === 'success'
+        ? { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
+        : toast.type === 'fail'
+          ? { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }
+          : { background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }),
+    }}
+  >
+    {toast.type === 'success' ? '✓' : toast.type === 'fail' ? '✕' : 'ℹ'} {toast.message}
+    {toast.action && (
+      <button
+        onClick={() => { toast.action!.onClick(); setToast(null); }}
+        style={{
+          marginLeft: 8,
+          padding: '4px 10px',
+          borderRadius: 4,
+          border: '1px solid currentColor',
+          background: 'transparent',
+          color: 'inherit',
+          cursor: 'pointer',
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {toast.action.label}
+      </button>
+    )}
+  </div>
+) : null;
+```
+
+The action button inherits toast color, has a 1px border, and clears the toast after click.
+  </action>
+  <verify>
+    <automated>
+grep -q "'ai-key'" src/components/settings/types.ts && \
+grep -q "ToastAction" src/components/settings/types.ts && \
+grep -q "ai-key" src/components/settings/SettingsShell.tsx && \
+grep -q "AI 설정" src/components/settings/SettingsShell.tsx && \
+grep -q "GeminiKeySection" src/components/settings/SettingsShell.tsx && \
+grep -q "isOwner" src/components/settings/SettingsShell.tsx && \
+grep -q "role === 'OWNER'" src/components/settings/SettingsShell.tsx && \
+grep -q "toast.action" src/components/settings/SettingsShell.tsx && \
+grep -q "action?.onClick" src/components/settings/SettingsShell.tsx || grep -q "action!.onClick" src/components/settings/SettingsShell.tsx && \
+echo "PASS: SettingsShell extensions verified"
+    </automated>
+  </verify>
+  <acceptance_criteria>
+- `src/components/settings/types.ts` contains `'ai-key'` in SectionKey union
+- `src/components/settings/types.ts` exports `ToastAction` interface with `label: string` and `onClick: () => void`
+- `src/components/settings/types.ts` `SectionProps.showToast` has 4 parameters: `(message, type?, action?, duration?)`
+- `SettingsShell.tsx` imports `GeminiKeySection` from `./GeminiKeySection`
+- `SettingsShell.tsx` has NAV_ITEMS entry with `key: 'ai-key'` and `label: 'AI 설정'`
+- `SettingsShell.tsx` has key icon SVG matching UI-SPEC (path contains `M21 2l-2 2m-7.61`)
+- `SettingsShell.tsx` has `const isOwner = role === 'OWNER'`
+- `visibleNavItems` filter checks `item.key === 'ai-key'` returns `isOwner`
+- `initialSection` guard checks `!isOwner && rawSection === 'ai-key'` before isViewer check
+- `sectionRenderers` has `'ai-key': isOwner ? <GeminiKeySection ... /> : null`
+- Toast rendering block contains `{toast.action && (` with button element
+- Toast action button calls `toast.action!.onClick()` then `setToast(null)`
+- `showToast` function uses `action ? 8000 : 3000` for default duration
+  </acceptance_criteria>
+  <done>SettingsShell extended with OWNER-only AI 설정 tab, RBAC nav/URL filtering, and toast action button support.</done>
+</task>
+
+<task type="auto">
+  <name>Task 2: Create GeminiKeySection component with full state machine</name>
+  <files>
+    src/components/settings/GeminiKeySection.tsx
+  </files>
+  <read_first>
+    src/components/settings/GeneralSection.tsx
+    src/components/settings/SettingsShell.tsx
+    src/components/settings/types.ts
+    src/components/ui/ConfirmDialog.tsx
+    .planning/phases/01-secure-key-management/01-UI-SPEC.md
+    .planning/phases/01-secure-key-management/01-CONTEXT.md
+  </read_first>
+  <action>
+Create `src/components/settings/GeminiKeySection.tsx` — client component with full state machine per UI-SPEC.
+
+**CRITICAL: Read `01-UI-SPEC.md` before implementing.** All colors, typography, spacing, and copywriting come from that contract.
+
+```typescript
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import type { SectionProps } from './types';
+```
+
+**State machine type and state:**
+```typescript
+type UIState =
+  | 'IDLE_NO_KEY'
+  | 'IDLE_HAS_KEY'
+  | 'REPLACE_MODE'
+  | 'SAVING'
+  | 'DELETING'
+  | 'DELETE_CONFIRM_OPEN';
+
+interface KeyMeta {
+  maskedKey: string;
+  updatedAt: string;
+}
+```
+
+**Component props:** Receive `SectionProps` (`showToast` + `workspaceId`).
+
+**State variables:**
+- `uiState: UIState` — initialized to `'IDLE_NO_KEY'`
+- `keyMeta: KeyMeta | null` — fetched masked key data
+- `inputValue: string` — controlled input for API key
+- `showPassword: boolean` — toggle for password visibility
+- `error: string | null` — inline error message below input
+- `isLoading: boolean` — initial fetch loading
+
+**useEffect on mount:** Fetch GET `/api/settings/gemini-key`:
+- On success with data: set `keyMeta`, set `uiState = 'IDLE_HAS_KEY'`
+- On success with null data: keep `uiState = 'IDLE_NO_KEY'`
+- On error: show toast with fail message
+
+**handleSave function:**
+1. Set `uiState = 'SAVING'`, clear `error`
+2. POST `/api/settings/gemini-key` with body `{ apiKey: inputValue }`
+3. On success (`data.saved === true`):
+   - Set `keyMeta = { maskedKey: data.maskedKey, updatedAt: new Date().toISOString() }`
+   - Set `uiState = 'IDLE_HAS_KEY'`
+   - Capture `inputValue` before clearing: `const savedKey = inputValue`
+   - Clear `inputValue = ''`
+   - Call `showToast` with action: `showToast('API 키가 저장되었습니다. 지금 복사하세요 \u2014 창을 닫으면 전체 키를 다시 볼 수 없습니다.', 'success', { label: '복사', onClick: () => navigator.clipboard.writeText(savedKey) }, 8000)`
+4. On error with code `PROBE_FAILED`: set `error = '유효하지 않은 API 키입니다. Gemini API에 접근할 수 없었습니다.'`, set `uiState` back to previous (IDLE_NO_KEY or REPLACE_MODE)
+5. On error with code `PROBE_NETWORK_ERROR`: set `error = '키 유효성 확인에 실패했습니다. 네트워크 연결을 확인해주세요.'`, set `uiState` back
+6. On other error: set generic error message, set `uiState` back
+
+**handleDelete function:**
+1. Set `uiState = 'DELETING'`
+2. DELETE `/api/settings/gemini-key`
+3. On success: set `keyMeta = null`, `uiState = 'IDLE_NO_KEY'`, `inputValue = ''`
+4. Call `showToast('API 키가 삭제되었습니다.', 'success')`
+5. On error: `showToast('삭제에 실패했습니다.', 'fail')`, set `uiState = 'IDLE_HAS_KEY'`
+
+**Render structure** (follow UI-SPEC exactly):
+
+**Section Header** (always shown):
+- Title: "AI 설정" — `fontSize: 14, fontWeight: 700, color: '#2C3E50', fontFamily: "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif"`
+- Description: "Gemini API 키를 등록하면 마크다운을 티켓으로 자동 변환할 수 있습니다." — `fontSize: 12, fontWeight: 400, color: '#5A6B7F', marginTop: 4`
+
+**Key Status Card** (shown when `uiState === 'IDLE_HAS_KEY' || uiState === 'DELETE_CONFIRM_OPEN' || uiState === 'DELETING'`):
+```
+border: 1px solid #DFE1E6, borderRadius: 8, padding: 16, background: #fff
+```
+- Row 1: Label "등록된 API 키" `(12px, 700, #5A6B7F)` + masked value `(12px, 400, #2C3E50, fontFamily: monospace)`
+- Row 2: "마지막 수정" + formatted date `(11px, 400, #8993A4)`
+- Actions row (gap: 8px):
+  - "키 교체" button — secondary style: `background: transparent, border: 1px solid #DFE1E6, color: #5A6B7F, borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500`
+  - "API 키 삭제" button — ghost danger: `background: transparent, border: none, color: #DC2626, fontSize: 12, fontWeight: 500, cursor: pointer`
+
+**Key Input Form** (shown when `uiState === 'IDLE_NO_KEY' || uiState === 'REPLACE_MODE' || uiState === 'SAVING'`):
+
+When `uiState === 'IDLE_NO_KEY'` and `keyMeta === null`, show empty state heading:
+- "API 키가 등록되지 않았습니다" `(12px, 700, #5A6B7F)`
+- "Gemini API 키를 등록하면 마크다운 파일을 티켓으로 자동 변환할 수 있습니다." `(12px, 400, #5A6B7F)`
+
+Input field:
+- `<label htmlFor="gemini-api-key" style={{ fontSize: 12, fontWeight: 700, color: '#2C3E50' }}>Gemini API 키</label>`
+- Container div with position: relative for the toggle button:
+  - `<input id="gemini-api-key" type={showPassword ? 'text' : 'password'} value={inputValue} onChange={...} placeholder="AIza로 시작하는 API 키를 입력하세요" disabled={uiState === 'SAVING'} />`
+  - Input styles: `width: '100%', height: 36, padding: '8px 40px 8px 12px', border: error ? '1px solid #DC2626' : '1px solid #DFE1E6', borderRadius: 6, fontSize: 12, outline: 'none', background: uiState === 'SAVING' ? '#F8F9FB' : '#fff', cursor: uiState === 'SAVING' ? 'not-allowed' : 'text', opacity: uiState === 'SAVING' ? 0.7 : 1`
+  - Focus styles (apply via onFocus/onBlur state): `border: '1px solid #629584', boxShadow: '0 0 0 3px #E8F5F0'`
+  - Error styles: `border: '1px solid #DC2626', boxShadow: '0 0 0 3px #FEF2F2'`
+  - Eye toggle button (position: absolute, right: 8, top: 50%, transform translateY(-50%)):
+    - `aria-label={showPassword ? 'API 키 숨기기' : 'API 키 표시'}`
+    - Min touch area 32x32px
+    - Toggle `showPassword` on click
+    - Eye open/closed SVG icons (16x16, stroke-based, strokeWidth=2)
+  - **CRITICAL:** `onKeyDown` handler: prevent Enter from submitting (`e.key === 'Enter' && e.preventDefault()`) — per UI-SPEC accessibility contract
+
+- Helper text (below input): "키는 즉시 암호화되어 저장됩니다. 저장 후에는 전체 키를 다시 볼 수 없습니다." — `fontSize: 11, color: '#8993A4', marginTop: 4`
+
+- Inline error zone (below helper, shown when `error !== null`):
+  - `<div role="alert" style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>{error}</div>`
+
+- Actions row (marginTop: 16, gap: 8):
+  - "API 키 저장" button — primary CTA:
+    - `background: '#629584', color: '#fff', borderRadius: 6, padding: '8px 20px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer'`
+    - Hover: `background: '#527D6F'`
+    - Disabled when `inputValue.trim() === ''` or `uiState === 'SAVING'`: `opacity: 0.45, cursor: 'not-allowed'`
+    - Loading state (`uiState === 'SAVING'`): show spinner + "확인 중..." text, `aria-busy="true"`
+  - "취소" button (shown ONLY in REPLACE_MODE): secondary style, calls `setUiState('IDLE_HAS_KEY')` and clears input/error
+
+**Delete Confirm Dialog** (shown when `uiState === 'DELETE_CONFIRM_OPEN'`):
+```typescript
+<ConfirmDialog
+  isOpen={uiState === 'DELETE_CONFIRM_OPEN'}
+  onClose={() => setUiState('IDLE_HAS_KEY')}
+  onConfirm={handleDelete}
+  title="API 키를 삭제하시겠습니까?"
+  description="삭제 후 AI 기능을 사용하려면 새 키를 다시 등록해야 합니다."
+  confirmText="API 키 삭제"
+  cancelText="취소"
+  variant="danger"
+/>
+```
+
+**Date formatting:** For "마지막 수정" display, format `updatedAt` using `new Date(updatedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })` — yields "2026년 4월 11일" format.
+
+**Spinner for SAVING state:** Small inline CSS spinner or a simple "..." animation. Use existing codebase pattern if available, otherwise:
+```typescript
+<span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 6 }} />
+```
+Add `@keyframes spin { to { transform: rotate(360deg) } }` via inline style or check if global CSS has it.
+
+**Style approach:** Use inline style objects matching the existing SettingsShell pattern. Follow `fieldInputStyle` pattern from `GeneralSection.tsx` for input field dimensions. No new CSS files.
+  </action>
+  <verify>
+    <automated>
+grep -q "'use client'" src/components/settings/GeminiKeySection.tsx && \
+grep -q "GeminiKeySection" src/components/settings/GeminiKeySection.tsx && \
+grep -q "IDLE_NO_KEY" src/components/settings/GeminiKeySection.tsx && \
+grep -q "IDLE_HAS_KEY" src/components/settings/GeminiKeySection.tsx && \
+grep -q "REPLACE_MODE" src/components/settings/GeminiKeySection.tsx && \
+grep -q "SAVING" src/components/settings/GeminiKeySection.tsx && \
+grep -q "DELETE_CONFIRM_OPEN" src/components/settings/GeminiKeySection.tsx && \
+grep -q "DELETING" src/components/settings/GeminiKeySection.tsx && \
+grep -q "api/settings/gemini-key" src/components/settings/GeminiKeySection.tsx && \
+grep -q "ConfirmDialog" src/components/settings/GeminiKeySection.tsx && \
+grep -q "API 키를 삭제하시겠습니까" src/components/settings/GeminiKeySection.tsx && \
+grep -q "navigator.clipboard" src/components/settings/GeminiKeySection.tsx && \
+grep -q 'role="alert"' src/components/settings/GeminiKeySection.tsx && \
+grep -q "aria-label" src/components/settings/GeminiKeySection.tsx && \
+grep -q "aria-busy" src/components/settings/GeminiKeySection.tsx && \
+grep -q "htmlFor" src/components/settings/GeminiKeySection.tsx && \
+grep -q "preventDefault" src/components/settings/GeminiKeySection.tsx && \
+grep -q "AI 설정" src/components/settings/GeminiKeySection.tsx && \
+grep -q "확인 중" src/components/settings/GeminiKeySection.tsx && \
+echo "PASS: GeminiKeySection fully verified"
+    </automated>
+  </verify>
+  <acceptance_criteria>
+- File starts with `'use client'`
+- Component named `GeminiKeySection` accepting `SectionProps`
+- UIState type has all 6 states: `IDLE_NO_KEY`, `IDLE_HAS_KEY`, `REPLACE_MODE`, `SAVING`, `DELETING`, `DELETE_CONFIRM_OPEN`
+- useEffect calls `fetch('/api/settings/gemini-key')` on mount
+- handleSave calls `fetch('/api/settings/gemini-key', { method: 'POST', ... })`
+- handleDelete calls `fetch('/api/settings/gemini-key', { method: 'DELETE' })`
+- Success toast contains `navigator.clipboard.writeText` in action onClick
+- Success toast message matches: "API 키가 저장되었습니다. 지금 복사하세요"
+- Toast action label is "복사"
+- ConfirmDialog props: title="API 키를 삭제하시겠습니까?", description="삭제 후 AI 기능을 사용하려면 새 키를 다시 등록해야 합니다.", confirmText="API 키 삭제"
+- Input has `id="gemini-api-key"` with matching `<label htmlFor="gemini-api-key">`
+- Eye toggle button has `aria-label` that toggles between "API 키 표시" and "API 키 숨기기"
+- Save button shows `aria-busy="true"` during SAVING state
+- Error div has `role="alert"`
+- Input `onKeyDown` prevents Enter (`e.key === 'Enter' && e.preventDefault()`)
+- Section title is "AI 설정" (14px, 700)
+- Colors match UI-SPEC: accent `#629584`, danger `#DC2626`, text `#2C3E50`, secondary text `#5A6B7F`
+- Save button loading text is "확인 중..."
+- "취소" button shown only in REPLACE_MODE
+  </acceptance_criteria>
+  <done>GeminiKeySection component fully implements the UI-SPEC state machine with all 6 states, proper accessibility, copywriting contract, and API integration.</done>
+</task>
+
+<task type="checkpoint:human-verify" gate="blocking">
+  <name>Task 3: Verify full Gemini key management flow</name>
+  <what-built>
+    Complete Gemini API key management feature:
+    - OWNER-only "AI 설정" tab in Settings sidebar
+    - API key registration with Gemini probe validation
+    - Masked key display after save
+    - Key replacement flow
+    - Key deletion with confirmation dialog
+    - Toast with copy action on save success
+    - RBAC enforcement at nav, URL, and API level
+  </what-built>
+  <how-to-verify>
+    1. **OWNER visibility:** Log in as OWNER → Go to /settings → Verify "AI 설정" tab appears in sidebar
+    2. **Empty state:** Click "AI 설정" → Verify empty state message: "API 키가 등록되지 않았습니다"
+    3. **Save with invalid key:** Enter "invalid-key-123" → Click "API 키 저장" → Verify "확인 중..." loading → Verify inline error appears
+    4. **Save with valid key:** Enter a real Gemini API key → Click "API 키 저장" → Verify:
+       - Toast appears with "복사" button
+       - Masked key card appears with correct mask format
+       - "키 교체" and "API 키 삭제" buttons visible
+    5. **Copy button:** Click "복사" in toast → Verify clipboard has the full key
+    6. **Replace flow:** Click "키 교체" → Verify input form + "취소" button → Click "취소" → Back to masked card
+    7. **Delete flow:** Click "API 키 삭제" → Verify confirm dialog text → Confirm → Verify back to empty state
+    8. **MEMBER test:** Log in as MEMBER → Go to /settings → Verify "AI 설정" tab is NOT visible
+    9. **URL guard:** As MEMBER, navigate to /settings?section=ai-key → Verify redirected to general section
+    10. **Build check:** Run `npm run build` to verify no type errors
+  </how-to-verify>
+  <resume-signal>Type "approved" if all checks pass, or describe specific issues.</resume-signal>
+</task>
+
+</tasks>
+
+<threat_model>
+## Trust Boundaries
+
+| Boundary | Description |
+|----------|-------------|
+| User role → nav visibility | OWNER check gates tab visibility |
+| URL parameter → section rendering | Non-OWNER ai-key URL redirected to general |
+| Client → clipboard API | Full key available only in toast action closure |
+| Toast lifecycle → key reference | setToast(null) releases plaintext closure after timeout |
+
+## STRIDE Threat Register
+
+| Threat ID | Category | Component | Disposition | Mitigation Plan |
+|-----------|----------|-----------|-------------|-----------------|
+| T-03-01 | Elevation of Privilege | SettingsShell.tsx | mitigate | `visibleNavItems` filters 'ai-key' to `role === 'OWNER'` only; `initialSection` redirects non-OWNER URL access to 'general' |
+| T-03-02 | Information Disclosure | GeminiKeySection.tsx | mitigate | Full key only in `navigator.clipboard.writeText` closure within toast action; toast auto-clears after 8s via `setToast(null)` releasing closure reference |
+| T-03-03 | Information Disclosure | Toast memory | mitigate | `setToast(null)` on timeout and on action click releases the `savedKey` closure, preventing long-lived plaintext in memory (Pitfall 6 from RESEARCH.md) |
+| T-03-04 | Spoofing | SettingsShell RBAC | mitigate | Client-side RBAC is defense-in-depth only; actual enforcement is in API handlers (Plan 02 T-02-01). Non-OWNER fetching GeminiKeySection data gets 403 from API. |
+| T-03-05 | Tampering | Input validation | mitigate | Enter key prevented on input (no accidental submission); save button disabled when input empty |
+</threat_model>
+
+<verification>
+1. `npm run build` passes without errors
+2. OWNER sees "AI 설정" tab, MEMBER/VIEWER do not
+3. Full key lifecycle works: save → masked display → replace → delete
+4. Toast copy button writes full key to clipboard
+5. All copywriting matches UI-SPEC contract exactly
+6. Accessibility: label connected to input, aria-label on toggle, role="alert" on error, aria-busy on save button
+</verification>
+
+<success_criteria>
+- OWNER can register, view (masked), replace, and delete Gemini API key
+- Non-OWNER roles see no trace of the AI settings feature
+- All UI text matches copywriting contract from UI-SPEC
+- State machine handles all transitions correctly (6 states)
+- Toast with action button works with 8s duration
+- Build passes with no type errors
+</success_criteria>
+
+<output>
+After completion, create `.planning/phases/01-secure-key-management/01-03-SUMMARY.md`
+</output>

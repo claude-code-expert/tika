@@ -547,19 +547,17 @@ type UIState =
 
 ---
 
-## Open Questions (RESOLVED)
+## Open Questions
 
 1. **ENCRYPTION_KEY 생성/배포 방법 사용자 교육**
    - What we know: 서버 시작 시 검증, fallback 없음
    - What's unclear: Vercel 대시보드에 설정 방법을 플래너가 Wave 0 태스크로 포함해야 하는지
    - Recommendation: Wave 0에 ENCRYPTION_KEY 생성 및 `.env.local` 설정 지침 태스크 포함
-   - **RESOLVED:** Plan 01-01 Wave 1 Task 1에서 `.env.example`에 `ENCRYPTION_KEY` 생성 지침 및 주석 추가로 해결됨
 
 2. **`workspace_settings` 테이블명**
    - What we know: D-02에서 `workspace_settings`로 결정됨
    - What's unclear: 향후 Phase 2 이후 다른 설정(AI 분석 설정 등)이 추가될 때 같은 테이블을 확장할지 별도 테이블을 만들 것인지
    - Recommendation: 지금은 D-02 그대로 진행. Phase 2에서 확장 필요시 컬럼 추가.
-   - **RESOLVED:** D-02 결정대로 `workspace_settings` 테이블 사용. Phase 2 이후 확장 필요 시 컬럼 추가 방식으로 처리.
 
 ---
 

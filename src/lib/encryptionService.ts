@@ -1,13 +1,22 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-// Module-load validation — no fallback (D-10)
-const RAW_KEY = process.env.ENCRYPTION_KEY;
-if (!RAW_KEY || !/^[0-9a-fA-F]{64}$/.test(RAW_KEY)) {
-  throw new Error(
-    `ENCRYPTION_KEY must be 64 hex characters (32 bytes). Got length: ${RAW_KEY?.length ?? 0}`,
-  );
+// Lazy key initialization — no fallback (D-10).
+// Validation deferred to first call so Next.js build-time module evaluation
+// does not fail when ENCRYPTION_KEY is absent from the build environment.
+let _masterKey: Buffer | null = null;
+
+function getMasterKey(): Buffer {
+  if (!_masterKey) {
+    const RAW_KEY = process.env.ENCRYPTION_KEY;
+    if (!RAW_KEY || !/^[0-9a-fA-F]{64}$/.test(RAW_KEY)) {
+      throw new Error(
+        `ENCRYPTION_KEY must be 64 hex characters (32 bytes). Got length: ${RAW_KEY?.length ?? 0}`,
+      );
+    }
+    _masterKey = Buffer.from(RAW_KEY, 'hex');
+  }
+  return _masterKey;
 }
-const MASTER_KEY = Buffer.from(RAW_KEY, 'hex');
 
 export function encryptApiKey(plaintext: string): {
   ciphertext: string;
@@ -15,7 +24,7 @@ export function encryptApiKey(plaintext: string): {
   tag: string;
 } {
   const iv = randomBytes(12); // D-11: new IV every call, INSIDE function body
-  const cipher = createCipheriv('aes-256-gcm', MASTER_KEY, iv);
+  const cipher = createCipheriv('aes-256-gcm', getMasterKey(), iv);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   return {
@@ -26,7 +35,7 @@ export function encryptApiKey(plaintext: string): {
 }
 
 export function decryptApiKey(ciphertext: string, iv: string, tag: string): string {
-  const decipher = createDecipheriv('aes-256-gcm', MASTER_KEY, Buffer.from(iv, 'hex'));
+  const decipher = createDecipheriv('aes-256-gcm', getMasterKey(), Buffer.from(iv, 'hex'));
   decipher.setAuthTag(Buffer.from(tag, 'hex'));
   return Buffer.concat([
     decipher.update(Buffer.from(ciphertext, 'hex')),

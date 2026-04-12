@@ -3,6 +3,30 @@
 > 이 문서는 Tika 프로젝트의 개발 히스토리를 기록합니다.
 > 각 엔트리는 프롬프트, 변경사항, 영향받은 파일을 포함합니다.
 
+## [feature/ai-pro] - 2026-04-12 Phase 1: Secure Key Management (AI 티켓 자동화 기반)
+
+### 🎯 Prompts
+1. "tika에 md로 checklist를 업로드 하면 이걸 분석해서 goal, story, feature, task 를 생성해야해. Gemini API key를 사용자에게 설정하는 화면이 있어야 하고 저장된 api키는 노출이 안되게 암호화해서 보관"
+2. "저장된 api key는 암호화해서 저장하고 실제 사용시에만 복호화, 앞에 5글자 뒤에 5글자만 확인하고 나머지는 * 마스킹, 관리자만 설정 가능"
+
+### ✅ Changes
+- **Added**: `src/lib/encryptionService.ts` — AES-256-GCM 암호화/복호화/마스킹 서비스. 매 호출마다 새 IV(`randomBytes(12)`), `ENCRYPTION_KEY` 부재 시 모듈 로드 시점 throw
+- **Added**: `src/db/schema.ts` — `workspace_settings` 테이블 (gemini_key_ciphertext, gemini_key_iv, gemini_key_tag, masked_key 컬럼, workspaceId unique + cascade)
+- **Added**: `src/db/queries/workspaceSettings.ts` — `getGeminiKeyMeta`, `upsertGeminiKey`, `deleteGeminiKey`, `getDecryptedGeminiKey` 쿼리 레이어. GET은 ciphertext 절대 미노출
+- **Added**: `app/api/settings/gemini-key/route.ts` — GET/POST/DELETE Route Handler. OWNER-only RBAC, Gemini probe(`ai.models.list`) 통과 후 저장, 응답에 ciphertext 미포함
+- **Added**: `src/components/settings/GeminiKeySection.tsx` — 6-state machine UI (IDLE_NO_KEY/IDLE_HAS_KEY/REPLACE_MODE/SAVING/DELETING/DELETE_CONFIRM_OPEN), 비밀번호 눈 토글, 인라인 에러, 저장 후 8초 클립보드 복사 toast
+- **Modified**: `src/components/settings/SettingsShell.tsx` — OWNER-only "AI 설정" 탭 추가, URL 가드(`?section=ai-key` non-owner 접근 시 general로 리다이렉트), toast action 버튼 지원
+- **Modified**: `src/components/settings/types.ts` — `SectionKey`에 `'ai-key'` 추가, `ToastAction` 인터페이스 추가, `showToast` 시그니처 확장(action, duration)
+- **Modified**: `src/lib/validations.ts` — `saveGeminiKeySchema` / `SaveGeminiKeyInput` 추가
+- **Modified**: `.env.example` — `ENCRYPTION_KEY` 플레이스홀더 + 생성 가이드 추가
+- **Added**: `@google/genai@^1.49.0` 패키지 설치
+- **DB**: `workspace_settings` 테이블 생성 완료 (`npx drizzle-kit push`)
+
+### 📁 Files
+`src/lib/encryptionService.ts` · `src/db/schema.ts` · `src/db/queries/workspaceSettings.ts` · `app/api/settings/gemini-key/route.ts` · `src/components/settings/GeminiKeySection.tsx` · `src/components/settings/SettingsShell.tsx` · `src/components/settings/types.ts` · `src/lib/validations.ts` · `.env.example` · `package.json`
+
+---
+
 ## [develop] - 2026-04-05 SEO 최적화 전체 적용 + settings.json 훅 버그 수정
 
 ### 🎯 Prompts

@@ -23,8 +23,8 @@
   4. MEMBER 또는 VIEWER로 로그인한 사용자는 API 키 설정 페이지 URL에 직접 접근해도 403이 반환된다
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md — Foundation: encryption service, DB schema, query layer, Zod validation
-- [ ] 01-02-PLAN.md — API routes: GET/POST/DELETE handlers with RBAC and Gemini probe
+- [x] 01-01-PLAN.md — Foundation: encryption service, DB schema, query layer, Zod validation
+- [x] 01-02-PLAN.md — API routes: GET/POST/DELETE handlers with RBAC and Gemini probe
 - [ ] 01-03-PLAN.md — UI: SettingsShell extension + GeminiKeySection component
 **UI hint**: yes
 

@@ -1,43 +1,9 @@
 # Tika
 
----
-
-### 소개
-
-<table>
-<tr>
-<td width="35%" align="center" valign="top">
-
-<img src="https://raw.githubusercontent.com/claude-code-expert/.github/main/profile/assets/cc-master.png" alt="클로드 코드 마스터" width="100%" />
-
-<br/>
-
-<a href="https://product.kyobobook.co.kr/detail/S000219725328" target="_blank"><img src="https://img.shields.io/badge/클로드_코드_마스터-온라인_구매-2E75B6?style=for-the-badge&logo=bookstack&logoColor=white" alt="클로드 코드 마스터 온라인 구매" /></a>
-
-</td>
-<td width="65%" valign="top">
-
-**Claude Code Expert**는 『클로드 코드 마스터 — 기획 · 개발 · 운영이 한 번에 끝나는 AI 에이전틱 코딩 워크 플로』의 공식 GitHub 조직입니다.
-
-책에서 다루는 프로젝트 예제를 고도화 한 티켓기반 이슈트래커 SaaS입니다.
-
-책에 수록된 모든 예제 코드, 참고 자료가 이 레파지터리에서 관리됩니다.
-
-책 관련 문의 사항이나 프로젝트 관련 문의사항은 brewnet.dev@gmail.com으로 연락주시기 바랍니다.
-
-</td>
-</tr>
-</table>
-
----
-
 > **이 프로젝트가 도움이 되었다면, Star를 눌러 마음을 표현해 주세요!**
 > **If you find this project helpful, please give it a Star to show your support!**
 
-Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드에서 드래그 앤 드롭으로 관리하는 티켓 기반 협업 도구로 WBS 관리나 멤버들의 일감 현황을 한 눈에 추적하고 관리할 수 있습니다.
-AI 분석 도구와 MCP를 통해 개발 단계에서 업무의 효율적인 등록관리, 상태변경, 자동화를 지원합니다. (개발 진행중)
-
-공식 홈페이지 : **https://tika-app.vercel.app**
+Goal > Story > Feature > Task 계층으로 업무를 분해하고, 칸반 보드에서 드래그 앤 드롭으로 관리하는 티켓 기반 협업 도구.
 
 ---
 
@@ -55,23 +21,17 @@ AI 분석 도구와 MCP를 통해 개발 단계에서 업무의 효율적인 등
 
 ## Screenshots
 
-**랜딩 페이지**
-![랜딩 페이지](public/images/tika-1.png)
+| 랜딩 페이지 | 대시보드 |
+|:-----------:|:--------:|
+| ![랜딩 페이지](public/images/tika-1.png) | ![대시보드](public/images/tika-2.png) |
 
-**대시보드**
-![대시보드](public/images/tika-2.png)
+| 칸반 보드 | WBS |
+|:---------:|:---:|
+| ![칸반 보드](public/images/tika-3.png) | ![WBS](public/images/tika-4.png) |
 
-**칸반 보드**
-![칸반 보드](public/images/tika-3.png)
-
-**WBS**
-![WBS](public/images/tika-4.png)
-
-**Project 분석**
-![Project 분석](public/images/tika-5.png)
-
-**멤버 현황 분석**
-![멤버 현황 분석](public/images/tika-6.png)
+| Project 분석 | 멤버 현황 분석 |
+|:------------:|:--------------:|
+| ![Project 분석](public/images/tika-5.png) | ![멤버 현황 분석](public/images/tika-6.png) |
 
 ---
 

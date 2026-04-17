@@ -386,3 +386,24 @@ export const workspaceJoinRequests = pgTable(
     index('idx_join_requests_workspace_status').on(table.workspaceId, table.status),
   ],
 );
+// 19. workspace_settings — AI feature settings (encrypted API keys)
+export const workspaceSettings = pgTable(
+  'workspace_settings',
+  {
+    id: serial('id').primaryKey(),
+    workspaceId: integer('workspace_id')
+      .notNull()
+      .unique()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    geminiKeyCiphertext: text('gemini_key_ciphertext'),
+    geminiKeyIv: text('gemini_key_iv'),
+    geminiKeyTag: text('gemini_key_tag'),
+    maskedKey: text('masked_key'),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => nowKST()),
+  },
+  (table) => [index('idx_workspace_settings_workspace_id').on(table.workspaceId)],
+);
+

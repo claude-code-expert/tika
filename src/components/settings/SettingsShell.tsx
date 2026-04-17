@@ -9,7 +9,8 @@ import { TicketForm } from '@/components/ticket/TicketForm';
 import { GeneralSection } from './GeneralSection';
 import { NotificationPreferencesSection } from './NotificationPreferencesSection';
 import { LabelSection } from './LabelSection';
-import type { SectionKey, ToastType } from './types';
+import { GeminiKeySection } from './GeminiKeySection';
+import type { SectionKey, ToastType, ToastAction } from './types';
 import type { TeamRole } from '@/types/index';
 
 const VIEWER_ALLOWED_SECTIONS: SectionKey[] = ['general'];
@@ -18,6 +19,7 @@ import type { CreateTicketInput, UpdateTicketInput } from '@/lib/validations';
 interface ToastState {
   message: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
 const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
@@ -51,19 +53,33 @@ const NAV_ITEMS: { key: SectionKey; label: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    key: 'ai-key' as SectionKey,
+    label: 'AI 설정',
+    icon: (
+      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+      </svg>
+    ),
+  },
 ];
 
 export function SettingsShell({ workspaceId, role }: { workspaceId: number; role: TeamRole }) {
+  const isOwner = role === 'OWNER';
   const isViewer = role === 'VIEWER';
-  const visibleNavItems = isViewer
-    ? NAV_ITEMS.filter((item) => VIEWER_ALLOWED_SECTIONS.includes(item.key))
-    : NAV_ITEMS;
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (item.key === 'ai-key') return isOwner;
+    if (isViewer) return VIEWER_ALLOWED_SECTIONS.includes(item.key);
+    return true;
+  });
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawSection = (searchParams.get('section') as SectionKey) ?? 'general';
   const initialSection =
-    isViewer && !VIEWER_ALLOWED_SECTIONS.includes(rawSection) ? 'general' : rawSection;
+    !isOwner && rawSection === 'ai-key' ? 'general' :
+    isViewer && !VIEWER_ALLOWED_SECTIONS.includes(rawSection) ? 'general' :
+    rawSection;
   const [activeSection, setActiveSection] = useState<SectionKey>(initialSection);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
@@ -87,15 +103,16 @@ export function SettingsShell({ workspaceId, role }: { workspaceId: number; role
     [workspaceId, router],
   );
 
-  function showToast(message: string, type: ToastType = 'success') {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  function showToast(message: string, type: ToastType = 'success', action?: ToastAction, duration?: number) {
+    setToast({ message, type, action });
+    setTimeout(() => setToast(null), duration ?? (action ? 8000 : 3000));
   }
 
   const sectionRenderers: Record<SectionKey, ReactNode> = {
     general: <GeneralSection showToast={showToast} workspaceId={workspaceId} />,
     'notification-preferences': <NotificationPreferencesSection showToast={showToast} workspaceId={workspaceId} />,
     labels: <LabelSection showToast={showToast} workspaceId={workspaceId} />,
+    'ai-key': isOwner ? <GeminiKeySection showToast={showToast} workspaceId={workspaceId} /> : null,
   };
 
   const toastEl = toast ? (
@@ -114,6 +131,24 @@ export function SettingsShell({ workspaceId, role }: { workspaceId: number; role
       }}
     >
       {toast.type === 'success' ? '✓' : toast.type === 'fail' ? '✕' : 'ℹ'} {toast.message}
+      {toast.action && (
+        <button
+          onClick={() => { toast.action!.onClick(); setToast(null); }}
+          style={{
+            marginLeft: 8,
+            padding: '4px 10px',
+            borderRadius: 4,
+            border: '1px solid currentColor',
+            background: 'transparent',
+            color: 'inherit',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
     </div>
   ) : null;
 

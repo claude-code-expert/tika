@@ -10,7 +10,7 @@ function getDb(): NodePgDatabase<typeof schema> {
       connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
       max: 1,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     });
     _db = drizzle(pool, { schema, logger: process.env.NODE_ENV === 'development' });

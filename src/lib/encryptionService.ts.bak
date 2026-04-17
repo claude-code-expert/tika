@@ -27,7 +27,7 @@ export function encryptApiKey(plaintext: string): {
 }
 
 export function decryptApiKey(ciphertext: string, iv: string, tag: string): string {
-  const decipher = createDecipheriv('aes-256-gcm', getMasterKey(), Buffer.from(iv, 'hex'));
+  const decipher = createDecipheriv('aes-256-gcm', MASTER_KEY, Buffer.from(iv, 'hex'));
   decipher.setAuthTag(Buffer.from(tag, 'hex'));
   return Buffer.concat([
     decipher.update(Buffer.from(ciphertext, 'hex')),

@@ -97,11 +97,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const { totalUsers, totalWorkspaces, recentUsers } = await getLandingStats().catch(() => ({
-    totalUsers: 0,
-    totalWorkspaces: 0,
-    recentUsers: [],
-  }));
+  const { totalUsers, totalWorkspaces, recentUsers } = await getLandingStats();
 
   return (
     <div
